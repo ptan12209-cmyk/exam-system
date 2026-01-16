@@ -186,14 +186,30 @@ export default function CreateExamPage() {
 
             // === TRUE/FALSE ===
             const tfData = data.true_false || []
+            console.log("TF Data from AI:", tfData)
             if (tfData.length > 0) {
-                const parsedTf: TFAnswer[] = tfData.map((tf: { question: number; answers: { a: boolean; b: boolean; c: boolean; d: boolean } }) => ({
-                    question: tf.question,
-                    a: tf.answers.a,
-                    b: tf.answers.b,
-                    c: tf.answers.c,
-                    d: tf.answers.d
-                }))
+                const parsedTf: TFAnswer[] = tfData.map((tf: { question: number; answers?: { a: boolean; b: boolean; c: boolean; d: boolean }; a?: boolean; b?: boolean; c?: boolean; d?: boolean }) => {
+                    // Handle both nested and flat format
+                    if (tf.answers) {
+                        return {
+                            question: tf.question,
+                            a: tf.answers.a,
+                            b: tf.answers.b,
+                            c: tf.answers.c,
+                            d: tf.answers.d
+                        }
+                    } else {
+                        // Flat format
+                        return {
+                            question: tf.question,
+                            a: tf.a ?? true,
+                            b: tf.b ?? true,
+                            c: tf.c ?? true,
+                            d: tf.d ?? true
+                        }
+                    }
+                })
+                console.log("Parsed TF:", parsedTf)
                 setTfAnswers(parsedTf)
                 setTfCount(parsedTf.length)
                 setEnableTF(true)  // Auto-enable TF when detected
@@ -201,11 +217,13 @@ export default function CreateExamPage() {
 
             // === SHORT ANSWER ===
             const saData = data.short_answer || []
+            console.log("SA Data from AI:", saData)
             if (saData.length > 0) {
                 const parsedSa: SAAnswer[] = saData.map((sa: { question: number; answer: number | string }) => ({
                     question: sa.question,
                     answer: sa.answer
                 }))
+                console.log("Parsed SA:", parsedSa)
                 setSaAnswers(parsedSa)
                 setSaCount(parsedSa.length)
                 setEnableSA(true)  // Auto-enable SA when detected
