@@ -366,14 +366,14 @@ export default function TakeExamPage() {
             const score = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 10 : 0
             const timeSpent = Math.floor((Date.now() - startTime) / 1000)
 
-            // Get current attempt number
-            const { count: currentAttempts } = await supabase
+            // Get current attempt number (avoid count() which causes FOR UPDATE error)
+            const { data: existingSubmissions } = await supabase
                 .from("submissions")
-                .select("id", { count: "exact", head: true })
+                .select("id")
                 .eq("exam_id", examId)
                 .eq("student_id", user.id)
 
-            const attemptNumber = (currentAttempts ?? 0) + 1
+            const attemptNumber = (existingSubmissions?.length ?? 0) + 1
 
             // Save submission with all answer types
             const { error } = await supabase
