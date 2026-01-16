@@ -1,11 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-
-// Force dynamic rendering to avoid build-time Supabase client creation
-export const dynamic = 'force-dynamic';
 
 // Configuration - Change this to your actual Meet link
 const GOOGLE_MEET_LINK = "https://meet.google.com/jdd-gddy-een";
@@ -28,16 +25,30 @@ export default function LiveRoomPage() {
     const [formTime, setFormTime] = useState("");
     const [formTopic, setFormTopic] = useState("");
     const [formHost, setFormHost] = useState("");
+    const [mounted, setMounted] = useState(false);
 
     const router = useRouter();
-    const supabase = createClient();
 
-    useEffect(() => {
-        checkAuth();
-        fetchSchedule();
+    // Create supabase client only on client-side
+    const supabase = useMemo(() => {
+        if (typeof window === 'undefined') return null;
+        return createClient();
     }, []);
 
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // Call checkAuth and fetchSchedule when supabase is ready
+    useEffect(() => {
+        if (supabase) {
+            checkAuth();
+            fetchSchedule();
+        }
+    }, [supabase]);
+
     const checkAuth = async () => {
+        if (!supabase) return;
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
             const { data: profile } = await supabase
@@ -54,6 +65,7 @@ export default function LiveRoomPage() {
     };
 
     const fetchSchedule = async () => {
+        if (!supabase) return;
         const { data } = await supabase
             .from("live_schedule")
             .select("*")
@@ -84,6 +96,7 @@ export default function LiveRoomPage() {
     };
 
     const handleSave = async () => {
+        if (!supabase) return;
         if (!formDay || !formTime || !formTopic) return;
 
         if (editItem) {
@@ -102,6 +115,7 @@ export default function LiveRoomPage() {
     };
 
     const handleDelete = async (id: string) => {
+        if (!supabase) return;
         if (confirm("Xóa lịch này?")) {
             await supabase.from("live_schedule").delete().eq("id", id);
             fetchSchedule();
