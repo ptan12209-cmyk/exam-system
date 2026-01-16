@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+// Force dynamic rendering to avoid build-time Supabase client creation
+export const dynamic = 'force-dynamic';
+
 // Configuration - Change this to your actual Meet link
 const GOOGLE_MEET_LINK = "https://meet.google.com/jdd-gddy-een";
 
