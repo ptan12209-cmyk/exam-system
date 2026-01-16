@@ -184,14 +184,17 @@ export default function CreateExamPage() {
                 setTotalQuestions(parsedMc.length)
             }
 
+            // Store the actual MC count for synchronous use (state is async!)
+            const parsedMcCount = validMc.length > 0 ? validMc.length : mcCount
+
             // === TRUE/FALSE ===
             const tfData = data.true_false || []
-            console.log("TF Data from AI:", tfData)
+            console.log("TF Data from AI:", tfData, "Using parsedMcCount:", parsedMcCount)
             if (tfData.length > 0) {
-                // Re-map question numbers to use correct offset (mcCount + 1 + index)
+                // Re-map question numbers to use correct offset (parsedMcCount + 1 + index)
                 const parsedTf: TFAnswer[] = tfData.map((tf: { question: number; answers?: { a: boolean; b: boolean; c: boolean; d: boolean }; a?: boolean; b?: boolean; c?: boolean; d?: boolean }, index: number) => {
-                    // Calculate correct question number based on position
-                    const correctQNum = mcCount + 1 + index
+                    // Calculate correct question number based on position - USE LOCAL VAR!
+                    const correctQNum = parsedMcCount + 1 + index
 
                     // Handle both nested and flat format
                     if (tf.answers) {
@@ -226,9 +229,9 @@ export default function CreateExamPage() {
                 // Calculate effective TF count for SA offset
                 const effectiveTfCount = tfData.length || tfCount
 
-                // Re-map question numbers to use correct offset
+                // Re-map question numbers to use correct offset - USE LOCAL VAR!
                 const parsedSa: SAAnswer[] = saData.map((sa: { question: number; answer: number | string }, index: number) => ({
-                    question: mcCount + effectiveTfCount + 1 + index,
+                    question: parsedMcCount + effectiveTfCount + 1 + index,
                     answer: sa.answer
                 }))
                 console.log("Parsed SA (remapped):", parsedSa)
