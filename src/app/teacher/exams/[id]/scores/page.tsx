@@ -90,16 +90,19 @@ export default function ExamScoresPage() {
 
             if (submissionsData && submissionsData.length > 0) {
                 // Fetch profiles separately
-                const studentIds = submissionsData.map(s => s.student_id)
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const studentIds = submissionsData.map((s: any) => s.student_id)
                 const { data: profilesData } = await supabase
                     .from("profiles")
                     .select("id, full_name")
                     .in("id", studentIds)
 
                 // Merge data
-                const merged = submissionsData.map(sub => ({
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const merged = submissionsData.map((sub: any) => ({
                     ...sub,
-                    profile: profilesData?.find(p => p.id === sub.student_id) || { full_name: null }
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    profile: profilesData?.find((p: any) => p.id === sub.student_id) || { full_name: null }
                 }))
                 setSubmissions(merged as Submission[])
             }

@@ -97,7 +97,8 @@ export default function ExamBankPage() {
             .order("created_at", { ascending: false })
 
         if (examsData) {
-            setExams(examsData.map(e => ({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            setExams(examsData.map((e: any) => ({
                 id: e.id,
                 title: e.title,
                 subject: e.subject || "physics",

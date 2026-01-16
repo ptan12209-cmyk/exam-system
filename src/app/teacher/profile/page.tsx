@@ -70,7 +70,8 @@ export default function TeacherProfilePage() {
                 .order("created_at", { ascending: false })
 
             if (exams) {
-                const published = exams.filter(e => e.status === "published").length
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const published = exams.filter((e: any) => e.status === "published").length
                 setStats({
                     totalExams: exams.length,
                     publishedExams: published,
@@ -204,8 +205,8 @@ export default function TeacherProfilePage() {
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${exam.status === "published"
-                                                    ? "bg-green-500/10 text-green-400"
-                                                    : "bg-yellow-500/10 text-yellow-400"
+                                                ? "bg-green-500/10 text-green-400"
+                                                : "bg-yellow-500/10 text-yellow-400"
                                                 }`}>
                                                 {exam.status === "published" ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
                                             </div>
@@ -217,8 +218,8 @@ export default function TeacherProfilePage() {
                                             </div>
                                         </div>
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${exam.status === "published"
-                                                ? "bg-green-500/20 text-green-400"
-                                                : "bg-yellow-500/20 text-yellow-400"
+                                            ? "bg-green-500/20 text-green-400"
+                                            : "bg-yellow-500/20 text-yellow-400"
                                             }`}>
                                             {exam.status === "published" ? "Đã publish" : "Bản nháp"}
                                         </span>

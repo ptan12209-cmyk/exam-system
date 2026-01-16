@@ -97,7 +97,7 @@ export default function ArenaResultPage() {
 
         if (leaderboardData) {
             // Calculate ranks
-            const rankedData = leaderboardData.map((r, idx) => ({
+            const rankedData = leaderboardData.map((r: ArenaResult, idx: number) => ({
                 ...r,
                 rank: idx + 1
             }))
@@ -105,7 +105,7 @@ export default function ArenaResultPage() {
 
             // Update my rank from leaderboard
             if (myResultData) {
-                const myRank = rankedData.findIndex(r => r.student_id === user.id) + 1
+                const myRank = rankedData.findIndex((r: ArenaResult) => r.student_id === user.id) + 1
                 if (myRank > 0) {
                     setMyResult(prev => prev ? { ...prev, rank: myRank } : prev)
                 }

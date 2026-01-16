@@ -152,7 +152,8 @@ async function checkAndAwardBadges(
         .select("badge_id")
         .eq("user_id", userId)
 
-    const earnedIds = new Set(earnedBadges?.map(b => b.badge_id) || [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const earnedIds = new Set(earnedBadges?.map((b: any) => b.badge_id) || [])
     const newBadgeNames: string[] = []
 
     for (const badge of badges || []) {
@@ -217,9 +218,11 @@ export async function getLeaderboard(limit: number = 10): Promise<{
         .order("xp", { ascending: false })
         .limit(limit)
 
-    return (data || []).map((item, index) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (data || []).map((item: any, index: number) => ({
         rank: index + 1,
         userId: item.user_id,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         fullName: (item.profile as any)?.full_name || "Học sinh",
         xp: item.xp,
         level: item.level

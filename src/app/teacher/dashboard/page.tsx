@@ -87,7 +87,7 @@ export default function TeacherDashboard() {
                 setExams(examsData)
                 setStats({
                     totalExams: examsData.length,
-                    publishedExams: examsData.filter(e => e.status === "published").length,
+                    publishedExams: examsData.filter((e: { status: string }) => e.status === "published").length,
                     totalSubmissions: 0 // Will be fetched separately
                 })
             }
