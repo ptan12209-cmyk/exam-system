@@ -188,11 +188,15 @@ export default function CreateExamPage() {
             const tfData = data.true_false || []
             console.log("TF Data from AI:", tfData)
             if (tfData.length > 0) {
-                const parsedTf: TFAnswer[] = tfData.map((tf: { question: number; answers?: { a: boolean; b: boolean; c: boolean; d: boolean }; a?: boolean; b?: boolean; c?: boolean; d?: boolean }) => {
+                // Re-map question numbers to use correct offset (mcCount + 1 + index)
+                const parsedTf: TFAnswer[] = tfData.map((tf: { question: number; answers?: { a: boolean; b: boolean; c: boolean; d: boolean }; a?: boolean; b?: boolean; c?: boolean; d?: boolean }, index: number) => {
+                    // Calculate correct question number based on position
+                    const correctQNum = mcCount + 1 + index
+
                     // Handle both nested and flat format
                     if (tf.answers) {
                         return {
-                            question: tf.question,
+                            question: correctQNum,
                             a: tf.answers.a,
                             b: tf.answers.b,
                             c: tf.answers.c,
@@ -201,7 +205,7 @@ export default function CreateExamPage() {
                     } else {
                         // Flat format
                         return {
-                            question: tf.question,
+                            question: correctQNum,
                             a: tf.a ?? true,
                             b: tf.b ?? true,
                             c: tf.c ?? true,
@@ -209,7 +213,7 @@ export default function CreateExamPage() {
                         }
                     }
                 })
-                console.log("Parsed TF:", parsedTf)
+                console.log("Parsed TF (remapped):", parsedTf)
                 setTfAnswers(parsedTf)
                 setTfCount(parsedTf.length)
                 setEnableTF(true)  // Auto-enable TF when detected
@@ -219,11 +223,15 @@ export default function CreateExamPage() {
             const saData = data.short_answer || []
             console.log("SA Data from AI:", saData)
             if (saData.length > 0) {
-                const parsedSa: SAAnswer[] = saData.map((sa: { question: number; answer: number | string }) => ({
-                    question: sa.question,
+                // Calculate effective TF count for SA offset
+                const effectiveTfCount = tfData.length || tfCount
+
+                // Re-map question numbers to use correct offset
+                const parsedSa: SAAnswer[] = saData.map((sa: { question: number; answer: number | string }, index: number) => ({
+                    question: mcCount + effectiveTfCount + 1 + index,
                     answer: sa.answer
                 }))
-                console.log("Parsed SA:", parsedSa)
+                console.log("Parsed SA (remapped):", parsedSa)
                 setSaAnswers(parsedSa)
                 setSaCount(parsedSa.length)
                 setEnableSA(true)  // Auto-enable SA when detected
