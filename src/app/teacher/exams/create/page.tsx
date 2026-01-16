@@ -63,6 +63,7 @@ export default function CreateExamPage() {
 
     const [pdfFile, setPdfFile] = useState<File | null>(null)
     const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+    const [answerPdfFile, setAnswerPdfFile] = useState<File | null>(null)  // Separate answer PDF
     const [loading, setLoading] = useState(false)
     const [uploadingPdf, setUploadingPdf] = useState(false)
     const [parsingPdf, setParsingPdf] = useState(false)
@@ -134,9 +135,12 @@ export default function CreateExamPage() {
     }
 
     // Auto-parse PDF to extract answer key
-    const parsePdfAnswers = async () => {
-        if (!pdfFile) {
-            setError("Vui lòng upload file PDF trước")
+    const parsePdfAnswers = async (fileToUse?: File) => {
+        // Priority: passed file > answerPdfFile > pdfFile
+        const targetFile = fileToUse || answerPdfFile || pdfFile
+
+        if (!targetFile) {
+            setError("Vui lòng upload file PDF đáp án trước")
             return
         }
 
@@ -146,7 +150,7 @@ export default function CreateExamPage() {
 
         try {
             const formData = new FormData()
-            formData.append("file", pdfFile)
+            formData.append("file", targetFile)
 
             const response = await fetch(`${WORKER_URL}/extract-answers`, {
                 method: "POST",
@@ -639,29 +643,50 @@ export default function CreateExamPage() {
                                 {/* Answer PDF Upload */}
                                 <div
                                     onClick={() => {
-                                        // Need to add answer input ref - use file input for now
                                         const input = document.createElement('input')
                                         input.type = 'file'
                                         input.accept = '.pdf'
-                                        input.onchange = (e) => {
+                                        input.onchange = async (e) => {
                                             const file = (e.target as HTMLInputElement).files?.[0]
                                             if (file) {
-                                                // Store temporarily and trigger parse
-                                                const reader = new FileReader()
-                                                reader.onload = () => {
-                                                    parsePdfAnswers()
-                                                }
-                                                // Set pdfFile temporarily for parsing
-                                                // Actually, we need a separate state, but for now use the existing flow
+                                                setAnswerPdfFile(file)
+                                                // Immediately parse the answer PDF
+                                                await parsePdfAnswers(file)
                                             }
                                         }
                                         input.click()
                                     }}
-                                    className="border-2 border-dashed border-purple-500/50 rounded-lg p-4 text-center cursor-pointer hover:bg-purple-500/10 transition-colors"
+                                    className={cn(
+                                        "border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
+                                        answerPdfFile
+                                            ? "border-green-500/50 bg-green-500/10"
+                                            : "border-purple-500/50 hover:bg-purple-500/10"
+                                    )}
                                 >
-                                    <Sparkles className="w-6 h-6 mx-auto text-purple-400 mb-2" />
-                                    <p className="text-sm text-purple-300">Click để upload PDF đáp án</p>
-                                    <p className="text-xs text-slate-500 mt-1">AI sẽ tự động trích xuất đáp án</p>
+                                    {parsingPdf ? (
+                                        <>
+                                            <Loader2 className="w-6 h-6 mx-auto text-purple-400 mb-2 animate-spin" />
+                                            <p className="text-sm text-purple-300">Đang quét AI...</p>
+                                        </>
+                                    ) : parseSuccess && answerPdfFile ? (
+                                        <>
+                                            <CheckCircle2 className="w-6 h-6 mx-auto text-green-400 mb-2" />
+                                            <p className="text-sm text-green-400">✓ {answerPdfFile.name}</p>
+                                            <p className="text-xs text-slate-500 mt-1">Click để thay đổi file</p>
+                                        </>
+                                    ) : answerPdfFile ? (
+                                        <>
+                                            <FileText className="w-6 h-6 mx-auto text-blue-400 mb-2" />
+                                            <p className="text-sm text-blue-300">{answerPdfFile.name}</p>
+                                            <p className="text-xs text-slate-500 mt-1">Click để thay đổi</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="w-6 h-6 mx-auto text-purple-400 mb-2" />
+                                            <p className="text-sm text-purple-300">Click để upload PDF đáp án</p>
+                                            <p className="text-xs text-slate-500 mt-1">AI sẽ tự động trích xuất đáp án</p>
+                                        </>
+                                    )}
                                 </div>
 
                                 {/* AI Parse Button - only show if exam PDF has answers embedded */}
@@ -669,7 +694,7 @@ export default function CreateExamPage() {
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        onClick={parsePdfAnswers}
+                                        onClick={() => parsePdfAnswers()}
                                         disabled={parsingPdf}
                                         className={cn(
                                             "w-full border-purple-500/50 text-purple-400 hover:bg-purple-500/10",
