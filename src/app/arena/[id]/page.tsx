@@ -155,7 +155,7 @@ export default function ArenaBattlePage() {
             const shuffled = questionsData.sort(() => Math.random() - 0.5)
             const selected = shuffled.slice(0, arenaData.total_questions)
             // Sort by difficulty and shuffle options
-            const sorted = selected.sort((a, b) => a.difficulty - b.difficulty)
+            const sorted = selected.sort((a: Question, b: Question) => a.difficulty - b.difficulty)
             setQuestions(sorted.map(shuffleOptions))
         }
 
