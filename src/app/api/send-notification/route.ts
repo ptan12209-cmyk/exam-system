@@ -20,29 +20,47 @@ export async function POST(request: Request) {
             );
         }
 
-        // Get all students (users with role = 'student')
+        // Get all student user IDs from profiles
         const { data: profiles, error: profilesError } = await supabaseAdmin
             .from('profiles')
-            .select('email')
-            .eq('role', 'student')
-            .not('email', 'is', null);
+            .select('id')
+            .eq('role', 'student');
 
         if (profilesError) {
             console.error('Error fetching students:', profilesError);
             return NextResponse.json(
-                { error: 'Failed to fetch student emails' },
+                { error: 'Failed to fetch student profiles' },
                 { status: 500 }
             );
         }
 
-        // Extract emails, filter out nulls
-        const studentEmails = profiles
-            ?.map(p => p.email)
-            .filter((email): email is string => !!email) || [];
-
-        if (studentEmails.length === 0) {
+        if (!profiles || profiles.length === 0) {
             return NextResponse.json(
                 { message: 'No students found to notify', sent: 0 },
+                { status: 200 }
+            );
+        }
+
+        // Get emails from auth.users using service role key
+        // Note: This requires SUPABASE_SERVICE_ROLE_KEY to access auth.users
+        let studentEmails: string[] = [];
+
+        if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+            // With service role, we can access auth.users
+            const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+
+            if (!authError && authUsers?.users) {
+                const studentIds = new Set(profiles.map(p => p.id));
+                studentEmails = authUsers.users
+                    .filter(u => studentIds.has(u.id) && u.email)
+                    .map(u => u.email!);
+            }
+        }
+
+        if (studentEmails.length === 0) {
+            console.log('No student emails found or service role key not set');
+            return NextResponse.json(
+                { message: 'Unable to get student emails. Make sure SUPABASE_SERVICE_ROLE_KEY is set.', sent: 0 },
                 { status: 200 }
             );
         }
