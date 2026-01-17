@@ -75,6 +75,9 @@ export default function CreateExamPage() {
     // Worker API URL (change to Render URL after deployment)
     const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || "http://localhost:8000"
 
+    // Email notification
+    const [sendNotification, setSendNotification] = useState(true)
+
     // Generate answer slots when total questions changes
     const handleTotalQuestionsChange = (value: number) => {
         const newValue = Math.max(1, Math.min(100, value))
@@ -337,6 +340,31 @@ export default function CreateExamPage() {
                 .single()
 
             if (insertError) throw insertError
+
+            // Send notification if publishing and option is enabled
+            if (publish && sendNotification && data) {
+                try {
+                    const { data: profile } = await supabase
+                        .from("profiles")
+                        .select("full_name")
+                        .eq("id", user.id)
+                        .single()
+
+                    await fetch("/api/send-notification", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            examId: data.id,
+                            examTitle: title.trim(),
+                            teacherName: profile?.full_name || "Giáo viên",
+                            deadline: isScheduled && endTime ? new Date(endTime).toLocaleString("vi-VN") : undefined
+                        })
+                    })
+                } catch (notifyErr) {
+                    console.error("Failed to send notification:", notifyErr)
+                    // Don't block - exam was saved successfully
+                }
+            }
 
             router.push("/teacher/dashboard")
         } catch (err) {
@@ -979,6 +1007,22 @@ export default function CreateExamPage() {
                                     })}
                                 </div>
                             )}
+
+                            {/* Email Notification Option */}
+                            <div className="flex items-center gap-3 py-4 px-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-500/20 mb-4">
+                                <input
+                                    type="checkbox"
+                                    id="sendNotification"
+                                    checked={sendNotification}
+                                    onChange={(e) => setSendNotification(e.target.checked)}
+                                    className="w-5 h-5 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                                />
+                                <label htmlFor="sendNotification" className="flex items-center gap-2 text-slate-300 cursor-pointer flex-1">
+                                    <span className="text-lg">📧</span>
+                                    <span className="font-medium">Gửi thông báo email cho học sinh</span>
+                                </label>
+                                <span className="text-xs text-slate-500">Khi publish</span>
+                            </div>
 
                             {/* Actions */}
                             <div className="flex items-center justify-between pt-4 border-t border-slate-700">

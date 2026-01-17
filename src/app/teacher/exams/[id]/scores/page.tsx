@@ -15,7 +15,8 @@ import {
     Loader2,
     CheckCircle2,
     XCircle,
-    Medal
+    Medal,
+    Eye
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -275,6 +276,7 @@ export default function ExamScoresPage() {
                                             <th className="text-center p-3 text-slate-400 text-sm font-medium">Đúng/Sai</th>
                                             <th className="text-center p-3 text-slate-400 text-sm font-medium">Thời gian</th>
                                             <th className="text-right p-3 text-slate-400 text-sm font-medium">Nộp lúc</th>
+                                            <th className="text-center p-3 text-slate-400 text-sm font-medium">Chi tiết</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -324,6 +326,18 @@ export default function ExamScoresPage() {
                                                 </td>
                                                 <td className="p-3 text-right text-slate-400 text-sm">
                                                     {formatDate(sub.submitted_at)}
+                                                </td>
+                                                <td className="p-3 text-center">
+                                                    <Link href={`/teacher/exams/${examId}/submissions/${sub.id}`}>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                                                        >
+                                                            <Eye className="w-4 h-4 mr-1" />
+                                                            Xem
+                                                        </Button>
+                                                    </Link>
                                                 </td>
                                             </tr>
                                         ))}
