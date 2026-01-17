@@ -344,24 +344,34 @@ export default function CreateExamPage() {
             // Send notification if publishing and option is enabled
             if (publish && sendNotification && data) {
                 try {
+                    // Get teacher name
                     const { data: profile } = await supabase
                         .from("profiles")
                         .select("full_name")
                         .eq("id", user.id)
                         .single()
 
-                    await fetch("/api/send-notification", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            examId: data.id,
-                            examTitle: title.trim(),
-                            teacherName: profile?.full_name || "Giáo viên",
-                            deadline: isScheduled && endTime ? new Date(endTime).toLocaleString("vi-VN") : undefined
-                        })
-                    })
+                    // Get all student IDs
+                    const { data: students } = await supabase
+                        .from("profiles")
+                        .select("id")
+                        .eq("role", "student")
+
+                    if (students && students.length > 0) {
+                        // Create notifications for all students
+                        const notifications = students.map((s: { id: string }) => ({
+                            user_id: s.id,
+                            title: `📝 Đề thi mới: ${title.trim()}`,
+                            message: `${profile?.full_name || "Giáo viên"} đã đăng đề thi mới${isScheduled && endTime ? `. Hạn nộp: ${new Date(endTime).toLocaleString("vi-VN")}` : ""}`,
+                            type: "exam",
+                            link: `/student/exams/${data.id}`,
+                            is_read: false
+                        }))
+
+                        await supabase.from("notifications").insert(notifications)
+                    }
                 } catch (notifyErr) {
-                    console.error("Failed to send notification:", notifyErr)
+                    console.error("Failed to create notifications:", notifyErr)
                     // Don't block - exam was saved successfully
                 }
             }

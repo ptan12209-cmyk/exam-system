@@ -19,6 +19,7 @@ import {
     Swords
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { NotificationBell } from "@/components/NotificationBell"
 
 interface Profile {
     id: string
@@ -143,6 +144,7 @@ export default function StudentDashboard() {
                                 <p className="text-sm font-medium text-white">{profile?.full_name}</p>
                                 <p className="text-xs text-slate-400">{profile?.class || "Học sinh"}</p>
                             </Link>
+                            <NotificationBell />
                             <Link href="/student/profile">
                                 <Button
                                     variant="ghost"
