@@ -189,6 +189,22 @@ export default function TakeExamPage() {
 
             if (newSession) {
                 setSessionId(newSession.id)
+
+                // Register as participant for real-time tracking
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("full_name")
+                    .eq("id", user.id)
+                    .single()
+
+                await supabase.from("exam_participants").upsert({
+                    exam_id: examId,
+                    user_id: user.id,
+                    student_name: profile?.full_name || "Học sinh",
+                    started_at: new Date().toISOString(),
+                    last_active: new Date().toISOString(),
+                    status: "active"
+                }, { onConflict: "exam_id,user_id" })
             }
 
             // Create shuffle order for MC questions (consistent per student per exam)
@@ -415,6 +431,13 @@ export default function TakeExamPage() {
                     })
                     .eq("id", sessionId)
             }
+
+            // Update participant status to submitted
+            await supabase
+                .from("exam_participants")
+                .update({ status: "submitted", last_active: new Date().toISOString() })
+                .eq("exam_id", examId)
+                .eq("user_id", user.id)
 
             // Clear localStorage
             localStorage.removeItem(LOCAL_STORAGE_KEY)
