@@ -19,6 +19,9 @@ import {
     Eye
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { LiveParticipants } from "@/components/realtime/LiveParticipants"
+import { ParticipantCount } from "@/components/realtime/ParticipantCount"
+import { SubmissionFeed } from "@/components/realtime/SubmissionFeed"
 
 interface Exam {
     id: string
@@ -249,6 +252,12 @@ export default function ExamScoresPage() {
                             <p className="text-xs text-slate-400">Điểm cao nhất</p>
                         </CardContent>
                     </Card>
+                </div>
+
+                {/* Real-time Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+                    <LiveParticipants examId={examId} />
+                    <SubmissionFeed examId={examId} />
                 </div>
 
                 {/* Submissions Table */}
