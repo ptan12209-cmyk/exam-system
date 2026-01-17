@@ -364,7 +364,7 @@ export default function CreateExamPage() {
                             title: `📝 Đề thi mới: ${title.trim()}`,
                             message: `${profile?.full_name || "Giáo viên"} đã đăng đề thi mới${isScheduled && endTime ? `. Hạn nộp: ${new Date(endTime).toLocaleString("vi-VN")}` : ""}`,
                             type: "exam",
-                            link: `/student/exams/${data.id}`,
+                            link: `/student/exams/${data.id}/take`,
                             is_read: false
                         }))
 
