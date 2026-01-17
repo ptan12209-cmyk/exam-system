@@ -167,3 +167,81 @@ export const exportToCSV = (
     link.click();
     URL.revokeObjectURL(url);
 };
+
+/**
+ * Export analytics data to Excel (for analytics page)
+ */
+interface AnalyticsExportData {
+    examTitle: string;
+    submissions: Array<{
+        studentName: string;
+        className: string;
+        score: number;
+        submittedAt: string;
+    }>;
+    stats: {
+        totalStudents: number;
+        averageScore: number;
+        highestScore: number;
+        lowestScore: number;
+        passRate: number;
+    };
+}
+
+export const exportAnalyticsToExcel = async (data: AnalyticsExportData): Promise<void> => {
+    try {
+        const XLSX = await import("xlsx");
+        const workbook = XLSX.utils.book_new();
+
+        // Header rows
+        const headerRows = [
+            [`BÁO CÁO PHÂN TÍCH: ${data.examTitle}`],
+            [`Xuất lúc: ${formatDate(new Date().toISOString())}`],
+            [],
+            ["THỐNG KÊ TỔNG QUAN"],
+            ["Tổng học sinh", data.stats.totalStudents],
+            ["Điểm trung bình", data.stats.averageScore.toFixed(1)],
+            ["Điểm cao nhất", data.stats.highestScore.toFixed(1)],
+            ["Điểm thấp nhất", data.stats.lowestScore.toFixed(1)],
+            ["Tỷ lệ đạt (≥5)", `${data.stats.passRate.toFixed(0)}%`],
+            [],
+            ["DANH SÁCH ĐIỂM"],
+        ];
+
+        const columnHeaders = ["STT", "Họ tên", "Lớp", "Điểm", "Thời gian nộp", "Xếp loại"];
+
+        const dataRows = data.submissions.map((sub, idx) => {
+            const grade = sub.score >= 8 ? "Giỏi" : sub.score >= 6.5 ? "Khá" : sub.score >= 5 ? "TB" : "Yếu";
+            return [
+                idx + 1,
+                sub.studentName,
+                sub.className,
+                sub.score.toFixed(1),
+                formatDate(sub.submittedAt),
+                grade
+            ];
+        });
+
+        const allRows = [
+            ...headerRows,
+            columnHeaders,
+            ...dataRows
+        ];
+
+        const worksheet = XLSX.utils.aoa_to_sheet(allRows);
+        worksheet["!cols"] = [
+            { wch: 5 },
+            { wch: 25 },
+            { wch: 10 },
+            { wch: 8 },
+            { wch: 18 },
+            { wch: 10 },
+        ];
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Phân tích");
+        XLSX.writeFile(workbook, `phan-tich-${data.examTitle.replace(/[^a-zA-Z0-9]/g, "_")}.xlsx`);
+    } catch {
+        console.log("xlsx library not available");
+        alert("Không thể xuất Excel. Vui lòng thử lại sau.");
+    }
+};

@@ -16,7 +16,8 @@ import {
     PlayCircle,
     CheckCircle2,
     ArrowRight,
-    Swords
+    Swords,
+    BarChart3
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NotificationBell } from "@/components/NotificationBell"
@@ -163,6 +164,16 @@ export default function StudentDashboard() {
                                     title="Đấu trường Lý thuyết"
                                 >
                                     <Swords className="w-5 h-5" />
+                                </Button>
+                            </Link>
+                            <Link href="/student/analytics">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-green-400 hover:text-green-300"
+                                    title="Thống kê của tôi"
+                                >
+                                    <BarChart3 className="w-5 h-5" />
                                 </Button>
                             </Link>
                             <Button
