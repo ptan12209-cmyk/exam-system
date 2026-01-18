@@ -64,6 +64,11 @@ export function ChallengeCard({ challenge, compact = false }: ChallengeCardProps
                                 {challenge.description}
                             </p>
                         )}
+                        {compact && (
+                            <p className="text-xs text-slate-400 mt-0.5">
+                                {challenge.description.split('.')[0]}
+                            </p>
+                        )}
                     </div>
                 </div>
 

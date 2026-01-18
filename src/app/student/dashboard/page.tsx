@@ -443,7 +443,7 @@ export default function StudentDashboard() {
                         <LeaderboardCard currentUserId={userId || undefined} />
 
                         {/* Rewards Shop Link */}
-                        <Link href="/student/profile#rewards">
+                        <Link href="/student/rewards">
                             <Card className="border-slate-700 bg-gradient-to-br from-yellow-900/30 to-orange-900/30 hover:border-yellow-500/50 transition-all cursor-pointer">
                                 <CardContent className="p-6 flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
