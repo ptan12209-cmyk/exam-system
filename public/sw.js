@@ -1,5 +1,5 @@
 // ExamHub Service Worker v2 - Enhanced PWA Support
-const CACHE_VERSION = 'examhub-v2';
+const CACHE_VERSION = 'examhub-v3';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -93,9 +93,9 @@ const strategies = {
 
         const fetchPromise = fetch(request).then((response) => {
             if (response.ok) {
-                const cache = caches.open(cacheName);
-                cache.then((c) => {
-                    c.put(request, response.clone());
+                const responseToCache = response.clone();
+                caches.open(cacheName).then((cache) => {
+                    cache.put(request, responseToCache);
                     limitCacheSize(cacheName, CACHE_LIMITS.images);
                 });
             }
@@ -113,6 +113,9 @@ self.addEventListener('fetch', (event) => {
 
     // Skip non-GET requests
     if (request.method !== 'GET') return;
+
+    // Skip non-http/https requests (e.g. chrome-extension://)
+    if (!url.protocol.startsWith('http')) return;
 
     // Skip API requests - always network
     if (url.pathname.startsWith('/api')) return;
