@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Trophy, Medal, Crown } from "lucide-react"
+import { useEffect, useState, useCallback } from "react"
+import { Trophy, Medal, Crown, Zap } from "lucide-react"
 import { getLeaderboard } from "@/lib/gamification"
+import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 
 interface LeaderboardEntry {
@@ -16,20 +17,53 @@ interface LeaderboardEntry {
 interface LeaderboardWidgetProps {
     currentUserId?: string
     limit?: number
+    realtime?: boolean
 }
 
-export function LeaderboardWidget({ currentUserId, limit = 10 }: LeaderboardWidgetProps) {
+export function LeaderboardWidget({ currentUserId, limit = 10, realtime = true }: LeaderboardWidgetProps) {
     const [entries, setEntries] = useState<LeaderboardEntry[]>([])
     const [loading, setLoading] = useState(true)
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+    const [isLive, setIsLive] = useState(false)
+
+    const fetchLeaderboard = useCallback(async () => {
+        const data = await getLeaderboard(limit)
+        setEntries(data)
+        setLastUpdated(new Date())
+        setLoading(false)
+    }, [limit])
 
     useEffect(() => {
-        const fetchLeaderboard = async () => {
-            const data = await getLeaderboard(limit)
-            setEntries(data)
-            setLoading(false)
-        }
         fetchLeaderboard()
-    }, [limit])
+
+        // Setup realtime subscription
+        if (!realtime) return
+
+        const supabase = createClient()
+
+        const channel = supabase
+            .channel("leaderboard-realtime")
+            .on(
+                "postgres_changes",
+                {
+                    event: "*", // Listen to INSERT, UPDATE, DELETE
+                    schema: "public",
+                    table: "student_stats"
+                },
+                () => {
+                    // Refetch leaderboard when stats change
+                    fetchLeaderboard()
+                    setIsLive(true)
+                    // Reset live indicator after 2 seconds
+                    setTimeout(() => setIsLive(false), 2000)
+                }
+            )
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [limit, realtime, fetchLeaderboard])
 
     const getRankIcon = (rank: number) => {
         switch (rank) {
@@ -69,13 +103,32 @@ export function LeaderboardWidget({ currentUserId, limit = 10 }: LeaderboardWidg
 
     return (
         <div className="space-y-2">
+            {/* Live indicator */}
+            {realtime && (
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+                    <div className="flex items-center gap-1">
+                        <span className={cn(
+                            "w-2 h-2 rounded-full",
+                            isLive ? "bg-green-500 animate-pulse" : "bg-slate-600"
+                        )} />
+                        <span>Live</span>
+                    </div>
+                    {lastUpdated && (
+                        <span>
+                            Cập nhật: {lastUpdated.toLocaleTimeString("vi-VN")}
+                        </span>
+                    )}
+                </div>
+            )}
+
             {entries.map((entry) => (
                 <div
                     key={entry.userId}
                     className={cn(
                         "flex items-center gap-3 p-3 rounded-lg border transition-all",
                         getRankBg(entry.rank),
-                        entry.userId === currentUserId && "ring-2 ring-blue-500"
+                        entry.userId === currentUserId && "ring-2 ring-blue-500",
+                        isLive && "animate-pulse"
                     )}
                 >
                     <div className="w-8 flex justify-center">
@@ -114,8 +167,9 @@ export function LeaderboardCard({ currentUserId }: { currentUserId?: string }) {
             <div className="flex items-center gap-2 mb-4">
                 <Trophy className="w-5 h-5 text-yellow-500" />
                 <h3 className="font-semibold text-white">Bảng xếp hạng</h3>
+                <Zap className="w-4 h-4 text-green-500 ml-auto" />
             </div>
-            <LeaderboardWidget currentUserId={currentUserId} limit={10} />
+            <LeaderboardWidget currentUserId={currentUserId} limit={10} realtime />
         </div>
     )
 }

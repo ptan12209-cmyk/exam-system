@@ -200,3 +200,22 @@ textarea {
 html {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* Mobile Navigation safe area */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Swipe gesture support */
+.swipe-container {
+  overflow-x: hidden;
+  touch-action: pan-y pinch-zoom;
+}
+
+/* Haptic feedback simulation */
+@media (hover: none) {
+  .haptic-tap:active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease;
+  }
+}
