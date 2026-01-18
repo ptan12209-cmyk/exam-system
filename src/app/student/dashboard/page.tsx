@@ -23,10 +23,8 @@ import {
 import { cn } from "@/lib/utils"
 import { NotificationBell } from "@/components/NotificationBell"
 import { XpBar } from "@/components/gamification/XpBar"
-import { ChallengesWidget } from "@/components/gamification/ChallengeCard"
-import { LeaderboardCard } from "@/components/gamification/Leaderboard"
 import { DailyCheckIn } from "@/components/gamification/DailyCheckIn"
-import { AchievementsWidget } from "@/components/gamification/AchievementsGrid"
+import { GamificationHub } from "@/components/gamification/GamificationHub"
 import { getUserStats } from "@/lib/gamification"
 
 interface Profile {
@@ -433,7 +431,7 @@ export default function StudentDashboard() {
                     </div>
 
                     {/* Sidebar (1/3) - Gamification */}
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         {/* Daily Check-in */}
                         <Card className="border-slate-700 bg-slate-800/50">
                             <CardContent className="p-4">
@@ -441,38 +439,12 @@ export default function StudentDashboard() {
                             </CardContent>
                         </Card>
 
-                        {/* Achievements Widget */}
+                        {/* Gamification Hub - Tabs */}
                         <Card className="border-slate-700 bg-slate-800/50">
-                            <CardContent className="p-6">
-                                <AchievementsWidget limit={4} />
+                            <CardContent className="p-4">
+                                <GamificationHub currentUserId={userId || undefined} />
                             </CardContent>
                         </Card>
-
-                        {/* Challenges Widget */}
-                        <Card className="border-slate-700 bg-slate-800/50">
-                            <CardContent className="p-6">
-                                <ChallengesWidget limit={3} />
-                            </CardContent>
-                        </Card>
-
-                        {/* Leaderboard */}
-                        <LeaderboardCard currentUserId={userId || undefined} />
-
-                        {/* Rewards Shop Link */}
-                        <Link href="/student/rewards">
-                            <Card className="border-slate-700 bg-gradient-to-br from-yellow-900/30 to-orange-900/30 hover:border-yellow-500/50 transition-all cursor-pointer">
-                                <CardContent className="p-6 flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
-                                        <Gift className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="font-semibold text-white">Cửa hàng phần thưởng</p>
-                                        <p className="text-sm text-slate-400">Đổi XP lấy quà</p>
-                                    </div>
-                                    <ArrowRight className="w-5 h-5 text-slate-400 ml-auto" />
-                                </CardContent>
-                            </Card>
-                        </Link>
                     </div>
                 </div>
             </main>

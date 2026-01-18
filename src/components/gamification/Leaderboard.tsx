@@ -161,7 +161,11 @@ export function LeaderboardWidget({ currentUserId, limit = 10, realtime = true }
     )
 }
 
-export function LeaderboardCard({ currentUserId }: { currentUserId?: string }) {
+export function LeaderboardCard({ currentUserId, compact = false }: { currentUserId?: string; compact?: boolean }) {
+    if (compact) {
+        return <LeaderboardWidget currentUserId={currentUserId} limit={5} realtime />
+    }
+
     return (
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
