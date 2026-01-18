@@ -25,6 +25,8 @@ import { NotificationBell } from "@/components/NotificationBell"
 import { XpBar } from "@/components/gamification/XpBar"
 import { ChallengesWidget } from "@/components/gamification/ChallengeCard"
 import { LeaderboardCard } from "@/components/gamification/Leaderboard"
+import { DailyCheckIn } from "@/components/gamification/DailyCheckIn"
+import { AchievementsWidget } from "@/components/gamification/AchievementsGrid"
 import { getUserStats } from "@/lib/gamification"
 
 interface Profile {
@@ -432,6 +434,20 @@ export default function StudentDashboard() {
 
                     {/* Sidebar (1/3) - Gamification */}
                     <div className="space-y-6">
+                        {/* Daily Check-in */}
+                        <Card className="border-slate-700 bg-slate-800/50">
+                            <CardContent className="p-4">
+                                <DailyCheckIn onComplete={({ xp }) => setUserXp(prev => prev + xp)} />
+                            </CardContent>
+                        </Card>
+
+                        {/* Achievements Widget */}
+                        <Card className="border-slate-700 bg-slate-800/50">
+                            <CardContent className="p-6">
+                                <AchievementsWidget limit={4} />
+                            </CardContent>
+                        </Card>
+
                         {/* Challenges Widget */}
                         <Card className="border-slate-700 bg-slate-800/50">
                             <CardContent className="p-6">

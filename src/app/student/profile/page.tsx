@@ -8,6 +8,9 @@ import { getUserStats } from "@/lib/gamification"
 import { XpBar } from "@/components/gamification/XpBar"
 import { BadgeGrid } from "@/components/gamification/BadgeCard"
 import { LeaderboardCard } from "@/components/gamification/Leaderboard"
+import { TitleSelector } from "@/components/gamification/TitleSelector"
+import { AchievementsGrid } from "@/components/gamification/AchievementsGrid"
+import { DailyCheckIn } from "@/components/gamification/DailyCheckIn"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -17,7 +20,9 @@ import {
     Flame,
     Star,
     BookOpen,
-    Loader2
+    Loader2,
+    Crown,
+    Medal
 } from "lucide-react"
 
 interface UserStats {
@@ -176,6 +181,32 @@ export default function ProfilePage() {
                                 Chưa có badge nào. Hoàn thành bài thi để nhận badge đầu tiên!
                             </p>
                         )}
+                    </CardContent>
+                </Card>
+
+                {/* Titles Section */}
+                <Card className="border-slate-700 bg-slate-800/50 mb-6">
+                    <CardHeader>
+                        <CardTitle className="text-white flex items-center gap-2">
+                            <Crown className="w-5 h-5 text-yellow-500" />
+                            Danh hiệu
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <TitleSelector />
+                    </CardContent>
+                </Card>
+
+                {/* Achievements Section */}
+                <Card className="border-slate-700 bg-slate-800/50 mb-6">
+                    <CardHeader>
+                        <CardTitle className="text-white flex items-center gap-2">
+                            <Medal className="w-5 h-5 text-purple-500" />
+                            Thành tựu
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <AchievementsGrid />
                     </CardContent>
                 </Card>
 
