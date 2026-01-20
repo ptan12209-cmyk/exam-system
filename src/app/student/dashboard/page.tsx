@@ -26,6 +26,7 @@ import { XpBar } from "@/components/gamification/XpBar"
 import { DailyCheckIn } from "@/components/gamification/DailyCheckIn"
 import { GamificationHub } from "@/components/gamification/GamificationHub"
 import { getUserStats } from "@/lib/gamification"
+import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
 
 interface Profile {
     id: string
@@ -41,6 +42,7 @@ interface Exam {
     total_questions: number
     status: "draft" | "published"
     created_at: string
+    subject?: string  // Môn học
 }
 
 interface Submission {
@@ -61,6 +63,12 @@ export default function StudentDashboard() {
     const [loading, setLoading] = useState(true)
     const [userXp, setUserXp] = useState(0)
     const [userId, setUserId] = useState<string | null>(null)
+    const [selectedSubject, setSelectedSubject] = useState<string>("all")  // Filter theo môn
+
+    // Filter exams by subject
+    const filteredExams = selectedSubject === "all"
+        ? availableExams
+        : availableExams.filter(e => e.subject === selectedSubject)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -310,16 +318,49 @@ export default function StudentDashboard() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {availableExams.length === 0 ? (
+                                {/* Subject Filter Tabs */}
+                                <div className="flex flex-wrap gap-2 mb-6 pb-4 border-b border-slate-700">
+                                    <button
+                                        onClick={() => setSelectedSubject("all")}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                                            selectedSubject === "all"
+                                                ? "bg-blue-500 text-white"
+                                                : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                        )}
+                                    >
+                                        📚 Tất cả ({availableExams.length})
+                                    </button>
+                                    {SUBJECTS.filter(s => availableExams.some(e => e.subject === s.value)).map((s) => {
+                                        const count = availableExams.filter(e => e.subject === s.value).length
+                                        return (
+                                            <button
+                                                key={s.value}
+                                                onClick={() => setSelectedSubject(s.value)}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                                                    selectedSubject === s.value
+                                                        ? `bg-gradient-to-r ${s.color} text-white`
+                                                        : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                                )}
+                                            >
+                                                {s.icon} {s.label} ({count})
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+
+                                {filteredExams.length === 0 ? (
                                     <div className="text-center py-12">
                                         <FileText className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                                         <p className="text-slate-400">Chưa có đề thi nào</p>
                                     </div>
                                 ) : (
                                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                        {availableExams.map((exam) => {
+                                        {filteredExams.map((exam) => {
                                             const submitted = hasSubmitted(exam.id)
                                             const submission = getSubmission(exam.id)
+                                            const subjectInfo = getSubjectInfo(exam.subject || "other")
 
                                             return (
                                                 <div
@@ -333,21 +374,22 @@ export default function StudentDashboard() {
                                                 >
                                                     <div className="flex items-start justify-between mb-3">
                                                         <div className={cn(
-                                                            "w-10 h-10 rounded-lg flex items-center justify-center",
-                                                            submitted
-                                                                ? "bg-green-500/10 text-green-400"
-                                                                : "bg-blue-500/10 text-blue-400"
+                                                            "w-10 h-10 rounded-lg flex items-center justify-center text-lg",
+                                                            `bg-gradient-to-br ${subjectInfo.color}`
                                                         )}>
-                                                            {submitted ? <CheckCircle2 className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                                                            {subjectInfo.icon}
                                                         </div>
-                                                        {submitted && (
-                                                            <span className="px-2 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-medium">
-                                                                Đã làm
-                                                            </span>
-                                                        )}
+                                                        <div className="flex items-center gap-2">
+                                                            {submitted && (
+                                                                <span className="px-2 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-medium">
+                                                                    Đã làm
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
 
-                                                    <h3 className="font-semibold text-white mb-2">{exam.title}</h3>
+                                                    <h3 className="font-semibold text-white mb-1">{exam.title}</h3>
+                                                    <span className="text-xs text-slate-500 mb-3 block">{subjectInfo.label}</span>
 
                                                     <div className="flex items-center gap-4 text-sm text-slate-400 mb-4">
                                                         <span className="flex items-center gap-1">

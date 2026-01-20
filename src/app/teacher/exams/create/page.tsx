@@ -22,6 +22,7 @@ import {
     Sparkles
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { SUBJECTS } from "@/lib/subjects"
 
 const OPTIONS = ["A", "B", "C", "D"] as const
 type Option = typeof OPTIONS[number]
@@ -32,6 +33,7 @@ export default function CreateExamPage() {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const [title, setTitle] = useState("")
+    const [subject, setSubject] = useState("other")  // Môn học
     const [duration, setDuration] = useState(15)
     const [maxAttempts, setMaxAttempts] = useState(1)  // 1 = no retake, 0 = unlimited
 
@@ -331,6 +333,7 @@ export default function CreateExamPage() {
                     pdf_url: pdfUrl,
                     max_attempts: maxAttempts,
                     status: publish ? "published" : "draft",
+                    subject,  // Môn học
                     // Scheduling fields
                     is_scheduled: isScheduled,
                     start_time: isScheduled && startTime ? new Date(startTime).toISOString() : null,
@@ -452,6 +455,29 @@ export default function CreateExamPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
+                            {/* Subject Selection */}
+                            <div className="space-y-2">
+                                <Label className="text-slate-300">📚 Môn học *</Label>
+                                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                                    {SUBJECTS.map((s) => (
+                                        <button
+                                            key={s.value}
+                                            type="button"
+                                            onClick={() => setSubject(s.value)}
+                                            className={cn(
+                                                "p-2 rounded-lg border-2 text-center transition-all text-sm",
+                                                subject === s.value
+                                                    ? `border-blue-500 bg-gradient-to-br ${s.color} text-white`
+                                                    : "border-slate-600 hover:border-slate-500 text-slate-300"
+                                            )}
+                                        >
+                                            <span className="text-lg">{s.icon}</span>
+                                            <p className="text-xs mt-1">{s.label}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <div className="space-y-2">
                                 <Label htmlFor="title" className="text-slate-300">Tên đề thi *</Label>
                                 <Input

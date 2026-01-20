@@ -23,6 +23,7 @@ import {
     Swords
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
 
 interface Profile {
     id: string
@@ -38,6 +39,7 @@ interface Exam {
     status: "draft" | "published"
     created_at: string
     submission_count?: number
+    subject?: string  // Môn học
 }
 
 export default function TeacherDashboard() {
@@ -52,6 +54,12 @@ export default function TeacherDashboard() {
         publishedExams: 0,
         totalSubmissions: 0
     })
+    const [selectedSubject, setSelectedSubject] = useState<string>("all")  // Filter theo môn
+
+    // Filter exams by subject
+    const filteredExams = selectedSubject === "all"
+        ? exams
+        : exams.filter(e => e.subject === selectedSubject)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -295,83 +303,121 @@ export default function TeacherDashboard() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {exams.length === 0 ? (
+                        {/* Subject Filter Tabs */}
+                        {exams.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-6 pb-4 border-b border-slate-700">
+                                <button
+                                    onClick={() => setSelectedSubject("all")}
+                                    className={cn(
+                                        "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                                        selectedSubject === "all"
+                                            ? "bg-blue-500 text-white"
+                                            : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                    )}
+                                >
+                                    📚 Tất cả ({exams.length})
+                                </button>
+                                {SUBJECTS.filter(s => exams.some(e => e.subject === s.value)).map((s) => {
+                                    const count = exams.filter(e => e.subject === s.value).length
+                                    return (
+                                        <button
+                                            key={s.value}
+                                            onClick={() => setSelectedSubject(s.value)}
+                                            className={cn(
+                                                "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                                                selectedSubject === s.value
+                                                    ? `bg-gradient-to-r ${s.color} text-white`
+                                                    : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                            )}
+                                        >
+                                            {s.icon} {s.label} ({count})
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        )}
+
+                        {filteredExams.length === 0 ? (
                             <div className="text-center py-12">
                                 <FileText className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                                <p className="text-slate-400 mb-4">Chưa có đề thi nào</p>
-                                <Link href="/teacher/exams/create">
-                                    <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Tạo đề thi đầu tiên
-                                    </Button>
-                                </Link>
+                                <p className="text-slate-400 mb-4">{exams.length === 0 ? "Chưa có đề thi nào" : "Không có đề thi nào trong môn này"}</p>
+                                {exams.length === 0 && (
+                                    <Link href="/teacher/exams/create">
+                                        <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Tạo đề thi đầu tiên
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                {exams.map((exam) => (
-                                    <div
-                                        key={exam.id}
-                                        className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 border border-slate-700 hover:border-slate-600 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={cn(
-                                                "w-10 h-10 rounded-lg flex items-center justify-center",
-                                                exam.status === "published"
-                                                    ? "bg-green-500/10 text-green-400"
-                                                    : "bg-yellow-500/10 text-yellow-400"
-                                            )}>
-                                                <FileText className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <h3 className="font-medium text-white">{exam.title}</h3>
-                                                <div className="flex items-center gap-4 mt-1 text-sm text-slate-400">
-                                                    <span className="flex items-center gap-1">
-                                                        <Clock className="w-3 h-3" />
-                                                        {exam.duration} phút
-                                                    </span>
-                                                    <span>{exam.total_questions} câu</span>
-                                                    <span className={cn(
-                                                        "px-2 py-0.5 rounded-full text-xs",
-                                                        exam.status === "published"
-                                                            ? "bg-green-500/10 text-green-400"
-                                                            : "bg-yellow-500/10 text-yellow-400"
-                                                    )}>
-                                                        {exam.status === "published" ? "Đã publish" : "Nháp"}
-                                                    </span>
+                                {filteredExams.map((exam) => {
+                                    const subjectInfo = getSubjectInfo(exam.subject || "other")
+                                    return (
+                                        <div
+                                            key={exam.id}
+                                            className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 border border-slate-700 hover:border-slate-600 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className={cn(
+                                                    "w-10 h-10 rounded-lg flex items-center justify-center text-lg",
+                                                    `bg-gradient-to-br ${subjectInfo.color}`
+                                                )}>
+                                                    {subjectInfo.icon}
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-medium text-white">{exam.title}</h3>
+                                                    <div className="flex items-center gap-4 mt-1 text-sm text-slate-400">
+                                                        <span className="text-xs">{subjectInfo.label}</span>
+                                                        <span className="flex items-center gap-1">
+                                                            <Clock className="w-3 h-3" />
+                                                            {exam.duration} phút
+                                                        </span>
+                                                        <span>{exam.total_questions} câu</span>
+                                                        <span className={cn(
+                                                            "px-2 py-0.5 rounded-full text-xs",
+                                                            exam.status === "published"
+                                                                ? "bg-green-500/10 text-green-400"
+                                                                : "bg-yellow-500/10 text-yellow-400"
+                                                        )}>
+                                                            {exam.status === "published" ? "Đã publish" : "Nháp"}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Link href={`/teacher/exams/${exam.id}/scores`}>
-                                                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-green-400" title="Xem điểm">
-                                                    <Users className="w-4 h-4" />
+                                            <div className="flex items-center gap-2">
+                                                <Link href={`/teacher/exams/${exam.id}/scores`}>
+                                                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-green-400" title="Xem điểm">
+                                                        <Users className="w-4 h-4" />
+                                                    </Button>
+                                                </Link>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleToggleStatus(exam)}
+                                                    className="text-slate-400 hover:text-white"
+                                                    title={exam.status === "published" ? "Ẩn" : "Publish"}
+                                                >
+                                                    <Eye className="w-4 h-4" />
                                                 </Button>
-                                            </Link>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleToggleStatus(exam)}
-                                                className="text-slate-400 hover:text-white"
-                                                title={exam.status === "published" ? "Ẩn" : "Publish"}
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                            </Button>
-                                            <Link href={`/teacher/exams/${exam.id}/edit`}>
-                                                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
-                                                    <Edit className="w-4 h-4" />
+                                                <Link href={`/teacher/exams/${exam.id}/edit`}>
+                                                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
+                                                        <Edit className="w-4 h-4" />
+                                                    </Button>
+                                                </Link>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleDeleteExam(exam.id)}
+                                                    className="text-slate-400 hover:text-red-400"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
                                                 </Button>
-                                            </Link>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleDeleteExam(exam.id)}
-                                                className="text-slate-400 hover:text-red-400"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         )}
                     </CardContent>
