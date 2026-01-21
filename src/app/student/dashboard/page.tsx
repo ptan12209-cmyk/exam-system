@@ -200,79 +200,50 @@ export default function StudentDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content (2/3) */}
                     <div className="lg:col-span-2 space-y-8">
-                        {/* Stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                            <Card className="border-slate-700 bg-slate-800/50">
-                                <CardContent className="p-6 flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                                        <FileText className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="text-slate-400 text-sm">Đề thi có sẵn</p>
-                                        <p className="text-2xl font-bold text-white">{availableExams.length}</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="border-slate-700 bg-slate-800/50">
-                                <CardContent className="p-6 flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-                                        <CheckCircle2 className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="text-slate-400 text-sm">Đã hoàn thành</p>
-                                        <p className="text-2xl font-bold text-white">{submissions.length}</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="border-slate-700 bg-slate-800/50">
-                                <CardContent className="p-6 flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
-                                        <Trophy className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="text-slate-400 text-sm">Điểm cao nhất</p>
-                                        <p className="text-2xl font-bold text-white">
-                                            {submissions.length > 0
-                                                ? Math.max(...submissions.map(s => s.score)).toFixed(1)
-                                                : "--"
-                                            }
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                        {/* Compact Stats Bar */}
+                        <div className="flex items-center gap-2 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-x-auto">
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 rounded-lg flex-shrink-0">
+                                <FileText className="w-4 h-4 text-blue-400" />
+                                <span className="text-sm text-slate-300">Đề thi:</span>
+                                <span className="text-sm font-bold text-white">{availableExams.length}</span>
+                            </div>
+                            <div className="w-px h-6 bg-slate-700 flex-shrink-0" />
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 rounded-lg flex-shrink-0">
+                                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                                <span className="text-sm text-slate-300">Hoàn thành:</span>
+                                <span className="text-sm font-bold text-white">{submissions.length}</span>
+                            </div>
+                            <div className="w-px h-6 bg-slate-700 flex-shrink-0" />
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 rounded-lg flex-shrink-0">
+                                <Trophy className="w-4 h-4 text-yellow-400" />
+                                <span className="text-sm text-slate-300">Cao nhất:</span>
+                                <span className="text-sm font-bold text-white">
+                                    {submissions.length > 0 ? Math.max(...submissions.map(s => s.score)).toFixed(1) : "--"}
+                                </span>
+                            </div>
                         </div>
 
-                        {/* Quick Links - Kho tài liệu & Phòng Live */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                            <Link href="/resources">
-                                <Card className="border-slate-700 bg-gradient-to-br from-purple-900/50 to-pink-900/50 hover:border-purple-500 transition-all cursor-pointer">
-                                    <CardContent className="p-6 flex items-center gap-4">
-                                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-2xl">
-                                            📚
-                                        </div>
-                                        <div>
-                                            <p className="text-lg font-bold text-white">Kho Tài Liệu & Đề</p>
-                                            <p className="text-slate-400 text-sm">Xem tài liệu, đề thi thử</p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                        {/* Quick Links - Compact */}
+                        <div className="flex gap-3 mb-6">
+                            <Link href="/resources" className="flex-1">
+                                <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-purple-900/50 to-pink-900/50 hover:from-purple-800/50 hover:to-pink-800/50 border border-purple-500/30 hover:border-purple-400/50 rounded-xl transition-all group">
+                                    <span className="text-xl">📚</span>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-white truncate">Kho Tài Liệu</p>
+                                        <p className="text-xs text-slate-400 truncate">Đề thi thử</p>
+                                    </div>
+                                    <ArrowRight className="w-4 h-4 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
+                                </div>
                             </Link>
-
-                            <Link href="/live">
-                                <Card className="border-slate-700 bg-gradient-to-br from-green-900/50 to-emerald-900/50 hover:border-green-500 transition-all cursor-pointer">
-                                    <CardContent className="p-6 flex items-center gap-4">
-                                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-2xl">
-                                            📺
-                                        </div>
-                                        <div>
-                                            <p className="text-lg font-bold text-white">Phòng Live Chữa Đề</p>
-                                            <p className="text-slate-400 text-sm">Tham gia Google Meet</p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                            <Link href="/live" className="flex-1">
+                                <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-green-900/50 to-emerald-900/50 hover:from-green-800/50 hover:to-emerald-800/50 border border-green-500/30 hover:border-green-400/50 rounded-xl transition-all group">
+                                    <span className="text-xl">📺</span>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-white truncate">Phòng Live</p>
+                                        <p className="text-xs text-slate-400 truncate">Chữa đề online</p>
+                                    </div>
+                                    <ArrowRight className="w-4 h-4 text-green-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
+                                </div>
                             </Link>
                         </div>
 
@@ -439,21 +410,17 @@ export default function StudentDashboard() {
                         )}
                     </div>
 
-                    {/* Sidebar (1/3) - Gamification */}
-                    <div className="space-y-4">
-                        {/* Daily Check-in */}
-                        <Card className="border-slate-700 bg-slate-800/50">
-                            <CardContent className="p-4">
-                                <DailyCheckIn onComplete={({ xp }) => setUserXp(prev => prev + xp)} />
-                            </CardContent>
-                        </Card>
+                    {/* Sidebar (1/3) - Gamification - Hidden on mobile, visible on lg+ */}
+                    <div className="hidden lg:block space-y-3">
+                        {/* Daily Check-in - Compact */}
+                        <div className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                            <DailyCheckIn onComplete={({ xp }) => setUserXp(prev => prev + xp)} />
+                        </div>
 
                         {/* Gamification Hub - Tabs */}
-                        <Card className="border-slate-700 bg-slate-800/50">
-                            <CardContent className="p-4">
-                                <GamificationHub currentUserId={userId || undefined} />
-                            </CardContent>
-                        </Card>
+                        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+                            <GamificationHub currentUserId={userId || undefined} />
+                        </div>
                     </div>
                 </div>
             </main>
