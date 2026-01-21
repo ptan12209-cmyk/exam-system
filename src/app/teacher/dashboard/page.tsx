@@ -24,6 +24,8 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
+import { UserMenu } from "@/components/UserMenu"
+import { TeacherBottomNav } from "@/components/BottomNav"
 
 interface Profile {
     id: string
@@ -205,8 +207,26 @@ export default function TeacherDashboard() {
                 </div>
             </aside>
 
+            {/* Mobile Header - Only visible on mobile */}
+            <header className="lg:hidden sticky top-0 z-50 border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/80 px-4 py-3">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <GraduationCap className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="text-lg font-bold text-white">ExamHub</span>
+                    </div>
+                    <UserMenu
+                        userName={profile?.full_name || ""}
+                        userClass="Giáo viên"
+                        onLogout={handleLogout}
+                        role="teacher"
+                    />
+                </div>
+            </header>
+
             {/* Main Content */}
-            <main className="lg:ml-64 p-6 lg:p-8">
+            <main className="lg:ml-64 p-4 lg:p-8 pb-20 lg:pb-8">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                     <div>
@@ -423,6 +443,9 @@ export default function TeacherDashboard() {
                     </CardContent>
                 </Card>
             </main>
+
+            {/* Mobile Bottom Navigation */}
+            <TeacherBottomNav />
         </div>
     )
 }

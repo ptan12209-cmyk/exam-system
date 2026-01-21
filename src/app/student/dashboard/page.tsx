@@ -289,12 +289,12 @@ export default function StudentDashboard() {
                                 </div>
 
                                 {filteredExams.length === 0 ? (
-                                    <div className="text-center py-12">
-                                        <FileText className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                                        <p className="text-slate-400">Chưa có đề thi nào</p>
+                                    <div className="text-center py-8">
+                                        <FileText className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                                        <p className="text-slate-400 text-sm">Chưa có đề thi nào</p>
                                     </div>
                                 ) : (
-                                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                                         {filteredExams.map((exam) => {
                                             const submitted = hasSubmitted(exam.id)
                                             const submission = getSubmission(exam.id)
@@ -304,56 +304,59 @@ export default function StudentDashboard() {
                                                 <div
                                                     key={exam.id}
                                                     className={cn(
-                                                        "p-4 rounded-lg border transition-all",
+                                                        "group p-3 rounded-xl border transition-all duration-200",
                                                         submitted
-                                                            ? "bg-slate-700/20 border-slate-700"
-                                                            : "bg-slate-700/30 border-slate-700 hover:border-blue-500/50"
+                                                            ? "bg-slate-800/30 border-slate-700/50"
+                                                            : "bg-slate-800/50 border-slate-700/50 hover:border-blue-500/50 hover:bg-slate-800/70 hover:shadow-lg hover:shadow-blue-500/5"
                                                     )}
                                                 >
-                                                    <div className="flex items-start justify-between mb-3">
+                                                    <div className="flex items-center gap-3 mb-2">
                                                         <div className={cn(
-                                                            "w-10 h-10 rounded-lg flex items-center justify-center text-lg",
+                                                            "w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0",
                                                             `bg-gradient-to-br ${subjectInfo.color}`
                                                         )}>
                                                             {subjectInfo.icon}
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            {submitted && (
-                                                                <span className="px-2 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-medium">
-                                                                    Đã làm
-                                                                </span>
-                                                            )}
+                                                        <div className="min-w-0 flex-1">
+                                                            <h3 className="font-semibold text-white text-sm leading-tight truncate">{exam.title}</h3>
+                                                            <span className="text-[10px] text-slate-500">{subjectInfo.label}</span>
                                                         </div>
+                                                        {submitted && (
+                                                            <span className="px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-medium flex-shrink-0">
+                                                                ✓
+                                                            </span>
+                                                        )}
                                                     </div>
 
-                                                    <h3 className="font-semibold text-white mb-1">{exam.title}</h3>
-                                                    <span className="text-xs text-slate-500 mb-3 block">{subjectInfo.label}</span>
-
-                                                    <div className="flex items-center gap-4 text-sm text-slate-400 mb-4">
+                                                    <div className="flex items-center gap-3 text-xs text-slate-400 mb-3">
                                                         <span className="flex items-center gap-1">
                                                             <Clock className="w-3 h-3" />
-                                                            {exam.duration} phút
+                                                            {exam.duration}p
                                                         </span>
                                                         <span>{exam.total_questions} câu</span>
+                                                        {submitted && submission && (
+                                                            <span className={cn(
+                                                                "ml-auto font-bold",
+                                                                submission.score >= 8 ? "text-green-400" :
+                                                                    submission.score >= 5 ? "text-yellow-400" : "text-red-400"
+                                                            )}>
+                                                                {submission.score.toFixed(1)} điểm
+                                                            </span>
+                                                        )}
                                                     </div>
 
                                                     {submitted ? (
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-sm text-slate-400">
-                                                                Điểm: <span className="font-bold text-white">{submission?.score.toFixed(1)}</span>
-                                                            </span>
-                                                            <Link href={`/student/exams/${exam.id}/result`}>
-                                                                <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white">
-                                                                    Xem kết quả
-                                                                    <ArrowRight className="w-4 h-4 ml-1" />
-                                                                </Button>
-                                                            </Link>
-                                                        </div>
+                                                        <Link href={`/student/exams/${exam.id}/result`}>
+                                                            <Button size="sm" variant="ghost" className="w-full text-slate-400 hover:text-white text-xs h-8">
+                                                                Xem kết quả
+                                                                <ArrowRight className="w-3 h-3 ml-1" />
+                                                            </Button>
+                                                        </Link>
                                                     ) : (
                                                         <Link href={`/student/exams/${exam.id}/take`}>
-                                                            <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                                                                <PlayCircle className="w-4 h-4 mr-2" />
-                                                                Bắt đầu làm bài
+                                                            <Button size="sm" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-xs h-8 group-hover:shadow-md transition-shadow">
+                                                                <PlayCircle className="w-3 h-3 mr-1" />
+                                                                Làm bài
                                                             </Button>
                                                         </Link>
                                                     )}
