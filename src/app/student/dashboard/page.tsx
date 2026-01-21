@@ -11,14 +11,12 @@ import {
     FileText,
     Trophy,
     Clock,
-    LogOut,
     Loader2,
     PlayCircle,
     CheckCircle2,
     ArrowRight,
-    Swords,
-    BarChart3,
-    Gift
+    BookOpen,
+    Video
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NotificationBell } from "@/components/NotificationBell"
@@ -27,6 +25,8 @@ import { DailyCheckIn } from "@/components/gamification/DailyCheckIn"
 import { GamificationHub } from "@/components/gamification/GamificationHub"
 import { getUserStats } from "@/lib/gamification"
 import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
+import { UserMenu } from "@/components/UserMenu"
+import { BottomNav } from "@/components/BottomNav"
 
 interface Profile {
     id: string
@@ -64,11 +64,15 @@ export default function StudentDashboard() {
     const [userXp, setUserXp] = useState(0)
     const [userId, setUserId] = useState<string | null>(null)
     const [selectedSubject, setSelectedSubject] = useState<string>("all")  // Filter theo môn
+    const [showGamification, setShowGamification] = useState(false)  // Toggle gamification drawer
 
     // Filter exams by subject
     const filteredExams = selectedSubject === "all"
         ? availableExams
         : availableExams.filter(e => e.subject === selectedSubject)
+
+    // Calculate max score
+    const maxScore = submissions.length > 0 ? Math.max(...submissions.map(s => s.score)) : 0
 
     useEffect(() => {
         const fetchData = async () => {
@@ -153,58 +157,21 @@ export default function StudentDashboard() {
             {/* Header */}
             <header className="border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/80 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16 items-center">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                                <GraduationCap className="w-5 h-5 text-white" />
+                    <div className="flex justify-between h-14 items-center">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                <GraduationCap className="w-4 h-4 text-white" />
                             </div>
-                            <span className="text-xl font-bold text-white">ExamHub</span>
+                            <span className="text-lg font-bold text-white">ExamHub</span>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <Link href="/student/profile" className="text-right hidden sm:block hover:opacity-80 transition-opacity">
-                                <p className="text-sm font-medium text-white">{profile?.full_name}</p>
-                                <p className="text-xs text-slate-400">{profile?.class || "Học sinh"}</p>
-                            </Link>
+                        <div className="flex items-center gap-3">
                             <NotificationBell />
-                            <Link href="/student/profile">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-slate-400 hover:text-white"
-                                    title="Hồ sơ"
-                                >
-                                    <Trophy className="w-5 h-5" />
-                                </Button>
-                            </Link>
-                            <Link href="/arena">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-purple-400 hover:text-purple-300"
-                                    title="Đấu trường Lý thuyết"
-                                >
-                                    <Swords className="w-5 h-5" />
-                                </Button>
-                            </Link>
-                            <Link href="/student/analytics">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-green-400 hover:text-green-300"
-                                    title="Thống kê của tôi"
-                                >
-                                    <BarChart3 className="w-5 h-5" />
-                                </Button>
-                            </Link>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleLogout}
-                                className="text-slate-400 hover:text-white"
-                                title="Đăng xuất"
-                            >
-                                <LogOut className="w-5 h-5" />
-                            </Button>
+                            <UserMenu
+                                userName={profile?.full_name || ""}
+                                userClass={profile?.class ?? undefined}
+                                onLogout={handleLogout}
+                                role="student"
+                            />
                         </div>
                     </div>
                 </div>
@@ -490,6 +457,9 @@ export default function StudentDashboard() {
                     </div>
                 </div>
             </main>
+
+            {/* Mobile Bottom Navigation */}
+            <BottomNav />
         </div>
     )
 }
