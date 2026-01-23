@@ -180,7 +180,7 @@ export default function StudentDashboard() {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Welcome + XP Bar */}
-                <div className="mb-8">
+                <div className="mb-8 animate-fade-in-up">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-bold text-white">
@@ -201,7 +201,7 @@ export default function StudentDashboard() {
                     {/* Main Content (2/3) */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Compact Stats Bar */}
-                        <div className="flex items-center gap-2 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-x-auto">
+                        <div className="flex items-center gap-2 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-x-auto animate-fade-in-up stagger-1">
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 rounded-lg flex-shrink-0">
                                 <FileText className="w-4 h-4 text-blue-400" />
                                 <span className="text-sm text-slate-300">Đề thi:</span>
@@ -224,7 +224,7 @@ export default function StudentDashboard() {
                         </div>
 
                         {/* Quick Links - Compact */}
-                        <div className="flex gap-3 mb-6">
+                        <div className="flex gap-3 mb-6 animate-fade-in-up stagger-2">
                             <Link href="/resources" className="flex-1">
                                 <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-purple-900/50 to-pink-900/50 hover:from-purple-800/50 hover:to-pink-800/50 border border-purple-500/30 hover:border-purple-400/50 rounded-xl transition-all group">
                                     <span className="text-xl">📚</span>
@@ -248,7 +248,7 @@ export default function StudentDashboard() {
                         </div>
 
                         {/* Available Exams */}
-                        <Card className="border-slate-700 bg-slate-800/50 mb-8">
+                        <Card className="border-slate-700 bg-slate-800/50 mb-8 animate-fade-in-up stagger-3">
                             <CardHeader>
                                 <CardTitle className="text-white">Đề thi có sẵn</CardTitle>
                                 <CardDescription className="text-slate-400">
