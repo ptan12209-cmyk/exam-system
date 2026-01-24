@@ -13,12 +13,14 @@ import {
     FileText,
     ChevronLeft,
     ChevronRight,
-    Shield
+    Shield,
+    AlertOctagon,
+    Maximize
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { AntiCheatProvider, useAntiCheat } from "@/components/exam/AntiCheatProvider"
+import { AntiCheatProvider } from "@/components/exam/AntiCheatProvider"
 import { AntiCheatWarning, FullscreenPrompt, ViolationIndicator } from "@/components/exam/AntiCheatUI"
-import { createShuffleSeed, shuffleWithMapping, ShuffleMapping } from "@/lib/shuffle"
+import { createShuffleSeed, shuffleWithMapping } from "@/lib/shuffle"
 
 const OPTIONS = ["A", "B", "C", "D"] as const
 type Option = typeof OPTIONS[number]
@@ -44,6 +46,7 @@ interface Exam {
     is_scheduled?: boolean
     start_time?: string
     end_time?: string
+    max_attempts?: number
 }
 
 export default function TakeExamPage() {
@@ -252,7 +255,7 @@ export default function TakeExamPage() {
         }
 
         fetchExam()
-    }, [examId, router, supabase, LOCAL_STORAGE_KEY])
+    }, [examId, router, supabase, LOCAL_STORAGE_KEY, shuffleEnabled])
 
     // Countdown timer
     useEffect(() => {
@@ -323,15 +326,6 @@ export default function TakeExamPage() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user || !exam) return
 
-            // Debug log
-            console.log("Submitting answers:", {
-                studentAnswers,
-                tfStudentAnswers,
-                saStudentAnswers,
-                examTfAnswers: exam.tf_answers,
-                examSaAnswers: exam.sa_answers
-            })
-
             // Calculate MC score
             let mcCorrect = 0
             const mcTotal = exam.mc_answers?.length || exam.correct_answers?.length || 0
@@ -343,33 +337,33 @@ export default function TakeExamPage() {
                 }
             })
 
-            // Calculate TF score (each correct sub-answer = 0.25 per question)
+            // Calculate TF score
             let tfCorrect = 0
             const tfTotal = exam.tf_answers?.length || 0
             if (exam.tf_answers) {
                 tfStudentAnswers.forEach(studentTf => {
-                    const correctTf = exam.tf_answers?.find(t => t.question === studentTf.question)
+                    const correctTf = exam.tf_answers?.find((t: TFAnswer) => t.question === studentTf.question)
                     if (correctTf) {
                         let subCorrect = 0
                         if (studentTf.a === correctTf.a) subCorrect++
                         if (studentTf.b === correctTf.b) subCorrect++
                         if (studentTf.c === correctTf.c) subCorrect++
                         if (studentTf.d === correctTf.d) subCorrect++
-                        tfCorrect += subCorrect / 4 // Each question worth 1 point max
+                        tfCorrect += subCorrect / 4
                     }
                 })
             }
 
-            // Calculate SA score (with 5% tolerance)
+            // Calculate SA score
             let saCorrect = 0
             const saTotal = exam.sa_answers?.length || 0
             if (exam.sa_answers) {
                 saStudentAnswers.forEach(studentSa => {
-                    const correctSa = exam.sa_answers?.find(s => s.question === studentSa.question)
+                    const correctSa = exam.sa_answers?.find((s: SAAnswer) => s.question === studentSa.question)
                     if (correctSa) {
                         const correctVal = parseFloat(correctSa.answer.toString().replace(',', '.'))
                         const studentVal = parseFloat(studentSa.answer.replace(',', '.'))
-                        const tolerance = Math.abs(correctVal) * 0.05 // 5% tolerance
+                        const tolerance = Math.abs(correctVal) * 0.05
                         if (Math.abs(correctVal - studentVal) <= tolerance) {
                             saCorrect++
                         }
@@ -382,16 +376,15 @@ export default function TakeExamPage() {
             const score = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 10 : 0
             const timeSpent = Math.floor((Date.now() - startTime) / 1000)
 
-            // Get current attempt number (avoid count() which causes FOR UPDATE error)
-            const { data: existingSubmissions } = await supabase
+            const { count } = await supabase
                 .from("submissions")
-                .select("id")
+                .select("*", { count: "exact", head: true })
                 .eq("exam_id", examId)
                 .eq("student_id", user.id)
 
-            const attemptNumber = (existingSubmissions?.length ?? 0) + 1
+            const attemptNumber = (count ?? 0) + 1
 
-            // Save submission with all answer types
+            // Save submission
             const { error } = await supabase
                 .from("submissions")
                 .insert({
@@ -409,7 +402,6 @@ export default function TakeExamPage() {
                     submitted_at: new Date().toISOString(),
                     time_spent: timeSpent,
                     attempt_number: attemptNumber,
-                    // Session tracking
                     session_id: sessionId,
                     is_ranked: isRanked,
                     cheat_flags: {
@@ -420,7 +412,6 @@ export default function TakeExamPage() {
 
             if (error) throw error
 
-            // Mark session as completed
             if (sessionId) {
                 await supabase
                     .from("exam_sessions")
@@ -432,17 +423,13 @@ export default function TakeExamPage() {
                     .eq("id", sessionId)
             }
 
-            // Update participant status to submitted
             await supabase
                 .from("exam_participants")
                 .update({ status: "submitted", last_active: new Date().toISOString() })
                 .eq("exam_id", examId)
                 .eq("user_id", user.id)
 
-            // Clear localStorage
             localStorage.removeItem(LOCAL_STORAGE_KEY)
-
-            // Redirect to result
             router.push(`/student/exams/${examId}/result`)
         } catch (err) {
             console.error("Submit error:", err)
@@ -450,29 +437,23 @@ export default function TakeExamPage() {
         }
     }, [exam, examId, studentAnswers, tfStudentAnswers, saStudentAnswers, startTime, supabase, router, submitting, LOCAL_STORAGE_KEY, sessionId, isRanked, tabSwitchCount])
 
-    // Format time
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60)
         const secs = seconds % 60
         return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
     }
 
-    // Count answered questions across all types
     const mcAnsweredCount = studentAnswers.filter(a => a !== null).length
-    // For TF: count as answered if at least one sub-question is answered
     const tfAnsweredCount = tfStudentAnswers.filter(a =>
         a.a !== null || a.b !== null || a.c !== null || a.d !== null
     ).length
     const saAnsweredCount = saStudentAnswers.filter(a => a.answer && a.answer.trim() !== "").length
     const answeredCount = mcAnsweredCount + tfAnsweredCount + saAnsweredCount
 
-    // Handle violation callback to update tabSwitchCount (must be before conditional returns)
     const handleViolation = useCallback((type: string, count: number) => {
         setTabSwitchCount(count)
-        // If too many violations, mark as unranked
         if (count >= 5 && isRanked) {
             setIsRanked(false)
-            // Update session
             if (sessionId) {
                 supabase
                     .from("exam_sessions")
@@ -482,32 +463,18 @@ export default function TakeExamPage() {
         }
     }, [isRanked, sessionId, supabase])
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-            </div>
-        )
-    }
-
-    if (!exam) return null
-
-    // Handle auto-submit on max violations
     const handleMaxViolations = () => {
         handleSubmit(true)
     }
 
-    // Handle continue existing session
     const handleContinueSession = async () => {
         if (!existingSession) return
-
         setSessionId(existingSession.id)
         setIsRanked(existingSession.is_ranked)
         setSessionNumber(existingSession.session_number)
 
-        // Restore answers from snapshot
         if (existingSession.answers_snapshot) {
-            const snapshot = existingSession.answers_snapshot as { mc?: (Option | null)[]; tf?: TFStudentAnswer[]; sa?: SAStudentAnswer[] }
+            const snapshot = existingSession.answers_snapshot as any
             if (snapshot.mc) setStudentAnswers(snapshot.mc)
             if (snapshot.tf) setTfStudentAnswers(snapshot.tf)
             if (snapshot.sa) setSaStudentAnswers(snapshot.sa)
@@ -517,24 +484,21 @@ export default function TakeExamPage() {
         setLoading(false)
     }
 
-    // Handle restart (new unranked session)
     const handleRestartSession = async () => {
         if (!userId || !existingSession) return
 
-        // Mark old session as abandoned
         await supabase
             .from("exam_sessions")
             .update({ status: "abandoned", is_ranked: false })
             .eq("id", existingSession.id)
 
-        // Create new unranked session
         const { data: newSession } = await supabase
             .from("exam_sessions")
             .insert({
                 exam_id: examId,
                 student_id: userId,
                 session_number: existingSession.session_number + 1,
-                is_ranked: false, // Restart = not ranked
+                is_ranked: false,
                 status: "in_progress"
             })
             .select()
@@ -546,33 +510,44 @@ export default function TakeExamPage() {
             setSessionNumber(newSession.session_number)
         }
 
-        // Clear answers
-        setStudentAnswers(Array(exam.total_questions).fill(null))
-        setTfStudentAnswers([])
-        setSaStudentAnswers([])
+        if (exam) {
+            setStudentAnswers(Array(exam.total_questions).fill(null))
+            setTfStudentAnswers([])
+            setSaStudentAnswers([])
+        }
         localStorage.removeItem(LOCAL_STORAGE_KEY)
-
         setShowSessionChoice(false)
         setLoading(false)
     }
 
-    // Show session choice modal
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+        )
+    }
+
+    if (!exam) return null
+
     if (showSessionChoice && existingSession) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-                <Card className="w-full max-w-md border-slate-700 bg-slate-800/50">
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+                <Card className="w-full max-w-md bg-white border-gray-200 shadow-xl">
                     <CardContent className="p-6 space-y-6">
                         <div className="text-center space-y-2">
-                            <AlertTriangle className="w-12 h-12 text-orange-500 mx-auto" />
-                            <h2 className="text-xl font-bold text-white">Phát hiện phiên làm bài</h2>
-                            <p className="text-slate-400">
+                            <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto">
+                                <AlertTriangle className="w-8 h-8 text-yellow-500" />
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-800">Phát hiện phiên làm bài</h2>
+                            <p className="text-gray-500 text-sm">
                                 Bạn có một phiên làm bài chưa hoàn thành. Bạn muốn tiếp tục hay làm lại từ đầu?
                             </p>
                         </div>
 
                         {existingSession.is_ranked && (
-                            <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                                <p className="text-sm text-green-400 text-center">
+                            <div className="p-3 bg-green-50 border border-green-100 rounded-lg">
+                                <p className="text-sm text-green-700 text-center font-medium">
                                     ⭐ Phiên này ĐƯỢC TÍNH xếp hạng
                                 </p>
                             </div>
@@ -581,7 +556,7 @@ export default function TakeExamPage() {
                         <div className="space-y-3">
                             <Button
                                 onClick={handleContinueSession}
-                                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
                             >
                                 ✅ Tiếp tục làm bài
                             </Button>
@@ -589,15 +564,11 @@ export default function TakeExamPage() {
                             <Button
                                 onClick={handleRestartSession}
                                 variant="outline"
-                                className="w-full border-red-500/50 text-red-400 hover:bg-red-500/10"
+                                className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
                             >
                                 🔄 Làm lại từ đầu (Không tính xếp hạng)
                             </Button>
                         </div>
-
-                        <p className="text-xs text-slate-500 text-center">
-                            Lưu ý: Chỉ phiên làm bài đầu tiên mới được tính xếp hạng
-                        </p>
                     </CardContent>
                 </Card>
             </div>
@@ -610,62 +581,47 @@ export default function TakeExamPage() {
             onMaxViolations={handleMaxViolations}
             onViolation={handleViolation}
         >
-            {/* Fullscreen Prompt - Show before exam starts */}
             {!examStarted && antiCheatEnabled && (
                 <FullscreenPrompt onStart={() => setExamStarted(true)} />
             )}
 
-            {/* AntiCheat Warning Modal */}
             {examStarted && <AntiCheatWarning />}
 
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col select-none">
-                {/* Header with Timer */}
-                <header className="border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-50">
-                    <div className="max-w-screen-2xl mx-auto px-4 h-14 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <FileText className="w-5 h-5 text-blue-400" />
-                            <h1 className="font-semibold text-white truncate max-w-[200px] md:max-w-none">
-                                {exam.title}
-                            </h1>
-                            {/* Ranking Indicator */}
-                            {isRanked ? (
-                                <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">
-                                    ⭐ Tính xếp hạng
-                                </span>
-                            ) : (
-                                <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 bg-slate-500/20 text-slate-400 text-xs rounded-full">
-                                    Không tính XH
-                                </span>
-                            )}
+            <div className="min-h-screen bg-gray-50 flex flex-col select-none">
+                {/* Header */}
+                <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm h-16">
+                    <div className="max-w-screen-2xl mx-auto px-4 h-full flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                                <FileText className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h1 className="font-bold text-gray-800 text-sm md:text-base truncate max-w-[200px] md:max-w-md">
+                                    {exam.title}
+                                </h1>
+                                {isRanked ? (
+                                    <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                                        <Shield className="w-3 h-3" />
+                                        Tính xếp hạng
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                        <AlertOctagon className="w-3 h-3" />
+                                        Không xếp hạng
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex items-center gap-4">
-                            {/* Progress */}
-                            <div className="hidden md:flex items-center gap-2">
-                                <span className="text-sm text-slate-400">
-                                    {answeredCount}/{exam.total_questions} câu
-                                </span>
-                                <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
-                                        style={{ width: `${(answeredCount / exam.total_questions) * 100}%` }}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Violation Indicator */}
-                            {antiCheatEnabled && examStarted && (
-                                <ViolationIndicator />
-                            )}
-
                             {/* Timer */}
                             <div className={cn(
-                                "flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono font-bold",
+                                "flex items-center gap-2 px-4 py-2 rounded-full font-mono font-bold shadow-sm border transition-colors",
                                 timeLeft <= 60
-                                    ? "bg-red-500/20 text-red-400 animate-pulse"
+                                    ? "bg-red-50 border-red-100 text-red-600 animate-pulse"
                                     : timeLeft <= 300
-                                        ? "bg-yellow-500/20 text-yellow-400"
-                                        : "bg-blue-500/10 text-blue-400"
+                                        ? "bg-yellow-50 border-yellow-100 text-yellow-600"
+                                        : "bg-white border-gray-100 text-blue-600"
                             )}>
                                 <Clock className="w-4 h-4" />
                                 {formatTime(timeLeft)}
@@ -675,7 +631,7 @@ export default function TakeExamPage() {
                             <Button
                                 onClick={() => setShowConfirm(true)}
                                 disabled={submitting}
-                                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                                className="hidden md:flex bg-green-600 hover:bg-green-700 shadow-md shadow-green-200"
                             >
                                 <Send className="w-4 h-4 mr-2" />
                                 Nộp bài
@@ -684,297 +640,281 @@ export default function TakeExamPage() {
                     </div>
                 </header>
 
-                {/* Main Content - Split Screen */}
-                <main className="flex-1 flex flex-col lg:flex-row">
-                    {/* Left: PDF Viewer */}
-                    <div className="lg:w-1/2 border-r border-slate-700/50 flex flex-col">
-                        <div className="flex-1 bg-slate-800/30 flex items-center justify-center p-4">
-                            {exam.pdf_url ? (
-                                <div className="w-full h-full flex flex-col">
-                                    <iframe
-                                        src={`${exam.pdf_url}#page=${pdfPage}`}
-                                        className="flex-1 w-full rounded-lg bg-white"
-                                        title="Đề thi PDF"
-                                    />
-                                    <div className="flex items-center justify-center gap-4 mt-4">
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            onClick={() => setPdfPage(p => Math.max(1, p - 1))}
-                                            className="border-slate-600 text-slate-300"
-                                        >
-                                            <ChevronLeft className="w-4 h-4" />
-                                        </Button>
-                                        <span className="text-slate-400 text-sm">Trang {pdfPage}</span>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            onClick={() => setPdfPage(p => p + 1)}
-                                            className="border-slate-600 text-slate-300"
-                                        >
-                                            <ChevronRight className="w-4 h-4" />
-                                        </Button>
-                                    </div>
+                <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+                    {/* Left Panel: Review Materials / Question List */}
+                    <div className="lg:w-1/2 flex flex-col p-4 overflow-hidden border-r border-gray-200 bg-white shadow-sm z-10">
+                        {exam.pdf_url ? (
+                            <div className="flex-1 rounded-xl overflow-hidden border border-gray-100 flex flex-col bg-gray-50">
+                                <iframe
+                                    src={`${exam.pdf_url}#page=${pdfPage}`}
+                                    className="flex-1 w-full bg-white"
+                                    title="Đề thi PDF"
+                                />
+                                <div className="p-2 bg-white border-t border-gray-100 flex items-center justify-center gap-4">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPdfPage(p => Math.max(1, p - 1))}
+                                        disabled={pdfPage <= 1}
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </Button>
+                                    <span className="text-sm font-medium text-gray-600">Trang {pdfPage}</span>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPdfPage(p => p + 1)}
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </Button>
                                 </div>
-                            ) : (
-                                <div className="text-center text-slate-400">
-                                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                                    <p>Không có file PDF đề thi</p>
-                                    <p className="text-sm mt-1">Vui lòng xem đáp án ở bên phải</p>
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+                                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                                    <FileText className="w-10 h-10 text-gray-300" />
                                 </div>
-                            )}
-                        </div>
+                                <p className="font-medium text-gray-500">Không có file đề thi</p>
+                                <p className="text-sm">Vui lòng đọc câu hỏi trực tiếp trên phiếu</p>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Right: Answer Sheet */}
-                    <div className="lg:w-1/2 flex flex-col bg-slate-900/50">
-                        <div className="p-4 border-b border-slate-700/50">
-                            <h2 className="font-semibold text-white">Phiếu trả lời</h2>
-                            <p className="text-sm text-slate-400">
-                                Đã chọn: {answeredCount}/{exam.total_questions} câu
-                            </p>
-                        </div>
+                    {/* Right Panel: Answer Sheet */}
+                    <div className="lg:w-1/2 flex flex-col bg-gray-50 h-full overflow-hidden">
+                        <div className="p-4 bg-white border-b border-gray-200 shadow-sm z-20">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h2 className="font-bold text-gray-800 text-lg">Phiếu trả lời</h2>
+                                    <p className="text-sm text-gray-500">
+                                        Đã hoàn thành <span className="font-medium text-blue-600">{answeredCount}</span>/{exam.total_questions} câu
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-blue-500 transition-all duration-500"
+                                            style={{ width: `${(answeredCount / exam.total_questions) * 100}%` }}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-1">Tiến độ làm bài</p>
+                                </div>
+                            </div>
 
-                        {/* Tabs */}
-                        <div className="flex gap-2 p-4 border-b border-slate-700/50">
-                            <button
-                                onClick={() => setActiveTab("mc")}
-                                className={cn(
-                                    "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-                                    activeTab === "mc"
-                                        ? "bg-blue-600 text-white"
-                                        : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                            {/* Answer Type Tabs */}
+                            <div className="flex p-1 bg-gray-100 rounded-lg">
+                                <button
+                                    onClick={() => setActiveTab("mc")}
+                                    className={cn(
+                                        "flex-1 py-2 text-sm font-medium rounded-md transition-all",
+                                        activeTab === "mc" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                                    )}
+                                >
+                                    Trắc nghiệm
+                                </button>
+                                {exam.tf_answers && exam.tf_answers.length > 0 && (
+                                    <button
+                                        onClick={() => setActiveTab("tf")}
+                                        className={cn(
+                                            "flex-1 py-2 text-sm font-medium rounded-md transition-all",
+                                            activeTab === "tf" ? "bg-white text-green-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                                        )}
+                                    >
+                                        Đúng/Sai
+                                    </button>
                                 )}
-                            >
-                                Trắc nghiệm ({exam.mc_answers?.length || exam.total_questions})
-                            </button>
-                            {exam.tf_answers && exam.tf_answers.length > 0 && (
-                                <button
-                                    onClick={() => setActiveTab("tf")}
-                                    className={cn(
-                                        "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-                                        activeTab === "tf"
-                                            ? "bg-green-600 text-white"
-                                            : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                                    )}
-                                >
-                                    Đúng/Sai ({exam.tf_answers.length})
-                                </button>
-                            )}
-                            {exam.sa_answers && exam.sa_answers.length > 0 && (
-                                <button
-                                    onClick={() => setActiveTab("sa")}
-                                    className={cn(
-                                        "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-                                        activeTab === "sa"
-                                            ? "bg-purple-600 text-white"
-                                            : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                                    )}
-                                >
-                                    Trả lời ngắn ({exam.sa_answers.length})
-                                </button>
-                            )}
+                                {exam.sa_answers && exam.sa_answers.length > 0 && (
+                                    <button
+                                        onClick={() => setActiveTab("sa")}
+                                        className={cn(
+                                            "flex-1 py-2 text-sm font-medium rounded-md transition-all",
+                                            activeTab === "sa" ? "bg-white text-purple-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                                        )}
+                                    >
+                                        Điền đáp án
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="flex-1 overflow-auto p-4">
-                            {/* MC Tab */}
+                        <div className="flex-1 overflow-y-auto p-4 content-start">
+                            {/* Multiple Choice Grid */}
                             {activeTab === "mc" && (
-                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                                    {Array.from({ length: exam.mc_answers?.length || exam.total_questions }, (_, i) => (
-                                        <Card key={i} className="border-slate-700 bg-slate-800/50">
-                                            <CardContent className="p-3">
-                                                <p className="text-xs text-slate-400 mb-2 text-center">
-                                                    Câu {i + 1}
-                                                </p>
-                                                <div className="grid grid-cols-2 gap-1">
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                                        {Array.from({ length: exam.mc_answers?.length || exam.total_questions }, (_, i) => (
+                                            <div key={i} id={`q-${i}`} className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-sm font-bold text-gray-700">Câu {i + 1}</span>
+                                                    {studentAnswers[i] && (
+                                                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                    )}
+                                                </div>
+                                                <div className="grid grid-cols-4 gap-1">
                                                     {OPTIONS.map((option) => (
                                                         <button
                                                             key={option}
                                                             onClick={() => handleAnswerSelect(i, option)}
                                                             className={cn(
-                                                                "py-2 rounded text-sm font-medium transition-all",
+                                                                "h-8 rounded text-sm font-medium transition-all active:scale-95",
                                                                 studentAnswers[i] === option
-                                                                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white scale-105"
-                                                                    : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                                                                    ? "bg-blue-600 text-white shadow-blue-200 shadow"
+                                                                    : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                                                             )}
                                                         >
                                                             {option}
                                                         </button>
                                                     ))}
                                                 </div>
-                                            </CardContent>
-                                        </Card>
-                                    ))}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
-                            {/* TF Tab */}
+                            {/* True/False Grid */}
                             {activeTab === "tf" && exam.tf_answers && (
-                                <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                     {exam.tf_answers.map((tf, i) => {
                                         const studentTf = tfStudentAnswers.find(a => a.question === tf.question) ||
                                             { question: tf.question, a: null, b: null, c: null, d: null }
                                         return (
-                                            <Card key={i} className="border-slate-700 bg-slate-800/50">
-                                                <CardContent className="p-4">
-                                                    <p className="text-sm font-medium text-slate-300 mb-3">
-                                                        Câu {tf.question}
-                                                    </p>
-                                                    <div className="grid grid-cols-4 gap-3">
-                                                        {(['a', 'b', 'c', 'd'] as const).map((sub) => (
-                                                            <div key={sub} className="text-center">
-                                                                <p className="text-xs text-slate-500 mb-1">{sub})</p>
-                                                                <div className="flex gap-1 justify-center">
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            const newTf = [...tfStudentAnswers]
-                                                                            const idx = newTf.findIndex(a => a.question === tf.question)
-                                                                            if (idx >= 0) {
-                                                                                newTf[idx] = { ...newTf[idx], [sub]: true }
-                                                                            } else {
-                                                                                newTf.push({ question: tf.question, a: null, b: null, c: null, d: null, [sub]: true })
-                                                                            }
-                                                                            setTfStudentAnswers(newTf)
-                                                                        }}
-                                                                        className={cn(
-                                                                            "px-2 py-1.5 rounded text-xs font-medium transition-colors",
-                                                                            studentTf[sub] === true
-                                                                                ? "bg-green-600 text-white"
-                                                                                : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                                                                        )}
-                                                                    >
-                                                                        Đ
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            const newTf = [...tfStudentAnswers]
-                                                                            const idx = newTf.findIndex(a => a.question === tf.question)
-                                                                            if (idx >= 0) {
-                                                                                newTf[idx] = { ...newTf[idx], [sub]: false }
-                                                                            } else {
-                                                                                newTf.push({ question: tf.question, a: null, b: null, c: null, d: null, [sub]: false })
-                                                                            }
-                                                                            setTfStudentAnswers(newTf)
-                                                                        }}
-                                                                        className={cn(
-                                                                            "px-2 py-1.5 rounded text-xs font-medium transition-colors",
-                                                                            studentTf[sub] === false
-                                                                                ? "bg-red-600 text-white"
-                                                                                : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                                                                        )}
-                                                                    >
-                                                                        S
-                                                                    </button>
-                                                                </div>
+                                            <div key={i} className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+                                                <div className="flex items-center justify-between mb-3 border-b border-gray-50 pb-2">
+                                                    <span className="font-bold text-gray-700">Câu {tf.question}</span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {(['a', 'b', 'c', 'd'] as const).map((sub) => (
+                                                        <div key={sub} className="flex items-center justify-between gap-2">
+                                                            <span className="text-sm text-gray-500 font-medium uppercase w-4">{sub}</span>
+                                                            <div className="flex gap-2 flex-1">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const newTf = [...tfStudentAnswers]
+                                                                        const idx = newTf.findIndex(a => a.question === tf.question)
+                                                                        if (idx >= 0) newTf[idx] = { ...newTf[idx], [sub]: true }
+                                                                        else newTf.push({ question: tf.question, a: null, b: null, c: null, d: null, [sub]: true })
+                                                                        setTfStudentAnswers(newTf)
+                                                                    }}
+                                                                    className={cn(
+                                                                        "flex-1 py-1 rounded text-xs font-medium transition-colors border",
+                                                                        studentTf[sub] === true
+                                                                            ? "bg-green-100 border-green-200 text-green-700"
+                                                                            : "bg-white border-gray-200 text-gray-400 hover:border-gray-300"
+                                                                    )}
+                                                                >
+                                                                    Đúng
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const newTf = [...tfStudentAnswers]
+                                                                        const idx = newTf.findIndex(a => a.question === tf.question)
+                                                                        if (idx >= 0) newTf[idx] = { ...newTf[idx], [sub]: false }
+                                                                        else newTf.push({ question: tf.question, a: null, b: null, c: null, d: null, [sub]: false })
+                                                                        setTfStudentAnswers(newTf)
+                                                                    }}
+                                                                    className={cn(
+                                                                        "flex-1 py-1 rounded text-xs font-medium transition-colors border",
+                                                                        studentTf[sub] === false
+                                                                            ? "bg-red-100 border-red-200 text-red-700"
+                                                                            : "bg-white border-gray-200 text-gray-400 hover:border-gray-300"
+                                                                    )}
+                                                                >
+                                                                    Sai
+                                                                </button>
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         )
                                     })}
                                 </div>
                             )}
 
-                            {/* SA Tab */}
+                            {/* Short Answer Grid */}
                             {activeTab === "sa" && exam.sa_answers && (
-                                <div className="space-y-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {exam.sa_answers.map((sa, i) => {
                                         const studentSa = saStudentAnswers.find(a => a.question === sa.question)
                                         return (
-                                            <Card key={i} className="border-slate-700 bg-slate-800/50">
-                                                <CardContent className="p-4 flex items-center gap-4">
-                                                    <p className="text-sm font-medium text-slate-300 w-20">
-                                                        Câu {sa.question}
-                                                    </p>
+                                            <div key={i} className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <span className="font-bold text-gray-700 w-16">Câu {sa.question}</span>
                                                     <input
                                                         type="text"
                                                         value={studentSa?.answer || ""}
                                                         onChange={(e) => {
                                                             const newSa = [...saStudentAnswers]
                                                             const idx = newSa.findIndex(a => a.question === sa.question)
-                                                            if (idx >= 0) {
-                                                                newSa[idx] = { ...newSa[idx], answer: e.target.value }
-                                                            } else {
-                                                                newSa.push({ question: sa.question, answer: e.target.value })
-                                                            }
+                                                            if (idx >= 0) newSa[idx] = { ...newSa[idx], answer: e.target.value }
+                                                            else newSa.push({ question: sa.question, answer: e.target.value })
                                                             setSaStudentAnswers(newSa)
                                                         }}
-                                                        placeholder="Nhập đáp án"
-                                                        className="flex-1 px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                        placeholder="Nhập đáp án của bạn..."
+                                                        className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                                                     />
-                                                </CardContent>
-                                            </Card>
+                                                </div>
+                                            </div>
                                         )
                                     })}
                                 </div>
                             )}
                         </div>
-
-                        {/* Quick Navigation */}
-                        <div className="p-4 border-t border-slate-700/50 bg-slate-900/80">
-                            <div className="flex flex-wrap gap-1">
-                                {Array.from({ length: exam.total_questions }, (_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => {
-                                            document.querySelector(`[data-question="${i}"]`)?.scrollIntoView({ behavior: "smooth" })
-                                        }}
-                                        className={cn(
-                                            "w-8 h-8 rounded text-xs font-medium",
-                                            studentAnswers[i] !== null
-                                                ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                                                : "bg-slate-700/50 text-slate-500"
-                                        )}
-                                    >
-                                        {i + 1}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
                     </div>
                 </main>
 
-                {/* Confirm Submit Dialog */}
+                {/* Mobile Submit FAB */}
+                <div className="md:hidden fixed bottom-6 right-6 z-50">
+                    <Button
+                        onClick={() => setShowConfirm(true)}
+                        size="icon"
+                        className="h-14 w-14 rounded-full bg-green-600 hover:bg-green-700 shadow-lg shadow-green-300"
+                    >
+                        <Send className="w-6 h-6 ml-0.5" />
+                    </Button>
+                </div>
+
+                {/* Confirm Dialog */}
                 {showConfirm && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <Card className="w-full max-w-md border-slate-700 bg-slate-800">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <Card className="w-full max-w-sm bg-white border-0 shadow-2xl">
                             <CardContent className="p-6">
-                                <div className="flex items-center gap-4 mb-4">
-                                    <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center">
-                                        <AlertTriangle className="w-6 h-6 text-yellow-400" />
+                                <div className="flex flex-col items-center text-center mb-6">
+                                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                                        <FileText className="w-8 h-8 text-blue-600" />
                                     </div>
-                                    <div>
-                                        <h3 className="font-semibold text-white">Xác nhận nộp bài?</h3>
-                                        <p className="text-sm text-slate-400">
-                                            Bạn đã làm {answeredCount}/{exam.total_questions} câu
-                                        </p>
-                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-800">Nộp bài thi?</h3>
+                                    <p className="text-gray-500 mt-2">
+                                        Bạn đã hoàn thành <span className="font-bold text-gray-800">{answeredCount}/{exam.total_questions}</span> câu hỏi.
+                                    </p>
+                                    {answeredCount < exam.total_questions && (
+                                        <div className="mt-4 px-4 py-2 bg-amber-50 text-amber-700 text-sm font-medium rounded-lg border border-amber-100">
+                                            ⚠️ Bạn còn {exam.total_questions - answeredCount} câu chưa làm
+                                        </div>
+                                    )}
                                 </div>
 
-                                {answeredCount < exam.total_questions && (
-                                    <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm mb-4">
-                                        ⚠️ Còn {exam.total_questions - answeredCount} câu chưa trả lời!
-                                    </div>
-                                )}
-
-                                <div className="flex gap-3">
+                                <div className="grid grid-cols-2 gap-3">
                                     <Button
                                         variant="outline"
-                                        className="flex-1 border-slate-600 text-slate-300"
                                         onClick={() => setShowConfirm(false)}
+                                        className="border-gray-200 text-gray-600 hover:bg-gray-50"
                                     >
-                                        Tiếp tục làm bài
+                                        Làm tiếp
                                     </Button>
                                     <Button
-                                        className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600"
                                         onClick={() => handleSubmit(false)}
                                         disabled={submitting}
+                                        className="bg-green-600 hover:bg-green-700 text-white shadow-green-200 shadow-md"
                                     >
                                         {submitting ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                Đang nộp...
+                                            </>
                                         ) : (
-                                            "Nộp bài"
+                                            "Nộp bài ngay"
                                         )}
                                     </Button>
                                 </div>

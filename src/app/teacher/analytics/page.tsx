@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
     GraduationCap,
     ArrowLeft,
@@ -16,12 +16,15 @@ import {
     Loader2,
     Users,
     Trophy,
-    Target
+    Target,
+    TrendingDown,
+    TrendingUp,
+    Calendar
 } from "lucide-react"
-import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { ScoreDistributionChart, generateScoreDistribution } from "@/components/analytics/ScoreDistributionChart"
 import { QuestionAnalysisTable, analyzeQuestions } from "@/components/analytics/QuestionAnalysisTable"
 import { exportAnalyticsToExcel } from "@/lib/excel-export"
+import { cn } from "@/lib/utils"
 
 interface Exam {
     id: string
@@ -163,148 +166,156 @@ export default function TeacherAnalyticsPage() {
     }
 
     const handleExportPDF = () => {
-        // Use browser print for PDF
         window.print()
     }
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            {/* Header */}
-            <header className="border-b border-border bg-card sticky top-0 z-50 safe-top">
-                <div className="max-w-7xl mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Link href="/teacher/dashboard">
-                                <Button variant="ghost" size="icon">
-                                    <ArrowLeft className="w-5 h-5" />
-                                </Button>
-                            </Link>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                                    <BarChart3 className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <h1 className="text-xl font-bold">Thống kê & Phân tích</h1>
-                                    <p className="text-sm text-muted-foreground">Phân tích kết quả thi</p>
-                                </div>
+        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+            <div className="max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                    <div className="flex items-center gap-4">
+                        <Link href="/teacher/dashboard">
+                            <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 hover:bg-white bg-white shadow-sm border border-gray-200">
+                                <ArrowLeft className="w-5 h-5" />
+                            </Button>
+                        </Link>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800">Thống kê & Phân tích</h1>
+                            <p className="text-gray-500 text-sm mt-1">Phân tích chi tiết kết quả thi</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Filters & Actions */}
+                <Card className="mb-6 border-gray-200 shadow-sm bg-white">
+                    <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                            <div className="flex items-center gap-2 w-full md:w-auto">
+                                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Chọn đề thi:</span>
+                                <select
+                                    value={selectedExamId}
+                                    onChange={(e) => setSelectedExamId(e.target.value)}
+                                    className="w-full md:w-64 px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                >
+                                    {exams.map((exam) => (
+                                        <option key={exam.id} value={exam.id}>
+                                            {exam.title}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <ThemeToggle />
+
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <Button variant="outline" onClick={handleExportExcel} disabled={submissions.length === 0} className="flex-1 md:flex-none border-gray-300 text-gray-700 hover:bg-gray-50">
+                                <FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />
+                                Excel
+                            </Button>
+                            <Button variant="outline" onClick={handleExportPDF} disabled={submissions.length === 0} className="flex-1 md:flex-none border-gray-300 text-gray-700 hover:bg-gray-50">
+                                <FileText className="w-4 h-4 mr-2 text-red-600" />
+                                In PDF
+                            </Button>
                         </div>
-                    </div>
-                </div>
-            </header>
-
-            <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-                {/* Exam Selector & Export */}
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <label className="text-sm font-medium">Chọn đề thi:</label>
-                        <select
-                            value={selectedExamId}
-                            onChange={(e) => setSelectedExamId(e.target.value)}
-                            className="px-4 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-ring"
-                        >
-                            {exams.map((exam) => (
-                                <option key={exam.id} value={exam.id}>
-                                    {exam.title}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={handleExportExcel} disabled={submissions.length === 0}>
-                            <FileSpreadsheet className="w-4 h-4 mr-2" />
-                            Excel
-                        </Button>
-                        <Button variant="outline" onClick={handleExportPDF} disabled={submissions.length === 0}>
-                            <FileText className="w-4 h-4 mr-2" />
-                            In PDF
-                        </Button>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
 
                 {/* Stats Overview */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <Card>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                    <Card className="border-gray-200 shadow-sm bg-white">
                         <CardContent className="p-4 text-center">
-                            <Users className="w-6 h-6 mx-auto text-blue-500 mb-2" />
-                            <div className="text-2xl font-bold">{stats.totalStudents}</div>
-                            <div className="text-xs text-muted-foreground">Học sinh</div>
+                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
+                                <Users className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div className="text-2xl font-bold text-gray-900">{stats.totalStudents}</div>
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Học sinh</div>
                         </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="border-gray-200 shadow-sm bg-white">
                         <CardContent className="p-4 text-center">
-                            <Target className="w-6 h-6 mx-auto text-purple-500 mb-2" />
-                            <div className="text-2xl font-bold">{stats.averageScore.toFixed(1)}</div>
-                            <div className="text-xs text-muted-foreground">Điểm TB</div>
+                            <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center mx-auto mb-3">
+                                <Target className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <div className="text-2xl font-bold text-gray-900">{stats.averageScore.toFixed(1)}</div>
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Điểm TB</div>
                         </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="border-gray-200 shadow-sm bg-white">
                         <CardContent className="p-4 text-center">
-                            <Trophy className="w-6 h-6 mx-auto text-yellow-500 mb-2" />
-                            <div className="text-2xl font-bold">{stats.highestScore.toFixed(1)}</div>
-                            <div className="text-xs text-muted-foreground">Cao nhất</div>
+                            <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mx-auto mb-3">
+                                <Trophy className="w-5 h-5 text-yellow-600" />
+                            </div>
+                            <div className="text-2xl font-bold text-gray-900">{stats.highestScore.toFixed(1)}</div>
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Cao nhất</div>
                         </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="border-gray-200 shadow-sm bg-white">
                         <CardContent className="p-4 text-center">
-                            <div className="w-6 h-6 mx-auto text-red-500 mb-2 font-bold">↓</div>
-                            <div className="text-2xl font-bold">{stats.lowestScore.toFixed(1)}</div>
-                            <div className="text-xs text-muted-foreground">Thấp nhất</div>
+                            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
+                                <TrendingDown className="w-5 h-5 text-red-600" />
+                            </div>
+                            <div className="text-2xl font-bold text-gray-900">{stats.lowestScore.toFixed(1)}</div>
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Thấp nhất</div>
                         </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="border-gray-200 shadow-sm bg-white">
                         <CardContent className="p-4 text-center">
-                            <GraduationCap className="w-6 h-6 mx-auto text-green-500 mb-2" />
-                            <div className="text-2xl font-bold">{stats.passRate.toFixed(0)}%</div>
-                            <div className="text-xs text-muted-foreground">Đạt (≥5)</div>
+                            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
+                                <GraduationCap className="w-5 h-5 text-green-600" />
+                            </div>
+                            <div className="text-2xl font-bold text-gray-900">{stats.passRate.toFixed(0)}%</div>
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Đạt (≥5)</div>
                         </CardContent>
                     </Card>
                 </div>
 
                 {exams.length === 0 ? (
-                    <Card>
+                    <Card className="border-gray-200 shadow-sm bg-white">
                         <CardContent className="p-12 text-center">
-                            <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                            <h3 className="text-lg font-medium mb-2">Chưa có đề thi</h3>
-                            <p className="text-muted-foreground mb-4">
-                                Tạo và publish đề thi để xem thống kê
+                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <BarChart3 className="w-8 h-8 text-gray-300" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">Chưa có dữ liệu</h3>
+                            <p className="text-gray-500 mb-6">
+                                Tạo đề thi và xuất bản để bắt đầu xem thống kê.
                             </p>
                             <Link href="/teacher/exams/create">
-                                <Button>Tạo đề thi</Button>
+                                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                                    Tạo đề thi mới
+                                </Button>
                             </Link>
                         </CardContent>
                     </Card>
                 ) : submissions.length === 0 ? (
-                    <Card>
+                    <Card className="border-gray-200 shadow-sm bg-white">
                         <CardContent className="p-12 text-center">
-                            <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                            <h3 className="text-lg font-medium mb-2">Chưa có bài nộp</h3>
-                            <p className="text-muted-foreground">
-                                Chia sẻ đề thi để học sinh làm bài
+                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Users className="w-8 h-8 text-gray-300" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">Chưa có bài nộp</h3>
+                            <p className="text-gray-500">
+                                Hãy chia sẻ đề thi để học sinh làm bài và xem kết quả tại đây.
                             </p>
                         </CardContent>
                     </Card>
                 ) : (
-                    <>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Score Distribution Chart */}
-                        <Card>
+                        <Card className="border-gray-200 shadow-sm bg-white lg:col-span-1">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <BarChart3 className="w-5 h-5" />
+                                <CardTitle className="flex items-center gap-2 text-lg text-gray-800">
+                                    <BarChart3 className="w-5 h-5 text-blue-600" />
                                     Phân bố điểm số
                                 </CardTitle>
+                                <CardDescription>Biểu đồ phổ điểm của học sinh</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <ScoreDistributionChart
@@ -313,44 +324,35 @@ export default function TeacherAnalyticsPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Question Analysis */}
-                        {selectedExam && (
-                            <QuestionAnalysisTable
-                                data={analyzeQuestions(
-                                    submissions.map(s => ({ student_answers: s.student_answers })),
-                                    selectedExam.correct_answers
-                                )}
-                            />
-                        )}
-
                         {/* Top Students Table */}
-                        <Card>
+                        <Card className="border-gray-200 shadow-sm bg-white lg:col-span-1">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Trophy className="w-5 h-5" />
+                                <CardTitle className="flex items-center gap-2 text-lg text-gray-800">
+                                    <Trophy className="w-5 h-5 text-yellow-500" />
                                     Bảng xếp hạng
                                 </CardTitle>
+                                <CardDescription>Top 10 học sinh có điểm cao nhất</CardDescription>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="overflow-x-auto">
+                                <div className="overflow-hidden rounded-md border border-gray-100 m-4 mt-0">
                                     <table className="w-full">
-                                        <thead className="bg-muted/50">
-                                            <tr className="text-left text-sm">
-                                                <th className="px-4 py-3 font-medium">#</th>
-                                                <th className="px-4 py-3 font-medium">Học sinh</th>
-                                                <th className="px-4 py-3 font-medium">Lớp</th>
-                                                <th className="px-4 py-3 font-medium text-right">Điểm</th>
+                                        <thead className="bg-gray-50">
+                                            <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <th className="px-4 py-3 text-center w-12">#</th>
+                                                <th className="px-4 py-3">Học sinh</th>
+                                                <th className="px-4 py-3 text-center">Lớp</th>
+                                                <th className="px-4 py-3 text-right">Điểm</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-border">
+                                        <tbody className="divide-y divide-gray-100 bg-white">
                                             {submissions.slice(0, 10).map((sub, index) => (
-                                                <tr key={sub.id} className="hover:bg-muted/30">
-                                                    <td className="px-4 py-3 font-medium">
+                                                <tr key={sub.id} className="hover:bg-blue-50/20 transition-colors">
+                                                    <td className="px-4 py-3 text-center font-medium">
                                                         {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}
                                                     </td>
-                                                    <td className="px-4 py-3">{sub.student?.full_name || "Ẩn danh"}</td>
-                                                    <td className="px-4 py-3 text-muted-foreground">{sub.student?.class || "-"}</td>
-                                                    <td className="px-4 py-3 text-right font-medium">{sub.score.toFixed(1)}</td>
+                                                    <td className="px-4 py-3 text-gray-900 font-medium">{sub.student?.full_name || "Ẩn danh"}</td>
+                                                    <td className="px-4 py-3 text-center text-gray-500">{sub.student?.class || "-"}</td>
+                                                    <td className="px-4 py-3 text-right font-bold text-blue-600">{sub.score.toFixed(1)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -358,9 +360,21 @@ export default function TeacherAnalyticsPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                    </>
+
+                        {/* Question Analysis */}
+                        {selectedExam && (
+                            <div className="lg:col-span-2">
+                                <QuestionAnalysisTable
+                                    data={analyzeQuestions(
+                                        submissions.map(s => ({ student_answers: s.student_answers })),
+                                        selectedExam.correct_answers
+                                    )}
+                                />
+                            </div>
+                        )}
+                    </div>
                 )}
-            </main>
+            </div>
         </div>
     )
 }

@@ -4,9 +4,12 @@ import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Bell, Check, ArrowLeft, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { NotificationBell } from "@/components/NotificationBell"
+import { UserMenu } from "@/components/UserMenu"
+import { BottomNav } from "@/components/BottomNav"
 
 interface Notification {
     id: string
@@ -21,12 +24,25 @@ interface Notification {
 export default function NotificationsPage() {
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [loading, setLoading] = useState(true)
+    const [fullName, setFullName] = useState("")
     const supabase = createClient()
+    const router = useRouter()
 
     useEffect(() => {
-        const fetchNotifications = async () => {
+        const fetchData = async () => {
             const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
+            if (!user) {
+                router.push("/login")
+                return
+            }
+
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("id", user.id)
+                .single()
+
+            if (profile) setFullName(profile.full_name || "")
 
             const { data, error } = await supabase
                 .from("notifications")
@@ -40,8 +56,13 @@ export default function NotificationsPage() {
             setLoading(false)
         }
 
-        fetchNotifications()
-    }, [supabase])
+        fetchData()
+    }, [supabase, router])
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
+        router.push("/login")
+    }
 
     const markAsRead = async (id: string) => {
         await supabase
@@ -83,118 +104,150 @@ export default function NotificationsPage() {
 
     const unreadCount = notifications.filter(n => !n.is_read).length
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+        )
+    }
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-            <div className="max-w-2xl mx-auto">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                        <Link href="/student/dashboard">
-                            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
-                                <ArrowLeft className="w-5 h-5" />
-                            </Button>
+        <div className="min-h-screen bg-gray-100 flex flex-col">
+            {/* Header */}
+            <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <Link href="/student/dashboard" className="flex items-center gap-2">
+                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-md">E</div>
+                            <span className="font-bold text-xl text-blue-600 hidden md:block">ExamHub</span>
                         </Link>
-                        <div>
-                            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                                <Bell className="w-6 h-6" />
-                                Thông báo
-                            </h1>
-                            <p className="text-slate-400 text-sm">
-                                {unreadCount > 0 ? `${unreadCount} thông báo chưa đọc` : "Tất cả đã đọc"}
-                            </p>
-                        </div>
                     </div>
-                    {unreadCount > 0 && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={markAllAsRead}
-                            className="text-blue-400 hover:text-blue-300"
-                        >
-                            <Check className="w-4 h-4 mr-1" />
-                            Đọc tất cả
-                        </Button>
-                    )}
+                    <nav className="hidden lg:flex items-center gap-1">
+                        <Link href="/student/dashboard" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">🏠</Link>
+                        <Link href="/student/exams" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">📝</Link>
+                        <Link href="/arena" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">🏆</Link>
+                    </nav>
+                    <div className="flex items-center gap-3">
+                        <NotificationBell />
+                        <UserMenu userName={fullName} onLogout={handleLogout} role="student" />
+                    </div>
+                </div>
+            </header>
+
+            {/* Main */}
+            <main className="flex-grow max-w-3xl mx-auto px-4 py-8 w-full">
+                {/* Breadcrumb */}
+                <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+                    <Link href="/student/dashboard" className="hover:text-blue-600">Trang chủ</Link>
+                    <span>›</span>
+                    <span className="font-medium text-gray-800">Thông báo</span>
                 </div>
 
-                {/* Notifications List */}
-                <Card className="bg-slate-800/50 border-slate-700">
-                    <CardContent className="p-0">
-                        {loading ? (
-                            <div className="p-8 text-center text-slate-400">Đang tải...</div>
-                        ) : notifications.length === 0 ? (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                        <h1 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <Bell className="w-5 h-5 text-blue-600" />
+                            Tất cả thông báo
+                            {unreadCount > 0 && (
+                                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                    {unreadCount}
+                                </span>
+                            )}
+                        </h1>
+                        {unreadCount > 0 && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={markAllAsRead}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs"
+                            >
+                                <Check className="w-3 h-3 mr-1" />
+                                Đánh dấu đã đọc
+                            </Button>
+                        )}
+                    </div>
+
+                    <div className="divide-y divide-gray-100">
+                        {notifications.length === 0 ? (
                             <div className="p-12 text-center">
-                                <Bell className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                                <p className="text-slate-400">Chưa có thông báo nào</p>
+                                <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-500">Bạn chưa có thông báo nào</p>
                             </div>
                         ) : (
-                            <div className="divide-y divide-slate-700/50">
-                                {notifications.map((notification) => (
-                                    <div
-                                        key={notification.id}
-                                        className={cn(
-                                            "p-4 hover:bg-slate-700/30 transition-colors",
-                                            !notification.is_read && "bg-blue-500/5 border-l-2 border-l-blue-500"
-                                        )}
-                                    >
-                                        {notification.link ? (
-                                            <Link
-                                                href={notification.link}
-                                                onClick={() => {
-                                                    if (!notification.is_read) markAsRead(notification.id)
-                                                }}
-                                                className="block"
-                                            >
-                                                <div className="flex items-start gap-3">
-                                                    <div className="flex-1">
-                                                        <p className={cn(
-                                                            "text-sm",
-                                                            notification.is_read ? "text-slate-300" : "text-white font-medium"
+                            notifications.map((notification) => (
+                                <div
+                                    key={notification.id}
+                                    className={cn(
+                                        "p-4 transition-colors hover:bg-gray-50",
+                                        !notification.is_read ? "bg-blue-50/60" : "bg-white"
+                                    )}
+                                >
+                                    <div className="flex gap-4">
+                                        <div className={cn(
+                                            "w-2 h-2 rounded-full mt-2 flex-shrink-0",
+                                            !notification.is_read ? "bg-blue-500" : "bg-transparent"
+                                        )} />
+                                        <div className="flex-1">
+                                            {notification.link ? (
+                                                <Link
+                                                    href={notification.link}
+                                                    onClick={() => !notification.is_read && markAsRead(notification.id)}
+                                                    className="block group"
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <h3 className={cn(
+                                                            "text-sm font-medium mb-1 group-hover:text-blue-600 transition-colors",
+                                                            !notification.is_read ? "text-gray-900" : "text-gray-600"
                                                         )}>
                                                             {notification.title}
-                                                        </p>
-                                                        {notification.message && (
-                                                            <p className="text-sm text-slate-400 mt-1">
-                                                                {notification.message}
-                                                            </p>
-                                                        )}
-                                                        <p className="text-xs text-slate-500 mt-2">
-                                                            {timeAgo(notification.created_at)}
-                                                        </p>
+                                                        </h3>
+                                                        <ExternalLink className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                     </div>
-                                                    <ExternalLink className="w-4 h-4 text-slate-500 flex-shrink-0 mt-1" />
+                                                    {notification.message && (
+                                                        <p className="text-sm text-gray-500 mb-2 line-clamp-2">
+                                                            {notification.message}
+                                                        </p>
+                                                    )}
+                                                </Link>
+                                            ) : (
+                                                <div
+                                                    onClick={() => !notification.is_read && markAsRead(notification.id)}
+                                                    className="cursor-pointer"
+                                                >
+                                                    <h3 className={cn(
+                                                        "text-sm font-medium mb-1",
+                                                        !notification.is_read ? "text-gray-900" : "text-gray-600"
+                                                    )}>
+                                                        {notification.title}
+                                                    </h3>
+                                                    {notification.message && (
+                                                        <p className="text-sm text-gray-500 mb-2">
+                                                            {notification.message}
+                                                        </p>
+                                                    )}
                                                 </div>
-                                            </Link>
-                                        ) : (
-                                            <div
-                                                onClick={() => {
-                                                    if (!notification.is_read) markAsRead(notification.id)
-                                                }}
-                                                className="cursor-pointer"
-                                            >
-                                                <p className={cn(
-                                                    "text-sm",
-                                                    notification.is_read ? "text-slate-300" : "text-white font-medium"
-                                                )}>
-                                                    {notification.title}
-                                                </p>
-                                                {notification.message && (
-                                                    <p className="text-sm text-slate-400 mt-1">
-                                                        {notification.message}
-                                                    </p>
-                                                )}
-                                                <p className="text-xs text-slate-500 mt-2">
-                                                    {timeAgo(notification.created_at)}
-                                                </p>
-                                            </div>
-                                        )}
+                                            )}
+                                            <p className="text-xs text-gray-400">
+                                                {timeAgo(notification.created_at)}
+                                            </p>
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            ))
                         )}
-                    </CardContent>
-                </Card>
-            </div>
+                    </div>
+                </div>
+            </main>
+
+            {/* Footer */}
+            <footer className="bg-blue-600 text-white py-8 mt-auto">
+                <div className="max-w-7xl mx-auto px-4 text-center">
+                    <p className="text-sm text-blue-200">© 2026 ExamHub. All rights reserved.</p>
+                </div>
+            </footer>
+
+            <BottomNav />
         </div>
     )
 }

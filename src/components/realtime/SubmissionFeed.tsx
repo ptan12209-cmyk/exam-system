@@ -125,66 +125,69 @@ export function SubmissionFeed({ examId, className, maxItems = 5 }: SubmissionFe
 
     const getScoreColor = (score: number, total: number) => {
         const percentage = (score / total) * 100
-        if (percentage >= 80) return "text-green-400"
-        if (percentage >= 50) return "text-yellow-400"
-        return "text-red-400"
+        if (percentage >= 80) return "text-green-600 bg-green-50 border-green-200"
+        if (percentage >= 50) return "text-yellow-600 bg-yellow-50 border-yellow-200"
+        return "text-red-600 bg-red-50 border-red-200"
     }
 
     if (loading) {
         return (
-            <div className={cn("bg-slate-800/50 rounded-xl p-4 border border-slate-700", className)}>
+            <div className={cn("bg-white rounded-xl p-4 border border-gray-200 shadow-sm", className)}>
                 <div className="animate-pulse space-y-3">
-                    <div className="h-4 bg-slate-700 rounded w-1/2"></div>
-                    <div className="h-12 bg-slate-700 rounded"></div>
-                    <div className="h-12 bg-slate-700 rounded"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-12 bg-gray-100 rounded"></div>
+                    <div className="h-12 bg-gray-100 rounded"></div>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className={cn("bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden", className)}>
+        <div className={cn("bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden", className)}>
             {/* Header */}
-            <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/80">
-                <h3 className="font-semibold text-white flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-400" />
+            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
                     Bài nộp gần đây
                 </h3>
             </div>
 
             {/* Feed */}
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-64 overflow-y-auto custom-scrollbar">
                 {submissions.length === 0 ? (
-                    <div className="p-6 text-center text-slate-400">
-                        <Trophy className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <div className="p-8 text-center text-gray-400">
+                        <Trophy className="w-8 h-8 mx-auto mb-2 opacity-30" />
                         <p className="text-sm">Chưa có bài nộp</p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-slate-700/50">
+                    <div className="divide-y divide-gray-100">
                         {submissions.map((submission, index) => (
                             <div
                                 key={submission.id}
                                 className={cn(
-                                    "px-4 py-3 flex items-center justify-between",
-                                    index === 0 && "bg-green-500/5 animate-pulse-once"
+                                    "px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors",
+                                    index === 0 && "bg-blue-50/30"
                                 )}
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
                                         {submission.student_name?.charAt(0) || "?"}
                                     </div>
                                     <div>
-                                        <p className="text-sm text-white font-medium">
+                                        <p className="text-sm text-gray-800 font-medium">
                                             {submission.student_name}
                                         </p>
-                                        <p className="text-xs text-slate-400 flex items-center gap-1">
+                                        <p className="text-xs text-gray-500 flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
                                             {formatTime(submission.submitted_at)}
                                         </p>
                                     </div>
+                                    {index === 0 && (
+                                        <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">Mới</span>
+                                    )}
                                 </div>
                                 <div className={cn(
-                                    "text-lg font-bold",
+                                    "px-2.5 py-1 rounded-lg text-sm font-bold border",
                                     getScoreColor(submission.score, submission.total_questions)
                                 )}>
                                     {submission.score}/{submission.total_questions}

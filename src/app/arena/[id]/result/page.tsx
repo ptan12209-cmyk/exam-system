@@ -14,7 +14,10 @@ import {
     Users,
     Loader2,
     Medal,
-    Crown
+    Crown,
+    Share2,
+    Home,
+    Swords
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -122,36 +125,36 @@ export default function ArenaResultPage() {
     }
 
     const getGrade = (score: number) => {
-        if (score >= 9) return { label: "Xuất sắc", color: "text-yellow-400", emoji: "🏆" }
-        if (score >= 8) return { label: "Giỏi", color: "text-green-400", emoji: "⭐" }
-        if (score >= 6.5) return { label: "Khá", color: "text-blue-400", emoji: "👍" }
-        if (score >= 5) return { label: "Đạt", color: "text-slate-400", emoji: "✓" }
-        return { label: "Chưa đạt", color: "text-red-400", emoji: "📚" }
+        if (score >= 9) return { label: "Xuất sắc", color: "text-amber-600 bg-amber-50 border-amber-200", emoji: "🏆" }
+        if (score >= 8) return { label: "Giỏi", color: "text-green-600 bg-green-50 border-green-200", emoji: "⭐" }
+        if (score >= 6.5) return { label: "Khá", color: "text-blue-600 bg-blue-50 border-blue-200", emoji: "👍" }
+        if (score >= 5) return { label: "Đạt", color: "text-gray-600 bg-gray-50 border-gray-200", emoji: "✓" }
+        return { label: "Chưa đạt", color: "text-red-600 bg-red-50 border-red-200", emoji: "📚" }
     }
 
     const getRankIcon = (rank: number) => {
-        if (rank === 1) return <Crown className="w-5 h-5 text-yellow-400" />
-        if (rank === 2) return <Medal className="w-5 h-5 text-slate-300" />
-        if (rank === 3) return <Medal className="w-5 h-5 text-amber-600" />
-        return <span className="text-slate-400 font-bold">{rank}</span>
+        if (rank === 1) return <Crown className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+        if (rank === 2) return <Medal className="w-5 h-5 text-slate-400 fill-slate-400" />
+        if (rank === 3) return <Medal className="w-5 h-5 text-amber-700 fill-amber-700" />
+        return <span className="text-gray-400 font-bold text-sm">#{rank}</span>
     }
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
 
     if (!myResult) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 flex items-center justify-center p-4">
-                <Card className="w-full max-w-md border-slate-700 bg-slate-800/50">
-                    <CardContent className="p-6 text-center">
-                        <p className="text-slate-400">Không tìm thấy kết quả</p>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <Card className="w-full max-w-md bg-white shadow-xl">
+                    <CardContent className="p-8 text-center">
+                        <p className="text-gray-500 mb-6">Không tìm thấy kết quả của bạn cho bài thi này.</p>
                         <Link href="/arena">
-                            <Button className="mt-4">Quay lại Đấu trường</Button>
+                            <Button className="w-full bg-blue-600 hover:bg-blue-700">Quay lại Đấu trường</Button>
                         </Link>
                     </CardContent>
                 </Card>
@@ -162,117 +165,157 @@ export default function ArenaResultPage() {
     const grade = getGrade(myResult.score)
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 p-6">
-            <div className="max-w-3xl mx-auto">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+            <div className="max-w-4xl mx-auto">
                 {/* Header */}
-                <div className="flex items-center gap-4 mb-8">
-                    <Link href="/arena">
-                        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
-                            <ArrowLeft className="w-5 h-5" />
-                        </Button>
-                    </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold text-white">{arena?.name}</h1>
-                        <p className="text-slate-400 text-sm">Kết quả thi đấu</p>
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                        <Link href="/arena">
+                            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-800 hover:bg-gray-100">
+                                <ArrowLeft className="w-5 h-5" />
+                            </Button>
+                        </Link>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                                <Swords className="w-6 h-6 text-orange-600" />
+                                {arena?.name}
+                            </h1>
+                            <p className="text-gray-500 text-sm">Kết quả thi đấu</p>
+                        </div>
                     </div>
                 </div>
 
-                {/* My Score Card */}
-                <Card className="border-slate-700 bg-gradient-to-br from-purple-500/10 to-pink-500/10 mb-8">
-                    <CardContent className="p-8">
-                        <div className="text-center">
-                            <div className="text-6xl mb-2">{grade.emoji}</div>
-                            <div className="text-5xl font-bold text-white mb-2">
-                                {myResult.score.toFixed(1)}
-                            </div>
-                            <div className={cn("text-xl font-medium mb-6", grade.color)}>
-                                {grade.label}
-                            </div>
+                <div className="grid md:grid-cols-3 gap-6">
+                    {/* Left Column: My Score (1/3) */}
+                    <div className="space-y-6">
+                        <Card className="border-gray-200 shadow-sm bg-white overflow-hidden relative">
+                            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-purple-500" />
+                            <CardContent className="p-6 text-center">
+                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-50 mb-4 text-4xl shadow-inner">
+                                    {grade.emoji}
+                                </div>
+                                <div className="mb-6">
+                                    <div className="text-5xl font-black text-gray-800 mb-2 tracking-tight">
+                                        {myResult.score.toFixed(1)}
+                                    </div>
+                                    <span className={cn("px-3 py-1 rounded-full text-sm font-bold border", grade.color)}>
+                                        {grade.label}
+                                    </span>
+                                </div>
 
-                            <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
-                                <div className="p-4 bg-slate-800/50 rounded-xl">
-                                    <Target className="w-5 h-5 text-blue-400 mx-auto mb-2" />
-                                    <div className="text-xl font-bold text-white">
-                                        {myResult.correct_count}/{myResult.total_questions}
+                                <div className="space-y-4 pt-6 border-t border-gray-100">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-gray-600">
+                                            <Target className="w-4 h-4 text-blue-500" />
+                                            <span className="text-sm">Chính xác</span>
+                                        </div>
+                                        <span className="font-bold text-gray-800">{myResult.correct_count}/{myResult.total_questions}</span>
                                     </div>
-                                    <div className="text-xs text-slate-500">Số đúng</div>
-                                </div>
-                                <div className="p-4 bg-slate-800/50 rounded-xl">
-                                    <Clock className="w-5 h-5 text-green-400 mx-auto mb-2" />
-                                    <div className="text-xl font-bold text-white">
-                                        {formatTime(myResult.time_spent)}
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-gray-600">
+                                            <Clock className="w-4 h-4 text-green-500" />
+                                            <span className="text-sm">Thời gian</span>
+                                        </div>
+                                        <span className="font-bold text-gray-800">{formatTime(myResult.time_spent)}</span>
                                     </div>
-                                    <div className="text-xs text-slate-500">Thời gian</div>
-                                </div>
-                                <div className="p-4 bg-slate-800/50 rounded-xl">
-                                    <Trophy className="w-5 h-5 text-yellow-400 mx-auto mb-2" />
-                                    <div className="text-xl font-bold text-white">
-                                        #{myResult.rank || "-"}
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-gray-600">
+                                            <Trophy className="w-4 h-4 text-yellow-500" />
+                                            <span className="text-sm">Xếp hạng</span>
+                                        </div>
+                                        <span className="font-bold text-blue-600">#{myResult.rank || "-"}</span>
                                     </div>
-                                    <div className="text-xs text-slate-500">Xếp hạng</div>
                                 </div>
-                            </div>
+                            </CardContent>
+                        </Card>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <Link href="/arena" className="col-span-1">
+                                <Button variant="outline" className="w-full border-gray-200 text-gray-600 hover:bg-gray-50">
+                                    <Swords className="w-4 h-4 mr-2" />
+                                    Đấu tiếp
+                                </Button>
+                            </Link>
+                            <Link href="/student/dashboard" className="col-span-1">
+                                <Button variant="outline" className="w-full border-gray-200 text-gray-600 hover:bg-gray-50">
+                                    <Home className="w-4 h-4 mr-2" />
+                                    Trang chủ
+                                </Button>
+                            </Link>
+                            <Button className="w-full col-span-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md">
+                                <Share2 className="w-4 h-4 mr-2" />
+                                Chia sẻ thành tích
+                            </Button>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
 
-                {/* Leaderboard */}
-                <Card className="border-slate-700 bg-slate-800/50">
-                    <CardHeader>
-                        <CardTitle className="text-white flex items-center gap-2">
-                            <Users className="w-5 h-5" />
-                            Bảng xếp hạng ({leaderboard.length} người tham gia)
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-2">
-                            {leaderboard.map((result, idx) => {
-                                const isMe = result.student_id === userId
-                                return (
-                                    <div
-                                        key={result.id}
-                                        className={cn(
-                                            "flex items-center gap-4 p-3 rounded-lg transition-colors",
-                                            isMe
-                                                ? "bg-purple-500/20 border border-purple-500/30"
-                                                : "hover:bg-slate-700/30"
-                                        )}
-                                    >
-                                        <div className="w-8 text-center">
-                                            {getRankIcon(idx + 1)}
-                                        </div>
-                                        <div className="flex-1">
-                                            <span className={cn(
-                                                "font-medium",
-                                                isMe ? "text-purple-300" : "text-white"
-                                            )}>
-                                                {result.profile?.full_name || "Học sinh"}
-                                                {isMe && " (Bạn)"}
-                                            </span>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="font-bold text-white">
-                                                {result.score.toFixed(1)}
-                                            </div>
-                                            <div className="text-xs text-slate-500">
-                                                {result.correct_count}/{result.total_questions} • {formatTime(result.time_spent)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </CardContent>
-                </Card>
+                    {/* Right Column: Leaderboard (2/3) */}
+                    <div className="md:col-span-2">
+                        <Card className="border-gray-200 shadow-sm bg-white h-full">
+                            <CardHeader className="border-b border-gray-50 bg-gray-50/30">
+                                <CardTitle className="text-gray-800 flex items-center gap-2 text-lg">
+                                    <Users className="w-5 h-5 text-blue-600" />
+                                    Bảng xếp hạng
+                                    <span className="ml-auto text-sm font-normal text-gray-500">{leaderboard.length} đấu thủ</span>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="divide-y divide-gray-50 max-h-[600px] overflow-y-auto custom-scrollbar">
+                                    {leaderboard.map((result, idx) => {
+                                        const isMe = result.student_id === userId
+                                        return (
+                                            <div
+                                                key={result.id}
+                                                className={cn(
+                                                    "flex items-center gap-4 p-4 transition-colors",
+                                                    isMe ? "bg-blue-50/60" : "hover:bg-gray-50"
+                                                )}
+                                            >
+                                                <div className="w-8 flex justify-center">
+                                                    {getRankIcon(idx + 1)}
+                                                </div>
 
-                {/* Actions */}
-                <div className="mt-8 flex justify-center gap-4">
-                    <Link href="/arena">
-                        <Button variant="outline" className="border-slate-600 text-slate-400">
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Về Đấu trường
-                        </Button>
-                    </Link>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={cn(
+                                                            "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
+                                                            isMe ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"
+                                                        )}>
+                                                            {(result.profile?.full_name || "U").charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div className="truncate">
+                                                            <p className={cn(
+                                                                "font-medium text-sm truncate",
+                                                                isMe ? "text-blue-700" : "text-gray-800"
+                                                            )}>
+                                                                {result.profile?.full_name || "Ẩn danh"}
+                                                                {isMe && " (Bạn)"}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="text-right flex items-center gap-6">
+                                                    <div className="hidden sm:block text-xs text-gray-500">
+                                                        <div>{result.correct_count} đúng</div>
+                                                        <div>{formatTime(result.time_spent)}</div>
+                                                    </div>
+                                                    <div className="font-bold text-gray-800 text-lg w-12 text-right">
+                                                        {result.score.toFixed(1)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                    {leaderboard.length === 0 && (
+                                        <div className="p-8 text-center text-gray-400">
+                                            Chưa có bảng xếp hạng
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
         </div>

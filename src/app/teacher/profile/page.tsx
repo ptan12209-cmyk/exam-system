@@ -15,6 +15,7 @@ import {
     BarChart3,
     Loader2
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface ProfileData {
     full_name: string | null
@@ -81,6 +82,7 @@ export default function TeacherProfilePage() {
                 setRecentExams(exams.slice(0, 5))
 
                 // Count total submissions
+                // This is a naive loop, but fine for now as per original code logic
                 let totalSubs = 0
                 for (const exam of exams) {
                     const { count } = await supabase
@@ -100,44 +102,52 @@ export default function TeacherProfilePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-8">
                     <Link href="/teacher/dashboard">
-                        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
+                        <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 hover:bg-white bg-white shadow-sm border border-gray-100">
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                     </Link>
-                    <h1 className="text-2xl font-bold text-white">Hồ sơ giáo viên</h1>
+                    <h1 className="text-2xl font-bold text-gray-800">Hồ sơ giáo viên</h1>
                 </div>
 
                 {/* Profile Header Card */}
-                <Card className="border-slate-700 bg-gradient-to-br from-slate-800/80 to-slate-800/50 mb-6">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-6">
+                <Card className="border-gray-200 bg-white shadow-sm mb-6 overflow-hidden relative">
+                    <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+                    <CardContent className="pt-0 relative z-10">
+                        <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-10 md:pl-6">
                             {/* Avatar */}
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center text-3xl font-bold text-white">
+                            <div className="w-24 h-24 rounded-full border-4 border-white bg-gray-100 flex items-center justify-center text-4xl font-bold text-gray-400 shadow-md">
                                 {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "?"}
                             </div>
 
-                            <div className="flex-1">
-                                <h2 className="text-xl font-bold text-white mb-1">
+                            <div className="flex-1 text-center md:text-left mb-4">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-1">
                                     {profile?.full_name || "Giáo viên"}
                                 </h2>
-                                <p className="text-slate-400 text-sm">
+                                <p className="text-gray-500 text-sm mb-2">
                                     {profile?.email}
                                 </p>
-                                <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm">
-                                    👨‍🏫 Giáo viên
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold border border-blue-100">
+                                    <Users className="w-3 h-3" />
+                                    Giảng viên chính thức
                                 </div>
+                            </div>
+
+                            <div className="mb-6 md:pr-6">
+                                <Button className="bg-white border text-gray-700 hover:bg-gray-50">
+                                    Chỉnh sửa hồ sơ
+                                </Button>
                             </div>
                         </div>
                     </CardContent>
@@ -145,124 +155,114 @@ export default function TeacherProfilePage() {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <Card className="border-slate-700 bg-slate-800/50">
-                        <CardContent className="pt-4 text-center">
-                            <FileText className="w-6 h-6 mx-auto mb-2 text-blue-400" />
-                            <div className="text-2xl font-bold text-white">
+                    <Card className="border-gray-200 bg-white shadow-sm">
+                        <CardContent className="pt-6 text-center">
+                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3 text-blue-600">
+                                <FileText className="w-5 h-5" />
+                            </div>
+                            <div className="text-2xl font-bold text-gray-800">
                                 {stats.totalExams}
                             </div>
-                            <div className="text-xs text-slate-400">Tổng đề thi</div>
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tổng đề thi</div>
                         </CardContent>
                     </Card>
 
-                    <Card className="border-slate-700 bg-slate-800/50">
-                        <CardContent className="pt-4 text-center">
-                            <CheckCircle className="w-6 h-6 mx-auto mb-2 text-green-400" />
-                            <div className="text-2xl font-bold text-white">
+                    <Card className="border-gray-200 bg-white shadow-sm">
+                        <CardContent className="pt-6 text-center">
+                            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3 text-green-600">
+                                <CheckCircle className="w-5 h-5" />
+                            </div>
+                            <div className="text-2xl font-bold text-gray-800">
                                 {stats.publishedExams}
                             </div>
-                            <div className="text-xs text-slate-400">Đã publish</div>
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Đã phát hành</div>
                         </CardContent>
                     </Card>
 
-                    <Card className="border-slate-700 bg-slate-800/50">
-                        <CardContent className="pt-4 text-center">
-                            <Clock className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
-                            <div className="text-2xl font-bold text-white">
+                    <Card className="border-gray-200 bg-white shadow-sm">
+                        <CardContent className="pt-6 text-center">
+                            <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mx-auto mb-3 text-yellow-600">
+                                <Clock className="w-5 h-5" />
+                            </div>
+                            <div className="text-2xl font-bold text-gray-800">
                                 {stats.draftExams}
                             </div>
-                            <div className="text-xs text-slate-400">Bản nháp</div>
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Bản nháp</div>
                         </CardContent>
                     </Card>
 
-                    <Card className="border-slate-700 bg-slate-800/50">
-                        <CardContent className="pt-4 text-center">
-                            <Users className="w-6 h-6 mx-auto mb-2 text-purple-400" />
-                            <div className="text-2xl font-bold text-white">
+                    <Card className="border-gray-200 bg-white shadow-sm">
+                        <CardContent className="pt-6 text-center">
+                            <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center mx-auto mb-3 text-purple-600">
+                                <Users className="w-5 h-5" />
+                            </div>
+                            <div className="text-2xl font-bold text-gray-800">
                                 {stats.totalSubmissions}
                             </div>
-                            <div className="text-xs text-slate-400">Lượt làm bài</div>
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Lượt làm bài</div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Recent Exams */}
-                <Card className="border-slate-700 bg-slate-800/50 mb-6">
-                    <CardHeader>
-                        <CardTitle className="text-white flex items-center gap-2">
-                            <BarChart3 className="w-5 h-5 text-blue-500" />
-                            Đề thi gần đây
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {recentExams.length > 0 ? (
-                            <div className="space-y-3">
-                                {recentExams.map((exam) => (
-                                    <Link
-                                        key={exam.id}
-                                        href={`/teacher/exams/${exam.id}/scores`}
-                                        className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30 border border-slate-700 hover:border-blue-500/50 transition-all"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${exam.status === "published"
-                                                ? "bg-green-500/10 text-green-400"
-                                                : "bg-yellow-500/10 text-yellow-400"
-                                                }`}>
-                                                {exam.status === "published" ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                {/* Recent Activity */}
+                <div className="grid md:grid-cols-2 gap-6">
+                    {/* Recent Exams List */}
+                    <Card className="border-gray-200 bg-white shadow-sm md:col-span-2">
+                        <CardHeader className="border-b border-gray-50 bg-gray-50/50">
+                            <CardTitle className="text-gray-800 flex items-center gap-2 text-base">
+                                <BarChart3 className="w-5 h-5 text-blue-600" />
+                                Đề thi gần đây
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            {recentExams.length > 0 ? (
+                                <div className="divide-y divide-gray-50">
+                                    {recentExams.map((exam) => (
+                                        <Link
+                                            key={exam.id}
+                                            href={`/teacher/exams/${exam.id}/scores`}
+                                            className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors group"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className={cn(
+                                                    "w-10 h-10 rounded-lg flex items-center justify-center border",
+                                                    exam.status === "published"
+                                                        ? "bg-green-50 text-green-600 border-green-100"
+                                                        : "bg-yellow-50 text-yellow-600 border-yellow-100"
+                                                )}>
+                                                    {exam.status === "published" ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">{exam.title}</p>
+                                                    <p className="text-xs text-gray-400">
+                                                        {new Date(exam.created_at).toLocaleDateString("vi-VN")}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="font-medium text-white">{exam.title}</p>
-                                                <p className="text-xs text-slate-400">
-                                                    {new Date(exam.created_at).toLocaleDateString("vi-VN")}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${exam.status === "published"
-                                            ? "bg-green-500/20 text-green-400"
-                                            : "bg-yellow-500/20 text-yellow-400"
-                                            }`}>
-                                            {exam.status === "published" ? "Đã publish" : "Bản nháp"}
-                                        </span>
+                                            <span className={cn(
+                                                "px-2.5 py-0.5 rounded-full text-xs font-medium border",
+                                                exam.status === "published"
+                                                    ? "bg-green-50 text-green-700 border-green-200"
+                                                    : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                            )}>
+                                                {exam.status === "published" ? "Đã phát hành" : "Bản nháp"}
+                                            </span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-10 px-4">
+                                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <FileText className="w-6 h-6 text-gray-300" />
+                                    </div>
+                                    <p className="text-gray-500 mb-4">Chưa có đề thi nào.</p>
+                                    <Link href="/teacher/exams/create">
+                                        <Button variant="outline" size="sm">Tạo đề đầu tiên</Button>
                                     </Link>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-center text-slate-500 py-8">
-                                Chưa có đề thi nào. <Link href="/teacher/exams/create" className="text-blue-400 hover:underline">Tạo đề đầu tiên →</Link>
-                            </p>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Link href="/teacher/exams/create">
-                        <Card className="border-slate-700 bg-gradient-to-br from-blue-900/50 to-purple-900/50 hover:border-blue-500 transition-all cursor-pointer">
-                            <CardContent className="p-6 flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-xl">
-                                    ➕
                                 </div>
-                                <div>
-                                    <p className="text-lg font-bold text-white">Tạo đề thi mới</p>
-                                    <p className="text-slate-400 text-sm">Upload PDF và nhập đáp án</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </Link>
-
-                    <Link href="/resources/upload">
-                        <Card className="border-slate-700 bg-gradient-to-br from-purple-900/50 to-pink-900/50 hover:border-purple-500 transition-all cursor-pointer">
-                            <CardContent className="p-6 flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xl">
-                                    📤
-                                </div>
-                                <div>
-                                    <p className="text-lg font-bold text-white">Upload tài liệu</p>
-                                    <p className="text-slate-400 text-sm">Chia sẻ tài liệu cho nhóm</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </Link>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </div>

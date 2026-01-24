@@ -14,7 +14,12 @@ import {
     Target,
     Trophy,
     ArrowRight,
-    AlertTriangle
+    AlertTriangle,
+    ChevronLeft,
+    ChevronRight,
+    CheckCircle2,
+    Circle,
+    Flag
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -71,7 +76,7 @@ export default function ArenaBattlePage() {
             .select("id")
             .eq("arena_id", arenaId)
             .eq("student_id", user.id)
-            .maybeSingle()  // Use maybeSingle to avoid 406 when no row exists
+            .maybeSingle()
 
         if (existingResult) {
             setAlreadySubmitted(true)
@@ -105,10 +110,9 @@ export default function ArenaBattlePage() {
         setArena(arenaData)
         setTimeLeft(arenaData.duration * 60)
 
-        // Shuffle options for a question (keep track of correct answer)
+        // Shuffle options for a question
         const shuffleOptions = (q: Question): Question => {
             const letters = ["A", "B", "C", "D"]
-            const originalIndex = letters.indexOf(q.correct_answer)
 
             // Create array with original indices
             const optionsWithIndex = q.options.map((opt, idx) => ({
@@ -128,7 +132,6 @@ export default function ArenaBattlePage() {
             return {
                 ...q,
                 options: optionsWithIndex.map((o, idx) => {
-                    // Replace letter prefix with new letter
                     const newLetter = letters[idx]
                     return o.text.replace(/^[A-D]\./, `${newLetter}.`)
                 }),
@@ -136,15 +139,11 @@ export default function ArenaBattlePage() {
             }
         }
 
-        // Fetch random questions from question bank
-        // Get questions by difficulty (10 per level for 40 total)
-        const questionsPerLevel = Math.floor(arenaData.total_questions / 4)
-
         const { data: questionsData, error: questionsError } = await supabase
             .from("questions")
             .select("id, content, options, correct_answer, difficulty")
             .eq("subject", arenaData.subject)
-            .limit(arenaData.total_questions * 2)  // Fetch more to allow random selection
+            .limit(arenaData.total_questions * 2)
 
         if (questionsError) {
             console.error("Error fetching questions:", questionsError)
@@ -154,7 +153,7 @@ export default function ArenaBattlePage() {
             // Shuffle and limit questions
             const shuffled = questionsData.sort(() => Math.random() - 0.5)
             const selected = shuffled.slice(0, arenaData.total_questions)
-            // Sort by difficulty and shuffle options
+            // Sort by difficulty
             const sorted = selected.sort((a: Question, b: Question) => a.difficulty - b.difficulty)
             setQuestions(sorted.map(shuffleOptions))
         }
@@ -228,7 +227,6 @@ export default function ArenaBattlePage() {
 
             if (error) throw error
 
-            // Redirect to results
             router.push(`/arena/${arenaId}/result`)
         } catch (err) {
             console.error("Submit error:", err)
@@ -251,10 +249,10 @@ export default function ArenaBattlePage() {
     const getDifficultyColor = (difficulty: number) => {
         const colors = [
             "",
-            "text-green-400",
-            "text-yellow-400",
-            "text-orange-400",
-            "text-red-400"
+            "text-green-600 bg-green-50 border-green-200",
+            "text-yellow-600 bg-yellow-50 border-yellow-200",
+            "text-orange-600 bg-orange-50 border-orange-200",
+            "text-red-600 bg-red-50 border-red-200"
         ]
         return colors[difficulty] || ""
     }
@@ -263,25 +261,27 @@ export default function ArenaBattlePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
 
     if (alreadySubmitted) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 flex items-center justify-center p-4">
-                <Card className="w-full max-w-md border-slate-700 bg-slate-800/50">
-                    <CardContent className="p-6 text-center">
-                        <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-                        <h2 className="text-xl font-bold text-white mb-2">Bạn đã tham gia đợt thi này</h2>
-                        <p className="text-slate-400 mb-6">Mỗi người chỉ được tham gia 1 lần</p>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <Card className="w-full max-w-md bg-white shadow-xl">
+                    <CardContent className="p-8 text-center">
+                        <div className="w-20 h-20 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Trophy className="w-10 h-10 text-yellow-600" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Bạn đã hoàn thành bài thi!</h2>
+                        <p className="text-gray-500 mb-8">Kết quả của bạn đã được ghi nhận.</p>
                         <Button
                             onClick={() => router.push(`/arena/${arenaId}/result`)}
-                            className="bg-gradient-to-r from-purple-600 to-pink-600"
+                            className="w-full bg-blue-600 hover:bg-blue-700"
                         >
-                            Xem kết quả
+                            Xem kết quả chi tiết
                         </Button>
                     </CardContent>
                 </Card>
@@ -291,18 +291,19 @@ export default function ArenaBattlePage() {
 
     if (!arena || questions.length === 0) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 flex items-center justify-center p-4">
-                <Card className="w-full max-w-md border-slate-700 bg-slate-800/50">
-                    <CardContent className="p-6 text-center">
-                        <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-                        <h2 className="text-xl font-bold text-white mb-2">Không có câu hỏi</h2>
-                        <p className="text-slate-400 mb-6">Ngân hàng câu hỏi chưa có đủ câu hỏi cho môn này</p>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <Card className="w-full max-w-md bg-white shadow-xl">
+                    <CardContent className="p-8 text-center">
+                        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <AlertTriangle className="w-10 h-10 text-red-500" />
+                        </div>
+                        <h2 className="text-xl font-bold text-gray-800 mb-2">Không tìm thấy câu hỏi</h2>
+                        <p className="text-gray-500 mb-8">Hệ thống chưa có đủ dữ liệu câu hỏi cho môn thi này.</p>
                         <Button
                             onClick={() => router.push("/arena")}
                             variant="outline"
-                            className="border-slate-600 text-slate-400"
                         >
-                            Quay lại
+                            Quay lại Đấu trường
                         </Button>
                     </CardContent>
                 </Card>
@@ -313,32 +314,37 @@ export default function ArenaBattlePage() {
     const currentQuestion = questions[currentIndex]
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 flex flex-col">
+        <div className="min-h-screen bg-gray-50 flex flex-col">
             {/* Header */}
-            <header className="border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-50">
-                <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+            <header className="bg-white border-b border-gray-200 sticky top-0 z-50 h-16 shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <Swords className="w-5 h-5 text-purple-400" />
-                        <span className="font-semibold text-white">{arena.name}</span>
+                        <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+                            <Swords className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <span className="font-bold text-gray-800 block text-sm md:text-base">{arena.name}</span>
+                            <span className="text-xs text-gray-500 md:hidden">
+                                {answeredCount}/{questions.length} câu
+                            </span>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-4">
-                        {/* Progress */}
-                        <div className="flex items-center gap-2">
-                            <Target className="w-4 h-4 text-slate-400" />
-                            <span className="text-sm text-slate-400">
-                                {answeredCount}/{questions.length}
+                        <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-full border border-gray-100">
+                            <Target className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm font-medium text-gray-600">
+                                Đã làm: <span className="text-blue-600">{answeredCount}</span>/{questions.length}
                             </span>
                         </div>
 
-                        {/* Timer */}
                         <div className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono font-bold",
+                            "flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono font-bold border",
                             timeLeft <= 60
-                                ? "bg-red-500/20 text-red-400 animate-pulse"
+                                ? "bg-red-50 border-red-100 text-red-600 animate-pulse"
                                 : timeLeft <= 300
-                                    ? "bg-yellow-500/20 text-yellow-400"
-                                    : "bg-purple-500/10 text-purple-400"
+                                    ? "bg-yellow-50 border-yellow-100 text-yellow-600"
+                                    : "bg-white border-gray-200 text-blue-600"
                         )}>
                             <Clock className="w-4 h-4" />
                             {formatTime(timeLeft)}
@@ -348,13 +354,13 @@ export default function ArenaBattlePage() {
                             onClick={() => handleSubmit(false)}
                             disabled={submitting}
                             size="sm"
-                            className="bg-gradient-to-r from-purple-600 to-pink-600"
+                            className="bg-green-600 hover:bg-green-700 shadow-md shadow-green-200 hidden md:flex"
                         >
                             {submitting ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                                 <>
-                                    <Send className="w-4 h-4 mr-1" />
+                                    <Send className="w-4 h-4 mr-2" />
                                     Nộp bài
                                 </>
                             )}
@@ -364,128 +370,170 @@ export default function ArenaBattlePage() {
             </header>
 
             {/* Main Content */}
-            <div className="flex-1 max-w-4xl mx-auto w-full p-4 md:p-6 grid md:grid-cols-[1fr_200px] gap-6">
-                {/* Question */}
-                <Card className="border-slate-700 bg-slate-800/50">
-                    <CardContent className="p-6">
-                        {/* Question Header */}
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold">
-                                {currentIndex + 1}
+            <div className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 grid md:grid-cols-[1fr_240px] gap-6">
+                {/* Question Area */}
+                <div className="flex flex-col gap-6">
+                    <Card className="border-gray-200 shadow-sm bg-white overflow-hidden">
+                        <CardContent className="p-0">
+                            {/* Question Header */}
+                            <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="px-3 py-1 rounded-md bg-white border border-gray-200 shadow-sm font-bold text-gray-700">
+                                        Câu {currentIndex + 1}
+                                    </div>
+                                    <span className={cn("px-2 py-1 rounded text-xs font-medium border", getDifficultyColor(currentQuestion.difficulty))}>
+                                        {getDifficultyLabel(currentQuestion.difficulty)}
+                                    </span>
+                                </div>
                             </div>
-                            <div>
-                                <span className={cn("text-sm font-medium", getDifficultyColor(currentQuestion.difficulty))}>
-                                    {"⭐".repeat(currentQuestion.difficulty)} {getDifficultyLabel(currentQuestion.difficulty)}
-                                </span>
+
+                            {/* Question Content */}
+                            <div className="p-6 md:p-8">
+                                <div className="text-gray-800 text-lg leading-relaxed mb-8">
+                                    <MathRenderer content={currentQuestion.content} />
+                                </div>
+
+                                <div className="grid gap-3">
+                                    {currentQuestion.options.map((option, idx) => {
+                                        const optionLetter = ["A", "B", "C", "D"][idx]
+                                        const isSelected = answers[currentQuestion.id] === optionLetter
+
+                                        return (
+                                            <button
+                                                key={idx}
+                                                onClick={() => handleAnswer(currentQuestion.id, optionLetter)}
+                                                className={cn(
+                                                    "w-full p-4 rounded-xl border-2 text-left transition-all relative group",
+                                                    isSelected
+                                                        ? "border-blue-500 bg-blue-50 text-blue-900"
+                                                        : "border-gray-200 hover:border-blue-300 hover:bg-gray-50 text-gray-700"
+                                                )}
+                                            >
+                                                <div className="flex items-start gap-4">
+                                                    <div className={cn(
+                                                        "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center font-bold transition-colors",
+                                                        isSelected
+                                                            ? "bg-blue-500 text-white"
+                                                            : "bg-gray-100 text-gray-500 group-hover:bg-blue-100 group-hover:text-blue-600"
+                                                    )}>
+                                                        {optionLetter}
+                                                    </div>
+                                                    <div className="flex-1 pt-1">
+                                                        <MathRenderer content={option.replace(/^[A-D]\.\s*/, "")} className="inline" />
+                                                    </div>
+                                                </div>
+                                                {isSelected && (
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-500">
+                                                        <CheckCircle2 className="w-5 h-5" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Navigation Buttons */}
+                    <div className="flex items-center justify-between">
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentIndex(prev => prev - 1)}
+                            disabled={currentIndex === 0}
+                            className="bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                        >
+                            <ChevronLeft className="w-4 h-4 mr-2" />
+                            Câu trước
+                        </Button>
+
+                        <div className="hidden md:block text-sm text-gray-400">
+                            Câu {currentIndex + 1} / {questions.length}
                         </div>
 
-                        {/* Question Content */}
-                        <div className="text-white text-lg mb-6 leading-relaxed">
-                            <MathRenderer content={currentQuestion.content} />
-                        </div>
-
-                        {/* Options */}
-                        <div className="space-y-3">
-                            {currentQuestion.options.map((option, idx) => {
-                                const optionLetter = ["A", "B", "C", "D"][idx]
-                                const isSelected = answers[currentQuestion.id] === optionLetter
-
-                                return (
-                                    <button
-                                        key={idx}
-                                        onClick={() => handleAnswer(currentQuestion.id, optionLetter)}
-                                        className={cn(
-                                            "w-full p-4 rounded-xl border-2 text-left transition-all",
-                                            isSelected
-                                                ? "border-purple-500 bg-purple-500/10 text-white"
-                                                : "border-slate-600 hover:border-slate-500 text-slate-300"
-                                        )}
-                                    >
-                                        <span className={cn(
-                                            "inline-flex w-8 h-8 items-center justify-center rounded-lg mr-3 font-bold",
-                                            isSelected
-                                                ? "bg-purple-500 text-white"
-                                                : "bg-slate-700 text-slate-400"
-                                        )}>
-                                            {optionLetter}
-                                        </span>
-                                        <MathRenderer content={option.replace(/^[A-D]\.\s*/, "")} className="inline" />
-                                    </button>
-                                )
-                            })}
-                        </div>
-
-                        {/* Navigation */}
-                        <div className="flex items-center justify-between mt-6">
+                        {currentIndex < questions.length - 1 ? (
                             <Button
-                                variant="outline"
-                                disabled={currentIndex === 0}
-                                onClick={() => setCurrentIndex(prev => prev - 1)}
-                                className="border-slate-600 text-slate-400"
+                                onClick={() => setCurrentIndex(prev => prev + 1)}
+                                className="bg-blue-600 hover:bg-blue-700"
                             >
-                                Câu trước
+                                Câu sau
+                                <ChevronRight className="w-4 h-4 ml-2" />
                             </Button>
+                        ) : (
+                            <Button
+                                onClick={() => handleSubmit(false)}
+                                disabled={submitting}
+                                className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-200"
+                            >
+                                Nộp bài
+                                <Send className="w-4 h-4 ml-2" />
+                            </Button>
+                        )}
+                    </div>
+                </div>
 
-                            {currentIndex < questions.length - 1 ? (
-                                <Button
-                                    onClick={() => setCurrentIndex(prev => prev + 1)}
-                                    className="bg-gradient-to-r from-purple-600 to-pink-600"
-                                >
-                                    Câu sau
-                                    <ArrowRight className="w-4 h-4 ml-1" />
-                                </Button>
-                            ) : (
-                                <Button
-                                    onClick={() => handleSubmit(false)}
-                                    disabled={submitting}
-                                    className="bg-gradient-to-r from-green-600 to-emerald-600"
-                                >
-                                    Nộp bài
-                                    <Send className="w-4 h-4 ml-1" />
-                                </Button>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Question Navigator */}
+                {/* Question Navigator Sidebar */}
                 <div className="hidden md:block">
-                    <Card className="border-slate-700 bg-slate-800/50 sticky top-20">
+                    <Card className="border-gray-200 shadow-sm bg-white sticky top-20">
                         <CardContent className="p-4">
-                            <h3 className="text-sm font-medium text-slate-400 mb-3">Danh sách câu hỏi</h3>
-                            <div className="grid grid-cols-5 gap-2">
-                                {questions.map((q, idx) => (
-                                    <button
-                                        key={q.id}
-                                        onClick={() => setCurrentIndex(idx)}
-                                        className={cn(
-                                            "w-8 h-8 rounded-lg text-xs font-bold transition-colors",
-                                            currentIndex === idx
-                                                ? "bg-purple-600 text-white"
-                                                : answers[q.id]
-                                                    ? "bg-green-600 text-white"
-                                                    : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                                        )}
-                                    >
-                                        {idx + 1}
-                                    </button>
-                                ))}
+                            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                                <Flag className="w-4 h-4" />
+                                Tổng quan
+                            </h3>
+
+                            <div className="grid grid-cols-5 gap-2 max-h-[calc(100vh-250px)] overflow-y-auto custom-scrollbar pr-1">
+                                {questions.map((q, idx) => {
+                                    const isAnswered = !!answers[q.id]
+                                    const isCurrent = currentIndex === idx
+
+                                    return (
+                                        <button
+                                            key={q.id}
+                                            onClick={() => setCurrentIndex(idx)}
+                                            className={cn(
+                                                "aspect-square rounded-lg text-sm font-bold transition-all flex items-center justify-center border",
+                                                isCurrent
+                                                    ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-200"
+                                                    : isAnswered
+                                                        ? "bg-green-50 text-green-700 border-green-200"
+                                                        : "bg-white text-gray-400 border-gray-100 hover:border-blue-300"
+                                            )}
+                                        >
+                                            {idx + 1}
+                                        </button>
+                                    )
+                                })}
                             </div>
 
-                            <div className="mt-4 pt-4 border-t border-slate-700">
-                                <div className="flex items-center gap-2 text-xs text-slate-500">
-                                    <div className="w-3 h-3 rounded bg-green-600" />
+                            <div className="mt-6 pt-4 border-t border-gray-100 space-y-2">
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <div className="w-3 h-3 rounded bg-blue-600" />
+                                    <span>Đang chọn</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <div className="w-3 h-3 rounded bg-green-50 border border-green-200" />
                                     <span>Đã trả lời</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                                    <div className="w-3 h-3 rounded bg-slate-700" />
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <div className="w-3 h-3 rounded bg-white border border-gray-200" />
                                     <span>Chưa trả lời</span>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
+            </div>
+
+            {/* Mobile Submit FAB */}
+            <div className="md:hidden fixed bottom-6 right-6 z-50">
+                <Button
+                    onClick={() => handleSubmit(false)}
+                    disabled={submitting}
+                    size="icon"
+                    className="h-14 w-14 rounded-full bg-green-600 hover:bg-green-700 shadow-lg shadow-green-300"
+                >
+                    <Send className="w-6 h-6 ml-1" />
+                </Button>
             </div>
         </div>
     )

@@ -86,8 +86,8 @@ export function LiveParticipants({ examId, className }: LiveParticipantsProps) {
         switch (status) {
             case "active": return "bg-green-500"
             case "submitted": return "bg-blue-500"
-            case "left": return "bg-slate-500"
-            default: return "bg-slate-500"
+            case "left": return "bg-gray-400"
+            default: return "bg-gray-400"
         }
     }
 
@@ -102,12 +102,12 @@ export function LiveParticipants({ examId, className }: LiveParticipantsProps) {
 
     if (loading) {
         return (
-            <div className={cn("bg-slate-800/50 rounded-xl p-4 border border-slate-700", className)}>
+            <div className={cn("bg-white rounded-xl p-4 border border-gray-200 shadow-sm", className)}>
                 <div className="animate-pulse">
-                    <div className="h-4 bg-slate-700 rounded w-1/2 mb-3"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
                     <div className="space-y-2">
-                        <div className="h-8 bg-slate-700 rounded"></div>
-                        <div className="h-8 bg-slate-700 rounded"></div>
+                        <div className="h-8 bg-gray-100 rounded"></div>
+                        <div className="h-8 bg-gray-100 rounded"></div>
                     </div>
                 </div>
             </div>
@@ -115,60 +115,62 @@ export function LiveParticipants({ examId, className }: LiveParticipantsProps) {
     }
 
     return (
-        <div className={cn("bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden", className)}>
+        <div className={cn("bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden", className)}>
             {/* Header */}
-            <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/80">
+            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
                 <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-white flex items-center gap-2">
-                        <Users className="w-4 h-4" />
+                    <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-blue-600" />
                         Học sinh tham gia
                     </h3>
-                    <div className="flex items-center gap-3 text-xs">
-                        <span className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                            <span className="text-slate-400">{activeCount} đang thi</span>
+                    <div className="flex items-center gap-3 text-xs font-medium">
+                        <span className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-green-500 shadow-sm"></span>
+                            <span className="text-gray-600">{activeCount} đang thi</span>
                         </span>
-                        <span className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                            <span className="text-slate-400">{submittedCount} đã nộp</span>
+                        <span className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-blue-500 shadow-sm"></span>
+                            <span className="text-gray-600">{submittedCount} đã nộp</span>
                         </span>
                     </div>
                 </div>
             </div>
 
             {/* Participants List */}
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-64 overflow-y-auto custom-scrollbar">
                 {participants.length === 0 ? (
-                    <div className="p-6 text-center text-slate-400">
-                        <User className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <div className="p-8 text-center text-gray-400">
+                        <User className="w-8 h-8 mx-auto mb-2 opacity-30" />
                         <p className="text-sm">Chưa có học sinh tham gia</p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-slate-700/50">
+                    <div className="divide-y divide-gray-100">
                         {participants.map((participant) => (
                             <div
                                 key={participant.id}
-                                className="px-4 py-2 flex items-center justify-between hover:bg-slate-700/30 transition-colors"
+                                className="px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
                             >
                                 <div className="flex items-center gap-3">
-                                    <span className={cn(
-                                        "w-2 h-2 rounded-full",
-                                        getStatusColor(participant.status)
-                                    )}></span>
-                                    <span className="text-sm text-white">
+                                    <div className="relative">
+                                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm", getStatusColor(participant.status))}>
+                                            {participant.student_name ? participant.student_name.charAt(0) : "U"}
+                                        </div>
+                                        <div className={cn("absolute -bottom-0.5 -right-0.5 w-3 h-3 border-2 border-white rounded-full bg-green-500", participant.status !== 'active' && "hidden")} />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-700">
                                         {participant.student_name || "Học sinh"}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-slate-400">
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
                                     <span className={cn(
-                                        "px-2 py-0.5 rounded-full",
-                                        participant.status === "active" && "bg-green-500/20 text-green-400",
-                                        participant.status === "submitted" && "bg-blue-500/20 text-blue-400",
-                                        participant.status === "left" && "bg-slate-500/20 text-slate-400"
+                                        "px-2 py-0.5 rounded-full font-medium",
+                                        participant.status === "active" && "bg-green-100 text-green-700",
+                                        participant.status === "submitted" && "bg-blue-100 text-blue-700",
+                                        participant.status === "left" && "bg-gray-100 text-gray-600"
                                     )}>
                                         {getStatusText(participant.status)}
                                     </span>
-                                    <span className="flex items-center gap-1">
+                                    <span className="flex items-center gap-1 text-gray-400">
                                         <Clock className="w-3 h-3" />
                                         {formatTime(participant.started_at)}
                                     </span>

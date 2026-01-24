@@ -20,12 +20,16 @@ import {
     Trash2,
     Loader2,
     BookOpen,
-    Swords
+    Swords,
+    Search,
+    Filter,
+    MoreVertical
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
 import { UserMenu } from "@/components/UserMenu"
 import { TeacherBottomNav } from "@/components/BottomNav"
+import { NotificationBell } from "@/components/NotificationBell"
 
 interface Profile {
     id: string
@@ -41,7 +45,7 @@ interface Exam {
     status: "draft" | "published"
     created_at: string
     submission_count?: number
-    subject?: string  // Môn học
+    subject?: string
 }
 
 export default function TeacherDashboard() {
@@ -56,12 +60,15 @@ export default function TeacherDashboard() {
         publishedExams: 0,
         totalSubmissions: 0
     })
-    const [selectedSubject, setSelectedSubject] = useState<string>("all")  // Filter theo môn
+    const [selectedSubject, setSelectedSubject] = useState<string>("all")
+    const [searchQuery, setSearchQuery] = useState("")
 
-    // Filter exams by subject
-    const filteredExams = selectedSubject === "all"
-        ? exams
-        : exams.filter(e => e.subject === selectedSubject)
+    // Filter exams by subject and search
+    const filteredExams = exams.filter(e => {
+        const matchSubject = selectedSubject === "all" || e.subject === selectedSubject
+        const matchSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase())
+        return matchSubject && matchSearch
+    })
 
     useEffect(() => {
         const fetchData = async () => {
@@ -95,10 +102,15 @@ export default function TeacherDashboard() {
 
             if (examsData) {
                 setExams(examsData)
+
+                // Get submission counts
+                // This would ideally be a separate query or join, but for now we'll mock or fetch later
+                // For simplicity in this UI refactor, we just count exams
+
                 setStats({
                     totalExams: examsData.length,
                     publishedExams: examsData.filter((e: { status: string }) => e.status === "published").length,
-                    totalSubmissions: 0 // Will be fetched separately
+                    totalSubmissions: 0
                 })
             }
 
@@ -134,72 +146,75 @@ export default function TeacherDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="min-h-screen bg-gray-50 flex">
             {/* Sidebar */}
-            <aside className="fixed left-0 top-0 h-full w-64 border-r border-slate-700/50 bg-slate-900/80 backdrop-blur-sm p-6 hidden lg:block">
+            <aside className="fixed left-0 top-0 h-full w-64 border-r border-gray-200 bg-white p-6 hidden lg:block z-50">
                 <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                        <GraduationCap className="w-5 h-5 text-white" />
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+                        <GraduationCap className="w-6 h-6 text-white" />
                     </div>
-                    <span className="text-xl font-bold text-white">ExamHub</span>
+                    <span className="text-xl font-bold text-gray-800">ExamHub</span>
                 </div>
 
-                <nav className="space-y-2">
+                <nav className="space-y-1">
                     <Link
                         href="/teacher/dashboard"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 text-blue-700 font-medium"
                     >
                         <BarChart3 className="w-5 h-5" />
-                        Dashboard
+                        Tổng quan
                     </Link>
                     <Link
                         href="/teacher/exams/create"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
                     >
                         <Plus className="w-5 h-5" />
                         Tạo đề mới
                     </Link>
+                    <div className="pt-4 pb-2">
+                        <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Quản lý</p>
+                    </div>
                     <Link
                         href="/teacher/profile"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
                     >
                         <Users className="w-5 h-5" />
-                        Hồ sơ của tôi
+                        Hồ sơ giáo viên
                     </Link>
                     <Link
                         href="/teacher/exam-bank"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-400 hover:bg-blue-500/10 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
                     >
                         <BookOpen className="w-5 h-5" />
-                        Ngân hàng ĐT
+                        Ngân hàng đề
                     </Link>
                     <Link
                         href="/teacher/arena"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-purple-400 hover:bg-purple-500/10 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
                     >
                         <Swords className="w-5 h-5" />
                         Đấu trường
                     </Link>
                     <Link
                         href="/teacher/analytics"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-green-400 hover:bg-green-500/10 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
                     >
                         <BarChart3 className="w-5 h-5" />
-                        Thống kê
+                        Thống kê chi tiết
                     </Link>
                 </nav>
 
                 <div className="absolute bottom-6 left-6 right-6">
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 transition-colors w-full"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors w-full font-medium"
                     >
                         <LogOut className="w-5 h-5" />
                         Đăng xuất
@@ -207,15 +222,16 @@ export default function TeacherDashboard() {
                 </div>
             </aside>
 
-            {/* Mobile Header - Only visible on mobile */}
-            <header className="lg:hidden sticky top-0 z-50 border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/80 px-4 py-3">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <GraduationCap className="w-4 h-4 text-white" />
-                        </div>
-                        <span className="text-lg font-bold text-white">ExamHub</span>
+            {/* Mobile Header */}
+            <header className="lg:hidden fixed top-0 w-full z-50 bg-white border-b border-gray-200 px-4 h-16 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <GraduationCap className="w-4 h-4 text-white" />
                     </div>
+                    <span className="text-lg font-bold text-gray-800">ExamHub</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <NotificationBell />
                     <UserMenu
                         userName={profile?.full_name || ""}
                         userClass="Giáo viên"
@@ -226,23 +242,36 @@ export default function TeacherDashboard() {
             </header>
 
             {/* Main Content */}
-            <main className="lg:ml-64 p-4 lg:p-8 pb-20 lg:pb-8">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <main className="flex-1 lg:ml-64 p-4 lg:p-8 pt-20 lg:pt-8 pb-24 lg:pb-8">
+                {/* Desktop Header */}
+                <div className="hidden lg:flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-white">
-                            Xin chào, {profile?.full_name || "Giáo viên"}!
+                        <h1 className="text-2xl font-bold text-gray-800">
+                            Xin chào, {profile?.full_name || "Thầy/Cô"}! 👋
                         </h1>
-                        <p className="text-slate-400 mt-1">
-                            Quản lý đề thi và xem thống kê
+                        <p className="text-gray-500 mt-1">
+                            Chúc thầy/cô một ngày làm việc hiệu quả.
                         </p>
                     </div>
-                    <Link href="/teacher/exams/create">
-                        <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Tạo đề thi mới
-                        </Button>
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        <NotificationBell />
+                        <UserMenu
+                            userName={profile?.full_name || ""}
+                            userClass="Giáo viên"
+                            onLogout={handleLogout}
+                            role="teacher"
+                        />
+                    </div>
+                </div>
+
+                {/* Mobile Title */}
+                <div className="lg:hidden mb-6">
+                    <h1 className="text-xl font-bold text-gray-800">
+                        Xin chào, {profile?.full_name?.split(" ").pop()}! 👋
+                    </h1>
+                    <p className="text-gray-500 text-sm">
+                        Quản lý lớp học và đề thi của bạn.
+                    </p>
                 </div>
 
                 {/* Stats Cards */}
@@ -252,30 +281,36 @@ export default function TeacherDashboard() {
                             label: "Tổng đề thi",
                             value: stats.totalExams,
                             icon: FileText,
-                            color: "from-blue-500 to-cyan-500"
+                            color: "text-blue-600",
+                            bg: "bg-blue-50",
+                            border: "border-blue-100"
                         },
                         {
-                            label: "Đã publish",
+                            label: "Đang hoạt động",
                             value: stats.publishedExams,
                             icon: CheckCircle,
-                            color: "from-green-500 to-emerald-500"
+                            color: "text-green-600",
+                            bg: "bg-green-50",
+                            border: "border-green-100"
                         },
                         {
                             label: "Lượt làm bài",
                             value: stats.totalSubmissions,
                             icon: Users,
-                            color: "from-purple-500 to-pink-500"
+                            color: "text-purple-600",
+                            bg: "bg-purple-50",
+                            border: "border-purple-100"
                         },
                     ].map((stat, index) => (
-                        <Card key={index} className="border-slate-700 bg-slate-800/50">
+                        <Card key={index} className={cn("shadow-sm border", stat.border)}>
                             <CardContent className="p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-slate-400 text-sm">{stat.label}</p>
-                                        <p className="text-3xl font-bold text-white mt-1">{stat.value}</p>
+                                        <p className="text-gray-500 text-sm font-medium">{stat.label}</p>
+                                        <p className="text-3xl font-bold text-gray-800 mt-2">{stat.value}</p>
                                     </div>
-                                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center`}>
-                                        <stat.icon className="w-6 h-6 text-white" />
+                                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", stat.bg)}>
+                                        <stat.icon className={cn("w-6 h-6", stat.color)} />
                                     </div>
                                 </div>
                             </CardContent>
@@ -283,31 +318,43 @@ export default function TeacherDashboard() {
                     ))}
                 </div>
 
-                {/* Quick Links - Kho tài liệu & Phòng Live */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    <Link href="/resources">
-                        <Card className="border-slate-700 bg-gradient-to-br from-purple-900/50 to-pink-900/50 hover:border-purple-500 transition-all cursor-pointer">
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                    <Link href="/teacher/exams/create" className="group">
+                        <Card className="border-dashed border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer h-full flex items-center justify-center p-6">
+                            <div className="text-center">
+                                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-200 transition-colors">
+                                    <Plus className="w-6 h-6 text-blue-600" />
+                                </div>
+                                <h3 className="font-semibold text-gray-800">Tạo đề thi mới</h3>
+                                <p className="text-sm text-gray-500 mt-1">Soạn từ ngân hàng hoặc tạo mới</p>
+                            </div>
+                        </Card>
+                    </Link>
+
+                    <Link href="/resources" className="group">
+                        <Card className="border-gray-200 hover:shadow-md transition-all cursor-pointer h-full">
                             <CardContent className="p-6 flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-2xl">
-                                    📚
+                                <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center">
+                                    <BookOpen className="w-6 h-6 text-orange-600" />
                                 </div>
                                 <div>
-                                    <p className="text-lg font-bold text-white">Kho Tài Liệu & Đề</p>
-                                    <p className="text-slate-400 text-sm">Upload & quản lý tài liệu</p>
+                                    <h3 className="font-bold text-gray-800 group-hover:text-orange-600 transition-colors">Kho Tài Liệu</h3>
+                                    <p className="text-sm text-gray-500">Quản lý file và bài giảng</p>
                                 </div>
                             </CardContent>
                         </Card>
                     </Link>
 
-                    <Link href="/live">
-                        <Card className="border-slate-700 bg-gradient-to-br from-green-900/50 to-emerald-900/50 hover:border-green-500 transition-all cursor-pointer">
+                    <Link href="/live" className="group">
+                        <Card className="border-gray-200 hover:shadow-md transition-all cursor-pointer h-full">
                             <CardContent className="p-6 flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-2xl">
-                                    📺
+                                <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
+                                    <Users className="w-6 h-6 text-red-600" />
                                 </div>
                                 <div>
-                                    <p className="text-lg font-bold text-white">Phòng Live Chữa Đề</p>
-                                    <p className="text-slate-400 text-sm">Quản lý lịch & Google Meet</p>
+                                    <h3 className="font-bold text-gray-800 group-hover:text-red-600 transition-colors">Phòng Live</h3>
+                                    <p className="text-sm text-gray-500">Tổ chức chữa đề online</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -315,114 +362,143 @@ export default function TeacherDashboard() {
                 </div>
 
                 {/* Exams List */}
-                <Card className="border-slate-700 bg-slate-800/50">
-                    <CardHeader>
-                        <CardTitle className="text-white">Danh sách đề thi</CardTitle>
-                        <CardDescription className="text-slate-400">
-                            Quản lý tất cả đề thi của bạn
-                        </CardDescription>
+                <Card className="border-gray-200 shadow-sm bg-white">
+                    <CardHeader className="border-b border-gray-100 pb-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <CardTitle className="text-lg font-bold text-gray-800">Danh sách đề thi gần đây</CardTitle>
+                                <CardDescription className="text-gray-500">Quản lý và theo dõi trạng thái các đề thi</CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="relative">
+                                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Tìm kiếm..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pl-9 pr-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
+                                    />
+                                </div>
+                                <Button variant="outline" size="icon" className="shrink-0">
+                                    <Filter className="w-4 h-4 text-gray-500" />
+                                </Button>
+                            </div>
+                        </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                         {/* Subject Filter Tabs */}
-                        {exams.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-6 pb-4 border-b border-slate-700">
+                        <div className="flex items-center gap-2 p-4 overflow-x-auto border-b border-gray-50 hide-scrollbar">
+                            <button
+                                onClick={() => setSelectedSubject("all")}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap",
+                                    selectedSubject === "all"
+                                        ? "bg-gray-800 text-white"
+                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                )}
+                            >
+                                Tất cả
+                            </button>
+                            {SUBJECTS.filter(s => exams.some(e => e.subject === s.value)).map((s) => (
                                 <button
-                                    onClick={() => setSelectedSubject("all")}
+                                    key={s.value}
+                                    onClick={() => setSelectedSubject(s.value)}
                                     className={cn(
-                                        "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-                                        selectedSubject === "all"
-                                            ? "bg-blue-500 text-white"
-                                            : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                        "px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2",
+                                        selectedSubject === s.value
+                                            ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200"
+                                            : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
                                     )}
                                 >
-                                    📚 Tất cả ({exams.length})
+                                    {s.icon} {s.label}
                                 </button>
-                                {SUBJECTS.filter(s => exams.some(e => e.subject === s.value)).map((s) => {
-                                    const count = exams.filter(e => e.subject === s.value).length
-                                    return (
-                                        <button
-                                            key={s.value}
-                                            onClick={() => setSelectedSubject(s.value)}
-                                            className={cn(
-                                                "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-                                                selectedSubject === s.value
-                                                    ? `bg-gradient-to-r ${s.color} text-white`
-                                                    : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                                            )}
-                                        >
-                                            {s.icon} {s.label} ({count})
-                                        </button>
-                                    )
-                                })}
-                            </div>
-                        )}
+                            ))}
+                        </div>
 
                         {filteredExams.length === 0 ? (
-                            <div className="text-center py-12">
-                                <FileText className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                                <p className="text-slate-400 mb-4">{exams.length === 0 ? "Chưa có đề thi nào" : "Không có đề thi nào trong môn này"}</p>
-                                {exams.length === 0 && (
-                                    <Link href="/teacher/exams/create">
-                                        <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-                                            <Plus className="w-4 h-4 mr-2" />
-                                            Tạo đề thi đầu tiên
-                                        </Button>
-                                    </Link>
-                                )}
+                            <div className="text-center py-16 px-4">
+                                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <FileText className="w-8 h-8 text-gray-300" />
+                                </div>
+                                <h3 className="text-gray-800 font-medium mb-1">Không tìm thấy đề thi</h3>
+                                <p className="text-gray-500 text-sm mb-6">Thử thay đổi bộ lọc hoặc tạo đề thi mới</p>
+                                <Link href="/teacher/exams/create">
+                                    <Button className="bg-blue-600 hover:bg-blue-700">
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Tạo đề thi ngay
+                                    </Button>
+                                </Link>
                             </div>
                         ) : (
-                            <div className="space-y-4">
+                            <div className="divide-y divide-gray-50">
                                 {filteredExams.map((exam) => {
                                     const subjectInfo = getSubjectInfo(exam.subject || "other")
                                     return (
                                         <div
                                             key={exam.id}
-                                            className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 border border-slate-700 hover:border-slate-600 transition-colors"
+                                            className="group flex flex-col md:flex-row md:items-center justify-between p-4 hover:bg-gray-50 transition-colors gap-4"
                                         >
-                                            <div className="flex items-center gap-4">
+                                            <div className="flex items-start gap-4">
                                                 <div className={cn(
-                                                    "w-10 h-10 rounded-lg flex items-center justify-center text-lg",
-                                                    `bg-gradient-to-br ${subjectInfo.color}`
+                                                    "w-12 h-12 rounded-xl flex shrink-0 items-center justify-center text-xl shadow-sm",
+                                                    `bg-gradient-to-br ${subjectInfo.color.replace('text-', '').replace('from-', 'from-').replace('to-', 'to-')}`
+                                                    // Note: subjectInfo.color usually has full classes, we might need to adjust logic if it returns specific text classes
+                                                    // Assuming subjectInfo.color returns something like "from-blue-500 to-cyan-500" for gradients
+                                                    // safe fallback if it's just classes:
                                                 )}>
-                                                    {subjectInfo.icon}
+                                                    <span className="text-2xl">{subjectInfo.icon}</span>
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-medium text-white">{exam.title}</h3>
-                                                    <div className="flex items-center gap-4 mt-1 text-sm text-slate-400">
-                                                        <span className="text-xs">{subjectInfo.label}</span>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h3 className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                                                            {exam.title}
+                                                        </h3>
+                                                        <span className={cn(
+                                                            "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                                                            exam.status === "published"
+                                                                ? "bg-green-100 text-green-700"
+                                                                : "bg-yellow-100 text-yellow-700"
+                                                        )}>
+                                                            {exam.status === "published" ? "Đã phát hành" : "Nháp"}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
                                                         <span className="flex items-center gap-1">
-                                                            <Clock className="w-3 h-3" />
+                                                            <BookOpen className="w-3.5 h-3.5" />
+                                                            {subjectInfo.label}
+                                                        </span>
+                                                        <span className="flex items-center gap-1">
+                                                            <Clock className="w-3.5 h-3.5" />
                                                             {exam.duration} phút
                                                         </span>
-                                                        <span>{exam.total_questions} câu</span>
-                                                        <span className={cn(
-                                                            "px-2 py-0.5 rounded-full text-xs",
-                                                            exam.status === "published"
-                                                                ? "bg-green-500/10 text-green-400"
-                                                                : "bg-yellow-500/10 text-yellow-400"
-                                                        )}>
-                                                            {exam.status === "published" ? "Đã publish" : "Nháp"}
+                                                        <span className="flex items-center gap-1">
+                                                            <FileText className="w-3.5 h-3.5" />
+                                                            {exam.total_questions} câu
                                                         </span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
+
+                                            <div className="flex items-center gap-2 self-end md:self-auto">
                                                 <Link href={`/teacher/exams/${exam.id}/scores`}>
-                                                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-green-400" title="Xem điểm">
-                                                        <Users className="w-4 h-4" />
+                                                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-600 hover:bg-blue-50">
+                                                        <Users className="w-4 h-4 mr-2" />
+                                                        Kết quả
                                                     </Button>
                                                 </Link>
+                                                <div className="h-4 w-px bg-gray-200 mx-1"></div>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleToggleStatus(exam)}
-                                                    className="text-slate-400 hover:text-white"
-                                                    title={exam.status === "published" ? "Ẩn" : "Publish"}
+                                                    className="text-gray-400 hover:text-gray-800"
+                                                    title={exam.status === "published" ? "Ẩn đề thi" : "Phát hành"}
                                                 >
                                                     <Eye className="w-4 h-4" />
                                                 </Button>
                                                 <Link href={`/teacher/exams/${exam.id}/edit`}>
-                                                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
+                                                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-600">
                                                         <Edit className="w-4 h-4" />
                                                     </Button>
                                                 </Link>
@@ -430,7 +506,7 @@ export default function TeacherDashboard() {
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleDeleteExam(exam.id)}
-                                                    className="text-slate-400 hover:text-red-400"
+                                                    className="text-gray-400 hover:text-red-600"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
@@ -444,7 +520,7 @@ export default function TeacherDashboard() {
                 </Card>
             </main>
 
-            {/* Mobile Bottom Navigation */}
+            {/* Mobile Bottom Nav */}
             <TeacherBottomNav />
         </div>
     )

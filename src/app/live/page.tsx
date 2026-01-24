@@ -1,8 +1,29 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Video,
+    Calendar,
+    Clock,
+    BookOpen,
+    ArrowLeft,
+    Plus,
+    Edit,
+    Trash2,
+    ExternalLink,
+    GraduationCap,
+    User,
+    X,
+    Save
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // Configuration - Change this to your actual Meet link
 const GOOGLE_MEET_LINK = "https://meet.google.com/jdd-gddy-een";
@@ -25,7 +46,6 @@ export default function LiveRoomPage() {
     const [formTime, setFormTime] = useState("");
     const [formTopic, setFormTopic] = useState("");
     const [formHost, setFormHost] = useState("");
-    const [mounted, setMounted] = useState(false);
 
     const router = useRouter();
 
@@ -35,16 +55,13 @@ export default function LiveRoomPage() {
         return createClient();
     }, []);
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
     // Call checkAuth and fetchSchedule when supabase is ready
     useEffect(() => {
         if (supabase) {
             checkAuth();
             fetchSchedule();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [supabase]);
 
     const checkAuth = async () => {
@@ -127,219 +144,276 @@ export default function LiveRoomPage() {
     const canEdit = user?.email === ADMIN_EMAIL;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-            {/* Header */}
-            <div className="bg-black/30 backdrop-blur-sm border-b border-white/10">
-                <div className="max-w-5xl mx-auto px-4 py-6">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => router.back()}
-                            className="text-white/60 hover:text-white"
-                        >
-                            ← Quay lại
-                        </button>
-                        <div>
-                            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                                📺 Phòng Học Trực Tuyến
-                            </h1>
-                            <p className="text-white/60 mt-1">
-                                Tham gia buổi chữa đề cùng nhóm
-                            </p>
+        <div className="min-h-screen bg-gray-50">
+            {/* Navigation */}
+            <nav className="border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between h-16 items-center">
+                        <div className="flex items-center gap-4">
+                            <Link href="/">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                        <GraduationCap className="w-5 h-5 text-white" />
+                                    </div>
+                                    <span className="text-xl font-bold text-gray-900">LuyenDe 2026</span>
+                                </div>
+                            </Link>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {user ? (
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <User className="w-4 h-4" />
+                                    <span>{user.name}</span>
+                                </div>
+                            ) : (
+                                <Link href="/login">
+                                    <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                                        Đăng nhập
+                                    </Button>
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>
-            </div>
+            </nav>
 
             <div className="max-w-5xl mx-auto px-4 py-8">
+                {/* Back button */}
+                <Link href="/student/dashboard" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6">
+                    <ArrowLeft className="w-4 h-4" />
+                    Quay lại Dashboard
+                </Link>
+
                 {/* Main Join Section */}
-                <div className="bg-gradient-to-br from-purple-600/30 to-pink-600/30 backdrop-blur-md rounded-3xl p-8 mb-8 text-center border border-white/10">
-                    <div className="text-6xl mb-4">🎥</div>
-                    <h2 className="text-2xl font-bold text-white mb-2">
-                        Buổi Live Chữa Đề
-                    </h2>
-                    <p className="text-white/70 mb-6">
-                        Click nút bên dưới để vào phòng học trực tuyến
-                    </p>
+                <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 mb-8 overflow-hidden shadow-lg">
+                    <CardContent className="p-8 md:p-12 text-center relative">
+                        <div className="absolute top-0 right-0 w-40 h-40 bg-blue-200/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="relative z-10">
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-xl shadow-blue-500/30">
+                                <Video className="w-10 h-10 text-white" />
+                            </div>
+                            <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                                Buổi Live Chữa Đề
+                            </h2>
+                            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                                Tham gia buổi học trực tuyến cùng giáo viên và bạn bè qua Google Meet
+                            </p>
 
-                    <button
-                        onClick={handleJoinMeet}
-                        className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-xl rounded-2xl hover:shadow-lg hover:shadow-green-500/30 transition-all transform hover:scale-105"
-                    >
-                        🔗 VÀO GOOGLE MEET
-                    </button>
-
-                    <p className="text-white/50 text-sm mt-4">
-                        Mở Google Meet trong tab mới
-                    </p>
-                </div>
+                            <Button
+                                onClick={handleJoinMeet}
+                                size="lg"
+                                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-lg px-10 py-6 h-auto shadow-xl shadow-green-500/30"
+                            >
+                                <ExternalLink className="w-5 h-5 mr-2" />
+                                Vào Google Meet
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 {/* Schedule */}
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 mb-8">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                            📅 Lịch Live Hàng Tuần
-                        </h3>
+                <Card className="border-gray-200 shadow-sm bg-white mb-8">
+                    <CardHeader className="border-b border-gray-50 flex flex-row items-center justify-between">
+                        <CardTitle className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-blue-600" />
+                            Lịch Live Hàng Tuần
+                        </CardTitle>
                         {canEdit && (
-                            <button
+                            <Button
                                 onClick={() => openEditor()}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700 text-white"
                             >
-                                ➕ Thêm lịch
-                            </button>
+                                <Plus className="w-4 h-4 mr-1" />
+                                Thêm lịch
+                            </Button>
                         )}
-                    </div>
-
-                    {schedule.length === 0 ? (
-                        <p className="text-white/50 text-center py-8">Chưa có lịch nào</p>
-                    ) : (
-                        <div className="space-y-4">
-                            {schedule.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="flex items-center justify-between bg-white/5 rounded-xl p-4"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                                            <span className="text-2xl">📚</span>
-                                        </div>
-                                        <div>
-                                            <p className="text-white font-semibold">{item.topic}</p>
-                                            <p className="text-white/60 text-sm">
-                                                {item.day} • {item.time}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <p className="text-purple-400 font-medium">{item.host}</p>
-                                        {canEdit && (
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => openEditor(item)}
-                                                    className="px-2 py-1 bg-blue-600 text-white rounded text-sm"
-                                                >
-                                                    ✏️
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(item.id)}
-                                                    className="px-2 py-1 bg-red-600 text-white rounded text-sm"
-                                                >
-                                                    🗑️
-                                                </button>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {schedule.length === 0 ? (
+                            <div className="p-12 text-center">
+                                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                <p className="text-gray-500">Chưa có lịch nào được đăng</p>
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-gray-100">
+                                {schedule.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center">
+                                                <BookOpen className="w-6 h-6 text-blue-600" />
                                             </div>
-                                        )}
+                                            <div>
+                                                <p className="text-gray-900 font-semibold">{item.topic}</p>
+                                                <p className="text-gray-500 text-sm flex items-center gap-3">
+                                                    <span className="flex items-center gap-1">
+                                                        <Calendar className="w-3 h-3" />
+                                                        {item.day}
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        {item.time}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <p className="text-blue-600 font-medium text-sm bg-blue-50 px-3 py-1 rounded-full">{item.host}</p>
+                                            {canEdit && (
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={() => openEditor(item)}
+                                                        className="border-gray-200 hover:bg-blue-50 hover:text-blue-600"
+                                                    >
+                                                        <Edit className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={() => handleDelete(item.id)}
+                                                        className="border-gray-200 hover:bg-red-50 hover:text-red-600"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
                 {/* Quick Links */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button
-                        onClick={() => router.push("/resources")}
-                        className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-left hover:bg-white/20 transition-all"
-                    >
-                        <div className="text-3xl mb-2">📚</div>
-                        <h4 className="text-white font-semibold">Kho Tài Liệu</h4>
-                        <p className="text-white/60 text-sm">Xem đề thi & tài liệu</p>
-                    </button>
+                    <Link href="/resources">
+                        <Card className="border-gray-200 bg-white hover:shadow-lg hover:border-blue-200 transition-all cursor-pointer h-full">
+                            <CardContent className="p-6">
+                                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
+                                    <BookOpen className="w-6 h-6 text-blue-600" />
+                                </div>
+                                <h4 className="text-gray-900 font-semibold mb-1">Kho Tài Liệu</h4>
+                                <p className="text-gray-500 text-sm">Xem đề thi & tài liệu</p>
+                            </CardContent>
+                        </Card>
+                    </Link>
 
-                    <button
-                        onClick={() => router.push("/student/dashboard")}
-                        className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-left hover:bg-white/20 transition-all"
-                    >
-                        <div className="text-3xl mb-2">📝</div>
-                        <h4 className="text-white font-semibold">Luyện Đề</h4>
-                        <p className="text-white/60 text-sm">Làm bài thi thử</p>
-                    </button>
+                    <Link href="/student/dashboard">
+                        <Card className="border-gray-200 bg-white hover:shadow-lg hover:border-emerald-200 transition-all cursor-pointer h-full">
+                            <CardContent className="p-6">
+                                <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
+                                    <GraduationCap className="w-6 h-6 text-emerald-600" />
+                                </div>
+                                <h4 className="text-gray-900 font-semibold mb-1">Luyện Đề</h4>
+                                <p className="text-gray-500 text-sm">Làm bài thi thử</p>
+                            </CardContent>
+                        </Card>
+                    </Link>
 
-                    <button
-                        onClick={() => router.push("/student/profile")}
-                        className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-left hover:bg-white/20 transition-all"
-                    >
-                        <div className="text-3xl mb-2">🏆</div>
-                        <h4 className="text-white font-semibold">Thành Tích</h4>
-                        <p className="text-white/60 text-sm">XP & Badges của bạn</p>
-                    </button>
+                    <Link href="/student/profile">
+                        <Card className="border-gray-200 bg-white hover:shadow-lg hover:border-amber-200 transition-all cursor-pointer h-full">
+                            <CardContent className="p-6">
+                                <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center mb-4">
+                                    <User className="w-6 h-6 text-amber-600" />
+                                </div>
+                                <h4 className="text-gray-900 font-semibold mb-1">Hồ Sơ</h4>
+                                <p className="text-gray-500 text-sm">XP & Thành tích</p>
+                            </CardContent>
+                        </Card>
+                    </Link>
                 </div>
 
                 {/* User Info */}
-                {user && (
-                    <div className="mt-8 text-center text-white/50 text-sm">
-                        Đang đăng nhập: <span className="text-white">{user.name}</span> ({user.email})
-                        {canEdit && <span className="ml-2 text-green-400">✏️ Có thể sửa lịch</span>}
+                {user && canEdit && (
+                    <div className="mt-8 text-center text-sm text-gray-500">
+                        <span className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-full">
+                            <Edit className="w-3 h-3" />
+                            Chế độ Admin: Có thể chỉnh sửa lịch
+                        </span>
                     </div>
                 )}
             </div>
 
             {/* Editor Modal */}
             {showEditor && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                    <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md">
-                        <h3 className="text-xl font-bold text-white mb-4">
-                            {editItem ? "✏️ Sửa lịch" : "➕ Thêm lịch mới"}
-                        </h3>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-white/70 text-sm">Ngày</label>
-                                <input
-                                    type="text"
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <Card className="w-full max-w-md border-gray-200 bg-white shadow-xl">
+                        <CardHeader className="flex flex-row items-center justify-between border-b border-gray-100 pb-4">
+                            <CardTitle className="text-gray-800 text-lg">
+                                {editItem ? "Sửa lịch" : "Thêm lịch mới"}
+                            </CardTitle>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowEditor(false)}
+                                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                            >
+                                <X className="w-5 h-5" />
+                            </Button>
+                        </CardHeader>
+                        <CardContent className="pt-5 space-y-4">
+                            <div className="space-y-2">
+                                <Label className="text-gray-700 font-medium">Ngày</Label>
+                                <Input
                                     value={formDay}
                                     onChange={(e) => setFormDay(e.target.value)}
                                     placeholder="VD: Thứ 7"
-                                    className="w-full mt-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+                                    className="bg-white border-gray-300"
                                 />
                             </div>
-                            <div>
-                                <label className="text-white/70 text-sm">Giờ</label>
-                                <input
-                                    type="text"
+                            <div className="space-y-2">
+                                <Label className="text-gray-700 font-medium">Giờ</Label>
+                                <Input
                                     value={formTime}
                                     onChange={(e) => setFormTime(e.target.value)}
                                     placeholder="VD: 20:00 - 22:00"
-                                    className="w-full mt-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+                                    className="bg-white border-gray-300"
                                 />
                             </div>
-                            <div>
-                                <label className="text-white/70 text-sm">Chủ đề</label>
-                                <input
-                                    type="text"
+                            <div className="space-y-2">
+                                <Label className="text-gray-700 font-medium">Chủ đề</Label>
+                                <Input
                                     value={formTopic}
                                     onChange={(e) => setFormTopic(e.target.value)}
                                     placeholder="VD: Chữa đề Toán THPT 2026"
-                                    className="w-full mt-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+                                    className="bg-white border-gray-300"
                                 />
                             </div>
-                            <div>
-                                <label className="text-white/70 text-sm">Người dạy</label>
-                                <input
-                                    type="text"
+                            <div className="space-y-2">
+                                <Label className="text-gray-700 font-medium">Người dạy</Label>
+                                <Input
                                     value={formHost}
                                     onChange={(e) => setFormHost(e.target.value)}
                                     placeholder="VD: Thầy Ái"
-                                    className="w-full mt-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+                                    className="bg-white border-gray-300"
                                 />
                             </div>
-                        </div>
 
-                        <div className="flex gap-3 mt-6">
-                            <button
-                                onClick={() => setShowEditor(false)}
-                                className="flex-1 py-2 bg-gray-600 text-white rounded-lg"
-                            >
-                                Hủy
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                disabled={!formDay || !formTime || !formTopic}
-                                className="flex-1 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50"
-                            >
-                                💾 Lưu
-                            </button>
-                        </div>
-                    </div>
+                            <div className="flex gap-3 pt-4">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowEditor(false)}
+                                    className="flex-1 border-gray-300 text-gray-700"
+                                >
+                                    Hủy
+                                </Button>
+                                <Button
+                                    onClick={handleSave}
+                                    disabled={!formDay || !formTime || !formTopic}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Lưu
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             )}
         </div>

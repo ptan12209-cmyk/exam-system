@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import {
     ArrowLeft,
@@ -24,7 +24,8 @@ import {
     Pause,
     CheckCircle,
     FileText,
-    X
+    X,
+    Filter
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -120,6 +121,7 @@ export default function ArenaAdminPage() {
             .order("created_at", { ascending: false })
 
         if (sessionsData) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const formatted = sessionsData.map((s: any) => ({
                 ...s,
                 participant_count: s.arena_results?.[0]?.count || 0,
@@ -225,22 +227,22 @@ export default function ArenaAdminPage() {
 
         if (now < start) {
             return (
-                <span className="px-2 py-1 text-xs rounded-full bg-blue-500/20 text-blue-400">
-                    <Clock className="w-3 h-3 inline mr-1" />
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <Clock className="w-3 h-3 mr-1" />
                     Sắp diễn ra
                 </span>
             )
         } else if (now >= start && now <= end) {
             return (
-                <span className="px-2 py-1 text-xs rounded-full bg-green-500/20 text-green-400">
-                    <Play className="w-3 h-3 inline mr-1" />
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 animate-pulse">
+                    <Play className="w-3 h-3 mr-1" />
                     Đang diễn ra
                 </span>
             )
         } else {
             return (
-                <span className="px-2 py-1 text-xs rounded-full bg-slate-500/20 text-slate-400">
-                    <CheckCircle className="w-3 h-3 inline mr-1" />
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <CheckCircle className="w-3 h-3 mr-1" />
                     Đã kết thúc
                 </span>
             )
@@ -249,26 +251,29 @@ export default function ArenaAdminPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
-            {/* Header */}
-            <header className="border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-50">
-                <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+            <div className="max-w-6xl mx-auto">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                     <div className="flex items-center gap-4">
                         <Link href="/teacher/dashboard">
-                            <Button variant="ghost" size="icon" className="text-slate-400">
+                            <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 hover:bg-white bg-white shadow-sm border border-gray-200">
                                 <ArrowLeft className="w-5 h-5" />
                             </Button>
                         </Link>
-                        <div className="flex items-center gap-2">
-                            <Swords className="w-6 h-6 text-purple-400" />
-                            <h1 className="text-xl font-bold text-white">Quản lý Đấu trường</h1>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                                <Swords className="w-6 h-6 text-purple-600" />
+                                Quản lý Đấu trường
+                            </h1>
+                            <p className="text-gray-500 text-sm mt-1">Tạo và quản lý các đợt thi tập trung</p>
                         </div>
                     </div>
                     <Button
@@ -276,25 +281,25 @@ export default function ArenaAdminPage() {
                             resetForm()
                             setShowCreate(true)
                         }}
-                        className="bg-gradient-to-r from-purple-600 to-pink-600"
+                        className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-sm"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Tạo đợt thi
                     </Button>
                 </div>
-            </header>
 
-            <main className="max-w-6xl mx-auto px-4 py-8">
-                {/* Sessions Grid */}
+                {/* Sessions List */}
                 {sessions.length === 0 ? (
-                    <Card className="border-slate-700 bg-slate-800/50">
+                    <Card className="border-gray-200 shadow-sm bg-white">
                         <CardContent className="p-12 text-center">
-                            <Swords className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                            <h2 className="text-xl font-semibold text-white mb-2">Chưa có đợt thi nào</h2>
-                            <p className="text-slate-400 mb-6">Tạo đợt thi mới để học sinh tham gia</p>
+                            <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Swords className="w-8 h-8 text-purple-500" />
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900 mb-2">Chưa có đợt thi nào</h2>
+                            <p className="text-gray-500 mb-6">Tạo đợt thi mới để tổ chức thi đấu cho học sinh</p>
                             <Button
                                 onClick={() => setShowCreate(true)}
-                                className="bg-gradient-to-r from-purple-600 to-pink-600"
+                                className="bg-purple-600 hover:bg-purple-700 text-white"
                             >
                                 <Plus className="w-4 h-4 mr-2" />
                                 Tạo đợt thi đầu tiên
@@ -302,60 +307,66 @@ export default function ArenaAdminPage() {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {sessions.map(session => (
-                            <Card key={session.id} className="border-slate-700 bg-slate-800/50 hover:border-purple-500/50 transition-colors">
-                                <CardHeader className="pb-2">
-                                    <div className="flex items-start justify-between">
-                                        <CardTitle className="text-lg text-white">{session.name}</CardTitle>
+                            <Card key={session.id} className="border-gray-200 shadow-sm bg-white hover:shadow-md transition-shadow group">
+                                <CardHeader className="pb-3 border-b border-gray-50">
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className="space-y-1">
+                                            <CardTitle className="text-lg font-bold text-gray-800 line-clamp-1" title={session.name}>
+                                                {session.name}
+                                            </CardTitle>
+                                            {session.exam && (
+                                                <div className="flex items-center text-xs text-purple-600 font-medium bg-purple-50 px-2 py-0.5 rounded w-fit">
+                                                    <FileText className="w-3 h-3 mr-1" />
+                                                    {session.exam.title}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center mt-2">
                                         {getStatusBadge(session)}
                                     </div>
-                                    {session.exam && (
-                                        <p className="text-sm text-purple-400 flex items-center gap-1">
-                                            <FileText className="w-3 h-3" />
-                                            {session.exam.title}
-                                        </p>
-                                    )}
                                 </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <div className="flex items-center gap-4 text-sm text-slate-400">
-                                        <span className="flex items-center gap-1">
-                                            <Calendar className="w-4 h-4" />
-                                            {new Date(session.start_time).toLocaleDateString("vi-VN")}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <Clock className="w-4 h-4" />
-                                            {session.duration} phút
-                                        </span>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 text-sm">
-                                        <span className="text-slate-400 flex items-center gap-1">
-                                            <Users className="w-4 h-4" />
-                                            {session.participant_count || 0} người thi
-                                        </span>
-                                        {session.exam && (
-                                            <span className="text-slate-400">
-                                                {session.exam.total_questions} câu
+                                <CardContent className="pt-4 space-y-4">
+                                    <div className="space-y-2 text-sm text-gray-600">
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className="w-4 h-4 text-gray-400" />
+                                            <span>
+                                                {new Date(session.start_time).toLocaleDateString("vi-VN", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    hour: "2-digit",
+                                                    minute: "2-digit"
+                                                })}
                                             </span>
-                                        )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="w-4 h-4 text-gray-400" />
+                                            <span>{session.duration} phút</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Users className="w-4 h-4 text-gray-400" />
+                                            <span className="font-medium text-gray-900">{session.participant_count || 0}</span>
+                                            <span>người tham gia</span>
+                                        </div>
                                     </div>
 
-                                    <div className="flex gap-2 pt-2 border-t border-slate-700">
+                                    <div className="flex gap-2 pt-2">
                                         <Button
-                                            variant="ghost"
+                                            variant="outline"
                                             size="sm"
                                             onClick={() => handleEdit(session)}
-                                            className="flex-1 text-slate-400 hover:text-white"
+                                            className="flex-1 border-gray-200 text-gray-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
                                         >
                                             <Edit className="w-4 h-4 mr-1" />
                                             Sửa
                                         </Button>
                                         <Button
-                                            variant="ghost"
+                                            variant="outline"
                                             size="sm"
                                             onClick={() => handleDelete(session.id)}
-                                            className="flex-1 text-red-400 hover:text-red-300"
+                                            className="flex-1 border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                                         >
                                             <Trash2 className="w-4 h-4 mr-1" />
                                             Xóa
@@ -366,15 +377,15 @@ export default function ArenaAdminPage() {
                         ))}
                     </div>
                 )}
-            </main>
+            </div>
 
             {/* Create/Edit Modal */}
             {showCreate && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <Card className="w-full max-w-lg border-slate-700 bg-slate-800">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle className="text-white">
-                                {editingId ? "Sửa đợt thi" : "Tạo đợt thi mới"}
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <Card className="w-full max-w-lg border-gray-200 bg-white shadow-xl">
+                        <CardHeader className="flex flex-row items-center justify-between border-b border-gray-100 pb-4">
+                            <CardTitle className="text-gray-800 text-xl">
+                                {editingId ? "Cập nhật đợt thi" : "Tạo đợt thi mới"}
                             </CardTitle>
                             <Button
                                 variant="ghost"
@@ -383,33 +394,33 @@ export default function ArenaAdminPage() {
                                     setShowCreate(false)
                                     resetForm()
                                 }}
-                                className="text-slate-400"
+                                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 -mr-2"
                             >
                                 <X className="w-5 h-5" />
                             </Button>
                         </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                        <CardContent className="pt-6">
+                            <form onSubmit={handleSubmit} className="space-y-5">
                                 <div className="space-y-2">
-                                    <Label className="text-slate-300">Tên đợt thi *</Label>
+                                    <Label className="text-gray-700 font-medium">Tên đợt thi <span className="text-red-500">*</span></Label>
                                     <Input
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
-                                        placeholder="VD: Đợt 1 - Tháng 1/2025"
-                                        className="bg-slate-700/50 border-slate-600 text-white"
+                                        placeholder="VD: Kiểm tra Toán 15 phút - Lớp 12A"
+                                        className="bg-white border-gray-300 focus:ring-purple-500 focus:border-purple-500"
                                         required
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-slate-300">Chọn đề thi *</Label>
+                                    <Label className="text-gray-700 font-medium">Chọn đề thi <span className="text-red-500">*</span></Label>
                                     <select
                                         value={examId}
                                         onChange={(e) => setExamId(e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-white"
+                                        className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white text-gray-900"
                                         required
                                     >
-                                        <option value="">-- Chọn đề --</option>
+                                        <option value="">-- Chọn đề thi --</option>
                                         {exams.map(exam => (
                                             <option key={exam.id} value={exam.id}>
                                                 {exam.title} ({exam.total_questions} câu - {exam.subject})
@@ -417,59 +428,62 @@ export default function ArenaAdminPage() {
                                         ))}
                                     </select>
                                     {exams.length === 0 && (
-                                        <p className="text-sm text-yellow-400">
-                                            Chưa có đề thi nào. <Link href="/teacher/exams/create" className="underline">Tạo đề mới</Link>
+                                        <p className="text-sm text-yellow-600 bg-yellow-50 p-2 rounded border border-yellow-200">
+                                            ⚠ Bạn chưa có đề thi nào. <Link href="/teacher/exams/create" className="underline font-medium hover:text-yellow-800">Tạo ngay</Link>
                                         </p>
                                     )}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-slate-300">Mô tả</Label>
+                                    <Label className="text-gray-700 font-medium">Mô tả</Label>
                                     <Textarea
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
-                                        placeholder="Mô tả về đợt thi..."
-                                        className="bg-slate-700/50 border-slate-600 text-white"
-                                        rows={2}
+                                        placeholder="Thông tin thêm về đợt thi..."
+                                        className="bg-white border-gray-300 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                                        rows={3}
                                     />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label className="text-slate-300">Bắt đầu *</Label>
+                                        <Label className="text-gray-700 font-medium">Bắt đầu <span className="text-red-500">*</span></Label>
                                         <Input
                                             type="datetime-local"
                                             value={startTime}
                                             onChange={(e) => setStartTime(e.target.value)}
-                                            className="bg-slate-700/50 border-slate-600 text-white"
+                                            className="bg-white border-gray-300 focus:ring-purple-500 focus:border-purple-500"
                                             required
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-slate-300">Kết thúc *</Label>
+                                        <Label className="text-gray-700 font-medium">Kết thúc <span className="text-red-500">*</span></Label>
                                         <Input
                                             type="datetime-local"
                                             value={endTime}
                                             onChange={(e) => setEndTime(e.target.value)}
-                                            className="bg-slate-700/50 border-slate-600 text-white"
+                                            className="bg-white border-gray-300 focus:ring-purple-500 focus:border-purple-500"
                                             required
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-slate-300">Thời gian làm bài (phút)</Label>
-                                    <Input
-                                        type="number"
-                                        value={duration}
-                                        onChange={(e) => setDuration(Number(e.target.value))}
-                                        min={10}
-                                        max={180}
-                                        className="bg-slate-700/50 border-slate-600 text-white"
-                                    />
+                                    <Label className="text-gray-700 font-medium">Thời gian làm bài (phút)</Label>
+                                    <div className="relative">
+                                        <Input
+                                            type="number"
+                                            value={duration}
+                                            onChange={(e) => setDuration(Number(e.target.value))}
+                                            min={5}
+                                            max={180}
+                                            className="bg-white border-gray-300 focus:ring-purple-500 focus:border-purple-500 pl-10"
+                                        />
+                                        <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                                    </div>
                                 </div>
 
-                                <div className="flex gap-3 pt-4">
+                                <div className="flex gap-3 pt-4 font-medium">
                                     <Button
                                         type="button"
                                         variant="outline"
@@ -477,21 +491,21 @@ export default function ArenaAdminPage() {
                                             setShowCreate(false)
                                             resetForm()
                                         }}
-                                        className="flex-1 border-slate-600 text-slate-400"
+                                        className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
                                     >
                                         Hủy
                                     </Button>
                                     <Button
                                         type="submit"
                                         disabled={saving}
-                                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600"
+                                        className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
                                     >
                                         {saving ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
                                         ) : editingId ? (
                                             "Cập nhật"
                                         ) : (
-                                            "Tạo đợt thi"
+                                            <><Plus className="w-4 h-4 mr-2" /> Tạo đợt thi</>
                                         )}
                                     </Button>
                                 </div>

@@ -2,7 +2,23 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+    Upload,
+    ArrowLeft,
+    FileText,
+    CheckCircle,
+    X,
+    Loader2,
+    GraduationCap
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const SUBJECTS = [
     { value: "math", label: "Toán" },
@@ -34,6 +50,7 @@ export default function UploadResourcePage() {
 
     useEffect(() => {
         checkAuth();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const checkAuth = async () => {
@@ -132,186 +149,200 @@ export default function UploadResourcePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4">
-            <div className="max-w-2xl mx-auto">
-                {/* Header */}
-                <div className="mb-8">
-                    <button
-                        onClick={() => router.back()}
-                        className="text-white/60 hover:text-white mb-4 flex items-center gap-2"
-                    >
-                        ← Quay lại
-                    </button>
-                    <h1 className="text-3xl font-bold text-white">📤 Tải lên tài liệu</h1>
-                    <p className="text-white/60 mt-1">Chia sẻ tài liệu với nhóm học tập</p>
+        <div className="min-h-screen bg-gray-50">
+            {/* Navigation */}
+            <nav className="border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between h-16 items-center">
+                        <Link href="/">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                    <GraduationCap className="w-5 h-5 text-white" />
+                                </div>
+                                <span className="text-xl font-bold text-gray-900">LuyenDe 2026</span>
+                            </div>
+                        </Link>
+                    </div>
                 </div>
+            </nav>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Error */}
-                    {error && (
-                        <div className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-xl">
-                            ❌ {error}
-                        </div>
-                    )}
+            <div className="max-w-2xl mx-auto px-4 py-8">
+                {/* Back button */}
+                <Link href="/resources" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6">
+                    <ArrowLeft className="w-4 h-4" />
+                    Quay lại Kho tài liệu
+                </Link>
 
-                    {/* File Upload */}
-                    <div
-                        className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${isDragging
-                            ? "border-purple-500 bg-purple-500/20"
-                            : file
-                                ? "border-green-500 bg-green-500/10"
-                                : "border-white/20 hover:border-white/40"
-                            }`}
-                        onDragOver={(e) => {
-                            e.preventDefault();
-                            setIsDragging(true);
-                        }}
-                        onDragLeave={() => setIsDragging(false)}
-                        onDrop={handleDrop}
-                    >
-                        {file ? (
-                            <div className="text-green-400">
-                                <div className="text-4xl mb-2">✅</div>
-                                <p className="font-medium">{file.name}</p>
-                                <p className="text-sm text-white/60">
-                                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                                </p>
-                                <button
-                                    type="button"
-                                    onClick={() => setFile(null)}
-                                    className="mt-2 text-sm text-red-400 hover:text-red-300"
-                                >
-                                    Xóa và chọn file khác
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="text-white/60">
-                                <div className="text-4xl mb-2">📄</div>
-                                <p className="font-medium">Kéo thả file PDF vào đây</p>
-                                <p className="text-sm">hoặc</p>
-                                <label className="mt-2 inline-block px-4 py-2 bg-purple-600 text-white rounded-lg cursor-pointer hover:bg-purple-700">
-                                    Chọn file
-                                    <input
-                                        type="file"
-                                        accept=".pdf"
-                                        onChange={handleFileChange}
-                                        className="hidden"
-                                    />
-                                </label>
-                            </div>
-                        )}
-                    </div>
+                <Card className="border-gray-200 shadow-sm bg-white">
+                    <CardHeader className="border-b border-gray-50">
+                        <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <Upload className="w-5 h-5 text-blue-600" />
+                            Tải lên tài liệu
+                        </CardTitle>
+                        <CardDescription>Chia sẻ tài liệu, đề thi với nhóm học tập</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* Error */}
+                            {error && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+                                    <X className="w-4 h-4" />
+                                    {error}
+                                </div>
+                            )}
 
-                    {/* Title */}
-                    <div>
-                        <label className="block text-white/80 mb-2 font-medium">
-                            Tiêu đề *
-                        </label>
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                            placeholder="VD: Đề thi thử THPT 2026 - Lần 5"
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
-                    </div>
-
-                    {/* Type & Subject */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-white/80 mb-2 font-medium">
-                                Loại *
-                            </label>
-                            <select
-                                value={type}
-                                onChange={(e) => setType(e.target.value as "document" | "exam")}
-                                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            >
-                                <option value="document" className="bg-slate-800">
-                                    📚 Tài liệu
-                                </option>
-                                <option value="exam" className="bg-slate-800">
-                                    📝 Đề thi
-                                </option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-white/80 mb-2 font-medium">
-                                Môn học *
-                            </label>
-                            <select
-                                value={subject}
-                                onChange={(e) => setSubject(e.target.value)}
-                                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            >
-                                {SUBJECTS.map((s) => (
-                                    <option key={s.value} value={s.value} className="bg-slate-800">
-                                        {s.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                        <label className="block text-white/80 mb-2 font-medium">
-                            Mô tả
-                        </label>
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            rows={3}
-                            placeholder="Mô tả ngắn về tài liệu..."
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                        />
-                    </div>
-
-                    {/* Tags */}
-                    <div>
-                        <label className="block text-white/80 mb-2 font-medium">
-                            Tags (phân cách bằng dấu phẩy)
-                        </label>
-                        <input
-                            type="text"
-                            value={tags}
-                            onChange={(e) => setTags(e.target.value)}
-                            placeholder="VD: THPT 2026, đại số, khó"
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
-                    </div>
-
-                    {/* Progress Bar */}
-                    {uploading && (
-                        <div className="bg-white/10 rounded-full overflow-hidden">
+                            {/* File Upload */}
                             <div
-                                className="h-2 bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
-                                style={{ width: `${uploadProgress}%` }}
-                            />
-                        </div>
-                    )}
+                                className={cn(
+                                    "border-2 border-dashed rounded-xl p-8 text-center transition-all",
+                                    isDragging
+                                        ? "border-blue-500 bg-blue-50"
+                                        : file
+                                            ? "border-green-500 bg-green-50"
+                                            : "border-gray-300 hover:border-blue-400 hover:bg-blue-50/50"
+                                )}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    setIsDragging(true);
+                                }}
+                                onDragLeave={() => setIsDragging(false)}
+                                onDrop={handleDrop}
+                            >
+                                {file ? (
+                                    <div className="text-green-700">
+                                        <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
+                                        <p className="font-semibold text-lg">{file.name}</p>
+                                        <p className="text-sm text-gray-500">
+                                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFile(null)}
+                                            className="mt-3 text-sm text-red-600 hover:text-red-700 font-medium"
+                                        >
+                                            Xóa và chọn file khác
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="text-gray-500">
+                                        <FileText className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                                        <p className="font-semibold text-gray-700">Kéo thả file PDF vào đây</p>
+                                        <p className="text-sm mb-4">hoặc</p>
+                                        <label className="inline-block px-5 py-2.5 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 font-medium shadow-md">
+                                            Chọn file
+                                            <input
+                                                type="file"
+                                                accept=".pdf"
+                                                onChange={handleFileChange}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
 
-                    {/* Submit */}
-                    <button
-                        type="submit"
-                        disabled={!file || !title || uploading}
-                        className={`w-full py-4 rounded-xl font-semibold text-lg transition-all ${!file || !title || uploading
-                            ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                            : "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/25"
-                            }`}
-                    >
-                        {uploading ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <span className="animate-spin">⏳</span>
-                                Đang tải lên... {uploadProgress}%
-                            </span>
-                        ) : (
-                            "📤 Tải lên"
-                        )}
-                    </button>
-                </form>
+                            {/* Title */}
+                            <div className="space-y-2">
+                                <Label className="text-gray-700 font-medium">Tiêu đề *</Label>
+                                <Input
+                                    type="text"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    required
+                                    placeholder="VD: Đề thi thử THPT 2026 - Lần 5"
+                                    className="bg-white border-gray-300"
+                                />
+                            </div>
+
+                            {/* Type & Subject */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-gray-700 font-medium">Loại *</Label>
+                                    <select
+                                        value={type}
+                                        onChange={(e) => setType(e.target.value as "document" | "exam")}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                    >
+                                        <option value="document">📚 Tài liệu</option>
+                                        <option value="exam">📝 Đề thi</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-gray-700 font-medium">Môn học *</Label>
+                                    <select
+                                        value={subject}
+                                        onChange={(e) => setSubject(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                    >
+                                        {SUBJECTS.map((s) => (
+                                            <option key={s.value} value={s.value}>
+                                                {s.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div className="space-y-2">
+                                <Label className="text-gray-700 font-medium">Mô tả</Label>
+                                <Textarea
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    rows={3}
+                                    placeholder="Mô tả ngắn về tài liệu..."
+                                    className="bg-white border-gray-300 resize-none"
+                                />
+                            </div>
+
+                            {/* Tags */}
+                            <div className="space-y-2">
+                                <Label className="text-gray-700 font-medium">Tags (phân cách bằng dấu phẩy)</Label>
+                                <Input
+                                    type="text"
+                                    value={tags}
+                                    onChange={(e) => setTags(e.target.value)}
+                                    placeholder="VD: THPT 2026, đại số, khó"
+                                    className="bg-white border-gray-300"
+                                />
+                            </div>
+
+                            {/* Progress Bar */}
+                            {uploading && (
+                                <div className="bg-gray-100 rounded-full overflow-hidden h-2">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300"
+                                        style={{ width: `${uploadProgress}%` }}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Submit */}
+                            <Button
+                                type="submit"
+                                disabled={!file || !title || uploading}
+                                className={cn(
+                                    "w-full h-12 text-base font-semibold",
+                                    !file || !title || uploading
+                                        ? "bg-gray-300 text-gray-500"
+                                        : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/20"
+                                )}
+                            >
+                                {uploading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Đang tải lên... {uploadProgress}%
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Upload className="w-5 h-5" />
+                                        Tải lên
+                                    </span>
+                                )}
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

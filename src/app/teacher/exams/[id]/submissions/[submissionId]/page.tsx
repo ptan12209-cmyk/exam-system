@@ -13,7 +13,9 @@ import {
     Trophy,
     CheckCircle2,
     XCircle,
-    Loader2
+    Loader2,
+    Calendar,
+    Mail
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -124,15 +126,15 @@ export default function SubmissionDetailPage() {
     }
 
     const getScoreColor = (score: number) => {
-        if (score >= 8) return "text-green-400"
-        if (score >= 5) return "text-yellow-400"
-        return "text-red-400"
+        if (score >= 8) return "text-green-600"
+        if (score >= 5) return "text-yellow-600"
+        return "text-red-600"
     }
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
@@ -153,72 +155,120 @@ export default function SubmissionDetailPage() {
     const studentSaAnswers = submission.sa_student_answers || []
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-            <div className="max-w-4xl mx-auto">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+            <div className="max-w-5xl mx-auto">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                     <div className="flex items-center gap-4">
                         <Link href={`/teacher/exams/${examId}/scores`}>
-                            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
+                            <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 hover:bg-white bg-white shadow-sm border border-gray-200">
                                 <ArrowLeft className="w-5 h-5" />
                             </Button>
                         </Link>
                         <div>
-                            <h1 className="text-2xl font-bold text-white">Chi tiết bài làm</h1>
-                            <p className="text-slate-400 text-sm">{exam.title}</p>
+                            <h1 className="text-2xl font-bold text-gray-800">Chi tiết bài làm</h1>
+                            <p className="text-gray-500 text-sm mt-1">{exam.title}</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Student Info Card */}
-                <Card className="border-slate-700 bg-gradient-to-br from-slate-800/80 to-slate-800/50 mb-6">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-6">
-                            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
-                                <User className="w-8 h-8 text-white" />
-                            </div>
-                            <div className="flex-1">
-                                <h2 className="text-xl font-bold text-white">
-                                    {profile?.full_name || "Học sinh"}
-                                </h2>
-                                <p className="text-slate-400 text-sm">{profile?.email || "Không có email"}</p>
-                            </div>
-                            <div className="text-right">
-                                <div className={cn("text-4xl font-bold", getScoreColor(submission.score))}>
-                                    {submission.score.toFixed(1)}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    {/* Student Info Card */}
+                    <Card className="col-span-1 lg:col-span-2 border-gray-200 shadow-sm bg-white overflow-hidden">
+                        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 h-24 relative">
+                            <div className="absolute -bottom-10 left-6">
+                                <div className="w-20 h-20 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center">
+                                    <div className="w-full h-full rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-2xl">
+                                        {profile?.full_name?.charAt(0) || <User className="w-8 h-8" />}
+                                    </div>
                                 </div>
-                                <p className="text-slate-400 text-sm">điểm</p>
                             </div>
                         </div>
+                        <CardContent className="pt-12 px-6 pb-6">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">
+                                        {profile?.full_name || "Học sinh"}
+                                    </h2>
+                                    <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
+                                        <Mail className="w-3.5 h-3.5" />
+                                        {profile?.email || "Không có email"}
+                                    </div>
+                                </div>
+                                <div className="flex gap-4 w-full md:w-auto">
+                                    <div className="flex-1 md:flex-none p-3 bg-gray-50 rounded-lg border border-gray-100 text-center min-w-[100px]">
+                                        <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Điểm số</p>
+                                        <div className={cn("text-3xl font-bold", getScoreColor(submission.score))}>
+                                            {submission.score.toFixed(1)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <div className="grid grid-cols-3 gap-4 mt-6">
-                            <div className="text-center p-3 bg-slate-700/30 rounded-lg">
-                                <Trophy className="w-5 h-5 mx-auto mb-1 text-yellow-400" />
-                                <p className="text-lg font-bold text-white">{submission.correct_count}/{exam.total_questions}</p>
-                                <p className="text-xs text-slate-400">Số đúng</p>
+                            <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
+                                <div className="text-center">
+                                    <div className="w-10 h-10 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center mx-auto mb-2">
+                                        <Trophy className="w-5 h-5" />
+                                    </div>
+                                    <p className="text-lg font-bold text-gray-800">{submission.correct_count}/{exam.total_questions}</p>
+                                    <p className="text-xs text-gray-500">Số câu đúng</p>
+                                </div>
+                                <div className="text-center">
+                                    <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-2">
+                                        <Clock className="w-5 h-5" />
+                                    </div>
+                                    <p className="text-lg font-bold text-gray-800">{formatTime(submission.time_spent)}</p>
+                                    <p className="text-xs text-gray-500">Thời gian làm</p>
+                                </div>
+                                <div className="text-center">
+                                    <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-2">
+                                        <Calendar className="w-5 h-5" />
+                                    </div>
+                                    <p className="text-sm font-bold text-gray-800 mt-2">{formatDate(submission.submitted_at)}</p>
+                                    <p className="text-xs text-gray-500">Thời gian nộp</p>
+                                </div>
                             </div>
-                            <div className="text-center p-3 bg-slate-700/30 rounded-lg">
-                                <Clock className="w-5 h-5 mx-auto mb-1 text-blue-400" />
-                                <p className="text-lg font-bold text-white">{formatTime(submission.time_spent)}</p>
-                                <p className="text-xs text-slate-400">Thời gian</p>
+                        </CardContent>
+                    </Card>
+
+                    {/* Summary Stats or Actions (Optional - currently using space for layout balance) */}
+                    <Card className="border-gray-200 shadow-sm bg-white flex flex-col justify-center">
+                        <CardContent className="p-6 text-center space-y-4">
+                            <div className="p-4 rounded-full bg-green-50 w-20 h-20 mx-auto flex items-center justify-center">
+                                {(submission.score / 10) >= 0.5 ? (
+                                    <CheckCircle2 className="w-10 h-10 text-green-500" />
+                                ) : (
+                                    <XCircle className="w-10 h-10 text-red-500" />
+                                )}
                             </div>
-                            <div className="text-center p-3 bg-slate-700/30 rounded-lg">
-                                <CheckCircle2 className="w-5 h-5 mx-auto mb-1 text-green-400" />
-                                <p className="text-lg font-bold text-white">{formatDate(submission.submitted_at)}</p>
-                                <p className="text-xs text-slate-400">Nộp lúc</p>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-800">
+                                    {(submission.score / 10) >= 0.8 ? "Xuất sắc!" :
+                                        (submission.score / 10) >= 0.65 ? "Làm tốt lắm!" :
+                                            (submission.score / 10) >= 0.5 ? "Đạt yêu cầu" : "Cần cố gắng"}
+                                </h3>
+                                <p className="text-gray-500 text-sm mt-1">
+                                    Học sinh đã hoàn thành {Math.round((submission.correct_count / exam.total_questions) * 100)}% bài thi chính xác.
+                                </p>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                            <Button className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 mt-2" variant="outline">
+                                Gửi nhận xét (Coming soon)
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 {/* Multiple Choice Answers */}
                 {mcCorrectAnswers.length > 0 && (
-                    <Card className="border-slate-700 bg-slate-800/50 mb-6">
-                        <CardHeader>
-                            <CardTitle className="text-white">📝 Trắc nghiệm ({mcCorrectAnswers.length} câu)</CardTitle>
+                    <Card className="border-gray-200 shadow-sm bg-white mb-6">
+                        <CardHeader className="border-b border-gray-100 bg-gray-50/50 pb-4">
+                            <CardTitle className="text-base text-gray-800 flex items-center gap-2">
+                                <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
+                                Trắc nghiệm ({mcCorrectAnswers.length} câu)
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                        <CardContent className="p-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
                                 {mcCorrectAnswers.map((correct, index) => {
                                     const studentAnswer = studentMcAnswers.find(a => a.question === correct.question)?.answer
                                     const isCorrect = studentAnswer?.toUpperCase() === correct.answer?.toUpperCase()
@@ -227,34 +277,37 @@ export default function SubmissionDetailPage() {
                                         <div
                                             key={index}
                                             className={cn(
-                                                "p-3 rounded-lg border flex flex-col items-center",
+                                                "p-3 rounded-xl border flex flex-col items-center transition-all",
                                                 isCorrect
-                                                    ? "bg-green-500/10 border-green-500/30"
-                                                    : "bg-red-500/10 border-red-500/30"
+                                                    ? "bg-green-50 border-green-200 shadow-sm"
+                                                    : "bg-red-50 border-red-200 shadow-sm"
                                             )}
                                         >
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-sm font-medium text-slate-400">Câu {correct.question}</span>
+                                            <div className="flex items-center gap-1.5 mb-2 w-full justify-center border-b border-black/5 pb-2">
+                                                <span className="text-xs font-semibold text-gray-500">Câu {correct.question}</span>
                                                 {isCorrect ? (
-                                                    <CheckCircle2 className="w-4 h-4 text-green-400" />
+                                                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
                                                 ) : (
-                                                    <XCircle className="w-4 h-4 text-red-400" />
+                                                    <XCircle className="w-3.5 h-3.5 text-red-500" />
                                                 )}
                                             </div>
-                                            <div className="flex gap-2 items-center">
-                                                <span className={cn(
-                                                    "px-2 py-1 rounded text-sm font-bold",
-                                                    isCorrect ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
-                                                )}>
-                                                    {studentAnswer || "—"}
-                                                </span>
+                                            <div className="flex flex-col items-center gap-1 w-full">
+                                                <div className="flex items-center gap-2 w-full justify-center">
+                                                    <span className="text-xs text-gray-400">HS:</span>
+                                                    <span className={cn(
+                                                        "w-6 h-6 rounded flex items-center justify-center text-xs font-bold",
+                                                        isCorrect ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                                                    )}>
+                                                        {studentAnswer || "—"}
+                                                    </span>
+                                                </div>
                                                 {!isCorrect && (
-                                                    <>
-                                                        <span className="text-slate-500">→</span>
-                                                        <span className="px-2 py-1 rounded text-sm font-bold bg-green-500/20 text-green-400">
+                                                    <div className="flex items-center gap-2 w-full justify-center">
+                                                        <span className="text-xs text-gray-400">ĐA:</span>
+                                                        <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold bg-green-100 text-green-700">
                                                             {correct.answer}
                                                         </span>
-                                                    </>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -267,19 +320,22 @@ export default function SubmissionDetailPage() {
 
                 {/* True/False Answers */}
                 {tfAnswers.length > 0 && (
-                    <Card className="border-slate-700 bg-slate-800/50 mb-6">
-                        <CardHeader>
-                            <CardTitle className="text-white">✅ Đúng/Sai ({tfAnswers.length} câu)</CardTitle>
+                    <Card className="border-gray-200 shadow-sm bg-white mb-6">
+                        <CardHeader className="border-b border-gray-100 bg-gray-50/50 pb-4">
+                            <CardTitle className="text-base text-gray-800 flex items-center gap-2">
+                                <span className="w-1.5 h-6 bg-green-500 rounded-full"></span>
+                                Đúng/Sai ({tfAnswers.length} câu)
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
+                        <CardContent className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {tfAnswers.map((tf, index) => {
                                     const studentTf = studentTfAnswers.find(a => a.question === tf.question)
                                     const qNum = mcCount + 1 + index
 
                                     return (
-                                        <div key={index} className="p-4 bg-slate-700/30 rounded-lg">
-                                            <p className="text-sm font-medium text-slate-300 mb-3">Câu {qNum}</p>
+                                        <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                            <p className="text-sm font-bold text-gray-700 mb-3 border-b border-gray-200 pb-2">Câu {qNum}</p>
                                             <div className="grid grid-cols-4 gap-2">
                                                 {(['a', 'b', 'c', 'd'] as const).map(opt => {
                                                     const correctVal = tf[opt]
@@ -290,19 +346,29 @@ export default function SubmissionDetailPage() {
                                                         <div
                                                             key={opt}
                                                             className={cn(
-                                                                "p-2 rounded text-center text-sm",
+                                                                "p-2 rounded-lg text-center flex flex-col items-center justify-center border",
                                                                 isCorrect
-                                                                    ? "bg-green-500/20 border border-green-500/30"
-                                                                    : "bg-red-500/20 border border-red-500/30"
+                                                                    ? "bg-green-50 border-green-200"
+                                                                    : "bg-red-50 border-red-200"
                                                             )}
                                                         >
-                                                            <span className="font-bold text-slate-300">{opt.toUpperCase()}:</span>
-                                                            <span className={cn("ml-1", isCorrect ? "text-green-400" : "text-red-400")}>
-                                                                {studentVal ? "Đ" : "S"}
-                                                            </span>
-                                                            {!isCorrect && (
-                                                                <span className="text-green-400 ml-1">(→{correctVal ? "Đ" : "S"})</span>
-                                                            )}
+                                                            <span className="text-xs font-bold text-gray-500 uppercase mb-1">{opt}</span>
+                                                            <div className="flex items-center gap-1">
+                                                                {/* Student Answer */}
+                                                                <span className={cn(
+                                                                    "font-bold text-sm",
+                                                                    studentVal ? "text-green-600" : "text-red-600"
+                                                                )}>
+                                                                    {studentVal ? "Đ" : "S"}
+                                                                </span>
+
+                                                                {/* Correct Answer Indicator if wrong */}
+                                                                {!isCorrect && (
+                                                                    <span className="text-[10px] text-gray-400">
+                                                                        ({correctVal ? "Đ" : "S"})
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     )
                                                 })}
@@ -317,12 +383,15 @@ export default function SubmissionDetailPage() {
 
                 {/* Short Answer */}
                 {saAnswers.length > 0 && (
-                    <Card className="border-slate-700 bg-slate-800/50 mb-6">
-                        <CardHeader>
-                            <CardTitle className="text-white">✍️ Trả lời ngắn ({saAnswers.length} câu)</CardTitle>
+                    <Card className="border-gray-200 shadow-sm bg-white mb-6">
+                        <CardHeader className="border-b border-gray-100 bg-gray-50/50 pb-4">
+                            <CardTitle className="text-base text-gray-800 flex items-center gap-2">
+                                <span className="w-1.5 h-6 bg-purple-500 rounded-full"></span>
+                                Trả lời ngắn ({saAnswers.length} câu)
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
+                        <CardContent className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {saAnswers.map((sa, index) => {
                                     const studentSa = studentSaAnswers.find(a => a.question === sa.question)
                                     const qNum = mcCount + tfAnswers.length + 1 + index
@@ -335,36 +404,44 @@ export default function SubmissionDetailPage() {
                                         <div
                                             key={index}
                                             className={cn(
-                                                "p-4 rounded-lg border",
+                                                "p-4 rounded-xl border transition-all",
                                                 isCorrect
-                                                    ? "bg-green-500/10 border-green-500/30"
-                                                    : "bg-red-500/10 border-red-500/30"
+                                                    ? "bg-green-50/50 border-green-200 hover:shadow-sm"
+                                                    : "bg-red-50/50 border-red-200 hover:shadow-sm"
                                             )}
                                         >
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm font-medium text-slate-300">Câu {qNum}</span>
+                                            <div className="flex items-center justify-between mb-3 border-b border-black/5 pb-2">
+                                                <span className="text-sm font-bold text-gray-700">Câu {qNum}</span>
                                                 {isCorrect ? (
-                                                    <CheckCircle2 className="w-5 h-5 text-green-400" />
+                                                    <div className="flex items-center text-green-600 text-xs font-medium">
+                                                        <CheckCircle2 className="w-4 h-4 mr-1" />
+                                                        Đúng
+                                                    </div>
                                                 ) : (
-                                                    <XCircle className="w-5 h-5 text-red-400" />
+                                                    <div className="flex items-center text-red-500 text-xs font-medium">
+                                                        <XCircle className="w-4 h-4 mr-1" />
+                                                        Sai
+                                                    </div>
                                                 )}
                                             </div>
-                                            <div className="mt-2 flex items-center gap-3">
-                                                <span className="text-slate-400">Học sinh:</span>
-                                                <span className={cn(
-                                                    "px-3 py-1 rounded font-bold",
-                                                    isCorrect ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
-                                                )}>
-                                                    {studentSa?.answer || "—"}
-                                                </span>
+
+                                            <div className="space-y-2 text-sm">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-500">Học sinh:</span>
+                                                    <span className={cn(
+                                                        "font-bold",
+                                                        isCorrect ? "text-green-700" : "text-red-700"
+                                                    )}>
+                                                        {studentSa?.answer || "—"}
+                                                    </span>
+                                                </div>
                                                 {!isCorrect && (
-                                                    <>
-                                                        <span className="text-slate-500">→</span>
-                                                        <span className="text-slate-400">Đáp án:</span>
-                                                        <span className="px-3 py-1 rounded font-bold bg-green-500/20 text-green-400">
+                                                    <div className="flex justify-between items-center pt-2 border-t border-dashed border-red-200">
+                                                        <span className="text-gray-500">Đáp án đúng:</span>
+                                                        <span className="font-bold text-green-700">
                                                             {sa.answer}
                                                         </span>
-                                                    </>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -375,10 +452,9 @@ export default function SubmissionDetailPage() {
                     </Card>
                 )}
 
-                {/* Back Button */}
-                <div className="flex justify-center">
+                <div className="flex justify-center mt-8">
                     <Link href={`/teacher/exams/${examId}/scores`}>
-                        <Button variant="outline" className="border-slate-600 text-slate-300">
+                        <Button variant="outline" className="border-gray-300 text-gray-600 hover:bg-gray-50">
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Quay lại danh sách
                         </Button>

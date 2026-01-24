@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -10,11 +10,13 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
     ArrowLeft,
-    Clock,
     Save,
     Loader2,
     CheckCircle2,
-    Trash2
+    HelpCircle,
+    FileText,
+    RefreshCw,
+    AlertCircle
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -22,18 +24,6 @@ const OPTIONS = ["A", "B", "C", "D"] as const
 type Option = typeof OPTIONS[number]
 type TFAnswer = { question: number; a: boolean; b: boolean; c: boolean; d: boolean }
 type SAAnswer = { question: number; answer: number | string }
-
-interface Exam {
-    id: string
-    title: string
-    duration: number
-    total_questions: number
-    status: "draft" | "published"
-    correct_answers: Option[] | null
-    mc_answers: { question: number; answer: Option }[] | null
-    tf_answers: TFAnswer[] | null
-    sa_answers: SAAnswer[] | null
-}
 
 export default function EditExamPage() {
     const router = useRouter()
@@ -87,7 +77,15 @@ export default function EditExamPage() {
             if (exam.mc_answers && exam.mc_answers.length > 0) {
                 const mc = exam.mc_answers as { question: number; answer: Option }[]
                 setMcCount(mc.length)
-                setMcAnswers(mc.map(m => m.answer))
+                // Initialize array with explicit size to avoid index issues
+                const newMc: (Option | null)[] = Array(mc.length).fill(null)
+                mc.forEach(item => {
+                    const idx = item.question - 1
+                    if (idx >= 0 && idx < mc.length) {
+                        newMc[idx] = item.answer
+                    }
+                })
+                setMcAnswers(newMc)
             } else if (exam.correct_answers) {
                 setMcCount(exam.correct_answers.length)
                 setMcAnswers(exam.correct_answers)
@@ -318,39 +316,42 @@ export default function EditExamPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                     <div className="flex items-center gap-4">
                         <Link href="/teacher/dashboard">
-                            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
+                            <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 hover:bg-white bg-white shadow-sm border border-gray-100">
                                 <ArrowLeft className="w-5 h-5" />
                             </Button>
                         </Link>
-                        <h1 className="text-2xl font-bold text-white">Chỉnh sửa đề thi</h1>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800">Chỉnh sửa đề thi</h1>
+                            <p className="text-gray-500 text-sm mt-1">Cập nhật thông tin và đáp án</p>
+                        </div>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
                         <Button
                             onClick={handleRegrade}
                             disabled={regrading}
                             variant="outline"
-                            className="border-orange-600 text-orange-400 hover:bg-orange-600 hover:text-white"
+                            className="border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:text-orange-700"
                         >
-                            {regrading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                            🔄 Chấm lại tất cả
+                            {regrading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                            Chấm lại tất cả
                         </Button>
                         <Button
                             onClick={handleSave}
                             disabled={saving}
-                            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
                             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                             Lưu thay đổi
@@ -359,136 +360,139 @@ export default function EditExamPage() {
                 </div>
 
                 {error && (
-                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 flex items-center gap-3">
+                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
                         {error}
                     </div>
                 )}
 
                 {success && (
-                    <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400">
+                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-600 flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
                         {success}
                     </div>
                 )}
 
-                {/* Basic Info */}
-                <Card className="border-slate-700 bg-slate-800/50 mb-6">
-                    <CardHeader>
-                        <CardTitle className="text-white">Thông tin cơ bản</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="col-span-2 space-y-2">
-                                <Label className="text-slate-300">Tên đề thi</Label>
+                {/* Configuration Cards */}
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    <Card className="border-gray-200 shadow-sm bg-white">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-base text-gray-800">Thông tin cơ bản</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label className="text-gray-700 font-medium">Tên đề thi</Label>
                                 <Input
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
-                                    className="bg-slate-700/50 border-slate-600 text-white"
+                                    className="bg-white border-gray-300 text-gray-900 focus:ring-blue-500"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-slate-300">Thời gian (phút)</Label>
+                                <Label className="text-gray-700 font-medium">Thời gian (phút)</Label>
                                 <Input
                                     type="number"
                                     value={duration}
                                     onChange={(e) => setDuration(Math.max(1, parseInt(e.target.value) || 1))}
-                                    className="bg-slate-700/50 border-slate-600 text-white"
+                                    className="bg-white border-gray-300 text-gray-900 focus:ring-blue-500"
                                 />
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
 
-                {/* Question Counts */}
-                <Card className="border-slate-700 bg-slate-800/50 mb-6">
-                    <CardHeader>
-                        <CardTitle className="text-white">Số câu hỏi</CardTitle>
-                        <CardDescription className="text-slate-400">
-                            Tổng: {mcCount + tfCount + saCount} câu
-                        </CardDescription>
+                    <Card className="border-gray-200 shadow-sm bg-white">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-base text-gray-800 flex justify-between items-center">
+                                <span>Cấu trúc đề thi</span>
+                                <span className="text-sm font-normal text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                                    Tổng: {mcCount + tfCount + saCount} câu
+                                </span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-blue-600 font-semibold uppercase">Trắc nghiệm</Label>
+                                    <Input
+                                        type="number"
+                                        value={mcCount}
+                                        onChange={(e) => handleMcCountChange(Math.max(0, parseInt(e.target.value) || 0))}
+                                        className="bg-white border-blue-200 text-gray-900 focus:ring-blue-500 h-10"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-green-600 font-semibold uppercase">Đúng/Sai</Label>
+                                    <Input
+                                        type="number"
+                                        value={tfCount}
+                                        onChange={(e) => handleTfCountChange(Math.max(0, parseInt(e.target.value) || 0))}
+                                        className="bg-white border-green-200 text-gray-900 focus:ring-green-500 h-10"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-purple-600 font-semibold uppercase">Điền đáp án</Label>
+                                    <Input
+                                        type="number"
+                                        value={saCount}
+                                        onChange={(e) => handleSaCountChange(Math.max(0, parseInt(e.target.value) || 0))}
+                                        className="bg-white border-purple-200 text-gray-900 focus:ring-purple-500 h-10"
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Answer Keys */}
+                <Card className="border-gray-200 shadow-sm bg-white">
+                    <CardHeader className="border-b border-gray-100 pb-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <CardTitle className="text-gray-800">Bảng đáp án</CardTitle>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setAnswerTab("mc")}
+                                    className={cn(
+                                        "px-4 py-2 rounded-lg text-sm font-medium transition-colors border",
+                                        answerTab === "mc"
+                                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                                            : "bg-white text-gray-500 border-transparent hover:bg-gray-50"
+                                    )}
+                                >
+                                    Trắc nghiệm ({mcCount})
+                                </button>
+                                <button
+                                    onClick={() => setAnswerTab("tf")}
+                                    className={cn(
+                                        "px-4 py-2 rounded-lg text-sm font-medium transition-colors border",
+                                        answerTab === "tf"
+                                            ? "bg-green-50 text-green-700 border-green-200"
+                                            : "bg-white text-gray-500 border-transparent hover:bg-gray-50"
+                                    )}
+                                >
+                                    Đúng/Sai ({tfCount})
+                                </button>
+                                <button
+                                    onClick={() => setAnswerTab("sa")}
+                                    className={cn(
+                                        "px-4 py-2 rounded-lg text-sm font-medium transition-colors border",
+                                        answerTab === "sa"
+                                            ? "bg-purple-50 text-purple-700 border-purple-200"
+                                            : "bg-white text-gray-500 border-transparent hover:bg-gray-50"
+                                    )}
+                                >
+                                    Điền đáp án ({saCount})
+                                </button>
+                            </div>
+                        </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-slate-300">Trắc nghiệm ABCD</Label>
-                                <Input
-                                    type="number"
-                                    value={mcCount}
-                                    onChange={(e) => handleMcCountChange(Math.max(0, parseInt(e.target.value) || 0))}
-                                    className="bg-slate-700/50 border-slate-600 text-white"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-slate-300">Đúng/Sai</Label>
-                                <Input
-                                    type="number"
-                                    value={tfCount}
-                                    onChange={(e) => handleTfCountChange(Math.max(0, parseInt(e.target.value) || 0))}
-                                    className="bg-slate-700/50 border-slate-600 text-white"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-slate-300">Trả lời ngắn</Label>
-                                <Input
-                                    type="number"
-                                    value={saCount}
-                                    onChange={(e) => handleSaCountChange(Math.max(0, parseInt(e.target.value) || 0))}
-                                    className="bg-slate-700/50 border-slate-600 text-white"
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Answer Tabs */}
-                <Card className="border-slate-700 bg-slate-800/50">
-                    <CardHeader>
-                        <CardTitle className="text-white">Đáp án</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {/* Tabs */}
-                        <div className="flex gap-2 mb-6">
-                            <button
-                                onClick={() => setAnswerTab("mc")}
-                                className={cn(
-                                    "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                                    answerTab === "mc"
-                                        ? "bg-blue-600 text-white"
-                                        : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                                )}
-                            >
-                                Trắc nghiệm ({mcCount})
-                            </button>
-                            <button
-                                onClick={() => setAnswerTab("tf")}
-                                className={cn(
-                                    "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                                    answerTab === "tf"
-                                        ? "bg-green-600 text-white"
-                                        : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                                )}
-                            >
-                                Đúng/Sai ({tfCount})
-                            </button>
-                            <button
-                                onClick={() => setAnswerTab("sa")}
-                                className={cn(
-                                    "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                                    answerTab === "sa"
-                                        ? "bg-purple-600 text-white"
-                                        : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                                )}
-                            >
-                                Trả lời ngắn ({saCount})
-                            </button>
-                        </div>
-
+                    <CardContent className="pt-6">
                         {/* MC Answers */}
                         {answerTab === "mc" && (
-                            <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
                                 {Array.from({ length: mcCount }, (_, i) => (
-                                    <div key={i} className="flex flex-col items-center gap-2 p-3 bg-slate-700/30 rounded-lg">
-                                        <span className="text-xs text-slate-400">Câu {i + 1}</span>
-                                        <div className="flex gap-1">
+                                    <div key={i} className="flex flex-col items-center gap-2 p-2 bg-gray-50 rounded border border-gray-100">
+                                        <span className="text-xs font-semibold text-gray-500">Câu {i + 1}</span>
+                                        <div className="grid grid-cols-2 gap-1 w-full">
                                             {OPTIONS.map((option) => (
                                                 <button
                                                     key={option}
@@ -498,10 +502,10 @@ export default function EditExamPage() {
                                                         setMcAnswers(newMc)
                                                     }}
                                                     className={cn(
-                                                        "w-8 h-8 rounded text-xs font-bold transition-colors",
+                                                        "h-7 rounded text-xs font-bold transition-all shadow-sm",
                                                         mcAnswers[i] === option
-                                                            ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                                                            : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                                                            ? "bg-blue-600 text-white"
+                                                            : "bg-white border border-gray-200 text-gray-400 hover:border-blue-300 hover:text-blue-600"
                                                     )}
                                                 >
                                                     {option}
@@ -510,23 +514,28 @@ export default function EditExamPage() {
                                         </div>
                                     </div>
                                 ))}
+                                {mcCount === 0 && (
+                                    <div className="col-span-full py-12 text-center text-gray-400">
+                                        Chưa có câu hỏi trắc nghiệm nào
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {/* TF Answers */}
                         {answerTab === "tf" && (
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {Array.from({ length: tfCount }, (_, i) => {
                                     const qNum = mcCount + 1 + i
                                     const answer = tfAnswers[i] || { question: qNum, a: true, b: true, c: true, d: true }
                                     return (
-                                        <div key={i} className="flex items-center gap-4 p-4 bg-slate-700/30 rounded-lg">
-                                            <span className="text-sm font-medium text-slate-300 w-20">Câu {qNum}</span>
-                                            <div className="flex gap-4">
+                                        <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                            <span className="text-sm font-bold text-gray-700 w-16">Câu {qNum}</span>
+                                            <div className="flex gap-6">
                                                 {(['a', 'b', 'c', 'd'] as const).map((sub) => (
-                                                    <div key={sub} className="flex flex-col items-center gap-1">
-                                                        <span className="text-xs text-slate-500">{sub})</span>
-                                                        <div className="flex gap-1">
+                                                    <div key={sub} className="flex flex-col items-center gap-2">
+                                                        <span className="text-xs font-semibold text-gray-500 uppercase">{sub}</span>
+                                                        <div className="flex rounded-md shadow-sm">
                                                             <button
                                                                 onClick={() => {
                                                                     const newTf = [...tfAnswers]
@@ -537,10 +546,10 @@ export default function EditExamPage() {
                                                                     setTfAnswers(newTf)
                                                                 }}
                                                                 className={cn(
-                                                                    "px-2 py-1 rounded text-xs font-medium transition-colors",
+                                                                    "px-2.5 py-1 rounded-l-md text-xs font-bold border-y border-l transition-colors",
                                                                     answer[sub] === true
-                                                                        ? "bg-green-600 text-white"
-                                                                        : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                                                                        ? "bg-green-600 border-green-600 text-white"
+                                                                        : "bg-white border-gray-200 text-gray-400 hover:bg-gray-50"
                                                                 )}
                                                             >
                                                                 Đ
@@ -555,10 +564,10 @@ export default function EditExamPage() {
                                                                     setTfAnswers(newTf)
                                                                 }}
                                                                 className={cn(
-                                                                    "px-2 py-1 rounded text-xs font-medium transition-colors",
+                                                                    "px-2.5 py-1 rounded-r-md text-xs font-bold border transition-colors",
                                                                     answer[sub] === false
-                                                                        ? "bg-red-600 text-white"
-                                                                        : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                                                                        ? "bg-red-500 border-red-500 text-white"
+                                                                        : "bg-white border-gray-200 text-gray-400 hover:bg-gray-50"
                                                                 )}
                                                             >
                                                                 S
@@ -571,7 +580,9 @@ export default function EditExamPage() {
                                     )
                                 })}
                                 {tfCount === 0 && (
-                                    <p className="text-center text-slate-500 py-8">Không có câu Đúng/Sai</p>
+                                    <div className="py-12 text-center text-gray-400">
+                                        Chưa có câu hỏi Đúng/Sai nào
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -583,8 +594,8 @@ export default function EditExamPage() {
                                     const qNum = mcCount + tfCount + 1 + i
                                     const answer = saAnswers[i] || { question: qNum, answer: "" }
                                     return (
-                                        <div key={i} className="flex items-center gap-4 p-4 bg-slate-700/30 rounded-lg">
-                                            <span className="text-sm font-medium text-slate-300 w-20">Câu {qNum}</span>
+                                        <div key={i} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                            <span className="text-sm font-bold text-gray-700 w-16">Câu {qNum}</span>
                                             <Input
                                                 value={answer.answer?.toString() || ""}
                                                 onChange={(e) => {
@@ -592,14 +603,16 @@ export default function EditExamPage() {
                                                     newSa[i] = { question: qNum, answer: e.target.value }
                                                     setSaAnswers(newSa)
                                                 }}
-                                                placeholder="Nhập đáp án số..."
-                                                className="bg-slate-700/50 border-slate-600 text-white flex-1"
+                                                placeholder="Nhập đáp án (số hoặc chữ)..."
+                                                className="bg-white border-gray-300 text-gray-900 focus:ring-purple-500 flex-1 max-w-md"
                                             />
                                         </div>
                                     )
                                 })}
                                 {saCount === 0 && (
-                                    <p className="text-center text-slate-500 py-8">Không có câu Trả lời ngắn</p>
+                                    <div className="py-12 text-center text-gray-400">
+                                        Chưa có câu hỏi điền đáp án nào
+                                    </div>
                                 )}
                             </div>
                         )}

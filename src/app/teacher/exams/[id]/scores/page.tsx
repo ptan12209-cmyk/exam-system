@@ -14,13 +14,12 @@ import {
     Download,
     Loader2,
     CheckCircle2,
-    XCircle,
     Medal,
-    Eye
+    Eye,
+    Edit3
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { LiveParticipants } from "@/components/realtime/LiveParticipants"
-import { ParticipantCount } from "@/components/realtime/ParticipantCount"
 import { SubmissionFeed } from "@/components/realtime/SubmissionFeed"
 
 interface Exam {
@@ -90,8 +89,6 @@ export default function ExamScoresPage() {
                 .order("score", { ascending: false })
                 .order("time_spent", { ascending: true })
 
-            console.log("Submissions query result:", { submissionsData, subError })
-
             if (submissionsData && submissionsData.length > 0) {
                 // Fetch profiles separately
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -133,15 +130,9 @@ export default function ExamScoresPage() {
     }
 
     const getScoreColor = (score: number) => {
-        if (score >= 8) return "text-green-400"
-        if (score >= 5) return "text-yellow-400"
-        return "text-red-400"
-    }
-
-    const getScoreBg = (score: number) => {
-        if (score >= 8) return "bg-green-500/10 border-green-500/20"
-        if (score >= 5) return "bg-yellow-500/10 border-yellow-500/20"
-        return "bg-red-500/10 border-red-500/20"
+        if (score >= 8) return "text-green-600 bg-green-50 border-green-200"
+        if (score >= 5) return "text-yellow-600 bg-yellow-50 border-yellow-200"
+        return "text-red-600 bg-red-50 border-red-200"
     }
 
     // Statistics
@@ -179,8 +170,8 @@ export default function ExamScoresPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
@@ -188,33 +179,34 @@ export default function ExamScoresPage() {
     if (!exam) return null
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-8">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                     <div className="flex items-center gap-4">
                         <Link href="/teacher/dashboard">
-                            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
+                            <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 hover:bg-white bg-white shadow-sm border border-gray-200">
                                 <ArrowLeft className="w-5 h-5" />
                             </Button>
                         </Link>
                         <div>
-                            <h1 className="text-2xl font-bold text-white">Điểm bài thi</h1>
-                            <p className="text-slate-400 text-sm">{exam.title}</p>
+                            <h1 className="text-2xl font-bold text-gray-800">Kết quả thi</h1>
+                            <p className="text-gray-500 text-sm mt-1">{exam.title}</p>
                         </div>
                     </div>
                     <div className="flex gap-3">
                         <Link href={`/teacher/exams/${examId}/edit`}>
                             <Button
                                 variant="outline"
-                                className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                                className="border-gray-300 text-gray-600 hover:bg-white hover:text-blue-600"
                             >
-                                ✏️ Sửa đáp án
+                                <Edit3 className="w-4 h-4 mr-2" />
+                                Sửa đáp án
                             </Button>
                         </Link>
                         <Button
                             onClick={handleExportExcel}
-                            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                            className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
                         >
                             <Download className="w-4 h-4 mr-2" />
                             Xuất Excel
@@ -224,127 +216,151 @@ export default function ExamScoresPage() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <Card className="border-slate-700 bg-slate-800/50">
+                    <Card className="border-gray-200 shadow-sm bg-white">
                         <CardContent className="p-4 text-center">
-                            <Users className="w-6 h-6 mx-auto mb-2 text-blue-400" />
-                            <p className="text-2xl font-bold text-white">{stats.total}</p>
-                            <p className="text-xs text-slate-400">Đã nộp</p>
+                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
+                                <Users className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Đã nộp</p>
                         </CardContent>
                     </Card>
-                    <Card className="border-slate-700 bg-slate-800/50">
+                    <Card className="border-gray-200 shadow-sm bg-white">
                         <CardContent className="p-4 text-center">
-                            <Trophy className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
-                            <p className="text-2xl font-bold text-yellow-400">{stats.avg}</p>
-                            <p className="text-xs text-slate-400">Điểm TB</p>
+                            <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mx-auto mb-3">
+                                <Trophy className="w-5 h-5 text-yellow-600" />
+                            </div>
+                            <p className="text-2xl font-bold text-gray-800">{stats.avg}</p>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Điểm TB</p>
                         </CardContent>
                     </Card>
-                    <Card className="border-slate-700 bg-slate-800/50">
+                    <Card className="border-gray-200 shadow-sm bg-white">
                         <CardContent className="p-4 text-center">
-                            <CheckCircle2 className="w-6 h-6 mx-auto mb-2 text-green-400" />
-                            <p className="text-2xl font-bold text-green-400">{stats.passed}</p>
-                            <p className="text-xs text-slate-400">Đạt (≥5)</p>
+                            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
+                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            </div>
+                            <p className="text-2xl font-bold text-gray-800">{stats.passed}</p>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Đạt (≥5)</p>
                         </CardContent>
                     </Card>
-                    <Card className="border-slate-700 bg-slate-800/50">
+                    <Card className="border-gray-200 shadow-sm bg-white">
                         <CardContent className="p-4 text-center">
-                            <Medal className="w-6 h-6 mx-auto mb-2 text-purple-400" />
-                            <p className="text-2xl font-bold text-purple-400">{stats.highest}</p>
-                            <p className="text-xs text-slate-400">Điểm cao nhất</p>
+                            <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center mx-auto mb-3">
+                                <Medal className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <p className="text-2xl font-bold text-gray-800">{stats.highest}</p>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Cao nhất</p>
                         </CardContent>
                     </Card>
                 </div>
 
                 {/* Real-time Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     <LiveParticipants examId={examId} />
                     <SubmissionFeed examId={examId} />
                 </div>
 
                 {/* Submissions Table */}
-                <Card className="border-slate-700 bg-slate-800/50">
-                    <CardHeader>
-                        <CardTitle className="text-white">Danh sách học sinh</CardTitle>
-                        <CardDescription className="text-slate-400">
-                            Xếp theo điểm từ cao đến thấp
-                        </CardDescription>
+                <Card className="border-gray-200 shadow-sm bg-white overflow-hidden">
+                    <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <CardTitle className="text-lg font-bold text-gray-800">Danh sách học sinh</CardTitle>
+                                <CardDescription className="text-gray-500 mt-1">
+                                    Xếp theo điểm từ cao đến thấp
+                                </CardDescription>
+                            </div>
+                            <div className="text-sm text-gray-500">
+                                {submissions.length} bản ghi
+                            </div>
+                        </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                         {submissions.length === 0 ? (
-                            <div className="text-center py-12 text-slate-400">
-                                <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                                <p>Chưa có học sinh nào nộp bài</p>
+                            <div className="text-center py-16 text-gray-400">
+                                <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Users className="w-8 h-8 text-gray-300" />
+                                </div>
+                                <p className="text-gray-500 font-medium">Chưa có học sinh nào nộp bài</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full">
                                     <thead>
-                                        <tr className="border-b border-slate-700">
-                                            <th className="text-left p-3 text-slate-400 text-sm font-medium">Hạng</th>
-                                            <th className="text-left p-3 text-slate-400 text-sm font-medium">Học sinh</th>
-                                            <th className="text-center p-3 text-slate-400 text-sm font-medium">Điểm</th>
-                                            <th className="text-center p-3 text-slate-400 text-sm font-medium">Đúng/Sai</th>
-                                            <th className="text-center p-3 text-slate-400 text-sm font-medium">Thời gian</th>
-                                            <th className="text-right p-3 text-slate-400 text-sm font-medium">Nộp lúc</th>
-                                            <th className="text-center p-3 text-slate-400 text-sm font-medium">Chi tiết</th>
+                                        <tr className="bg-gray-50/50 border-b border-gray-100 text-left">
+                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase w-16 text-center">Hạng</th>
+                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase">Học sinh</th>
+                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Điểm</th>
+                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Số câu đúng</th>
+                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Thời gian</th>
+                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-right">Nộp lúc</th>
+                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center w-24">Chi tiết</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-gray-100">
                                         {submissions.map((sub, index) => (
                                             <tr
                                                 key={sub.id}
-                                                className="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors"
+                                                className="hover:bg-blue-50/30 transition-colors group"
                                             >
-                                                <td className="p-3">
+                                                <td className="p-4 text-center">
                                                     <span className={cn(
-                                                        "w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm",
-                                                        index === 0 ? "bg-yellow-500/20 text-yellow-400" :
-                                                            index === 1 ? "bg-slate-400/20 text-slate-300" :
-                                                                index === 2 ? "bg-orange-500/20 text-orange-400" :
-                                                                    "bg-slate-700 text-slate-400"
+                                                        "w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs mx-auto shadow-sm",
+                                                        index === 0 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" :
+                                                            index === 1 ? "bg-gray-200 text-gray-700 border border-gray-300" :
+                                                                index === 2 ? "bg-orange-100 text-orange-700 border border-orange-200" :
+                                                                    "bg-white text-gray-500 border border-gray-200"
                                                     )}>
                                                         {index + 1}
                                                     </span>
                                                 </td>
-                                                <td className="p-3">
-                                                    <p className="font-medium text-white">
-                                                        {sub.profile?.full_name || `Học sinh ${sub.student_id.slice(0, 8)}`}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500">
-                                                        ID: {sub.student_id.slice(0, 8)}...
-                                                    </p>
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                                                            {sub.profile?.full_name?.charAt(0) || sub.student_id.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium text-gray-900">
+                                                                {sub.profile?.full_name || `Học sinh ${sub.student_id.slice(0, 8)}`}
+                                                            </p>
+                                                            <p className="text-xs text-gray-400 font-mono">
+                                                                #{sub.student_id.slice(0, 8)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
                                                 </td>
-                                                <td className="p-3 text-center">
+                                                <td className="p-4 text-center">
                                                     <span className={cn(
-                                                        "px-3 py-1 rounded-full text-sm font-bold border",
-                                                        getScoreBg(sub.score),
+                                                        "px-3 py-1 rounded-full text-sm font-bold border inline-block min-w-[3rem]",
                                                         getScoreColor(sub.score)
                                                     )}>
                                                         {sub.score.toFixed(1)}
                                                     </span>
                                                 </td>
-                                                <td className="p-3 text-center">
-                                                    <span className="text-green-400">{sub.correct_count}</span>
-                                                    <span className="text-slate-500">/</span>
-                                                    <span className="text-red-400">{exam.total_questions - sub.correct_count}</span>
+                                                <td className="p-4 text-center">
+                                                    <div className="inline-flex items-center gap-1 font-medium text-sm">
+                                                        <span className="text-green-600">{sub.correct_count}</span>
+                                                        <span className="text-gray-300">/</span>
+                                                        <span className="text-gray-500">{exam.total_questions}</span>
+                                                    </div>
                                                 </td>
-                                                <td className="p-3 text-center">
-                                                    <div className="flex items-center justify-center gap-1 text-slate-400">
-                                                        <Clock className="w-4 h-4" />
+                                                <td className="p-4 text-center">
+                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-50 text-gray-600 text-xs font-medium border border-gray-100">
+                                                        <Clock className="w-3.5 h-3.5 text-gray-400" />
                                                         <span>{formatTime(sub.time_spent)}</span>
                                                     </div>
                                                 </td>
-                                                <td className="p-3 text-right text-slate-400 text-sm">
+                                                <td className="p-4 text-right text-gray-500 text-sm">
                                                     {formatDate(sub.submitted_at)}
                                                 </td>
-                                                <td className="p-3 text-center">
+                                                <td className="p-4 text-center">
                                                     <Link href={`/teacher/exams/${examId}/submissions/${sub.id}`}>
                                                         <Button
                                                             variant="ghost"
-                                                            size="sm"
-                                                            className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                                                            size="icon"
+                                                            className="text-gray-400 hover:text-blue-600 hover:bg-blue-50"
                                                         >
-                                                            <Eye className="w-4 h-4 mr-1" />
-                                                            Xem
+                                                            <Eye className="w-5 h-5" />
                                                         </Button>
                                                     </Link>
                                                 </td>

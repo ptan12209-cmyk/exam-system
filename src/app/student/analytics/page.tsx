@@ -6,18 +6,16 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { NotificationBell } from "@/components/NotificationBell"
+import { UserMenu } from "@/components/UserMenu"
+import { BottomNav } from "@/components/BottomNav"
 import {
-    ArrowLeft,
-    BarChart3,
     Loader2,
-    Trophy,
-    Target,
     Calendar,
     TrendingUp,
-    Flame,
-    Award
+    Target,
+    BarChart3
 } from "lucide-react"
-import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { ProgressLineChart } from "@/components/analytics/ProgressLineChart"
 import { ActivityHeatmap, generateActivityData } from "@/components/analytics/ActivityHeatmap"
 import { StrengthRadarChart, calculateStrengthBySubject } from "@/components/analytics/StrengthRadarChart"
@@ -45,7 +43,7 @@ interface StudentStats {
 export default function StudentAnalyticsPage() {
     const router = useRouter()
     const supabase = createClient()
-
+    const [fullName, setFullName] = useState("")
     const [loading, setLoading] = useState(true)
     const [submissions, setSubmissions] = useState<Submission[]>([])
     const [stats, setStats] = useState<StudentStats | null>(null)
@@ -64,6 +62,14 @@ export default function StudentAnalyticsPage() {
                 return
             }
 
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("id", user.id)
+                .single()
+
+            if (profile) setFullName(profile.full_name || "")
+
             // Fetch submissions with exam details
             const { data: subsData } = await supabase
                 .from("submissions")
@@ -78,14 +84,7 @@ export default function StudentAnalyticsPage() {
                 .order("submitted_at", { ascending: true })
 
             if (subsData) {
-                // Transform the data to handle the join properly
-                const transformedData = subsData.map((sub: {
-                    id: string
-                    exam_id: string
-                    score: number
-                    submitted_at: string
-                    exam: { id: string; title: string; subject?: string } | { id: string; title: string; subject?: string }[] | null
-                }) => ({
+                const transformedData = subsData.map((sub: any) => ({
                     ...sub,
                     exam: Array.isArray(sub.exam) ? sub.exam[0] : sub.exam
                 })) as Submission[]
@@ -134,10 +133,15 @@ export default function StudentAnalyticsPage() {
         fetchData()
     }, [router, supabase])
 
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
+        router.push("/login")
+    }
+
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
@@ -159,105 +163,86 @@ export default function StudentAnalyticsPage() {
     )
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-gray-100 flex flex-col">
             {/* Header */}
-            <header className="border-b border-border bg-card sticky top-0 z-50 safe-top">
-                <div className="max-w-7xl mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Link href="/student/dashboard">
-                                <Button variant="ghost" size="icon">
-                                    <ArrowLeft className="w-5 h-5" />
-                                </Button>
-                            </Link>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
-                                    <BarChart3 className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <h1 className="text-xl font-bold">Thống kê của tôi</h1>
-                                    <p className="text-sm text-muted-foreground">Theo dõi tiến bộ học tập</p>
-                                </div>
-                            </div>
-                        </div>
-                        <ThemeToggle />
+            <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <Link href="/student/dashboard" className="flex items-center gap-2">
+                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-md">E</div>
+                            <span className="font-bold text-xl text-blue-600 hidden md:block">ExamHub</span>
+                        </Link>
+                    </div>
+                    <nav className="hidden lg:flex items-center gap-1">
+                        <Link href="/student/dashboard" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">🏠</Link>
+                        <Link href="/student/exams" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">📝</Link>
+                        <Link href="/arena" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">🏆</Link>
+                        <Link href="/student/analytics" className="p-3 text-blue-600 bg-blue-50 rounded-lg">📊</Link>
+                    </nav>
+                    <div className="flex items-center gap-3">
+                        <NotificationBell />
+                        <UserMenu userName={fullName} onLogout={handleLogout} role="student" />
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+            {/* Main */}
+            <main className="flex-grow max-w-7xl mx-auto px-4 py-8 w-full">
+                {/* Breadcrumb */}
+                <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+                    <Link href="/student/dashboard" className="hover:text-blue-600">Trang chủ</Link>
+                    <span>›</span>
+                    <span className="font-medium text-gray-800">Thống kê học tập</span>
+                </div>
+
                 {/* Stats Overview */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    <Card>
-                        <CardContent className="p-4 text-center">
-                            <Calendar className="w-6 h-6 mx-auto text-blue-500 mb-2" />
-                            <div className="text-2xl font-bold">{summary.totalExams}</div>
-                            <div className="text-xs text-muted-foreground">Bài thi</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-4 text-center">
-                            <Target className="w-6 h-6 mx-auto text-purple-500 mb-2" />
-                            <div className="text-2xl font-bold">{summary.averageScore.toFixed(1)}</div>
-                            <div className="text-xs text-muted-foreground">Điểm TB</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-4 text-center">
-                            <Trophy className="w-6 h-6 mx-auto text-yellow-500 mb-2" />
-                            <div className="text-2xl font-bold">{summary.bestScore.toFixed(1)}</div>
-                            <div className="text-xs text-muted-foreground">Cao nhất</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-4 text-center">
-                            <TrendingUp className={`w-6 h-6 mx-auto mb-2 ${summary.recentTrend >= 0 ? 'text-green-500' : 'text-red-500'}`} />
-                            <div className="text-2xl font-bold">
-                                {summary.recentTrend >= 0 ? '+' : ''}{summary.recentTrend.toFixed(1)}
-                            </div>
-                            <div className="text-xs text-muted-foreground">Xu hướng</div>
-                        </CardContent>
-                    </Card>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+                        <Calendar className="w-6 h-6 mx-auto text-blue-500 mb-2" />
+                        <div className="text-2xl font-bold text-gray-800">{summary.totalExams}</div>
+                        <div className="text-xs text-gray-500">Bài thi</div>
+                    </div>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+                        <Target className="w-6 h-6 mx-auto text-purple-500 mb-2" />
+                        <div className="text-2xl font-bold text-gray-800">{summary.averageScore.toFixed(1)}</div>
+                        <div className="text-xs text-gray-500">Điểm TB</div>
+                    </div>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+                        <TrendingUp className={`w-6 h-6 mx-auto mb-2 ${summary.recentTrend >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+                        <div className="text-2xl font-bold text-gray-800">
+                            {summary.recentTrend >= 0 ? '+' : ''}{summary.recentTrend.toFixed(1)}
+                        </div>
+                        <div className="text-xs text-gray-500">Xu hướng</div>
+                    </div>
                     {stats && (
-                        <>
-                            <Card>
-                                <CardContent className="p-4 text-center">
-                                    <Flame className="w-6 h-6 mx-auto text-orange-500 mb-2" />
-                                    <div className="text-2xl font-bold">{stats.streak_days}</div>
-                                    <div className="text-xs text-muted-foreground">Streak</div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="p-4 text-center">
-                                    <Award className="w-6 h-6 mx-auto text-pink-500 mb-2" />
-                                    <div className="text-2xl font-bold">Lv.{stats.level}</div>
-                                    <div className="text-xs text-muted-foreground">{stats.xp} XP</div>
-                                </CardContent>
-                            </Card>
-                        </>
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+                            <div className="w-6 h-6 mx-auto text-orange-500 mb-2 font-bold flex items-center justify-center">XP</div>
+                            <div className="text-2xl font-bold text-gray-800">{stats.xp}</div>
+                            <div className="text-xs text-gray-500">Lv.{stats.level}</div>
+                        </div>
                     )}
                 </div>
 
                 {submissions.length === 0 ? (
-                    <Card>
-                        <CardContent className="p-12 text-center">
-                            <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                            <h3 className="text-lg font-medium mb-2">Chưa có dữ liệu</h3>
-                            <p className="text-muted-foreground mb-4">
-                                Hoàn thành một số bài thi để xem thống kê
-                            </p>
-                            <Link href="/student/dashboard">
-                                <Button>Làm bài thi</Button>
-                            </Link>
-                        </CardContent>
-                    </Card>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+                        <BarChart3 className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                        <h3 className="text-lg font-bold text-gray-800 mb-2">Chưa có dữ liệu thống kê</h3>
+                        <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                            Hệ thống sẽ tự động phân tích và hiển thị biểu đồ sau khi bạn hoàn thành bài thi đầu tiên.
+                        </p>
+                        <Link href="/student/exams">
+                            <Button className="bg-blue-600 hover:bg-blue-700">
+                                Làm bài thi ngay
+                            </Button>
+                        </Link>
+                    </div>
                 ) : (
-                    <>
+                    <div className="space-y-6">
                         {/* Progress Chart */}
-                        <Card>
+                        <Card className="bg-white border-gray-100 shadow-sm">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <TrendingUp className="w-5 h-5" />
+                                <CardTitle className="flex items-center gap-2 text-gray-800">
+                                    <TrendingUp className="w-5 h-5 text-blue-500" />
                                     Tiến bộ theo thời gian
                                 </CardTitle>
                             </CardHeader>
@@ -269,10 +254,10 @@ export default function StudentAnalyticsPage() {
                         {/* Two Column Layout */}
                         <div className="grid md:grid-cols-2 gap-6">
                             {/* Activity Heatmap */}
-                            <Card>
+                            <Card className="bg-white border-gray-100 shadow-sm">
                                 <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Calendar className="w-5 h-5" />
+                                    <CardTitle className="flex items-center gap-2 text-gray-800">
+                                        <Calendar className="w-5 h-5 text-green-500" />
                                         Hoạt động 6 tháng
                                     </CardTitle>
                                 </CardHeader>
@@ -283,10 +268,10 @@ export default function StudentAnalyticsPage() {
 
                             {/* Strength Radar */}
                             {strengthData.length >= 3 && (
-                                <Card>
+                                <Card className="bg-white border-gray-100 shadow-sm">
                                     <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <Target className="w-5 h-5" />
+                                        <CardTitle className="flex items-center gap-2 text-gray-800">
+                                            <Target className="w-5 h-5 text-red-500" />
                                             Điểm mạnh / Điểm yếu
                                         </CardTitle>
                                     </CardHeader>
@@ -297,34 +282,48 @@ export default function StudentAnalyticsPage() {
                             )}
                         </div>
 
-                        {/* Recent Exams */}
-                        <Card>
+                        {/* Recent Exams Table */}
+                        <Card className="bg-white border-gray-100 shadow-sm overflow-hidden">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Calendar className="w-5 h-5" />
+                                <CardTitle className="flex items-center gap-2 text-gray-800">
+                                    <Calendar className="w-5 h-5 text-purple-500" />
                                     Lịch sử làm bài
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
-                                        <thead className="bg-muted/50">
-                                            <tr className="text-left text-sm">
-                                                <th className="px-4 py-3 font-medium">Đề thi</th>
-                                                <th className="px-4 py-3 font-medium">Ngày</th>
-                                                <th className="px-4 py-3 font-medium text-right">Điểm</th>
+                                        <thead className="bg-gray-50 border-b border-gray-100">
+                                            <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                <th className="px-6 py-4">Đề thi</th>
+                                                <th className="px-6 py-4">Ngày nộp</th>
+                                                <th className="px-6 py-4 text-right">Điểm số</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-border">
+                                        <tbody className="divide-y divide-gray-100">
                                             {[...submissions].reverse().slice(0, 10).map((sub) => (
-                                                <tr key={sub.id} className="hover:bg-muted/30">
-                                                    <td className="px-4 py-3">{sub.exam?.title || "Không xác định"}</td>
-                                                    <td className="px-4 py-3 text-muted-foreground">
-                                                        {new Date(sub.submitted_at).toLocaleDateString("vi-VN")}
+                                                <tr key={sub.id} className="hover:bg-gray-50/50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="font-medium text-gray-900">{sub.exam?.title || "Không xác định"}</div>
+                                                        {sub.exam?.subject && (
+                                                            <div className="text-xs text-gray-500 mt-1">{sub.exam.subject}</div>
+                                                        )}
                                                     </td>
-                                                    <td className="px-4 py-3 text-right font-medium">
-                                                        <span className={sub.score >= 5 ? "text-green-500" : "text-red-500"}>
-                                                            {sub.score.toFixed(1)}
+                                                    <td className="px-6 py-4 text-sm text-gray-500">
+                                                        {new Date(sub.submitted_at).toLocaleDateString("vi-VN", {
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-sm font-bold ${sub.score >= 8 ? 'bg-green-100 text-green-700' :
+                                                            sub.score >= 5 ? 'bg-blue-100 text-blue-700' :
+                                                                'bg-red-100 text-red-700'
+                                                            }`}>
+                                                            {sub.score.toFixed(2)}
                                                         </span>
                                                     </td>
                                                 </tr>
@@ -334,9 +333,18 @@ export default function StudentAnalyticsPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                    </>
+                    </div>
                 )}
             </main>
+
+            {/* Footer */}
+            <footer className="bg-blue-600 text-white py-8 mt-auto">
+                <div className="max-w-7xl mx-auto px-4 text-center">
+                    <p className="text-sm text-blue-200">© 2026 ExamHub. All rights reserved.</p>
+                </div>
+            </footer>
+
+            <BottomNav />
         </div>
     )
 }

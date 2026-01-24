@@ -19,7 +19,11 @@ import {
     CheckCircle2,
     X,
     Wand2,
-    Sparkles
+    Sparkles,
+    Calendar,
+    HelpCircle,
+    Copy,
+    Trash
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SUBJECTS } from "@/lib/subjects"
@@ -33,9 +37,9 @@ export default function CreateExamPage() {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const [title, setTitle] = useState("")
-    const [subject, setSubject] = useState("other")  // Môn học
+    const [subject, setSubject] = useState("other")
     const [duration, setDuration] = useState(15)
-    const [maxAttempts, setMaxAttempts] = useState(1)  // 1 = no retake, 0 = unlimited
+    const [maxAttempts, setMaxAttempts] = useState(1)
 
     // Scheduling
     const [isScheduled, setIsScheduled] = useState(false)
@@ -43,15 +47,15 @@ export default function CreateExamPage() {
     const [endTime, setEndTime] = useState("")
 
     // Question type toggles
-    const [enableTF, setEnableTF] = useState(false)  // True/False
-    const [enableSA, setEnableSA] = useState(false)  // Short answer
+    const [enableTF, setEnableTF] = useState(false)
+    const [enableSA, setEnableSA] = useState(false)
 
     // Question counts per type
-    const [mcCount, setMcCount] = useState(12)  // Multiple choice
-    const [tfCount, setTfCount] = useState(4)   // True/False
-    const [saCount, setSaCount] = useState(6)   // Short answer
+    const [mcCount, setMcCount] = useState(12)
+    const [tfCount, setTfCount] = useState(4)
+    const [saCount, setSaCount] = useState(6)
 
-    // Legacy - for backwards compatibility
+    // Legacy support
     const [totalQuestions, setTotalQuestions] = useState(10)
     const [correctAnswers, setCorrectAnswers] = useState<(Option | null)[]>([])
 
@@ -65,7 +69,7 @@ export default function CreateExamPage() {
 
     const [pdfFile, setPdfFile] = useState<File | null>(null)
     const [pdfUrl, setPdfUrl] = useState<string | null>(null)
-    const [answerPdfFile, setAnswerPdfFile] = useState<File | null>(null)  // Separate answer PDF
+    const [answerPdfFile, setAnswerPdfFile] = useState<File | null>(null)
     const [loading, setLoading] = useState(false)
     const [uploadingPdf, setUploadingPdf] = useState(false)
     const [parsingPdf, setParsingPdf] = useState(false)
@@ -74,18 +78,14 @@ export default function CreateExamPage() {
     const [step, setStep] = useState<"info" | "answers">("info")
     const [answerTab, setAnswerTab] = useState<"mc" | "tf" | "sa">("mc")
 
-    // Worker API URL (change to Render URL after deployment)
     const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || "http://localhost:8000"
 
-    // Email notification
     const [sendNotification, setSendNotification] = useState(true)
 
-    // Generate answer slots when total questions changes
     const handleTotalQuestionsChange = (value: number) => {
         const newValue = Math.max(1, Math.min(100, value))
         setTotalQuestions(newValue)
 
-        // Resize answers array
         const newAnswers: (Option | null)[] = Array(newValue).fill(null)
         correctAnswers.forEach((answer, i) => {
             if (i < newValue) newAnswers[i] = answer
@@ -110,13 +110,12 @@ export default function CreateExamPage() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) throw new Error("Chưa đăng nhập")
 
-            // Sanitize file name - remove Vietnamese diacritics and special chars
             const sanitizeFileName = (name: string) => {
                 return name
                     .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+                    .replace(/[\u0300-\u036f]/g, "")
                     .replace(/[đĐ]/g, "d")
-                    .replace(/[^a-zA-Z0-9._-]/g, "_") // Replace special chars with underscore
+                    .replace(/[^a-zA-Z0-9._-]/g, "_")
             }
             const safeFileName = sanitizeFileName(file.name)
             const fileName = `${user.id}/${Date.now()}_${safeFileName}`
@@ -139,9 +138,7 @@ export default function CreateExamPage() {
         }
     }
 
-    // Auto-parse PDF to extract answer key
     const parsePdfAnswers = async (fileToUse?: File) => {
-        // Priority: passed file > answerPdfFile > pdfFile
         const targetFile = fileToUse || answerPdfFile || pdfFile
 
         if (!targetFile) {
@@ -170,7 +167,6 @@ export default function CreateExamPage() {
             const data = await response.json()
             console.log("API Response:", data)
 
-            // === MULTIPLE CHOICE ===
             const mcData = data.multiple_choice || []
             const validMc = mcData.filter((a: string | null) =>
                 a && ["A", "B", "C", "D"].includes(a.toUpperCase())
@@ -184,24 +180,16 @@ export default function CreateExamPage() {
                 }).filter((a: Option | null) => a !== null)
                 setMcAnswers(parsedMc)
                 setMcCount(parsedMc.length)
-                // Also set legacy for backwards compatibility
                 setCorrectAnswers(parsedMc)
                 setTotalQuestions(parsedMc.length)
             }
 
-            // Store the actual MC count for synchronous use (state is async!)
             const parsedMcCount = validMc.length > 0 ? validMc.length : mcCount
 
-            // === TRUE/FALSE ===
             const tfData = data.true_false || []
-            console.log("TF Data from AI:", tfData, "Using parsedMcCount:", parsedMcCount)
             if (tfData.length > 0) {
-                // Re-map question numbers to use correct offset (parsedMcCount + 1 + index)
                 const parsedTf: TFAnswer[] = tfData.map((tf: { question: number; answers?: { a: boolean; b: boolean; c: boolean; d: boolean }; a?: boolean; b?: boolean; c?: boolean; d?: boolean }, index: number) => {
-                    // Calculate correct question number based on position - USE LOCAL VAR!
                     const correctQNum = parsedMcCount + 1 + index
-
-                    // Handle both nested and flat format
                     if (tf.answers) {
                         return {
                             question: correctQNum,
@@ -211,7 +199,6 @@ export default function CreateExamPage() {
                             d: tf.answers.d
                         }
                     } else {
-                        // Flat format
                         return {
                             question: correctQNum,
                             a: tf.a ?? true,
@@ -221,28 +208,21 @@ export default function CreateExamPage() {
                         }
                     }
                 })
-                console.log("Parsed TF (remapped):", parsedTf)
                 setTfAnswers(parsedTf)
                 setTfCount(parsedTf.length)
-                setEnableTF(true)  // Auto-enable TF when detected
+                setEnableTF(true)
             }
 
-            // === SHORT ANSWER ===
             const saData = data.short_answer || []
-            console.log("SA Data from AI:", saData)
             if (saData.length > 0) {
-                // Calculate effective TF count for SA offset
                 const effectiveTfCount = tfData.length || tfCount
-
-                // Re-map question numbers to use correct offset - USE LOCAL VAR!
                 const parsedSa: SAAnswer[] = saData.map((sa: { question: number; answer: number | string }, index: number) => ({
                     question: parsedMcCount + effectiveTfCount + 1 + index,
                     answer: sa.answer
                 }))
-                console.log("Parsed SA (remapped):", parsedSa)
                 setSaAnswers(parsedSa)
                 setSaCount(parsedSa.length)
-                setEnableSA(true)  // Auto-enable SA when detected
+                setEnableSA(true)
             }
 
             if (validMc.length > 0 || tfData.length > 0 || saData.length > 0) {
@@ -261,6 +241,12 @@ export default function CreateExamPage() {
         const newAnswers = [...correctAnswers]
         newAnswers[questionIndex] = option
         setCorrectAnswers(newAnswers)
+        // Also update mcAnswers if applicable
+        if (mcAnswers.length > 0) {
+            const newMc = [...mcAnswers]
+            newMc[questionIndex] = option
+            setMcAnswers(newMc)
+        }
     }
 
     const handleSave = async (publish: boolean = false) => {
@@ -269,7 +255,6 @@ export default function CreateExamPage() {
             return
         }
 
-        // Check if at least MC answers are filled
         const filledMc = (mcAnswers.length > 0 ? mcAnswers : correctAnswers).filter(a => a !== null).length
         if (filledMc < mcCount && mcCount > 0) {
             setError(`Vui lòng chọn đáp án cho tất cả ${mcCount} câu trắc nghiệm`)
@@ -283,13 +268,11 @@ export default function CreateExamPage() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) throw new Error("Chưa đăng nhập")
 
-            // Prepare mc_answers as array of objects
             const mcAnswerObjects = (mcAnswers.length > 0 ? mcAnswers : correctAnswers).map((ans, i) => ({
                 question: i + 1,
                 answer: ans
             })).filter(a => a.answer !== null)
 
-            // Only include TF if enabled
             let finalTfAnswers: TFAnswer[] = []
             const effectiveTfCount = enableTF ? tfCount : 0
             if (enableTF && tfCount > 0) {
@@ -303,7 +286,6 @@ export default function CreateExamPage() {
                 }
             }
 
-            // Only include SA if enabled
             let finalSaAnswers: SAAnswer[] = []
             const effectiveSaCount = enableSA ? saCount : 0
             if (enableSA && saCount > 0) {
@@ -317,8 +299,6 @@ export default function CreateExamPage() {
                 }
             }
 
-            console.log("Saving exam with:", { mcAnswerObjects, finalTfAnswers, finalSaAnswers, enableTF, enableSA })
-
             const { data, error: insertError } = await supabase
                 .from("exams")
                 .insert({
@@ -326,15 +306,14 @@ export default function CreateExamPage() {
                     title: title.trim(),
                     duration,
                     total_questions: mcCount + effectiveTfCount + effectiveSaCount,
-                    correct_answers: mcAnswers.length > 0 ? mcAnswers : correctAnswers, // Legacy
+                    correct_answers: mcAnswers.length > 0 ? mcAnswers : correctAnswers,
                     mc_answers: mcAnswerObjects,
                     tf_answers: finalTfAnswers,
                     sa_answers: finalSaAnswers,
                     pdf_url: pdfUrl,
                     max_attempts: maxAttempts,
                     status: publish ? "published" : "draft",
-                    subject,  // Môn học
-                    // Scheduling fields
+                    subject,
                     is_scheduled: isScheduled,
                     start_time: isScheduled && startTime ? new Date(startTime).toISOString() : null,
                     end_time: isScheduled && endTime ? new Date(endTime).toISOString() : null
@@ -344,38 +323,24 @@ export default function CreateExamPage() {
 
             if (insertError) throw insertError
 
-            // Send notification if publishing and option is enabled
             if (publish && sendNotification && data) {
                 try {
-                    // Get teacher name
-                    const { data: profile } = await supabase
-                        .from("profiles")
-                        .select("full_name")
-                        .eq("id", user.id)
-                        .single()
-
-                    // Get all student IDs
-                    const { data: students } = await supabase
-                        .from("profiles")
-                        .select("id")
-                        .eq("role", "student")
+                    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
+                    const { data: students } = await supabase.from("profiles").select("id").eq("role", "student")
 
                     if (students && students.length > 0) {
-                        // Create notifications for all students
                         const notifications = students.map((s: { id: string }) => ({
                             user_id: s.id,
                             title: `📝 Đề thi mới: ${title.trim()}`,
-                            message: `${profile?.full_name || "Giáo viên"} đã đăng đề thi mới${isScheduled && endTime ? `. Hạn nộp: ${new Date(endTime).toLocaleString("vi-VN")}` : ""}`,
+                            message: `${profile?.full_name || "Giáo viên"} đã đăng đề thi mới`,
                             type: "exam",
                             link: `/student/exams/${data.id}/take`,
                             is_read: false
                         }))
-
                         await supabase.from("notifications").insert(notifications)
                     }
                 } catch (notifyErr) {
                     console.error("Failed to create notifications:", notifyErr)
-                    // Don't block - exam was saved successfully
                 }
             }
 
@@ -388,19 +353,19 @@ export default function CreateExamPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-8">
                     <Link href="/teacher/dashboard">
-                        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
+                        <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 hover:bg-white bg-white shadow-sm border border-gray-100">
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-white">Tạo đề thi mới</h1>
-                        <p className="text-slate-400 text-sm mt-1">
-                            {step === "info" ? "Bước 1: Thông tin đề thi" : "Bước 2: Nhập đáp án đúng"}
+                        <h1 className="text-2xl font-bold text-gray-800">Tạo đề thi mới</h1>
+                        <p className="text-gray-500 text-sm mt-1">
+                            {step === "info" ? "Bước 1: Thiết lập thông tin và cấu hình" : "Bước 2: Nhập đáp án chi tiết"}
                         </p>
                     </div>
                 </div>
@@ -408,29 +373,29 @@ export default function CreateExamPage() {
                 {/* Step Indicator */}
                 <div className="flex items-center gap-4 mb-8">
                     <div className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-lg",
+                        "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors",
                         step === "info"
-                            ? "bg-blue-500/10 border border-blue-500/20 text-blue-400"
-                            : "bg-slate-700/30 text-slate-400"
+                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            : "bg-white text-gray-400 border border-gray-100"
                     )}>
                         <div className={cn(
                             "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                            step === "info" ? "bg-blue-500 text-white" : "bg-slate-600"
+                            step === "info" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"
                         )}>
-                            {step === "answers" ? <CheckCircle2 className="w-4 h-4" /> : "1"}
+                            1
                         </div>
                         Thông tin
                     </div>
-                    <div className="h-px flex-1 bg-slate-700" />
+                    <div className="h-px flex-1 bg-gray-200" />
                     <div className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-lg",
+                        "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors",
                         step === "answers"
-                            ? "bg-blue-500/10 border border-blue-500/20 text-blue-400"
-                            : "bg-slate-700/30 text-slate-400"
+                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            : "bg-white text-gray-400 border border-gray-100"
                     )}>
                         <div className={cn(
                             "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                            step === "answers" ? "bg-blue-500 text-white" : "bg-slate-600"
+                            step === "answers" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"
                         )}>
                             2
                         </div>
@@ -439,502 +404,469 @@ export default function CreateExamPage() {
                 </div>
 
                 {error && (
-                    <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 mb-6 flex items-center gap-3">
+                    <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-600 mb-6 flex items-center gap-3">
                         <X className="w-5 h-5 flex-shrink-0" />
                         {error}
                     </div>
                 )}
 
                 {step === "info" ? (
-                    /* Step 1: Basic Info */
-                    <Card className="border-slate-700 bg-slate-800/50">
-                        <CardHeader>
-                            <CardTitle className="text-white">Thông tin đề thi</CardTitle>
-                            <CardDescription className="text-slate-400">
-                                Nhập thông tin cơ bản và upload file PDF đề thi (nếu có)
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {/* Subject Selection */}
-                            <div className="space-y-2">
-                                <Label className="text-slate-300">📚 Môn học *</Label>
-                                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-                                    {SUBJECTS.map((s) => (
-                                        <button
-                                            key={s.value}
-                                            type="button"
-                                            onClick={() => setSubject(s.value)}
-                                            className={cn(
-                                                "p-2 rounded-lg border-2 text-center transition-all text-sm",
-                                                subject === s.value
-                                                    ? `border-blue-500 bg-gradient-to-br ${s.color} text-white`
-                                                    : "border-slate-600 hover:border-slate-500 text-slate-300"
-                                            )}
-                                        >
-                                            <span className="text-lg">{s.icon}</span>
-                                            <p className="text-xs mt-1">{s.label}</p>
-                                        </button>
-                                    ))}
+                    <div className="space-y-6">
+                        <Card className="border-gray-200 shadow-sm bg-white">
+                            <CardHeader>
+                                <CardTitle className="text-gray-800">Thông tin cơ bản</CardTitle>
+                                <CardDescription className="text-gray-500">
+                                    Điền các thông tin bắt buộc cho đề thi
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Subject Selection */}
+                                <div className="space-y-3">
+                                    <Label className="text-gray-700 font-medium">Môn học</Label>
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                        {SUBJECTS.map((s) => (
+                                            <button
+                                                key={s.value}
+                                                type="button"
+                                                onClick={() => setSubject(s.value)}
+                                                className={cn(
+                                                    "p-3 rounded-xl border transition-all text-sm flex flex-col items-center justify-center gap-2",
+                                                    subject === s.value
+                                                        ? `border-blue-500 bg-blue-50 text-blue-700 ring-1 ring-blue-500`
+                                                        : "border-gray-200 hover:border-blue-300 hover:bg-gray-50 text-gray-600"
+                                                )}
+                                            >
+                                                <span className="text-2xl">{s.icon}</span>
+                                                <span className="font-medium text-xs">{s.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="title" className="text-slate-300">Tên đề thi *</Label>
-                                <Input
-                                    id="title"
-                                    placeholder="Ví dụ: Kiểm tra 15 phút Toán - Chương 1"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    className="bg-slate-700/50 border-slate-600 text-white"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="duration" className="text-slate-300">
-                                        <Clock className="w-4 h-4 inline mr-1" />
-                                        Thời gian (phút)
-                                    </Label>
+                                    <Label htmlFor="title" className="text-gray-700 font-medium">Tên đề thi</Label>
                                     <Input
-                                        id="duration"
-                                        type="number"
-                                        min={1}
-                                        max={180}
-                                        value={duration}
-                                        onChange={(e) => setDuration(Number(e.target.value))}
-                                        className="bg-slate-700/50 border-slate-600 text-white"
+                                        id="title"
+                                        placeholder="Ví dụ: Kiểm tra 15 phút Toán - Chương 1"
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        className="bg-white border-gray-300 focus:border-blue-500 text-gray-900"
                                     />
                                 </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="duration" className="text-gray-700 font-medium">
+                                            Thời gian (phút)
+                                        </Label>
+                                        <div className="relative">
+                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <Input
+                                                id="duration"
+                                                type="number"
+                                                min={1}
+                                                max={180}
+                                                value={duration}
+                                                onChange={(e) => setDuration(Number(e.target.value))}
+                                                className="pl-9 bg-white border-gray-300 text-gray-900"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="totalQuestions" className="text-gray-700 font-medium">
+                                            Số câu trắc nghiệm
+                                        </Label>
+                                        <Input
+                                            id="totalQuestions"
+                                            type="number"
+                                            min={1}
+                                            max={100}
+                                            value={mcCount}
+                                            onChange={(e) => {
+                                                const val = Number(e.target.value)
+                                                setMcCount(val)
+                                                handleTotalQuestionsChange(val) // Sync with legacy logic
+                                            }}
+                                            className="bg-white border-gray-300 text-gray-900"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="totalQuestions" className="text-slate-300">
-                                        Số câu trắc nghiệm
+                                    <Label htmlFor="maxAttempts" className="text-gray-700 font-medium">
+                                        Số lần làm bài
                                     </Label>
-                                    <Input
-                                        id="totalQuestions"
-                                        type="number"
-                                        min={1}
-                                        max={100}
-                                        value={totalQuestions}
-                                        onChange={(e) => handleTotalQuestionsChange(Number(e.target.value))}
-                                        className="bg-slate-700/50 border-slate-600 text-white"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Max Attempts */}
-                            <div className="space-y-2">
-                                <Label htmlFor="maxAttempts" className="text-slate-300">
-                                    Số lần làm bài tối đa
-                                </Label>
-                                <select
-                                    id="maxAttempts"
-                                    value={maxAttempts}
-                                    onChange={(e) => setMaxAttempts(Number(e.target.value))}
-                                    className="w-full h-10 px-3 rounded-md bg-slate-700/50 border border-slate-600 text-white"
-                                >
-                                    <option value={1}>1 lần (không cho làm lại)</option>
-                                    <option value={2}>2 lần</option>
-                                    <option value={3}>3 lần</option>
-                                    <option value={5}>5 lần</option>
-                                    <option value={10}>10 lần</option>
-                                    <option value={0}>Không giới hạn</option>
-                                </select>
-                                <p className="text-xs text-slate-500">
-                                    {maxAttempts === 0
-                                        ? "Học sinh có thể làm lại bài không giới hạn"
-                                        : maxAttempts === 1
-                                            ? "Học sinh chỉ được làm 1 lần duy nhất"
-                                            : `Học sinh có thể làm tối đa ${maxAttempts} lần, điểm cao nhất sẽ được tính`
-                                    }
-                                </p>
-                            </div>
-
-                            {/* Scheduling Toggle */}
-                            <div className="space-y-3">
-                                <div
-                                    onClick={() => setIsScheduled(!isScheduled)}
-                                    className={cn(
-                                        "p-4 rounded-lg border-2 cursor-pointer transition-all",
-                                        isScheduled
-                                            ? "border-orange-500 bg-orange-500/10"
-                                            : "border-slate-600 hover:border-slate-500"
-                                    )}
-                                >
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="font-medium text-white">📅 Giới hạn thời gian mở đề</span>
-                                        <div className={cn(
-                                            "w-5 h-5 rounded border-2 flex items-center justify-center",
-                                            isScheduled ? "border-orange-500 bg-orange-500" : "border-slate-500"
-                                        )}>
-                                            {isScheduled && <CheckCircle2 className="w-3 h-3 text-white" />}
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-slate-400">
-                                        Học sinh chỉ có thể làm bài trong khoảng thời gian đã định
-                                    </p>
-                                </div>
-
-                                {isScheduled && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-orange-500/5 rounded-lg border border-orange-500/20">
-                                        <div className="space-y-2">
-                                            <Label className="text-slate-300">🕐 Thời gian bắt đầu</Label>
-                                            <Input
-                                                type="datetime-local"
-                                                value={startTime}
-                                                onChange={(e) => setStartTime(e.target.value)}
-                                                className="bg-slate-700/50 border-slate-600 text-white"
-                                            />
-                                            <p className="text-xs text-slate-500">
-                                                Trước thời gian này, đề sẽ không hiển thị
-                                            </p>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-slate-300">🔒 Thời gian kết thúc</Label>
-                                            <Input
-                                                type="datetime-local"
-                                                value={endTime}
-                                                onChange={(e) => setEndTime(e.target.value)}
-                                                className="bg-slate-700/50 border-slate-600 text-white"
-                                            />
-                                            <p className="text-xs text-slate-500">
-                                                Sau thời gian này, không cho làm bài mới
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Question Type Toggles */}
-                            <div className="space-y-3">
-                                <Label className="text-slate-300">Loại câu hỏi</Label>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {/* TF Toggle */}
-                                    <div
-                                        onClick={() => setEnableTF(!enableTF)}
-                                        className={cn(
-                                            "p-4 rounded-lg border-2 cursor-pointer transition-all",
-                                            enableTF
-                                                ? "border-green-500 bg-green-500/10"
-                                                : "border-slate-600 hover:border-slate-500"
-                                        )}
+                                    <select
+                                        id="maxAttempts"
+                                        value={maxAttempts}
+                                        onChange={(e) => setMaxAttempts(Number(e.target.value))}
+                                        className="w-full h-10 px-3 rounded-md bg-white border border-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                     >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="font-medium text-white">Câu hỏi Đúng/Sai</span>
-                                            <div className={cn(
-                                                "w-5 h-5 rounded border-2 flex items-center justify-center",
-                                                enableTF ? "border-green-500 bg-green-500" : "border-slate-500"
-                                            )}>
-                                                {enableTF && <CheckCircle2 className="w-3 h-3 text-white" />}
+                                        <option value={1}>1 lần (không làm lại)</option>
+                                        <option value={2}>2 lần</option>
+                                        <option value={3}>3 lần</option>
+                                        <option value={5}>5 lần</option>
+                                        <option value={0}>Không giới hạn</option>
+                                    </select>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <Card className={cn(
+                                "border transition-all cursor-pointer",
+                                isScheduled ? "border-orange-500 shadow-md ring-1 ring-orange-100" : "border-gray-200 hover:border-gray-300 bg-white"
+                            )}>
+                                <div onClick={() => setIsScheduled(!isScheduled)} className="p-6">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className={cn("p-2 rounded-lg", isScheduled ? "bg-orange-100 text-orange-600" : "bg-gray-100 text-gray-500")}>
+                                                <Calendar className="w-5 h-5" />
+                                            </div>
+                                            <h3 className="font-semibold text-gray-800">Giới hạn thời gian</h3>
+                                        </div>
+                                        <div className={cn(
+                                            "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
+                                            isScheduled ? "bg-orange-500 border-orange-500" : "border-gray-300"
+                                        )}>
+                                            {isScheduled && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-gray-500 mb-4 ml-1">
+                                        Học sinh chỉ có thể làm bài trong khoảng thời gian xác định
+                                    </p>
+
+                                    {isScheduled && (
+                                        <div className="space-y-3 pt-3 border-t border-orange-100" onClick={e => e.stopPropagation()}>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs text-gray-600">Bắt đầu từ</Label>
+                                                <Input
+                                                    type="datetime-local"
+                                                    value={startTime}
+                                                    onChange={(e) => setStartTime(e.target.value)}
+                                                    className="h-9 text-sm bg-white"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs text-gray-600">Kết thúc lúc</Label>
+                                                <Input
+                                                    type="datetime-local"
+                                                    value={endTime}
+                                                    onChange={(e) => setEndTime(e.target.value)}
+                                                    className="h-9 text-sm bg-white"
+                                                />
                                             </div>
                                         </div>
-                                        <p className="text-xs text-slate-400">Dạng 4 ý a, b, c, d - chọn Đúng/Sai</p>
+                                    )}
+                                </div>
+                            </Card>
+
+                            <div className="space-y-4">
+                                <Card className={cn(
+                                    "border transition-all cursor-pointer",
+                                    enableTF ? "border-green-500 shadow-md ring-1 ring-green-100" : "border-gray-200 hover:border-gray-300 bg-white"
+                                )}>
+                                    <div onClick={() => setEnableTF(!enableTF)} className="p-6">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className={cn("p-2 rounded-lg", enableTF ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500")}>
+                                                    <HelpCircle className="w-5 h-5" />
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800">Đúng / Sai</h3>
+                                            </div>
+                                            <div className={cn(
+                                                "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
+                                                enableTF ? "bg-green-500 border-green-500" : "border-gray-300"
+                                            )}>
+                                                {enableTF && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-500">Dạng câu hỏi 4 ý chọn Đúng/Sai</p>
+
                                         {enableTF && (
-                                            <div className="mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                                <span className="text-xs text-slate-400">Số câu:</span>
+                                            <div className="mt-4 flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                                                <Label className="text-sm text-gray-700">Số câu:</Label>
                                                 <Input
                                                     type="number"
                                                     min={1}
                                                     max={20}
                                                     value={tfCount}
                                                     onChange={(e) => setTfCount(Math.max(1, Number(e.target.value)))}
-                                                    className="bg-slate-700 border-slate-600 text-white w-20 h-8 text-center"
+                                                    className="w-20 h-9 text-center bg-white"
                                                 />
                                             </div>
                                         )}
                                     </div>
+                                </Card>
 
-                                    {/* SA Toggle */}
-                                    <div
-                                        onClick={() => setEnableSA(!enableSA)}
-                                        className={cn(
-                                            "p-4 rounded-lg border-2 cursor-pointer transition-all",
-                                            enableSA
-                                                ? "border-purple-500 bg-purple-500/10"
-                                                : "border-slate-600 hover:border-slate-500"
-                                        )}
-                                    >
+                                <Card className={cn(
+                                    "border transition-all cursor-pointer",
+                                    enableSA ? "border-purple-500 shadow-md ring-1 ring-purple-100" : "border-gray-200 hover:border-gray-300 bg-white"
+                                )}>
+                                    <div onClick={() => setEnableSA(!enableSA)} className="p-6">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="font-medium text-white">Câu hỏi Trả lời ngắn</span>
+                                            <div className="flex items-center gap-2">
+                                                <div className={cn("p-2 rounded-lg", enableSA ? "bg-purple-100 text-purple-600" : "bg-gray-100 text-gray-500")}>
+                                                    <FileText className="w-5 h-5" />
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800">Trả lời ngắn</h3>
+                                            </div>
                                             <div className={cn(
-                                                "w-5 h-5 rounded border-2 flex items-center justify-center",
-                                                enableSA ? "border-purple-500 bg-purple-500" : "border-slate-500"
+                                                "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
+                                                enableSA ? "bg-purple-500 border-purple-500" : "border-gray-300"
                                             )}>
-                                                {enableSA && <CheckCircle2 className="w-3 h-3 text-white" />}
+                                                {enableSA && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                                             </div>
                                         </div>
-                                        <p className="text-xs text-slate-400">Đáp án là số hoặc text ngắn</p>
+                                        <p className="text-sm text-gray-500">Dạng điền đáp án ngắn (số, chữ)</p>
+
                                         {enableSA && (
-                                            <div className="mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                                <span className="text-xs text-slate-400">Số câu:</span>
+                                            <div className="mt-4 flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                                                <Label className="text-sm text-gray-700">Số câu:</Label>
                                                 <Input
                                                     type="number"
                                                     min={1}
                                                     max={20}
                                                     value={saCount}
                                                     onChange={(e) => setSaCount(Math.max(1, Number(e.target.value)))}
-                                                    className="bg-slate-700 border-slate-600 text-white w-20 h-8 text-center"
+                                                    className="w-20 h-9 text-center bg-white"
                                                 />
                                             </div>
                                         )}
                                     </div>
-                                </div>
+                                </Card>
                             </div>
+                        </div>
 
-                            {/* SECTION 1: File đề thi (cho học sinh) */}
-                            <div className="space-y-2 p-4 bg-blue-900/20 rounded-lg border border-blue-500/30">
-                                <Label className="text-blue-300 flex items-center gap-2">
-                                    <FileText className="w-4 h-4" />
-                                    📋 File đề thi (cho học sinh xem)
-                                </Label>
-                                <p className="text-xs text-slate-400 mb-2">
-                                    File PDF chỉ chứa câu hỏi, KHÔNG chứa đáp án
-                                </p>
-                                <div
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className={cn(
-                                        "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
-                                        pdfFile
-                                            ? "border-green-500/50 bg-green-500/5"
-                                            : "border-slate-600 hover:border-slate-500"
-                                    )}
-                                >
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept=".pdf"
-                                        onChange={handlePdfUpload}
-                                        className="hidden"
-                                    />
-                                    {uploadingPdf ? (
-                                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-400" />
-                                    ) : pdfFile ? (
-                                        <>
-                                            <FileText className="w-8 h-8 mx-auto text-green-400 mb-2" />
-                                            <p className="text-sm text-green-400">{pdfFile.name}</p>
-                                            <p className="text-xs text-slate-500 mt-1">Click để thay đổi</p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="w-8 h-8 mx-auto text-slate-500 mb-2" />
-                                            <p className="text-sm text-slate-400">Click để upload PDF đề thi</p>
-                                            <p className="text-xs text-slate-500 mt-1">Học sinh sẽ xem file này khi làm bài</p>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* SECTION 2: File đáp án + AI Scan */}
-                            <div className="space-y-3 p-4 bg-gradient-to-r from-purple-900/20 to-green-900/20 rounded-lg border border-purple-500/30">
-                                <Label className="text-purple-300 flex items-center gap-2">
-                                    <Wand2 className="w-4 h-4" />
-                                    📝 File đáp án (quét bằng AI)
-                                </Label>
-                                <p className="text-xs text-slate-400 mb-2">
-                                    Upload PDF chỉ chứa bảng đáp án để AI quét tự động. File này sẽ KHÔNG hiển thị cho học sinh.
-                                </p>
-
-                                {/* Answer PDF Upload */}
-                                <div
-                                    onClick={() => {
-                                        const input = document.createElement('input')
-                                        input.type = 'file'
-                                        input.accept = '.pdf'
-                                        input.onchange = async (e) => {
-                                            const file = (e.target as HTMLInputElement).files?.[0]
-                                            if (file) {
-                                                setAnswerPdfFile(file)
-                                                // Immediately parse the answer PDF
-                                                await parsePdfAnswers(file)
-                                            }
-                                        }
-                                        input.click()
-                                    }}
-                                    className={cn(
-                                        "border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
-                                        answerPdfFile
-                                            ? "border-green-500/50 bg-green-500/10"
-                                            : "border-purple-500/50 hover:bg-purple-500/10"
-                                    )}
-                                >
-                                    {parsingPdf ? (
-                                        <>
-                                            <Loader2 className="w-6 h-6 mx-auto text-purple-400 mb-2 animate-spin" />
-                                            <p className="text-sm text-purple-300">Đang quét AI...</p>
-                                        </>
-                                    ) : parseSuccess && answerPdfFile ? (
-                                        <>
-                                            <CheckCircle2 className="w-6 h-6 mx-auto text-green-400 mb-2" />
-                                            <p className="text-sm text-green-400">✓ {answerPdfFile.name}</p>
-                                            <p className="text-xs text-slate-500 mt-1">Click để thay đổi file</p>
-                                        </>
-                                    ) : answerPdfFile ? (
-                                        <>
-                                            <FileText className="w-6 h-6 mx-auto text-blue-400 mb-2" />
-                                            <p className="text-sm text-blue-300">{answerPdfFile.name}</p>
-                                            <p className="text-xs text-slate-500 mt-1">Click để thay đổi</p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Sparkles className="w-6 h-6 mx-auto text-purple-400 mb-2" />
-                                            <p className="text-sm text-purple-300">Click để upload PDF đáp án</p>
-                                            <p className="text-xs text-slate-500 mt-1">AI sẽ tự động trích xuất đáp án</p>
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* AI Parse Button - only show if exam PDF has answers embedded */}
-                                {pdfFile && (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => parsePdfAnswers()}
-                                        disabled={parsingPdf}
+                        {/* File Uploads */}
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <Card className="border-gray-200 shadow-sm bg-white">
+                                <CardHeader className="pb-4">
+                                    <CardTitle className="text-base text-gray-800 flex items-center gap-2">
+                                        <FileText className="w-4 h-4 text-blue-600" />
+                                        File đề thi (PDF)
+                                    </CardTitle>
+                                    <CardDescription>File này sẽ hiển thị cho học sinh</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div
+                                        onClick={() => fileInputRef.current?.click()}
                                         className={cn(
-                                            "w-full border-purple-500/50 text-purple-400 hover:bg-purple-500/10",
-                                            parseSuccess && "border-green-500/50 text-green-400"
+                                            "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 min-h-[160px]",
+                                            pdfFile
+                                                ? "border-green-300 bg-green-50"
+                                                : "border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                                        )}
+                                    >
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".pdf"
+                                            onChange={handlePdfUpload}
+                                            className="hidden"
+                                        />
+                                        {uploadingPdf ? (
+                                            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                                        ) : pdfFile ? (
+                                            <>
+                                                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                                                    <FileText className="w-6 h-6" />
+                                                </div>
+                                                <div className="text-sm font-medium text-green-700">{pdfFile.name}</div>
+                                                <p className="text-xs text-green-600">Click để thay đổi</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                                    <Upload className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-700">Tải lên file đề thi</p>
+                                                    <p className="text-xs text-gray-500 mt-1">Chỉ hỗ trợ PDF</p>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-gray-200 shadow-sm bg-white">
+                                <CardHeader className="pb-4">
+                                    <CardTitle className="text-base text-gray-800 flex items-center gap-2">
+                                        <Wand2 className="w-4 h-4 text-purple-600" />
+                                        Nhập nhanh từ PDF
+                                    </CardTitle>
+                                    <CardDescription>AI tự động quét đáp án từ file</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div
+                                        onClick={() => {
+                                            const input = document.createElement('input')
+                                            input.type = 'file'
+                                            input.accept = '.pdf'
+                                            input.onchange = async (e) => {
+                                                const file = (e.target as HTMLInputElement).files?.[0]
+                                                if (file) {
+                                                    setAnswerPdfFile(file)
+                                                    await parsePdfAnswers(file)
+                                                }
+                                            }
+                                            input.click()
+                                        }}
+                                        className={cn(
+                                            "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2",
+                                            answerPdfFile
+                                                ? "border-green-300 bg-green-50"
+                                                : "border-purple-200 hover:border-purple-300 hover:bg-purple-50"
                                         )}
                                     >
                                         {parsingPdf ? (
                                             <>
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                🤖 AI đang phân tích...
+                                                <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+                                                <p className="text-sm text-purple-600 font-medium">Đang phân tích...</p>
                                             </>
-                                        ) : parseSuccess ? (
+                                        ) : parseSuccess && answerPdfFile ? (
                                             <>
-                                                <Sparkles className="w-4 h-4 mr-2" />
-                                                ✅ Đã quét xong! Click để quét lại
+                                                <CheckCircle2 className="w-8 h-8 text-green-600" />
+                                                <p className="text-sm font-medium text-green-700">Đã quét thành công!</p>
                                             </>
                                         ) : (
                                             <>
-                                                <Wand2 className="w-4 h-4 mr-2" />
-                                                🤖 Quét từ PDF đề thi (nếu có đáp án ở cuối)
+                                                <Sparkles className="w-8 h-8 text-purple-500" />
+                                                <p className="text-sm font-medium text-purple-700">Upload bảng đáp án</p>
+                                                <p className="text-xs text-purple-600">Hỗ trợ MC, A/B/C/D, Đúng/Sai</p>
                                             </>
                                         )}
-                                    </Button>
-                                )}
-                            </div>
+                                    </div>
 
-                            <div className="flex justify-end">
-                                <Button
-                                    onClick={() => {
-                                        if (!title.trim()) {
-                                            setError("Vui lòng nhập tên đề thi")
-                                            return
-                                        }
-                                        // Initialize MC answers if needed
-                                        if (mcAnswers.length === 0 && correctAnswers.length === 0) {
-                                            setMcAnswers(Array(mcCount).fill(null))
-                                            setCorrectAnswers(Array(mcCount).fill(null))
-                                        } else if (mcAnswers.length !== mcCount) {
-                                            const newMc = Array(mcCount).fill(null).map((_, i) => mcAnswers[i] || correctAnswers[i] || null)
-                                            setMcAnswers(newMc)
-                                            setCorrectAnswers(newMc)
-                                        }
-
-                                        // Initialize TF answers if needed and enabled
-                                        if (enableTF && tfAnswers.length === 0 && tfCount > 0) {
-                                            const newTf: TFAnswer[] = Array.from({ length: tfCount }, (_, i) => ({
-                                                question: mcCount + 1 + i,
-                                                a: true, b: true, c: true, d: true // Default all true
-                                            }))
-                                            setTfAnswers(newTf)
-                                        }
-
-                                        // Initialize SA answers if needed and enabled
-                                        if (enableSA && saAnswers.length === 0 && saCount > 0) {
-                                            const effectiveTfCount = enableTF ? tfCount : 0
-                                            const newSa: SAAnswer[] = Array.from({ length: saCount }, (_, i) => ({
-                                                question: mcCount + effectiveTfCount + 1 + i,
-                                                answer: ""
-                                            }))
-                                            setSaAnswers(newSa)
-                                        }
-
-                                        setError(null)
-                                        setStep("answers")
-                                    }}
-                                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                                >
-                                    Tiếp theo: Nhập đáp án
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    /* Step 2: Answer Input */
-                    <Card className="border-slate-700 bg-slate-800/50">
-                        <CardHeader>
-                            <CardTitle className="text-white">Nhập đáp án đúng</CardTitle>
-                            <CardDescription className="text-slate-400">
-                                Tổng: {mcCount} trắc nghiệm
-                                {enableTF && ` + ${tfCount} đúng/sai`}
-                                {enableSA && ` + ${saCount} trả lời ngắn`}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {/* Tabs */}
-                            <div className="flex gap-2 mb-6">
-                                <button
-                                    onClick={() => setAnswerTab("mc")}
-                                    className={cn(
-                                        "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                                        answerTab === "mc"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                                    {pdfFile && !answerPdfFile && (
+                                        <Button
+                                            variant="outline"
+                                            className="w-full text-xs"
+                                            onClick={() => parsePdfAnswers()}
+                                            disabled={parsingPdf}
+                                        >
+                                            Thử quét từ file đề thi
+                                        </Button>
                                     )}
-                                >
-                                    Trắc nghiệm ABCD ({mcCount})
-                                </button>
-                                {enableTF && (
-                                    <button
-                                        onClick={() => setAnswerTab("tf")}
-                                        className={cn(
-                                            "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                                            answerTab === "tf"
-                                                ? "bg-green-600 text-white"
-                                                : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                                        )}
-                                    >
-                                        Đúng/Sai ({tfCount})
-                                    </button>
-                                )}
-                                {enableSA && (
-                                    <button
-                                        onClick={() => setAnswerTab("sa")}
-                                        className={cn(
-                                            "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                                            answerTab === "sa"
-                                                ? "bg-purple-600 text-white"
-                                                : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                                        )}
-                                    >
-                                        Trả lời ngắn ({saCount})
-                                    </button>
-                                )}
-                            </div>
+                                </CardContent>
+                            </Card>
+                        </div>
 
+                        <div className="flex justify-end pt-4">
+                            <Button
+                                size="lg"
+                                onClick={() => {
+                                    if (!title.trim()) {
+                                        setError("Vui lòng nhập tên đề thi")
+                                        return
+                                    }
+                                    if (mcAnswers.length === 0 && correctAnswers.length === 0) {
+                                        setMcAnswers(Array(mcCount).fill(null))
+                                        setCorrectAnswers(Array(mcCount).fill(null))
+                                    } else if (mcAnswers.length !== mcCount) {
+                                        const newMc = Array(mcCount).fill(null).map((_, i) => mcAnswers[i] || correctAnswers[i] || null)
+                                        setMcAnswers(newMc)
+                                        setCorrectAnswers(newMc)
+                                    }
+
+                                    if (enableTF && tfAnswers.length === 0 && tfCount > 0) {
+                                        const newTf: TFAnswer[] = Array.from({ length: tfCount }, (_, i) => ({
+                                            question: mcCount + 1 + i,
+                                            a: true, b: true, c: true, d: true
+                                        }))
+                                        setTfAnswers(newTf)
+                                    }
+
+                                    if (enableSA && saAnswers.length === 0 && saCount > 0) {
+                                        const effectiveTfCount = enableTF ? tfCount : 0
+                                        const newSa: SAAnswer[] = Array.from({ length: saCount }, (_, i) => ({
+                                            question: mcCount + effectiveTfCount + 1 + i,
+                                            answer: ""
+                                        }))
+                                        setSaAnswers(newSa)
+                                    }
+
+                                    setError(null)
+                                    setStep("answers")
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                Tiếp tục
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
+                    /* Step 2: Answers */
+                    <Card className="border-gray-200 shadow-sm bg-white">
+                        <CardHeader className="border-b border-gray-100 pb-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-gray-800">Nhập đáp án</CardTitle>
+                                    <CardDescription className="text-gray-500 mt-1">
+                                        Tổng: {mcCount} câu hỏi
+                                        {enableTF && ` • ${tfCount} Đ/S`}
+                                        {enableSA && ` • ${saCount} điền đáp án`}
+                                    </CardDescription>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setAnswerTab("mc")}
+                                        className={cn(
+                                            "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                                            answerTab === "mc" ? "bg-blue-50 text-blue-700 border border-blue-200" : "text-gray-500 hover:bg-gray-100"
+                                        )}
+                                    >
+                                        Trắc nghiệm
+                                    </button>
+                                    {enableTF && (
+                                        <button
+                                            onClick={() => setAnswerTab("tf")}
+                                            className={cn(
+                                                "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                                                answerTab === "tf" ? "bg-green-50 text-green-700 border border-green-200" : "text-gray-500 hover:bg-gray-100"
+                                            )}
+                                        >
+                                            Đúng/Sai
+                                        </button>
+                                    )}
+                                    {enableSA && (
+                                        <button
+                                            onClick={() => setAnswerTab("sa")}
+                                            className={cn(
+                                                "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                                                answerTab === "sa" ? "bg-purple-50 text-purple-700 border border-purple-200" : "text-gray-500 hover:bg-gray-100"
+                                            )}
+                                        >
+                                            Điền đáp án
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-6">
                             {/* MC Tab */}
                             {answerTab === "mc" && (
                                 <div>
-                                    <div className="flex items-center justify-between text-sm mb-4">
-                                        <span className="text-slate-400">
-                                            Đã chọn: {(mcAnswers.length > 0 ? mcAnswers : correctAnswers).filter(a => a !== null).length}/{mcCount}
+                                    <div className="flex items-center justify-between text-sm mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                        <span className="text-blue-700 font-medium">
+                                            Đã chọn: {(mcAnswers.length > 0 ? mcAnswers : correctAnswers).filter(a => a !== null).length}/{mcCount} câu
                                         </span>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-4 mb-8">
+                                    <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-3">
                                         {Array.from({ length: mcCount }, (_, i) => (
-                                            <div key={i} className="text-center">
-                                                <p className="text-xs text-slate-400 mb-2">Câu {i + 1}</p>
+                                            <div key={i} className="text-center p-2 rounded border border-gray-100 bg-gray-50/50">
+                                                <p className="text-xs font-semibold text-gray-500 mb-2">Câu {i + 1}</p>
                                                 <div className="grid grid-cols-2 gap-1">
                                                     {OPTIONS.map((option) => (
                                                         <button
                                                             key={option}
                                                             onClick={() => handleAnswerSelect(i, option)}
                                                             className={cn(
-                                                                "w-full py-1.5 rounded text-xs font-medium transition-colors",
+                                                                "w-full py-1.5 rounded textxs font-bold transition-all",
                                                                 (mcAnswers[i] || correctAnswers[i]) === option
-                                                                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                                                                    : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                                                                    ? "bg-blue-600 text-white shadow-sm"
+                                                                    : "bg-white border border-gray-200 text-gray-400 hover:border-blue-300 hover:text-blue-600"
                                                             )}
                                                         >
                                                             {option}
@@ -949,18 +881,18 @@ export default function CreateExamPage() {
 
                             {/* TF Tab */}
                             {answerTab === "tf" && (
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     {Array.from({ length: tfCount }, (_, i) => {
                                         const qNum = mcCount + 1 + i
                                         const answer = tfAnswers.find(a => a.question === qNum) || { question: qNum, a: true, b: true, c: true, d: true }
                                         return (
-                                            <div key={i} className="flex items-center gap-4 p-4 bg-slate-700/30 rounded-lg">
-                                                <span className="text-sm font-medium text-slate-300 w-20">Câu {qNum}</span>
-                                                <div className="flex gap-4">
+                                            <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                                <span className="text-sm font-bold text-gray-700 w-16">Câu {qNum}</span>
+                                                <div className="flex gap-6">
                                                     {(['a', 'b', 'c', 'd'] as const).map((sub) => (
-                                                        <div key={sub} className="flex flex-col items-center gap-1">
-                                                            <span className="text-xs text-slate-500">{sub})</span>
-                                                            <div className="flex gap-1">
+                                                        <div key={sub} className="flex flex-col items-center gap-2">
+                                                            <span className="text-xs font-semibold text-gray-500 uppercase">{sub}</span>
+                                                            <div className="flex rounded-md shadow-sm">
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => {
@@ -974,10 +906,10 @@ export default function CreateExamPage() {
                                                                         setTfAnswers(newTf)
                                                                     }}
                                                                     className={cn(
-                                                                        "px-3 py-1.5 rounded text-xs font-medium transition-colors",
+                                                                        "px-2.5 py-1 rounded-l-md text-xs font-bold border-y border-l transition-colors",
                                                                         answer[sub]
-                                                                            ? "bg-green-600 text-white"
-                                                                            : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                                                                            ? "bg-green-600 border-green-600 text-white"
+                                                                            : "bg-white border-gray-200 text-gray-400 hover:bg-gray-50"
                                                                     )}
                                                                 >
                                                                     Đ
@@ -995,10 +927,10 @@ export default function CreateExamPage() {
                                                                         setTfAnswers(newTf)
                                                                     }}
                                                                     className={cn(
-                                                                        "px-3 py-1.5 rounded text-xs font-medium transition-colors",
+                                                                        "px-2.5 py-1 rounded-r-md text-xs font-bold border transition-colors",
                                                                         !answer[sub]
-                                                                            ? "bg-red-600 text-white"
-                                                                            : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                                                                            ? "bg-red-500 border-red-500 text-white"
+                                                                            : "bg-white border-gray-200 text-gray-400 hover:bg-gray-50"
                                                                     )}
                                                                 >
                                                                     S
@@ -1020,9 +952,9 @@ export default function CreateExamPage() {
                                         const qNum = mcCount + tfCount + 1 + i
                                         const answer = saAnswers.find(a => a.question === qNum)
                                         return (
-                                            <div key={i} className="flex items-center gap-4 p-3 bg-slate-700/30 rounded-lg">
-                                                <span className="text-sm font-medium text-slate-300 w-20">Câu {qNum}</span>
-                                                <input
+                                            <div key={i} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                                <span className="text-sm font-bold text-gray-700 w-16">Câu {qNum}</span>
+                                                <Input
                                                     type="text"
                                                     value={answer?.answer?.toString() || ""}
                                                     onChange={(e) => {
@@ -1035,8 +967,8 @@ export default function CreateExamPage() {
                                                         }
                                                         setSaAnswers(newSa)
                                                     }}
-                                                    placeholder="Nhập đáp án (số)"
-                                                    className="flex-1 px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                    placeholder="Nhập đáp án (số hoặc chữ)"
+                                                    className="max-w-xs bg-white text-gray-900"
                                                 />
                                             </div>
                                         )
@@ -1044,28 +976,27 @@ export default function CreateExamPage() {
                                 </div>
                             )}
 
-                            {/* Email Notification Option */}
-                            <div className="flex items-center gap-3 py-4 px-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-500/20 mb-4">
+                            {/* Notification Option */}
+                            <div className="mt-8 flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-100">
                                 <input
                                     type="checkbox"
                                     id="sendNotification"
                                     checked={sendNotification}
                                     onChange={(e) => setSendNotification(e.target.checked)}
-                                    className="w-5 h-5 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
-                                <label htmlFor="sendNotification" className="flex items-center gap-2 text-slate-300 cursor-pointer flex-1">
-                                    <span className="text-lg">📧</span>
-                                    <span className="font-medium">Gửi thông báo email cho học sinh</span>
+                                <label htmlFor="sendNotification" className="flex-1 cursor-pointer">
+                                    <div className="font-medium text-blue-900">Gửi thông báo cho học sinh</div>
+                                    <div className="text-xs text-blue-700">Học sinh sẽ nhận được thông báo ngay khi đề thi được Publish</div>
                                 </label>
-                                <span className="text-xs text-slate-500">Khi publish</span>
                             </div>
 
-                            {/* Actions */}
-                            <div className="flex items-center justify-between pt-4 border-t border-slate-700">
+                            {/* Footer Actions */}
+                            <div className="mt-8 flex items-center justify-between pt-6 border-t border-gray-100">
                                 <Button
                                     variant="ghost"
                                     onClick={() => setStep("info")}
-                                    className="text-slate-400"
+                                    className="text-gray-500 hover:text-gray-900"
                                 >
                                     <ArrowLeft className="w-4 h-4 mr-2" />
                                     Quay lại
@@ -1076,26 +1007,16 @@ export default function CreateExamPage() {
                                         variant="outline"
                                         onClick={() => handleSave(false)}
                                         disabled={loading}
-                                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
                                     >
-                                        {loading ? (
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        ) : (
-                                            <Save className="w-4 h-4 mr-2" />
-                                        )}
                                         Lưu nháp
                                     </Button>
                                     <Button
                                         onClick={() => handleSave(true)}
                                         disabled={loading}
-                                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                                        className="bg-green-600 hover:bg-green-700 text-white"
                                     >
-                                        {loading ? (
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        ) : (
-                                            <Eye className="w-4 h-4 mr-2" />
-                                        )}
-                                        Publish đề thi
+                                        {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Eye className="w-4 h-4 mr-2" />}
+                                        Publish ngay
                                     </Button>
                                 </div>
                             </div>
