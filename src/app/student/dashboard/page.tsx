@@ -5,24 +5,10 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-    GraduationCap,
-    FileText,
-    Trophy,
-    Clock,
-    Loader2,
-    PlayCircle,
-    CheckCircle2,
-    ArrowRight,
-    BookOpen,
-    Video
-} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NotificationBell } from "@/components/NotificationBell"
 import { XpBar } from "@/components/gamification/XpBar"
 import { DailyCheckIn } from "@/components/gamification/DailyCheckIn"
-import { GamificationHub } from "@/components/gamification/GamificationHub"
 import { getUserStats } from "@/lib/gamification"
 import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
 import { UserMenu } from "@/components/UserMenu"
@@ -42,7 +28,7 @@ interface Exam {
     total_questions: number
     status: "draft" | "published"
     created_at: string
-    subject?: string  // Môn học
+    subject?: string
 }
 
 interface Submission {
@@ -63,70 +49,39 @@ export default function StudentDashboard() {
     const [loading, setLoading] = useState(true)
     const [userXp, setUserXp] = useState(0)
     const [userId, setUserId] = useState<string | null>(null)
-    const [selectedSubject, setSelectedSubject] = useState<string>("all")  // Filter theo môn
-    const [showGamification, setShowGamification] = useState(false)  // Toggle gamification drawer
-
-    // Filter exams by subject
-    const filteredExams = selectedSubject === "all"
-        ? availableExams
-        : availableExams.filter(e => e.subject === selectedSubject)
-
-    // Calculate max score
-    const maxScore = submissions.length > 0 ? Math.max(...submissions.map(s => s.score)) : 0
+    const [sidebarOpen, setSidebarOpen] = useState(false)
+    const [searchQuery, setSearchQuery] = useState("")
 
     useEffect(() => {
         const fetchData = async () => {
             const { data: { user } } = await supabase.auth.getUser()
+            if (!user) { router.push("/login"); return }
 
-            if (!user) {
-                router.push("/login")
-                return
-            }
-
-            // Get profile
-            const { data: profileData } = await supabase
-                .from("profiles")
-                .select("*")
-                .eq("id", user.id)
-                .single()
-
-            if (!profileData || profileData.role !== "student") {
-                router.push("/teacher/dashboard")
-                return
-            }
+            const { data: profileData } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+            if (!profileData || profileData.role !== "student") { router.push("/teacher/dashboard"); return }
 
             setProfile(profileData)
             setUserId(user.id)
 
-            // Get gamification stats
             const { stats } = await getUserStats(user.id)
             setUserXp(stats.xp)
 
-            // Get available exams (published)
             const { data: examsData } = await supabase
                 .from("exams")
                 .select("*")
                 .eq("status", "published")
                 .order("created_at", { ascending: false })
+            if (examsData) setAvailableExams(examsData)
 
-            if (examsData) {
-                setAvailableExams(examsData)
-            }
-
-            // Get student's submissions
             const { data: submissionsData } = await supabase
                 .from("submissions")
                 .select("*, exam:exams(*)")
                 .eq("student_id", user.id)
                 .order("submitted_at", { ascending: false })
-
-            if (submissionsData) {
-                setSubmissions(submissionsData)
-            }
+            if (submissionsData) setSubmissions(submissionsData)
 
             setLoading(false)
         }
-
         fetchData()
     }, [router, supabase])
 
@@ -135,35 +90,52 @@ export default function StudentDashboard() {
         router.push("/login")
     }
 
-    // Check if student already submitted this exam
-    const hasSubmitted = (examId: string) => {
-        return submissions.some(s => s.exam_id === examId)
-    }
-
-    const getSubmission = (examId: string) => {
-        return submissions.find(s => s.exam_id === examId)
-    }
+    const hasSubmitted = (examId: string) => submissions.some(s => s.exam_id === examId)
+    const getSubmission = (examId: string) => submissions.find(s => s.exam_id === examId)
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-            {/* Header */}
-            <header className="border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/80 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-14 items-center">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                <GraduationCap className="w-4 h-4 text-white" />
-                            </div>
-                            <span className="text-lg font-bold text-white">ExamHub</span>
+        <div className="min-h-screen bg-gray-100">
+            {/* Top Navbar - Fixed */}
+            <nav className="fixed top-0 z-50 w-full bg-white border-b border-gray-200">
+                <div className="px-3 py-3 lg:px-5">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                            {/* Mobile menu button */}
+                            <button
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                className="inline-flex items-center p-2 text-gray-500 rounded-lg sm:hidden hover:bg-gray-100"
+                            >
+                                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                            <Link href="/student/dashboard" className="flex ml-2 md:mr-24 items-center">
+                                <div className="bg-blue-600 text-white p-1 rounded mr-2 w-8 h-8 flex items-center justify-center font-bold text-xl">E</div>
+                                <span className="text-xl font-semibold text-blue-600 hidden sm:block">ExamHub</span>
+                            </Link>
                         </div>
+                        {/* Search */}
+                        <div className="hidden md:flex relative w-96">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <span className="text-gray-400">🔍</span>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Tìm kiếm đề thi, tài liệu..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        {/* Right side */}
                         <div className="flex items-center gap-3">
                             <NotificationBell />
                             <UserMenu
@@ -175,262 +147,298 @@ export default function StudentDashboard() {
                         </div>
                     </div>
                 </div>
-            </header>
+            </nav>
+
+            {/* Sidebar - Fixed */}
+            <aside className={cn(
+                "fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform bg-white border-r border-gray-200",
+                sidebarOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
+            )}>
+                <div className="h-full px-3 pb-4 overflow-y-auto flex flex-col justify-between">
+                    <ul className="space-y-2 font-medium">
+                        <li>
+                            <Link href="/student/dashboard" className="flex items-center p-2 text-blue-600 rounded-lg bg-blue-50 group">
+                                <span className="text-xl">🏠</span>
+                                <span className="ml-3">Trang chủ</span>
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/resources" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                                <span className="text-xl">📚</span>
+                                <span className="ml-3">Thư viện tài liệu</span>
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/student/exams" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                                <span className="text-xl">📝</span>
+                                <span className="ml-3">Luyện đề thi</span>
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/arena" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                                <span className="text-xl">🏆</span>
+                                <span className="ml-3">Đấu trường</span>
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/live" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                                <span className="text-xl">📺</span>
+                                <span className="ml-3">Live Stream</span>
+                            </Link>
+                        </li>
+
+                        {/* Divider */}
+                        <li className="pt-4 mt-4 border-t border-gray-200">
+                            <span className="px-2 text-xs font-semibold text-gray-500 uppercase">Tiến độ học tập</span>
+                            <div className="mt-3 px-2">
+                                <XpBar xp={userXp} size="sm" />
+                            </div>
+                        </li>
+                    </ul>
+
+                    <div className="mt-auto pt-4 text-xs text-center text-gray-500">
+                        © 2026 ExamHub Education
+                    </div>
+                </div>
+            </aside>
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Welcome + XP Bar */}
-                <div className="mb-8 animate-fade-in-up">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-white">
-                                Xin chào, {profile?.full_name || "Học sinh"}!
-                            </h1>
-                            <p className="text-slate-400 mt-1">
-                                Chọn một đề thi để bắt đầu làm bài
-                            </p>
+            <div className="p-4 sm:ml-64 pt-20">
+                {/* Banner */}
+                <div className="w-full mb-8 rounded-lg overflow-hidden shadow-lg relative bg-gradient-to-r from-blue-600 to-purple-600">
+                    <div className="h-48 md:h-64 flex flex-col justify-center items-center text-center p-6">
+                        <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-wide animate-pulse">
+                            Chào mừng trở lại!
+                        </span>
+                        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                            Xin chào, {profile?.full_name || "Học sinh"}!
+                        </h1>
+                        <p className="text-blue-100 text-sm md:text-lg mb-4 max-w-2xl">
+                            Tiếp tục hành trình học tập của bạn với {availableExams.length} đề thi đang chờ
+                        </p>
+                        <Link href="/student/exams">
+                            <Button className="bg-white text-blue-600 hover:bg-blue-50 font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:scale-105">
+                                Vào thi ngay
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-xl">📊</div>
+                            <div>
+                                <p className="text-2xl font-bold text-gray-900">{availableExams.length}</p>
+                                <p className="text-xs text-gray-500">Đề thi</p>
+                            </div>
                         </div>
-                        <div className="md:w-72">
-                            <XpBar xp={userXp} size="md" />
+                    </div>
+                    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-xl">✅</div>
+                            <div>
+                                <p className="text-2xl font-bold text-gray-900">{submissions.length}</p>
+                                <p className="text-xs text-gray-500">Hoàn thành</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-yellow-100 text-yellow-600 rounded-lg flex items-center justify-center text-xl">🏆</div>
+                            <div>
+                                <p className="text-2xl font-bold text-gray-900">
+                                    {submissions.length > 0 ? Math.max(...submissions.map(s => s.score)).toFixed(1) : "--"}
+                                </p>
+                                <p className="text-xs text-gray-500">Điểm cao nhất</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center text-xl">⚡</div>
+                            <div>
+                                <p className="text-2xl font-bold text-gray-900">{userXp}</p>
+                                <p className="text-xs text-gray-500">XP hiện tại</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Main Grid: Content + Sidebar */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Content (2/3) */}
-                    <div className="lg:col-span-2 space-y-8">
-                        {/* Compact Stats Bar */}
-                        <div className="flex items-center gap-2 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-x-auto animate-fade-in-up stagger-1">
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 rounded-lg flex-shrink-0">
-                                <FileText className="w-4 h-4 text-blue-400" />
-                                <span className="text-sm text-slate-300">Đề thi:</span>
-                                <span className="text-sm font-bold text-white">{availableExams.length}</span>
+                {/* Main Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+                    {/* Exams List */}
+                    <div className="lg:col-span-2">
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                                <h2 className="text-xl font-bold text-gray-900 uppercase">Đề thi mới nhất</h2>
                             </div>
-                            <div className="w-px h-6 bg-slate-700 flex-shrink-0" />
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 rounded-lg flex-shrink-0">
-                                <CheckCircle2 className="w-4 h-4 text-green-400" />
-                                <span className="text-sm text-slate-300">Hoàn thành:</span>
-                                <span className="text-sm font-bold text-white">{submissions.length}</span>
-                            </div>
-                            <div className="w-px h-6 bg-slate-700 flex-shrink-0" />
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 rounded-lg flex-shrink-0">
-                                <Trophy className="w-4 h-4 text-yellow-400" />
-                                <span className="text-sm text-slate-300">Cao nhất:</span>
-                                <span className="text-sm font-bold text-white">
-                                    {submissions.length > 0 ? Math.max(...submissions.map(s => s.score)).toFixed(1) : "--"}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Quick Links - Compact */}
-                        <div className="flex gap-3 mb-6 animate-fade-in-up stagger-2">
-                            <Link href="/resources" className="flex-1">
-                                <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-purple-900/50 to-pink-900/50 hover:from-purple-800/50 hover:to-pink-800/50 border border-purple-500/30 hover:border-purple-400/50 rounded-xl transition-all group">
-                                    <span className="text-xl">📚</span>
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-white truncate">Kho Tài Liệu</p>
-                                        <p className="text-xs text-slate-400 truncate">Đề thi thử</p>
-                                    </div>
-                                    <ArrowRight className="w-4 h-4 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
-                                </div>
-                            </Link>
-                            <Link href="/live" className="flex-1">
-                                <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-green-900/50 to-emerald-900/50 hover:from-green-800/50 hover:to-emerald-800/50 border border-green-500/30 hover:border-green-400/50 rounded-xl transition-all group">
-                                    <span className="text-xl">📺</span>
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-white truncate">Phòng Live</p>
-                                        <p className="text-xs text-slate-400 truncate">Chữa đề online</p>
-                                    </div>
-                                    <ArrowRight className="w-4 h-4 text-green-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
-                                </div>
+                            <Link href="/student/exams" className="text-sm text-blue-600 hover:underline font-medium">
+                                Xem tất cả
                             </Link>
                         </div>
 
-                        {/* Available Exams */}
-                        <Card className="border-slate-700 bg-slate-800/50 mb-8 animate-fade-in-up stagger-3">
-                            <CardHeader>
-                                <CardTitle className="text-white">Đề thi có sẵn</CardTitle>
-                                <CardDescription className="text-slate-400">
-                                    Chọn một đề thi để bắt đầu làm bài
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {/* Subject Filter Tabs */}
-                                <div className="flex flex-wrap gap-2 mb-6 pb-4 border-b border-slate-700">
-                                    <button
-                                        onClick={() => setSelectedSubject("all")}
-                                        className={cn(
-                                            "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-                                            selectedSubject === "all"
-                                                ? "bg-blue-500 text-white"
-                                                : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                                        )}
-                                    >
-                                        📚 Tất cả ({availableExams.length})
-                                    </button>
-                                    {SUBJECTS.filter(s => availableExams.some(e => e.subject === s.value)).map((s) => {
-                                        const count = availableExams.filter(e => e.subject === s.value).length
-                                        return (
-                                            <button
-                                                key={s.value}
-                                                onClick={() => setSelectedSubject(s.value)}
-                                                className={cn(
-                                                    "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-                                                    selectedSubject === s.value
-                                                        ? `bg-gradient-to-r ${s.color} text-white`
-                                                        : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                                                )}
-                                            >
-                                                {s.icon} {s.label} ({count})
-                                            </button>
-                                        )
-                                    })}
-                                </div>
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+                            {availableExams.slice(0, 5).map((exam) => {
+                                const submitted = hasSubmitted(exam.id)
+                                const submission = getSubmission(exam.id)
+                                const subjectInfo = getSubjectInfo(exam.subject || "other")
 
-                                {filteredExams.length === 0 ? (
-                                    <div className="text-center py-8">
-                                        <FileText className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                                        <p className="text-slate-400 text-sm">Chưa có đề thi nào</p>
-                                    </div>
-                                ) : (
-                                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                                        {filteredExams.map((exam) => {
-                                            const submitted = hasSubmitted(exam.id)
-                                            const submission = getSubmission(exam.id)
-                                            const subjectInfo = getSubjectInfo(exam.subject || "other")
-
-                                            return (
-                                                <div
-                                                    key={exam.id}
-                                                    className={cn(
-                                                        "group p-3 rounded-xl border transition-all duration-200",
-                                                        submitted
-                                                            ? "bg-slate-800/30 border-slate-700/50"
-                                                            : "bg-slate-800/50 border-slate-700/50 hover:border-blue-500/50 hover:bg-slate-800/70 hover:shadow-lg hover:shadow-blue-500/5"
-                                                    )}
-                                                >
-                                                    <div className="flex items-center gap-3 mb-2">
-                                                        <div className={cn(
-                                                            "w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0",
-                                                            `bg-gradient-to-br ${subjectInfo.color}`
-                                                        )}>
-                                                            {subjectInfo.icon}
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <h3 className="font-semibold text-white text-sm leading-tight truncate">{exam.title}</h3>
-                                                            <span className="text-[10px] text-slate-500">{subjectInfo.label}</span>
-                                                        </div>
-                                                        {submitted && (
-                                                            <span className="px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-medium flex-shrink-0">
-                                                                ✓
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex items-center gap-3 text-xs text-slate-400 mb-3">
-                                                        <span className="flex items-center gap-1">
-                                                            <Clock className="w-3 h-3" />
-                                                            {exam.duration}p
-                                                        </span>
-                                                        <span>{exam.total_questions} câu</span>
-                                                        {submitted && submission && (
-                                                            <span className={cn(
-                                                                "ml-auto font-bold",
-                                                                submission.score >= 8 ? "text-green-400" :
-                                                                    submission.score >= 5 ? "text-yellow-400" : "text-red-400"
-                                                            )}>
-                                                                {submission.score.toFixed(1)} điểm
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    {submitted ? (
-                                                        <Link href={`/student/exams/${exam.id}/result`}>
-                                                            <Button size="sm" variant="ghost" className="w-full text-slate-400 hover:text-white text-xs h-8">
-                                                                Xem kết quả
-                                                                <ArrowRight className="w-3 h-3 ml-1" />
-                                                            </Button>
-                                                        </Link>
-                                                    ) : (
-                                                        <Link href={`/student/exams/${exam.id}/take`}>
-                                                            <Button size="sm" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-xs h-8 group-hover:shadow-md transition-shadow">
-                                                                <PlayCircle className="w-3 h-3 mr-1" />
-                                                                Làm bài
-                                                            </Button>
-                                                        </Link>
-                                                    )}
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* Recent Submissions */}
-                        {submissions.length > 0 && (
-                            <Card className="border-slate-700 bg-slate-800/50">
-                                <CardHeader>
-                                    <CardTitle className="text-white">Bài thi gần đây</CardTitle>
-                                    <CardDescription className="text-slate-400">
-                                        Lịch sử các bài thi bạn đã làm
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-3">
-                                        {submissions.slice(0, 5).map((submission) => (
-                                            <div
-                                                key={submission.id}
-                                                className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30 border border-slate-700"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-lg bg-green-500/10 text-green-400 flex items-center justify-center">
-                                                        <CheckCircle2 className="w-5 h-5" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-white">{submission.exam?.title || "Đề thi"}</p>
-                                                        <p className="text-xs text-slate-400">
-                                                            {new Date(submission.submitted_at).toLocaleString("vi-VN")}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className={cn(
-                                                        "text-lg font-bold",
-                                                        submission.score >= 8 ? "text-green-400" :
-                                                            submission.score >= 5 ? "text-yellow-400" : "text-red-400"
+                                return (
+                                    <div key={exam.id} className="p-4 flex items-start gap-4 hover:bg-gray-50 transition-colors">
+                                        <div className={cn(
+                                            "flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-xl bg-blue-100"
+                                        )}>
+                                            {subjectInfo.icon}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-1">
+                                                {exam.title}
+                                            </h3>
+                                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                                                    {subjectInfo.label}
+                                                </span>
+                                                <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                                                    {exam.total_questions} câu
+                                                </span>
+                                                <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                                                    {exam.duration} phút
+                                                </span>
+                                                {submitted && (
+                                                    <span className={cn(
+                                                        "px-2 py-0.5 rounded font-bold",
+                                                        submission && submission.score >= 8 ? "bg-green-100 text-green-800" :
+                                                            submission && submission.score >= 5 ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800"
                                                     )}>
-                                                        {submission.score.toFixed(1)}
-                                                    </p>
-                                                    <p className="text-xs text-slate-400">điểm</p>
-                                                </div>
+                                                        {submission?.score.toFixed(1)} điểm
+                                                    </span>
+                                                )}
+                                                <span className="flex items-center gap-1 ml-auto">
+                                                    📅 {new Date(exam.created_at).toLocaleDateString("vi-VN")}
+                                                </span>
                                             </div>
-                                        ))}
+                                        </div>
+                                        <Link href={submitted ? `/student/exams/${exam.id}/result` : `/student/exams/${exam.id}/take`}>
+                                            <Button size="sm" variant={submitted ? "outline" : "default"} className={cn(
+                                                submitted ? "border-blue-600 text-blue-600" : "bg-blue-600 hover:bg-blue-700"
+                                            )}>
+                                                {submitted ? "Xem lại" : "Làm bài"}
+                                            </Button>
+                                        </Link>
                                     </div>
-                                </CardContent>
-                            </Card>
-                        )}
+                                )
+                            })}
+
+                            {availableExams.length === 0 && (
+                                <div className="p-8 text-center text-gray-500">
+                                    <span className="text-4xl mb-2 block">📝</span>
+                                    Chưa có đề thi nào
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Sidebar (1/3) - Gamification - Hidden on mobile, visible on lg+ */}
-                    <div className="hidden lg:block space-y-3">
-                        {/* Daily Check-in - Compact */}
-                        <div className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                    {/* Sidebar - Daily Check-in & Quick Stats */}
+                    <div className="lg:col-span-1 space-y-6">
+                        {/* Daily Check-in */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-1 h-6 bg-yellow-500 rounded-full"></div>
+                                <h2 className="text-lg font-bold text-gray-900 uppercase">Điểm danh</h2>
+                            </div>
                             <DailyCheckIn onComplete={({ xp }) => setUserXp(prev => prev + xp)} />
                         </div>
 
-                        {/* Gamification Hub - Tabs */}
-                        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-                            <GamificationHub currentUserId={userId || undefined} />
+                        {/* Quick Links */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-1 h-6 bg-purple-600 rounded-full"></div>
+                                <h2 className="text-lg font-bold text-gray-900 uppercase">Truy cập nhanh</h2>
+                            </div>
+                            <div className="space-y-2">
+                                <Link href="/arena" className="block">
+                                    <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600 transition-colors">
+                                        <span className="text-2xl">⚔️</span>
+                                        <div>
+                                            <p className="font-bold">Đấu trường</p>
+                                            <p className="text-xs text-purple-100">Thi đấu online</p>
+                                        </div>
+                                    </div>
+                                </Link>
+                                <Link href="/resources" className="block">
+                                    <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 transition-colors">
+                                        <span className="text-2xl">📖</span>
+                                        <div>
+                                            <p className="font-bold">Tài liệu</p>
+                                            <p className="text-xs text-green-100">Kho tài liệu học tập</p>
+                                        </div>
+                                    </div>
+                                </Link>
+                                <Link href="/student/achievements" className="block">
+                                    <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600 transition-colors">
+                                        <span className="text-2xl">🏅</span>
+                                        <div>
+                                            <p className="font-bold">Thành tích</p>
+                                            <p className="text-xs text-yellow-100">Xem huy hiệu</p>
+                                        </div>
+                                    </div>
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Recent Results */}
+                        {submissions.length > 0 && (
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className="w-1 h-6 bg-green-500 rounded-full"></div>
+                                    <h2 className="text-lg font-bold text-gray-900 uppercase">Kết quả gần đây</h2>
+                                </div>
+                                <div className="space-y-3">
+                                    {submissions.slice(0, 3).map((sub, i) => (
+                                        <div key={sub.id} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
+                                            <div className="font-bold text-gray-400 w-4 text-center">{i + 1}</div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold text-gray-900 truncate">{sub.exam?.title || "Đề thi"}</p>
+                                                <p className="text-xs text-gray-500">{new Date(sub.submitted_at).toLocaleDateString("vi-VN")}</p>
+                                            </div>
+                                            <span className={cn(
+                                                "text-sm font-bold",
+                                                sub.score >= 8 ? "text-green-600" : sub.score >= 5 ? "text-yellow-600" : "text-red-600"
+                                            )}>
+                                                {sub.score.toFixed(1)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer */}
+            <footer className="bg-blue-600 text-white pt-10 pb-6 sm:ml-64">
+                <div className="container mx-auto px-4">
+                    <div className="max-w-4xl mx-auto text-center">
+                        <h3 className="font-bold text-xl mb-4">ExamHub - Hệ thống luyện đề trực tuyến</h3>
+                        <p className="text-blue-200 text-sm mb-4">Nền tảng học tập và ôn luyện trực tuyến hàng đầu</p>
+                        <div className="border-t border-blue-400/30 pt-4 text-sm text-blue-200">
+                            © 2026 ExamHub. All rights reserved.
                         </div>
                     </div>
                 </div>
-            </main>
+            </footer>
 
             {/* Mobile Bottom Navigation */}
             <BottomNav />
+
+            {/* Mobile sidebar overlay */}
+            {sidebarOpen && (
+                <div className="fixed inset-0 z-30 bg-black/50 sm:hidden" onClick={() => setSidebarOpen(false)} />
+            )}
         </div>
     )
 }
-
