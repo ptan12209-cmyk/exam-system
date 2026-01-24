@@ -16,6 +16,7 @@ import {
     Shield
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ScientificCalculator } from "@/components/ScientificCalculator"
 import { AntiCheatProvider, useAntiCheat } from "@/components/exam/AntiCheatProvider"
 import { AntiCheatWarning, FullscreenPrompt, ViolationIndicator } from "@/components/exam/AntiCheatUI"
 import { createShuffleSeed, shuffleWithMapping, ShuffleMapping } from "@/lib/shuffle"
@@ -69,6 +70,7 @@ export default function TakeExamPage() {
     const [examStarted, setExamStarted] = useState(false)
     const [antiCheatEnabled, setAntiCheatEnabled] = useState(true)
     const [userId, setUserId] = useState<string | null>(null)
+    const [showCalculator, setShowCalculator] = useState(false)
 
     // Question randomization
     const [mcQuestionOrder, setMcQuestionOrder] = useState<number[]>([])
@@ -640,6 +642,15 @@ export default function TakeExamPage() {
                         </div>
 
                         <div className="flex items-center gap-4">
+                            {/* Calculator Toggle */}
+                            <button
+                                onClick={() => setShowCalculator(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 hover:text-white transition-colors text-sm"
+                                title="Máy tính (Ctrl+K)"
+                            >
+                                🧮
+                                <span className="hidden md:inline">Máy tính</span>
+                            </button>
                             {/* Progress */}
                             <div className="hidden md:flex items-center gap-2">
                                 <span className="text-sm text-slate-400">
@@ -983,6 +994,11 @@ export default function TakeExamPage() {
                     </div>
                 )}
             </div>
+            {/* Scientific Calculator Modal */}
+            <ScientificCalculator
+                isOpen={showCalculator}
+                onClose={() => setShowCalculator(false)}
+            />
         </AntiCheatProvider>
     )
 }
