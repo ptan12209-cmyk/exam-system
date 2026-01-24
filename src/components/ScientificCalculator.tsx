@@ -8,48 +8,45 @@ interface ScientificCalculatorProps {
     onClose: () => void
 }
 
-type AngleMode = "D" | "R" | "G" // DEG, RAD, GRAD
+type AngleMode = "D" | "R" | "G"
 
-// fx-580VN X exact button component
-function CalcKey({
+// Exact fx-580VN X button with shift/alpha labels above
+function Key({
     main,
     shift,
     alpha,
     onClick,
-    className,
-    variant = "default",
-    wide = false
+    color = "dark",
+    size = 1
 }: {
     main: React.ReactNode
     shift?: string
     alpha?: string
     onClick: () => void
-    className?: string
-    variant?: "default" | "dark" | "yellow" | "red" | "gray"
-    wide?: boolean
+    color?: "dark" | "gray" | "orange" | "number"
+    size?: number
 }) {
-    const variants = {
-        default: "bg-[#3d4a5c] hover:bg-[#4d5a6c] text-white border-[#2d3a4c]",
-        dark: "bg-[#2a3444] hover:bg-[#3a4454] text-white border-[#1a2434]",
-        yellow: "bg-[#d4a82f] hover:bg-[#e4b83f] text-black border-[#b4881f] font-bold",
-        red: "bg-[#c45c5c] hover:bg-[#d46c6c] text-white border-[#a43c3c] font-bold",
-        gray: "bg-[#5a6a7a] hover:bg-[#6a7a8a] text-white border-[#4a5a6a]"
+    const colors = {
+        dark: "bg-[#2d3748] hover:bg-[#3d4758] border-[#1d2738] text-white",
+        gray: "bg-[#4a5568] hover:bg-[#5a6578] border-[#3a4558] text-white",
+        orange: "bg-[#dd6b20] hover:bg-[#ed7b30] border-[#cd5b10] text-white font-bold",
+        number: "bg-[#1a202c] hover:bg-[#2a303c] border-[#0a101c] text-white text-sm"
     }
 
     return (
-        <div className={cn("flex flex-col items-center", wide && "col-span-2")}>
-            {/* SHIFT/ALPHA labels above key */}
-            <div className="flex justify-between w-full px-0.5 h-3 text-[7px] leading-none">
+        <div className={cn("flex flex-col", size > 1 && `col-span-${size}`)}>
+            <div className="flex justify-between px-0.5 text-[6px] h-2.5 leading-none">
                 <span className="text-yellow-400 truncate">{shift || ""}</span>
                 <span className="text-red-400 truncate">{alpha || ""}</span>
             </div>
             <button
                 onClick={onClick}
                 className={cn(
-                    "w-full h-7 rounded-sm text-[10px] font-medium transition-all active:scale-95 border-b-2",
-                    variants[variant],
-                    className
+                    "h-6 rounded text-[9px] font-medium transition-all active:scale-95 border-b",
+                    colors[color],
+                    size > 1 && "col-span-2"
                 )}
+                style={size > 1 ? { gridColumn: `span ${size}` } : {}}
             >
                 {main}
             </button>
@@ -58,60 +55,60 @@ function CalcKey({
 }
 
 export function ScientificCalculator({ isOpen, onClose }: ScientificCalculatorProps) {
-    // States
     const [display, setDisplay] = useState("0")
     const [expression, setExpression] = useState("")
     const [angleMode, setAngleMode] = useState<AngleMode>("D")
-    const [shiftActive, setShiftActive] = useState(false)
-    const [alphaActive, setAlphaActive] = useState(false)
+    const [shift, setShift] = useState(false)
+    const [alpha, setAlpha] = useState(false)
     const [memory, setMemory] = useState(0)
     const [ans, setAns] = useState(0)
 
-    // Keyboard handling
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
+        const handle = (e: KeyboardEvent) => {
             if (!isOpen) return
             if (e.key === "Escape") { onClose(); return }
-            if (e.key >= "0" && e.key <= "9") { e.preventDefault(); inputNumber(e.key) }
-            if (e.key === ".") { e.preventDefault(); inputNumber(".") }
-            if (e.key === "+") { e.preventDefault(); inputOperator("+") }
-            if (e.key === "-") { e.preventDefault(); inputOperator("-") }
-            if (e.key === "*") { e.preventDefault(); inputOperator("×") }
-            if (e.key === "/") { e.preventDefault(); inputOperator("÷") }
-            if (e.key === "Enter" || e.key === "=") { e.preventDefault(); calculate() }
-            if (e.key === "Backspace") { e.preventDefault(); handleDEL() }
+            if (e.key >= "0" && e.key <= "9") { e.preventDefault(); input(e.key) }
+            if (e.key === ".") { e.preventDefault(); input(".") }
+            if (e.key === "+") { e.preventDefault(); op("+") }
+            if (e.key === "-") { e.preventDefault(); op("-") }
+            if (e.key === "*") { e.preventDefault(); op("×") }
+            if (e.key === "/") { e.preventDefault(); op("÷") }
+            if (e.key === "Enter" || e.key === "=") { e.preventDefault(); calc() }
+            if (e.key === "Backspace") { e.preventDefault(); del() }
         }
-        window.addEventListener("keydown", handleKeyDown)
-        return () => window.removeEventListener("keydown", handleKeyDown)
+        window.addEventListener("keydown", handle)
+        return () => window.removeEventListener("keydown", handle)
     }, [isOpen, display, expression])
 
-    // Input functions
-    const inputNumber = useCallback((n: string) => {
-        setShiftActive(false); setAlphaActive(false)
+    const input = (n: string) => {
+        setShift(false); setAlpha(false)
         if (display === "0" && n !== ".") setDisplay(n)
         else if (n === "." && display.includes(".")) return
-        else setDisplay(prev => prev + n)
-    }, [display])
+        else setDisplay(d => d + n)
+    }
 
-    const inputOperator = useCallback((op: string) => {
-        setExpression(prev => prev + display + op)
+    const op = (o: string) => {
+        setExpression(e => e + display + o)
         setDisplay("0")
-        setShiftActive(false); setAlphaActive(false)
-    }, [display])
+        setShift(false); setAlpha(false)
+    }
 
-    const toRad = (v: number) => angleMode === "D" ? v * Math.PI / 180 : angleMode === "G" ? v * Math.PI / 200 : v
-    const fromRad = (v: number) => angleMode === "D" ? v * 180 / Math.PI : angleMode === "G" ? v * 200 / Math.PI : v
+    const toR = (v: number) => angleMode === "D" ? v * Math.PI / 180 : angleMode === "G" ? v * Math.PI / 200 : v
+    const fromR = (v: number) => angleMode === "D" ? v * 180 / Math.PI : angleMode === "G" ? v * 200 / Math.PI : v
 
-    const applyFunction = useCallback((fn: string) => {
+    const fn = (f: string) => {
         const n = parseFloat(display)
         let r: number
-        switch (fn) {
-            case "sin": r = Math.sin(toRad(n)); break
-            case "cos": r = Math.cos(toRad(n)); break
-            case "tan": r = Math.tan(toRad(n)); break
-            case "sin⁻¹": r = fromRad(Math.asin(n)); break
-            case "cos⁻¹": r = fromRad(Math.acos(n)); break
-            case "tan⁻¹": r = fromRad(Math.atan(n)); break
+        switch (f) {
+            case "sin": r = Math.sin(toR(n)); break
+            case "cos": r = Math.cos(toR(n)); break
+            case "tan": r = Math.tan(toR(n)); break
+            case "sin⁻¹": r = fromR(Math.asin(n)); break
+            case "cos⁻¹": r = fromR(Math.acos(n)); break
+            case "tan⁻¹": r = fromR(Math.atan(n)); break
+            case "sinh": r = Math.sinh(n); break
+            case "cosh": r = Math.cosh(n); break
+            case "tanh": r = Math.tanh(n); break
             case "log": r = Math.log10(n); break
             case "ln": r = Math.log(n); break
             case "10^x": r = Math.pow(10, n); break
@@ -121,181 +118,183 @@ export function ScientificCalculator({ isOpen, onClose }: ScientificCalculatorPr
             case "x²": r = n * n; break
             case "x³": r = n * n * n; break
             case "x⁻¹": r = 1 / n; break
-            case "x!": r = factorial(n); break
-            case "(-)": r = -n; break
+            case "n!": r = fact(n); break
+            case "neg": r = -n; break
             case "π": r = Math.PI; break
             case "e": r = Math.E; break
             case "%": r = n / 100; break
             case "Abs": r = Math.abs(n); break
             default: return
         }
-        setDisplay(format(r))
+        setDisplay(fmt(r))
         setAns(r)
-        setShiftActive(false); setAlphaActive(false)
-    }, [display, angleMode])
+        setShift(false); setAlpha(false)
+    }
 
-    const factorial = (n: number): number => {
+    const fact = (n: number): number => {
         if (n < 0 || !Number.isInteger(n)) return NaN
         if (n <= 1) return 1
         let r = 1; for (let i = 2; i <= n; i++) r *= i
         return r
     }
 
-    const format = (n: number): string => {
+    const fmt = (n: number): string => {
         if (Number.isNaN(n)) return "Math ERROR"
         if (!Number.isFinite(n)) return n > 0 ? "∞" : "-∞"
-        if (Math.abs(n) < 1e-10 && n !== 0) return n.toExponential(6)
-        if (Math.abs(n) >= 1e10) return n.toExponential(6)
-        return (Math.round(n * 1e10) / 1e10).toString()
+        const abs = Math.abs(n)
+        if (abs !== 0 && (abs < 1e-10 || abs >= 1e10)) return n.toExponential(6)
+        return String(Math.round(n * 1e10) / 1e10)
     }
 
-    const calculate = useCallback(() => {
+    const calc = () => {
         try {
             const expr = (expression + display).replace(/×/g, "*").replace(/÷/g, "/")
-            const result = new Function(`return ${expr}`)()
-            setAns(result)
-            setExpression("")
-            setDisplay(format(result))
+            const r = new Function(`return ${expr}`)()
+            setAns(r); setExpression(""); setDisplay(fmt(r))
         } catch { setDisplay("Syntax ERROR") }
-        setShiftActive(false); setAlphaActive(false)
-    }, [expression, display])
-
-    const handleAC = () => { setDisplay("0"); setExpression("") }
-    const handleDEL = () => setDisplay(prev => prev.length > 1 ? prev.slice(0, -1) : "0")
-    const handleAns = () => setDisplay(format(ans))
-    const handleM = (op: "+" | "-" | "R" | "C") => {
-        if (op === "+") setMemory(m => m + parseFloat(display))
-        else if (op === "-") setMemory(m => m - parseFloat(display))
-        else if (op === "R") setDisplay(format(memory))
-        else setMemory(0)
+        setShift(false); setAlpha(false)
     }
+
+    const ac = () => { setDisplay("0"); setExpression("") }
+    const del = () => setDisplay(d => d.length > 1 ? d.slice(0, -1) : "0")
 
     if (!isOpen) return null
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-2">
-            <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/80" onClick={onClose} />
 
-            {/* Calculator body - fx-580VN X exact style */}
-            <div className="relative w-[320px] bg-gradient-to-b from-[#3a4a5f] to-[#2a3a4f] rounded-xl shadow-2xl border-2 border-[#c4a42f] overflow-hidden">
+            {/* fx-580VN X Body */}
+            <div className="relative w-[300px] bg-gradient-to-b from-[#2d3748] to-[#1a202c] rounded-lg shadow-2xl overflow-hidden"
+                style={{ border: "3px solid #b7791f" }}>
 
-                {/* Top brand area */}
-                <div className="bg-[#2a3a4f] px-3 py-1.5 flex justify-between items-center border-b border-[#4a5a6f]">
-                    <span className="text-[10px] text-gray-400 font-bold tracking-wider">CASIO</span>
-                    <span className="text-[8px] text-gray-500">fx-580VN X</span>
+                {/* Brand */}
+                <div className="bg-[#1a202c] px-2 py-1 flex justify-between items-center">
+                    <span className="text-[8px] text-gray-400 font-bold">CASIO</span>
+                    <span className="text-[7px] text-gray-500 italic">fx-580VN X</span>
+                    <button onClick={onClose} className="text-gray-500 hover:text-red-400 text-xs">✕</button>
                 </div>
 
-                {/* LCD Display */}
-                <div className="mx-2 my-2 bg-gradient-to-b from-[#a8c8a8] to-[#88a888] rounded p-2 border border-[#687868] shadow-inner">
-                    <div className="flex justify-between text-[8px] text-[#2a4a2a] mb-0.5">
-                        <span>{angleMode}</span>
+                {/* Solar Panel Area */}
+                <div className="mx-2 h-2 bg-gradient-to-r from-[#1a1a2e] via-[#2d2d44] to-[#1a1a2e] rounded-sm" />
+
+                {/* LCD */}
+                <div className="mx-2 my-1.5 bg-gradient-to-b from-[#9ae6b4] to-[#68d391] rounded p-1.5 border border-[#38a169]">
+                    <div className="flex justify-between text-[7px] text-[#1a4731]">
+                        <span className="font-bold">{angleMode === "D" ? "D" : angleMode === "R" ? "R" : "G"}</span>
                         <span>{memory !== 0 ? "M" : ""}</span>
-                        <span>{shiftActive ? "SHIFT" : alphaActive ? "ALPHA" : ""}</span>
+                        <span className="font-bold">{shift ? "S" : alpha ? "A" : ""}</span>
                     </div>
-                    <div className="text-right text-[#1a3a1a] text-[9px] h-3 truncate font-mono">{expression || " "}</div>
-                    <div className="text-right text-[#0a2a0a] text-lg font-bold font-mono truncate">{display}</div>
+                    <div className="text-right text-[#1a4731] text-[8px] truncate font-mono">{expression || "\u00A0"}</div>
+                    <div className="text-right text-[#0d3320] text-lg font-bold font-mono truncate">{display}</div>
                 </div>
 
-                {/* Navigation row */}
-                <div className="flex items-center justify-between px-2 py-1">
-                    <div className="flex gap-1">
-                        <button onClick={() => setShiftActive(!shiftActive)}
-                            className={cn("px-2 py-1 text-[8px] rounded font-bold", shiftActive ? "bg-yellow-500 text-black" : "bg-[#2a3444] text-yellow-400")}>
+                {/* CLASSWIZ label */}
+                <div className="text-center text-[6px] text-gray-500 tracking-widest">CLASSWIZ</div>
+
+                {/* Control Row: SHIFT, ALPHA, D-PAD, MODE, ON */}
+                <div className="flex items-center justify-between px-1.5 py-1">
+                    <div className="flex gap-0.5">
+                        <button onClick={() => { setShift(!shift); setAlpha(false) }}
+                            className={cn("px-1.5 py-0.5 text-[7px] rounded font-bold", shift ? "bg-yellow-400 text-black" : "bg-[#2d3748] text-yellow-400 border border-yellow-400/30")}>
                             SHIFT
                         </button>
-                        <button onClick={() => setAlphaActive(!alphaActive)}
-                            className={cn("px-2 py-1 text-[8px] rounded font-bold", alphaActive ? "bg-red-500 text-white" : "bg-[#2a3444] text-red-400")}>
+                        <button onClick={() => { setAlpha(!alpha); setShift(false) }}
+                            className={cn("px-1.5 py-0.5 text-[7px] rounded font-bold", alpha ? "bg-red-500 text-white" : "bg-[#2d3748] text-red-400 border border-red-400/30")}>
                             ALPHA
                         </button>
                     </div>
 
-                    {/* D-pad */}
-                    <div className="flex flex-col items-center">
-                        <button className="w-5 h-4 bg-[#2a3444] rounded-t text-[8px] text-white">▲</button>
+                    {/* D-Pad */}
+                    <div className="flex flex-col items-center scale-75">
+                        <button className="w-4 h-3 bg-[#2d3748] rounded-t-full text-[6px] text-white border border-gray-600">▲</button>
                         <div className="flex">
-                            <button className="w-4 h-5 bg-[#2a3444] rounded-l text-[8px] text-white">◀</button>
-                            <button className="w-6 h-5 bg-[#3a4454] text-[7px] text-white font-bold">MODE</button>
-                            <button className="w-4 h-5 bg-[#2a3444] rounded-r text-[8px] text-white">▶</button>
+                            <button className="w-3 h-4 bg-[#2d3748] rounded-l-full text-[6px] text-white border border-gray-600">◀</button>
+                            <button className="w-5 h-4 bg-[#374151] text-[5px] text-white font-bold border-y border-gray-600">MODE</button>
+                            <button className="w-3 h-4 bg-[#2d3748] rounded-r-full text-[6px] text-white border border-gray-600">▶</button>
                         </div>
-                        <button className="w-5 h-4 bg-[#2a3444] rounded-b text-[8px] text-white">▼</button>
+                        <button className="w-4 h-3 bg-[#2d3748] rounded-b-full text-[6px] text-white border border-gray-600">▼</button>
                     </div>
 
-                    <div className="flex gap-1">
+                    <div className="flex gap-0.5">
                         <button onClick={() => setAngleMode(angleMode === "D" ? "R" : angleMode === "R" ? "G" : "D")}
-                            className="px-2 py-1 text-[8px] bg-[#2a3444] text-cyan-400 rounded">
+                            className="px-1 py-0.5 text-[6px] bg-[#2d3748] text-cyan-400 rounded border border-cyan-400/30">
                             {angleMode === "D" ? "DEG" : angleMode === "R" ? "RAD" : "GRA"}
                         </button>
-                        <button onClick={onClose} className="px-2 py-1 text-[8px] bg-[#2a3444] text-red-400 rounded">✕</button>
+                        <button className="px-1 py-0.5 text-[6px] bg-[#2d3748] text-green-400 rounded border border-green-400/30">ON</button>
                     </div>
                 </div>
 
-                {/* Keypad - Exact fx-580VN X layout */}
-                <div className="p-2 grid grid-cols-6 gap-1">
-                    {/* Row 1 */}
-                    <CalcKey main="OPTN" shift="x=" onClick={() => { }} />
-                    <CalcKey main="CALC" shift="SOLVE" onClick={() => { }} />
-                    <CalcKey main="∫" shift="d/dx" onClick={() => { }} />
-                    <CalcKey main="□/□" shift="a b/c" onClick={() => { }} />
-                    <CalcKey main="√" shift="∛" onClick={() => applyFunction(shiftActive ? "∛" : "√")} />
-                    <CalcKey main="x²" shift="x³" onClick={() => applyFunction(shiftActive ? "x³" : "x²")} />
+                {/* Keypad */}
+                <div className="p-1.5 grid grid-cols-6 gap-0.5">
+                    {/* Row 1: OPTN CALC ∫ FRAC √ x² */}
+                    <Key main="OPTN" shift="x=" onClick={() => { }} />
+                    <Key main="CALC" shift="SOLVE" onClick={() => { }} />
+                    <Key main="∫" shift="d/dx" onClick={() => { }} />
+                    <Key main="□/□" shift="ab/c" onClick={() => { }} />
+                    <Key main="√" shift="∛" onClick={() => fn(shift ? "∛" : "√")} />
+                    <Key main="x²" shift="x³" onClick={() => fn(shift ? "x³" : "x²")} />
 
-                    {/* Row 2 */}
-                    <CalcKey main="x^□" shift="ˣ√" onClick={() => inputOperator("^")} />
-                    <CalcKey main="log" shift="10^x" onClick={() => applyFunction(shiftActive ? "10^x" : "log")} />
-                    <CalcKey main="ln" shift="e^x" onClick={() => applyFunction(shiftActive ? "e^x" : "ln")} />
-                    <CalcKey main="(-)" onClick={() => applyFunction("(-)")} />
-                    <CalcKey main="°′″" shift="←" onClick={() => { }} />
-                    <CalcKey main="hyp" shift="Abs" onClick={() => shiftActive && applyFunction("Abs")} />
+                    {/* Row 2: x^y log ln (-) ° hyp */}
+                    <Key main="x^□" shift="ˣ√" onClick={() => op("^")} />
+                    <Key main="log" shift="10ˣ" onClick={() => fn(shift ? "10^x" : "log")} />
+                    <Key main="ln" shift="eˣ" onClick={() => fn(shift ? "e^x" : "ln")} />
+                    <Key main="(-)" onClick={() => fn("neg")} />
+                    <Key main="°′″" shift="←" onClick={() => { }} />
+                    <Key main="hyp" shift="Abs" onClick={() => shift && fn("Abs")} />
 
-                    {/* Row 3 - Trig */}
-                    <CalcKey main="sin" shift="sin⁻¹" alpha="D" onClick={() => applyFunction(shiftActive ? "sin⁻¹" : "sin")} />
-                    <CalcKey main="cos" shift="cos⁻¹" alpha="E" onClick={() => applyFunction(shiftActive ? "cos⁻¹" : "cos")} />
-                    <CalcKey main="tan" shift="tan⁻¹" alpha="F" onClick={() => applyFunction(shiftActive ? "tan⁻¹" : "tan")} />
-                    <CalcKey main="(" alpha="X" onClick={() => setDisplay(prev => prev === "0" ? "(" : prev + "(")} />
-                    <CalcKey main=")" alpha="Y" onClick={() => setDisplay(prev => prev + ")")} />
-                    <CalcKey main="S⇔D" shift="M:" onClick={() => { }} />
+                    {/* Row 3: sin cos tan ( ) S⇔D */}
+                    <Key main="sin" shift="sin⁻¹" alpha="D" onClick={() => fn(shift ? "sin⁻¹" : "sin")} />
+                    <Key main="cos" shift="cos⁻¹" alpha="E" onClick={() => fn(shift ? "cos⁻¹" : "cos")} />
+                    <Key main="tan" shift="tan⁻¹" alpha="F" onClick={() => fn(shift ? "tan⁻¹" : "tan")} />
+                    <Key main="(" alpha="X" onClick={() => setDisplay(d => d === "0" ? "(" : d + "(")} />
+                    <Key main=")" alpha="Y" onClick={() => setDisplay(d => d + ")")} />
+                    <Key main="S⇔D" shift="M:" onClick={() => { }} />
 
-                    {/* Row 4 */}
-                    <CalcKey main="RCL" shift="STO" alpha="A" onClick={() => handleM("R")} />
-                    <CalcKey main="ENG" shift="←" alpha="B" onClick={() => { }} />
-                    <CalcKey main="(" shift="%" alpha="C" onClick={() => shiftActive ? applyFunction("%") : setDisplay(prev => prev === "0" ? "(" : prev + "(")} />
-                    <CalcKey main="," onClick={() => setDisplay(prev => prev + ",")} variant="gray" />
-                    <CalcKey main="M+" shift="M-" onClick={() => handleM(shiftActive ? "-" : "+")} variant="gray" />
-                    <CalcKey main="DEL" shift="INS" onClick={handleDEL} variant="gray" />
+                    {/* Row 4: RCL ENG ( , M+ DEL */}
+                    <Key main="RCL" shift="STO" alpha="A" onClick={() => setDisplay(fmt(memory))} />
+                    <Key main="ENG" shift="←" alpha="B" onClick={() => { }} />
+                    <Key main="(" shift="%" alpha="C" onClick={() => shift ? fn("%") : setDisplay(d => d === "0" ? "(" : d + "(")} />
+                    <Key main="," onClick={() => setDisplay(d => d + ",")} color="gray" />
+                    <Key main="M+" shift="M-" onClick={() => shift ? setMemory(m => m - parseFloat(display)) : setMemory(m => m + parseFloat(display))} color="gray" />
+                    <Key main="DEL" shift="INS" onClick={del} color="orange" />
 
-                    {/* Row 5 - Numbers 7,8,9 */}
-                    <CalcKey main="7" onClick={() => inputNumber("7")} variant="dark" />
-                    <CalcKey main="8" onClick={() => inputNumber("8")} variant="dark" />
-                    <CalcKey main="9" onClick={() => inputNumber("9")} variant="dark" />
-                    <CalcKey main="AC" onClick={handleAC} variant="gray" />
-                    <CalcKey main="÷" onClick={() => inputOperator("÷")} variant="gray" />
-                    <CalcKey main="×" onClick={() => inputOperator("×")} variant="gray" />
+                    {/* Row 5: 7 8 9 AC ÷ */}
+                    <Key main="7" onClick={() => input("7")} color="number" />
+                    <Key main="8" onClick={() => input("8")} color="number" />
+                    <Key main="9" onClick={() => input("9")} color="number" />
+                    <Key main="AC" shift="OFF" onClick={ac} color="orange" />
+                    <Key main="÷" onClick={() => op("÷")} color="gray" />
+                    <Key main="×" onClick={() => op("×")} color="gray" />
 
-                    {/* Row 6 - Numbers 4,5,6 */}
-                    <CalcKey main="4" onClick={() => inputNumber("4")} variant="dark" />
-                    <CalcKey main="5" onClick={() => inputNumber("5")} variant="dark" />
-                    <CalcKey main="6" onClick={() => inputNumber("6")} variant="dark" />
-                    <CalcKey main="-" onClick={() => inputOperator("-")} variant="gray" />
-                    <CalcKey main="+" onClick={() => inputOperator("+")} variant="gray" />
-                    <CalcKey main="Ans" shift="PreAns" onClick={handleAns} variant="gray" />
+                    {/* Row 6: 4 5 6 - + */}
+                    <Key main="4" onClick={() => input("4")} color="number" />
+                    <Key main="5" onClick={() => input("5")} color="number" />
+                    <Key main="6" onClick={() => input("6")} color="number" />
+                    <Key main="-" onClick={() => op("-")} color="gray" />
+                    <Key main="+" onClick={() => op("+")} color="gray" />
+                    <Key main="Ans" shift="PreAns" onClick={() => setDisplay(fmt(ans))} color="gray" />
 
-                    {/* Row 7 - Numbers 1,2,3 + EXE */}
-                    <CalcKey main="1" alpha="x" onClick={() => inputNumber("1")} variant="dark" />
-                    <CalcKey main="2" alpha="y" onClick={() => inputNumber("2")} variant="dark" />
-                    <CalcKey main="3" alpha="π" onClick={() => alphaActive ? applyFunction("π") : inputNumber("3")} variant="dark" />
-                    <CalcKey main="×10^x" onClick={() => setDisplay(prev => prev + "e")} variant="gray" />
-                    <CalcKey main="=" onClick={calculate} variant="yellow" wide />
+                    {/* Row 7: 1 2 3 ×10^x = = */}
+                    <Key main="1" alpha="x" onClick={() => input("1")} color="number" />
+                    <Key main="2" alpha="y" onClick={() => input("2")} color="number" />
+                    <Key main="3" alpha="π" onClick={() => alpha ? fn("π") : input("3")} color="number" />
+                    <Key main="×10ˣ" onClick={() => setDisplay(d => d + "e")} color="gray" />
+                    <Key main="=" onClick={calc} color="orange" />
+                    <Key main="=" onClick={calc} color="orange" />
 
-                    {/* Row 8 - 0, ., etc */}
-                    <CalcKey main="0" onClick={() => inputNumber("0")} variant="dark" />
-                    <CalcKey main="." shift="Ran#" alpha="e" onClick={() => alphaActive ? applyFunction("e") : inputNumber(".")} variant="dark" />
-                    <CalcKey main="x!" shift="nPr" onClick={() => applyFunction("x!")} variant="dark" />
-                    <CalcKey main="x⁻¹" shift="nCr" onClick={() => applyFunction("x⁻¹")} variant="gray" />
+                    {/* Row 8: 0 . x! x⁻¹ */}
+                    <Key main="0" onClick={() => input("0")} color="number" />
+                    <Key main="." shift="Ran#" alpha="e" onClick={() => alpha ? fn("e") : input(".")} color="number" />
+                    <Key main="x!" shift="nPr" onClick={() => fn("n!")} color="number" />
+                    <Key main="x⁻¹" shift="nCr" onClick={() => fn("x⁻¹")} color="gray" />
+                    <Key main=",," onClick={() => { }} color="gray" />
+                    <Key main="" onClick={() => { }} color="gray" />
                 </div>
 
                 {/* Footer */}
-                <div className="px-2 pb-2 text-center">
-                    <p className="text-[7px] text-gray-500">NATURAL TEXTBOOK DISPLAY</p>
+                <div className="px-2 pb-1.5 text-center">
+                    <div className="text-[5px] text-gray-500 tracking-[0.2em]">NATURAL TEXTBOOK DISPLAY</div>
                 </div>
             </div>
         </div>
