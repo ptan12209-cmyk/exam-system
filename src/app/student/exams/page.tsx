@@ -5,23 +5,20 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import {
-    ArrowLeft,
-    Clock,
-    FileText,
-    Loader2,
-    CheckCircle2,
-    Play
-} from "lucide-react"
 import { cn } from "@/lib/utils"
+import { NotificationBell } from "@/components/NotificationBell"
+import { UserMenu } from "@/components/UserMenu"
+import { BottomNav } from "@/components/BottomNav"
+import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
 
 interface Exam {
     id: string
     title: string
+    description?: string
     duration: number
     total_questions: number
     status: string
+    subject?: string
     created_at: string
     is_scheduled?: boolean
     start_time?: string
@@ -33,6 +30,25 @@ interface Submission {
     score: number
 }
 
+const CATEGORIES = [
+    { value: "all", label: "Tất cả" },
+    { value: "thpt", label: "Đề thi thử THPT" },
+    { value: "hsa", label: "ĐGNL HSA" },
+    { value: "tsa", label: "ĐGTD TSA" },
+    { value: "vact", label: "ĐGNL V-ACT" },
+]
+
+const SUBJECT_TAG_COLORS: Record<string, string> = {
+    math: "bg-purple-100 text-purple-600",
+    physics: "bg-blue-100 text-blue-600",
+    chemistry: "bg-green-100 text-green-600",
+    biology: "bg-yellow-100 text-yellow-600",
+    english: "bg-red-100 text-red-600",
+    literature: "bg-pink-100 text-pink-600",
+    history: "bg-amber-100 text-amber-600",
+    geography: "bg-cyan-100 text-cyan-600",
+}
+
 export default function StudentExamsPage() {
     const router = useRouter()
     const supabase = createClient()
@@ -40,31 +56,35 @@ export default function StudentExamsPage() {
     const [exams, setExams] = useState<Exam[]>([])
     const [submissions, setSubmissions] = useState<Map<string, number>>(new Map())
     const [loading, setLoading] = useState(true)
+    const [user, setUser] = useState<{ id: string; full_name?: string } | null>(null)
+    const [filterSubject, setFilterSubject] = useState("")
+    const [filterCategory, setFilterCategory] = useState("all")
+    const [searchQuery, setSearchQuery] = useState("")
+    const [sortBy, setSortBy] = useState("newest")
 
     useEffect(() => {
         async function fetchData() {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) {
+            const { data: { user: authUser } } = await supabase.auth.getUser()
+            if (!authUser) {
                 router.push("/login")
                 return
             }
 
-            // Fetch published exams
+            const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", authUser.id).single()
+            setUser({ id: authUser.id, full_name: profile?.full_name })
+
             const { data: examsData } = await supabase
                 .from("exams")
                 .select("*")
                 .eq("status", "published")
                 .order("created_at", { ascending: false })
 
-            if (examsData) {
-                setExams(examsData)
-            }
+            if (examsData) setExams(examsData)
 
-            // Fetch user submissions
             const { data: subsData } = await supabase
                 .from("submissions")
                 .select("exam_id, score")
-                .eq("student_id", user.id)
+                .eq("student_id", authUser.id)
 
             if (subsData) {
                 const subMap = new Map<string, number>()
@@ -79,9 +99,13 @@ export default function StudentExamsPage() {
 
             setLoading(false)
         }
-
         fetchData()
     }, [router, supabase])
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
+        router.push("/login")
+    }
 
     const isExamAvailable = (exam: Exam) => {
         if (!exam.is_scheduled) return true
@@ -91,128 +115,293 @@ export default function StudentExamsPage() {
         return true
     }
 
+    const filteredExams = exams
+        .filter(e => !filterSubject || e.subject === filterSubject)
+        .filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()))
+
+    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString("vi-VN")
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="min-h-screen bg-gray-100 flex flex-col">
             {/* Header */}
-            <header className="border-b border-slate-700/50 bg-slate-900/80 sticky top-0 z-50">
-                <div className="max-w-4xl mx-auto px-4 py-4">
-                    <div className="flex items-center gap-4">
-                        <Link href="/student/dashboard">
-                            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
-                                <ArrowLeft className="w-5 h-5" />
-                            </Button>
+            <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <Link href="/student/dashboard" className="flex items-center gap-2">
+                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-md">E</div>
+                            <span className="font-bold text-xl text-blue-600 hidden md:block">ExamHub</span>
                         </Link>
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                                <FileText className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-bold text-white">Danh sách đề thi</h1>
-                                <p className="text-sm text-slate-400">{exams.length} đề thi có sẵn</p>
-                            </div>
+                        <div className="hidden md:flex items-center bg-gray-100 rounded-full px-4 py-2 w-80">
+                            <span className="text-gray-400 mr-2">🔍</span>
+                            <input
+                                type="text"
+                                placeholder="Tìm kiếm đề thi..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="bg-transparent border-none outline-none text-sm w-full focus:ring-0"
+                            />
                         </div>
+                    </div>
+                    <nav className="hidden lg:flex items-center gap-1">
+                        <Link href="/student/dashboard" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg"><span className="text-2xl">🏠</span></Link>
+                        <Link href="/resources" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg"><span className="text-2xl">📚</span></Link>
+                        <Link href="/student/exams" className="p-3 text-blue-600 bg-blue-50 rounded-lg"><span className="text-2xl">📝</span></Link>
+                        <Link href="/arena" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg"><span className="text-2xl">🏆</span></Link>
+                    </nav>
+                    <div className="flex items-center gap-3">
+                        <NotificationBell />
+                        <UserMenu userName={user?.full_name || ""} onLogout={handleLogout} role="student" />
                     </div>
                 </div>
             </header>
 
-            {/* Content */}
-            <main className="max-w-4xl mx-auto px-4 py-6">
-                {exams.length === 0 ? (
-                    <Card className="border-slate-700 bg-slate-800/50">
-                        <CardContent className="p-12 text-center">
-                            <FileText className="w-12 h-12 mx-auto mb-4 text-slate-500" />
-                            <h3 className="text-lg font-medium text-white mb-2">Chưa có đề thi nào</h3>
-                            <p className="text-slate-400">Hãy quay lại sau khi giáo viên đăng đề thi mới</p>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="space-y-4">
-                        {exams.map((exam) => {
-                            const hasSubmitted = submissions.has(exam.id)
-                            const bestScore = submissions.get(exam.id)
-                            const available = isExamAvailable(exam)
+            {/* Main */}
+            <main className="flex-grow max-w-7xl mx-auto px-4 py-8 w-full">
+                {/* Breadcrumb */}
+                <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+                    <span>📝</span>
+                    <span>›</span>
+                    <span className="font-medium text-gray-800">Đề thi</span>
+                </div>
 
-                            return (
-                                <Card
-                                    key={exam.id}
-                                    className={cn(
-                                        "border-slate-700 transition-all",
-                                        hasSubmitted
-                                            ? "bg-green-500/5 border-green-500/20"
-                                            : "bg-slate-800/50 hover:border-blue-500/30"
-                                    )}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    {/* Sidebar - Filters */}
+                    <div className="lg:col-span-1 space-y-6">
+                        {/* Mobile Search */}
+                        <div className="md:hidden flex items-center bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
+                            <input
+                                type="text"
+                                placeholder="Tìm kiếm đề thi..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="bg-transparent border-none outline-none text-sm w-full focus:ring-0"
+                            />
+                            <span className="text-blue-600">🔍</span>
+                        </div>
+
+                        {/* Filter Card */}
+                        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-bold text-lg text-blue-600">Bộ lọc</h3>
+                                <span className="text-gray-400">⚙️</span>
+                            </div>
+
+                            {/* Subject Filter */}
+                            <div className="mb-6">
+                                <div className="flex items-center gap-2 text-gray-700 font-medium mb-3">
+                                    <span className="text-gray-500">📚</span> Môn học
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        onClick={() => setFilterSubject("")}
+                                        className={cn(
+                                            "px-3 py-1.5 text-xs rounded-md transition-colors",
+                                            !filterSubject
+                                                ? "bg-blue-100 text-blue-600 font-medium ring-1 ring-blue-200"
+                                                : "bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600"
+                                        )}
+                                    >
+                                        Tất cả
+                                    </button>
+                                    {SUBJECTS.filter(s => s.value).map((s) => (
+                                        <button
+                                            key={s.value}
+                                            onClick={() => setFilterSubject(s.value)}
+                                            className={cn(
+                                                "px-3 py-1.5 text-xs rounded-md transition-colors",
+                                                filterSubject === s.value
+                                                    ? "bg-blue-100 text-blue-600 font-medium ring-1 ring-blue-200"
+                                                    : "bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600"
+                                            )}
+                                        >
+                                            {s.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <hr className="border-gray-100 mb-6" />
+
+                            {/* Category Filter */}
+                            <div className="mb-2">
+                                <div className="flex items-center gap-2 text-gray-700 font-medium mb-3">
+                                    <span className="text-gray-500">📂</span> Phân loại
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    {CATEGORIES.map((c) => (
+                                        <label key={c.value} className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={filterCategory === c.value}
+                                                onChange={() => setFilterCategory(c.value)}
+                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-600 h-4 w-4"
+                                            />
+                                            <span>{c.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="lg:col-span-3">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-2xl font-bold text-gray-800">Danh sách đề thi</h2>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <span>Sắp xếp:</span>
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="border-none bg-transparent font-medium text-gray-700 focus:ring-0 cursor-pointer"
                                 >
-                                    <CardContent className="p-6">
-                                        <div className="flex items-center justify-between gap-4">
-                                            <div className="flex-1">
-                                                <h3 className="text-lg font-semibold text-white mb-2">
-                                                    {exam.title}
-                                                </h3>
-                                                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
-                                                    <span className="flex items-center gap-1">
-                                                        <FileText className="w-4 h-4" />
-                                                        {exam.total_questions} câu
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Clock className="w-4 h-4" />
+                                    <option value="newest">Mới nhất</option>
+                                    <option value="popular">Nhiều người thi</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Exam Grid */}
+                        {filteredExams.length === 0 ? (
+                            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+                                <span className="text-5xl mb-4 block">📝</span>
+                                <h3 className="text-lg font-medium text-gray-800 mb-2">Chưa có đề thi nào</h3>
+                                <p className="text-gray-500">Hãy quay lại sau khi có đề thi mới</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {filteredExams.map((exam) => {
+                                    const hasSubmitted = submissions.has(exam.id)
+                                    const bestScore = submissions.get(exam.id)
+                                    const available = isExamAvailable(exam)
+                                    const subjectInfo = exam.subject ? getSubjectInfo(exam.subject) : null
+
+                                    return (
+                                        <div
+                                            key={exam.id}
+                                            className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all border border-gray-100 flex flex-col h-full group"
+                                        >
+                                            <div className="p-5 flex flex-col h-full">
+                                                {/* Tags */}
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="flex gap-2 flex-wrap">
+                                                        <span className="px-2 py-1 rounded bg-orange-100 text-orange-600 text-xs font-bold uppercase tracking-wide">
+                                                            THPT
+                                                        </span>
+                                                        {subjectInfo && (
+                                                            <span className={cn(
+                                                                "px-2 py-1 rounded text-xs font-bold uppercase tracking-wide",
+                                                                SUBJECT_TAG_COLORS[exam.subject || ""] || "bg-gray-100 text-gray-600"
+                                                            )}>
+                                                                {subjectInfo.label}
+                                                            </span>
+                                                        )}
+                                                        {hasSubmitted && (
+                                                            <span className="px-2 py-1 rounded bg-green-100 text-green-600 text-xs font-bold">
+                                                                ✓ Đã làm
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className="px-2 py-1 rounded bg-gray-100 text-gray-600 text-xs font-medium">
                                                         {exam.duration} phút
                                                     </span>
-                                                    {hasSubmitted && (
-                                                        <span className="flex items-center gap-1 text-green-400">
-                                                            <CheckCircle2 className="w-4 h-4" />
-                                                            Điểm cao nhất: {bestScore?.toFixed(1)}
-                                                        </span>
-                                                    )}
                                                 </div>
-                                                {!available && exam.is_scheduled && (
-                                                    <p className="text-xs text-yellow-400 mt-2">
-                                                        {exam.start_time && new Date(exam.start_time) > new Date()
-                                                            ? `Mở lúc: ${new Date(exam.start_time).toLocaleString("vi-VN")}`
-                                                            : "Đã hết hạn làm bài"}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="flex gap-2">
+
+                                                {/* Title */}
+                                                <h3 className="text-lg font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                                    {exam.title}
+                                                </h3>
+
+                                                {/* Description */}
+                                                <p className="text-sm text-gray-500 mb-4 line-clamp-2">
+                                                    {exam.description || `Đề thi ${exam.total_questions} câu hỏi, thời gian ${exam.duration} phút`}
+                                                </p>
+
+                                                {/* Score if submitted */}
                                                 {hasSubmitted && (
-                                                    <Link href={`/student/exams/${exam.id}/result`}>
-                                                        <Button
-                                                            variant="outline"
-                                                            className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                                                        >
-                                                            Xem kết quả
-                                                        </Button>
-                                                    </Link>
+                                                    <div className="mb-4 p-2 bg-green-50 rounded-lg text-green-700 text-sm font-medium">
+                                                        🏆 Điểm cao nhất: {bestScore?.toFixed(1)}
+                                                    </div>
                                                 )}
-                                                <Link href={`/student/exams/${exam.id}/take`}>
-                                                    <Button
-                                                        disabled={!available}
-                                                        className={cn(
-                                                            available
-                                                                ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
-                                                                : "bg-slate-700 cursor-not-allowed"
-                                                        )}
-                                                    >
-                                                        <Play className="w-4 h-4 mr-2" />
-                                                        {hasSubmitted ? "Làm lại" : "Bắt đầu"}
-                                                    </Button>
-                                                </Link>
+
+                                                {/* Footer */}
+                                                <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+                                                    <div className="flex items-center gap-4 text-xs text-gray-500 font-medium">
+                                                        <div className="flex items-center gap-1">
+                                                            <span>❓</span> {exam.total_questions} câu
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <span>📅</span> {formatDate(exam.created_at)}
+                                                        </div>
+                                                    </div>
+                                                    <Link href={available ? `/student/exams/${exam.id}/take` : "#"}>
+                                                        <button
+                                                            disabled={!available}
+                                                            className={cn(
+                                                                "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                                                                available
+                                                                    ? "bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white"
+                                                                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                                            )}
+                                                        >
+                                                            →
+                                                        </button>
+                                                    </Link>
+                                                </div>
                                             </div>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            )
-                        })}
+                                    )
+                                })}
+                            </div>
+                        )}
+
+                        {/* Pagination */}
+                        {filteredExams.length > 0 && (
+                            <div className="mt-8 flex justify-center">
+                                <nav className="flex items-center gap-1 bg-white shadow-sm rounded-lg p-1 border border-gray-100">
+                                    <button className="w-9 h-9 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100">‹</button>
+                                    <button className="w-9 h-9 flex items-center justify-center rounded-md bg-blue-600 text-white font-medium shadow-sm">1</button>
+                                    <button className="w-9 h-9 flex items-center justify-center rounded-md text-gray-700 hover:bg-gray-100">2</button>
+                                    <button className="w-9 h-9 flex items-center justify-center rounded-md text-gray-700 hover:bg-gray-100">3</button>
+                                    <span className="w-9 h-9 flex items-center justify-center text-gray-400">...</span>
+                                    <button className="w-9 h-9 flex items-center justify-center rounded-md text-gray-700 hover:bg-gray-100">10</button>
+                                    <button className="w-9 h-9 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100">›</button>
+                                </nav>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
             </main>
+
+            {/* Footer */}
+            <footer className="bg-blue-600 text-white pt-12 pb-6 mt-auto">
+                <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center">
+                    <div className="w-full max-w-lg text-center mb-8">
+                        <h4 className="font-bold text-lg mb-6 uppercase">Liên hệ</h4>
+                        <ul className="space-y-3 text-sm text-blue-100">
+                            <li className="flex items-center justify-center gap-3">
+                                <span>🌐</span> examhub.id.vn
+                            </li>
+                            <li className="flex items-center justify-center gap-3">
+                                <span>📧</span> contact@examhub.id.vn
+                            </li>
+                        </ul>
+                    </div>
+                    <div className="w-full border-t border-blue-400/30 pt-6 text-center text-sm text-blue-200">
+                        © 2026 ExamHub. All rights reserved.
+                    </div>
+                </div>
+            </footer>
+
+            <BottomNav />
         </div>
     )
 }
