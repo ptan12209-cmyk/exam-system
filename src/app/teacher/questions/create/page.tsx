@@ -110,18 +110,18 @@ export default function CreateQuestionPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 md:p-8">
             <div className="max-w-3xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-8">
                     <Link href="/teacher/exam-bank">
-                        <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 hover:bg-white bg-white shadow-sm border border-gray-200">
+                        <Button variant="ghost" size="icon" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700">
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800">Thêm câu hỏi mới</h1>
-                        <p className="text-gray-500 text-sm mt-1">Tạo câu hỏi trắc nghiệm thủ công</p>
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Thêm câu hỏi mới</h1>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Tạo câu hỏi trắc nghiệm thủ công</p>
                     </div>
                 </div>
 

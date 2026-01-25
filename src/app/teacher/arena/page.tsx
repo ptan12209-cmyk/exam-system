@@ -251,29 +251,29 @@ export default function ArenaAdminPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 md:p-8">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                     <div className="flex items-center gap-4">
                         <Link href="/teacher/dashboard">
-                            <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 hover:bg-white bg-white shadow-sm border border-gray-200">
+                            <Button variant="ghost" size="icon" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700">
                                 <ArrowLeft className="w-5 h-5" />
                             </Button>
                         </Link>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
                                 <Swords className="w-6 h-6 text-purple-600" />
                                 Quản lý Đấu trường
                             </h1>
-                            <p className="text-gray-500 text-sm mt-1">Tạo và quản lý các đợt thi tập trung</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Tạo và quản lý các đợt thi tập trung</p>
                         </div>
                     </div>
                     <Button

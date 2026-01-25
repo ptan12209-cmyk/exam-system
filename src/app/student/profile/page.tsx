@@ -78,16 +78,16 @@ export default function ProfilePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex items-center justify-center">
                 <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col">
+        <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+            <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         <Link href="/student/dashboard" className="flex items-center gap-2">
@@ -96,10 +96,10 @@ export default function ProfilePage() {
                         </Link>
                     </div>
                     <nav className="hidden lg:flex items-center gap-1">
-                        <Link href="/student/dashboard" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">🏠</Link>
-                        <Link href="/student/exams" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">📝</Link>
-                        <Link href="/arena" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">🏆</Link>
-                        <Link href="/student/profile" className="p-3 text-blue-600 bg-blue-50 rounded-lg">👤</Link>
+                        <Link href="/student/dashboard" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏠</Link>
+                        <Link href="/student/exams" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">📝</Link>
+                        <Link href="/arena" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏆</Link>
+                        <Link href="/student/profile" className="p-3 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-lg">👤</Link>
                     </nav>
                     <div className="flex items-center gap-3">
                         <NotificationBell />
@@ -111,14 +111,14 @@ export default function ProfilePage() {
             {/* Main Content */}
             <main className="flex-grow max-w-5xl mx-auto px-4 py-8 w-full">
                 {/* Breadcrumb */}
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-                    <Link href="/student/dashboard" className="hover:text-blue-600">Trang chủ</Link>
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    <Link href="/student/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400">Trang chủ</Link>
                     <span>›</span>
-                    <span className="font-medium text-gray-800">Hồ sơ của tôi</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">Hồ sơ của tôi</span>
                 </div>
 
                 {/* Profile Header */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 mb-6">
                     <div className="flex flex-col md:flex-row items-center gap-6">
                         {/* Avatar */}
                         <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-4xl font-bold text-white shadow-lg">
@@ -126,11 +126,11 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="flex-1 text-center md:text-left">
-                            <h1 className="text-2xl font-bold text-gray-800 mb-1">
+                            <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">
                                 {fullName || "Học sinh"}
                             </h1>
                             {userClass && (
-                                <p className="text-gray-500 mb-3">Lớp {userClass}</p>
+                                <p className="text-gray-500 dark:text-gray-400 mb-3">Lớp {userClass}</p>
                             )}
                             {stats && (
                                 <div className="max-w-md">
@@ -147,7 +147,7 @@ export default function ProfilePage() {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 text-center">
                         <div className="text-3xl mb-2">📚</div>
                         <div className="text-2xl font-bold text-gray-800">{stats?.exams_completed || 0}</div>
                         <div className="text-xs text-gray-500">Bài đã làm</div>

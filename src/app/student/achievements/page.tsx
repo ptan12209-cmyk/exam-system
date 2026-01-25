@@ -55,16 +55,16 @@ export default function AchievementsPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex items-center justify-center">
                 <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col">
+        <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+            <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         <Link href="/student/dashboard" className="flex items-center gap-2">
@@ -73,10 +73,10 @@ export default function AchievementsPage() {
                         </Link>
                     </div>
                     <nav className="hidden lg:flex items-center gap-1">
-                        <Link href="/student/dashboard" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">🏠</Link>
-                        <Link href="/student/exams" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">📝</Link>
-                        <Link href="/arena" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">🏆</Link>
-                        <Link href="/student/achievements" className="p-3 text-blue-600 bg-blue-50 rounded-lg">🎯</Link>
+                        <Link href="/student/dashboard" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏠</Link>
+                        <Link href="/student/exams" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">📝</Link>
+                        <Link href="/arena" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏆</Link>
+                        <Link href="/student/achievements" className="p-3 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-lg">🎯</Link>
                     </nav>
                     <div className="flex items-center gap-3">
                         <NotificationBell />
