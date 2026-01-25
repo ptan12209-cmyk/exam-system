@@ -103,17 +103,8 @@ export async function updateStudentStats(
     const newPerfectScores = score >= 10 ? stats.perfect_scores + 1 : stats.perfect_scores
     const newLevel = calculateLevel(newXP)
 
-    await supabase
-        .from("student_stats")
-        .update({
-            xp: newXP,
-            level: newLevel,
-            streak_days: newStreak,
-            last_exam_date: today,
-            exams_completed: newExamsCompleted,
-            perfect_scores: newPerfectScores
-        })
-        .eq("user_id", userId)
+    // NOTE: Database trigger 'on_submission_created' now handles the actual update of student_stats.
+    // We only calculate the values here to return them for the UI animation.
 
     // Check for new badges
     const newBadges = await checkAndAwardBadges(userId, {
@@ -184,10 +175,7 @@ async function checkAndAwardBadges(
 
             // Add XP reward
             if (badge.xp_reward > 0) {
-                await supabase
-                    .from("student_stats")
-                    .update({ xp: supabase.rpc("increment_xp", { user_id: userId, amount: badge.xp_reward }) })
-                    .eq("user_id", userId)
+                await supabase.rpc("increment_xp", { user_id: userId, amount: badge.xp_reward })
             }
 
             newBadgeNames.push(badge.name)
