@@ -9,6 +9,14 @@ export const XP_REWARDS = {
     BADGE_EARNED: 0      // Badge has its own XP reward
 }
 
+interface Badge {
+    id: string
+    name: string
+    condition_type: string
+    condition_value: number
+    xp_reward: number
+}
+
 // Calculate level from XP
 export function calculateLevel(xp: number): number {
     return Math.floor(Math.sqrt(xp / 100)) + 1
@@ -41,122 +49,20 @@ export function calculateExamXP(score: number): number {
     return xp
 }
 
-// Update student stats after exam completion
-export async function updateStudentStats(
-    userId: string,
-    score: number
-): Promise<{
-    xpGained: number
-    newLevel: number
-    leveledUp: boolean
-    newBadges: string[]
-}> {
-    const supabase = createClient()
-
-    // Get or create student stats
-    let { data: stats } = await supabase
-        .from("student_stats")
-        .select("*")
-        .eq("user_id", userId)
-        .single()
-
-    if (!stats) {
-        // Create new stats record
-        const { data: newStats } = await supabase
-            .from("student_stats")
-            .insert({ user_id: userId })
-            .select()
-            .single()
-        stats = newStats
-    }
-
-    if (!stats) {
-        return { xpGained: 0, newLevel: 1, leveledUp: false, newBadges: [] }
-    }
-
-    const oldLevel = calculateLevel(stats.xp)
-
-    // Calculate XP
-    let xpGained = calculateExamXP(score)
-
-    // Check streak
-    const today = new Date().toISOString().split("T")[0]
-    const lastExamDate = stats.last_exam_date
-    let newStreak = 1
-
-    if (lastExamDate) {
-        const lastDate = new Date(lastExamDate)
-        const todayDate = new Date(today)
-        const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
-
-        if (diffDays === 1) {
-            newStreak = stats.streak_days + 1
-            xpGained += XP_REWARDS.STREAK_BONUS * newStreak
-        } else if (diffDays === 0) {
-            newStreak = stats.streak_days // Same day, keep streak
-        }
-    }
-
-    // Update stats
-    const newXP = stats.xp + xpGained
-    const newExamsCompleted = stats.exams_completed + 1
-    const newPerfectScores = score >= 10 ? stats.perfect_scores + 1 : stats.perfect_scores
-    const newLevel = calculateLevel(newXP)
-
-    await supabase
-        .from("student_stats")
-        .update({
-            xp: newXP,
-            level: newLevel,
-            streak_days: newStreak,
-            last_exam_date: today,
-            exams_completed: newExamsCompleted,
-            perfect_scores: newPerfectScores
-        })
-        .eq("user_id", userId)
-
-    // Check for new badges
-    const newBadges = await checkAndAwardBadges(userId, {
-        examsCompleted: newExamsCompleted,
-        streak: newStreak,
-        perfectScores: newPerfectScores
-    })
-
-    return {
-        xpGained,
-        newLevel,
-        leveledUp: newLevel > oldLevel,
-        newBadges
-    }
-}
-
-// Check and award badges
-async function checkAndAwardBadges(
-    userId: string,
+// Helper to calculate new badges
+function calculateNewBadges(
+    badges: Badge[],
+    earnedIds: Set<string>,
     stats: {
         examsCompleted: number
         streak: number
         perfectScores: number
     }
-): Promise<string[]> {
-    const supabase = createClient()
+): { newBadges: Badge[], totalBadgeXP: number } {
+    const newBadges: Badge[] = []
+    let totalBadgeXP = 0
 
-    // Get all badges
-    const { data: badges } = await supabase
-        .from("badges")
-        .select("*")
-
-    // Get user's existing badges
-    const { data: earnedBadges } = await supabase
-        .from("student_badges")
-        .select("badge_id")
-        .eq("user_id", userId)
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const earnedIds = new Set(earnedBadges?.map((b: any) => b.badge_id) || [])
-    const newBadgeNames: string[] = []
-
-    for (const badge of badges || []) {
+    for (const badge of badges) {
         if (earnedIds.has(badge.id)) continue
 
         let earned = false
@@ -177,24 +83,123 @@ async function checkAndAwardBadges(
         }
 
         if (earned) {
-            // Award badge
-            await supabase
-                .from("student_badges")
-                .insert({ user_id: userId, badge_id: badge.id })
-
-            // Add XP reward
-            if (badge.xp_reward > 0) {
-                await supabase
-                    .from("student_stats")
-                    .update({ xp: supabase.rpc("increment_xp", { user_id: userId, amount: badge.xp_reward }) })
-                    .eq("user_id", userId)
-            }
-
-            newBadgeNames.push(badge.name)
+            newBadges.push(badge)
+            totalBadgeXP += badge.xp_reward || 0
         }
     }
 
-    return newBadgeNames
+    return { newBadges, totalBadgeXP }
+}
+
+// Update student stats after exam completion
+export async function updateStudentStats(
+    userId: string,
+    score: number
+): Promise<{
+    xpGained: number
+    newLevel: number
+    leveledUp: boolean
+    newBadges: string[]
+}> {
+    const supabase = createClient()
+
+    // Get or create student stats
+    // We need to query this first because we need the current stats to calculate new stats
+    let { data: stats } = await supabase
+        .from("student_stats")
+        .select("*")
+        .eq("user_id", userId)
+        .single()
+
+    if (!stats) {
+        // Create new stats record
+        const { data: newStats } = await supabase
+            .from("student_stats")
+            .insert({ user_id: userId })
+            .select()
+            .single()
+        stats = newStats
+    }
+
+    if (!stats) {
+        return { xpGained: 0, newLevel: 1, leveledUp: false, newBadges: [] }
+    }
+
+    // Parallel fetch for badges and earned badges
+    const [badgesResult, earnedBadgesResult] = await Promise.all([
+        supabase.from("badges").select("*"),
+        supabase.from("student_badges").select("badge_id").eq("user_id", userId)
+    ])
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const badges: Badge[] = (badgesResult.data || []) as any[]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const earnedIds = new Set(earnedBadgesResult.data?.map((b: any) => b.badge_id) || [])
+
+    const oldLevel = calculateLevel(stats.xp)
+
+    // Calculate Exam XP
+    let xpGained = calculateExamXP(score)
+
+    // Check streak
+    const today = new Date().toISOString().split("T")[0]
+    const lastExamDate = stats.last_exam_date
+    let newStreak = 1
+
+    if (lastExamDate) {
+        const lastDate = new Date(lastExamDate)
+        const todayDate = new Date(today)
+        const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
+
+        if (diffDays === 1) {
+            newStreak = stats.streak_days + 1
+            xpGained += XP_REWARDS.STREAK_BONUS * newStreak
+        } else if (diffDays === 0) {
+            newStreak = stats.streak_days // Same day, keep streak
+        }
+    }
+
+    // Calculate potential new stats
+    const newExamsCompleted = stats.exams_completed + 1
+    const newPerfectScores = score >= 10 ? stats.perfect_scores + 1 : stats.perfect_scores
+
+    // Calculate new badges with new stats
+    const { newBadges, totalBadgeXP } = calculateNewBadges(badges, earnedIds, {
+        examsCompleted: newExamsCompleted,
+        streak: newStreak,
+        perfectScores: newPerfectScores
+    })
+
+    // Calculate final XP and Level
+    const finalXP = stats.xp + xpGained + totalBadgeXP
+    const newLevel = calculateLevel(finalXP)
+
+    // Single Update
+    await supabase
+        .from("student_stats")
+        .update({
+            xp: finalXP,
+            level: newLevel,
+            streak_days: newStreak,
+            last_exam_date: today,
+            exams_completed: newExamsCompleted,
+            perfect_scores: newPerfectScores
+        })
+        .eq("user_id", userId)
+
+    // Single Bulk Insert
+    if (newBadges.length > 0) {
+        await supabase
+            .from("student_badges")
+            .insert(newBadges.map(b => ({ user_id: userId, badge_id: b.id })))
+    }
+
+    return {
+        xpGained,
+        newLevel,
+        leveledUp: newLevel > oldLevel,
+        newBadges: newBadges.map(b => b.name)
+    }
 }
 
 // Get leaderboard
