@@ -146,65 +146,65 @@ export default function TeacherDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex">
             {/* Sidebar */}
-            <aside className="fixed left-0 top-0 h-full w-64 border-r border-gray-200 bg-white p-6 hidden lg:block z-50">
+            <aside className="fixed left-0 top-0 h-full w-64 border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 hidden lg:block z-50">
                 <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-blue-900/30">
                         <GraduationCap className="w-6 h-6 text-white" />
                     </div>
-                    <span className="text-xl font-bold text-gray-800">ExamHub</span>
+                    <span className="text-xl font-bold text-gray-800 dark:text-white">ExamHub</span>
                 </div>
 
                 <nav className="space-y-1">
                     <Link
                         href="/teacher/dashboard"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 text-blue-700 font-medium"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium"
                     >
                         <BarChart3 className="w-5 h-5" />
                         Tổng quan
                     </Link>
                     <Link
                         href="/teacher/exams/create"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                     >
                         <Plus className="w-5 h-5" />
                         Tạo đề mới
                     </Link>
                     <div className="pt-4 pb-2">
-                        <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Quản lý</p>
+                        <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Quản lý</p>
                     </div>
                     <Link
                         href="/teacher/profile"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                     >
                         <Users className="w-5 h-5" />
                         Hồ sơ giáo viên
                     </Link>
                     <Link
                         href="/teacher/exam-bank"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                     >
                         <BookOpen className="w-5 h-5" />
                         Ngân hàng đề
                     </Link>
                     <Link
                         href="/teacher/arena"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                     >
                         <Swords className="w-5 h-5" />
                         Đấu trường
                     </Link>
                     <Link
                         href="/teacher/analytics"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                     >
                         <BarChart3 className="w-5 h-5" />
                         Thống kê chi tiết
@@ -214,7 +214,7 @@ export default function TeacherDashboard() {
                 <div className="absolute bottom-6 left-6 right-6">
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors w-full font-medium"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full font-medium"
                     >
                         <LogOut className="w-5 h-5" />
                         Đăng xuất
@@ -223,12 +223,12 @@ export default function TeacherDashboard() {
             </aside>
 
             {/* Mobile Header */}
-            <header className="lg:hidden fixed top-0 w-full z-50 bg-white border-b border-gray-200 px-4 h-16 flex items-center justify-between">
+            <header className="lg:hidden fixed top-0 w-full z-50 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                         <GraduationCap className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-lg font-bold text-gray-800">ExamHub</span>
+                    <span className="text-lg font-bold text-gray-800 dark:text-white">ExamHub</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <NotificationBell />
@@ -246,12 +246,10 @@ export default function TeacherDashboard() {
                 {/* Desktop Header */}
                 <div className="hidden lg:flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800">
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
                             Xin chào, {profile?.full_name || "Thầy/Cô"}! 👋
                         </h1>
-                        <p className="text-gray-500 mt-1">
-                            Chúc thầy/cô một ngày làm việc hiệu quả.
-                        </p>
+                        <p className="text-gray-500 dark:text-gray-400">Quản lý đề thi và theo dõi kết quả học sinh</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <NotificationBell />

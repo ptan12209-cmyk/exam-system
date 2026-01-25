@@ -110,9 +110,9 @@ export default function ResourcesPage() {
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString("vi-VN");
 
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col">
+        <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col">
             {/* Header */}
-            <header className="bg-white shadow-sm sticky top-0 z-50">
+            <header className="bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/student/dashboard" className="flex items-center gap-2">
@@ -125,14 +125,14 @@ export default function ResourcesPage() {
                                 placeholder="Tìm kiếm..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="bg-gray-100 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-600 w-64"
+                                className="bg-gray-100 dark:bg-slate-700 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-600 w-64 dark:text-white dark:placeholder-gray-400"
                             />
                             <span className="absolute left-3 top-2 text-gray-400">🔍</span>
                         </div>
                     </div>
-                    <nav className="hidden lg:flex items-center gap-6 text-gray-500">
-                        <Link href="/student/dashboard" className="hover:text-blue-600"><span className="text-2xl">🏠</span></Link>
-                        <Link href="/student/exams" className="hover:text-blue-600"><span className="text-2xl">📝</span></Link>
+                    <nav className="hidden lg:flex items-center gap-6 text-gray-500 dark:text-gray-400">
+                        <Link href="/student/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400"><span className="text-2xl">🏠</span></Link>
+                        <Link href="/student/exams" className="hover:text-blue-600 dark:hover:text-blue-400"><span className="text-2xl">📝</span></Link>
                         <Link href="/resources" className="text-blue-600 relative">
                             <span className="text-2xl">📚</span>
                             <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full"></span>
@@ -163,8 +163,8 @@ export default function ResourcesPage() {
 
             {/* Breadcrumb */}
             <div className="max-w-7xl mx-auto px-4 py-4 w-full">
-                <nav className="flex text-sm text-gray-500">
-                    <Link href="/student/dashboard" className="hover:text-blue-600">Trang chủ</Link>
+                <nav className="flex text-sm text-gray-500 dark:text-gray-400">
+                    <Link href="/student/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400">Trang chủ</Link>
                     <span className="mx-2">/</span>
                     <span className="text-blue-600 font-medium">Tài liệu</span>
                 </nav>
@@ -175,19 +175,19 @@ export default function ResourcesPage() {
                 {/* Sidebar */}
                 <aside className="w-full lg:w-1/4 space-y-6">
                     {/* Filter Card */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-lg flex items-center gap-2">
+                            <h3 className="font-bold text-lg flex items-center gap-2 dark:text-white">
                                 <span className="text-blue-600">⚙️</span> Bộ lọc
                             </h3>
-                            <button onClick={() => { setFilterSubject(""); setFilterType(""); }} className="text-xs text-gray-500 hover:text-blue-600">
+                            <button onClick={() => { setFilterSubject(""); setFilterType(""); }} className="text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
                                 Xóa tất cả
                             </button>
                         </div>
 
                         {/* Subject Filter */}
                         <div className="mb-6">
-                            <h4 className="font-medium mb-3 text-sm uppercase tracking-wide text-gray-500">Môn học</h4>
+                            <h4 className="font-medium mb-3 text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">Môn học</h4>
                             <div className="grid grid-cols-2 gap-2">
                                 {SUBJECTS.map((s) => (
                                     <button
@@ -196,8 +196,8 @@ export default function ResourcesPage() {
                                         className={cn(
                                             "px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left flex items-center gap-2",
                                             filterSubject === s.value
-                                                ? "bg-blue-100 text-blue-700"
-                                                : "bg-gray-100 hover:bg-blue-50 text-gray-700"
+                                                ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
+                                                : "bg-gray-100 dark:bg-slate-700 hover:bg-blue-50 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300"
                                         )}
                                     >
                                         <span className={cn("w-2 h-2 rounded-full", `bg-${s.color}-500`)}></span>
@@ -209,9 +209,9 @@ export default function ResourcesPage() {
 
                         {/* Type Filter */}
                         <div>
-                            <h4 className="font-medium mb-3 text-sm uppercase tracking-wide text-gray-500">Định dạng</h4>
+                            <h4 className="font-medium mb-3 text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">Định dạng</h4>
                             <div className="space-y-2">
-                                <label className="flex items-center gap-3 cursor-pointer group">
+                                <label className="flex items-center gap-3 cursor-pointer group dark:text-gray-300">
                                     <input
                                         type="checkbox"
                                         checked={filterType === "" || filterType === "document"}
@@ -255,7 +255,7 @@ export default function ResourcesPage() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                         <div>
                             <h1 className="text-2xl font-bold text-blue-600 mb-1">Thư viện tài liệu</h1>
-                            <p className="text-gray-500 text-sm">Hơn {resources.length}+ tài liệu ôn thi chất lượng cao</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">Hơn {resources.length}+ tài liệu ôn thi chất lượng cao</p>
                         </div>
                         <div className="relative w-full md:w-80">
                             <input
@@ -263,7 +263,7 @@ export default function ResourcesPage() {
                                 placeholder="Tìm kiếm trong thư viện..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-white border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm"
+                                className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm dark:text-white dark:placeholder-gray-400"
                             />
                             <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
                         </div>
@@ -276,8 +276,8 @@ export default function ResourcesPage() {
                             className={cn(
                                 "px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 cursor-pointer transition-colors",
                                 sortBy === "all" || sortBy === "newest"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "border border-gray-200 text-gray-500 hover:border-blue-600 hover:text-blue-600"
+                                    ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
+                                    : "border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:border-blue-600 hover:text-blue-600"
                             )}
                         >
                             Tất cả
@@ -287,8 +287,8 @@ export default function ResourcesPage() {
                             className={cn(
                                 "px-3 py-1 rounded-full text-sm font-medium cursor-pointer transition-colors",
                                 sortBy === "popular"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "border border-gray-200 text-gray-500 hover:border-blue-600 hover:text-blue-600"
+                                    ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
+                                    : "border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:border-blue-600 hover:text-blue-600"
                             )}
                         >
                             Xem nhiều nhất
@@ -301,9 +301,9 @@ export default function ResourcesPage() {
                             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                     ) : filteredResources.length === 0 ? (
-                        <div className="text-center py-20 bg-white rounded-xl border border-gray-100">
+                        <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
                             <div className="text-5xl mb-4">📭</div>
-                            <p className="text-gray-500">Chưa có tài liệu nào</p>
+                            <p className="text-gray-500 dark:text-gray-400">Chưa có tài liệu nào</p>
                             {user?.role === "teacher" && (
                                 <Link href="/resources/upload">
                                     <button className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
@@ -317,7 +317,7 @@ export default function ResourcesPage() {
                             {filteredResources.map((resource) => (
                                 <div
                                     key={resource.id}
-                                    className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md border border-gray-100 transition-all group flex gap-4 items-start"
+                                    className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-700 transition-all group flex gap-4 items-start"
                                 >
                                     {/* Icon */}
                                     <div className={cn(
@@ -331,7 +331,7 @@ export default function ResourcesPage() {
 
                                     {/* Content */}
                                     <div className="flex-grow min-w-0">
-                                        <h3 className="font-semibold text-lg text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                        <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
                                             {resource.title}
                                         </h3>
                                         <div className="flex flex-wrap gap-2 mb-3">

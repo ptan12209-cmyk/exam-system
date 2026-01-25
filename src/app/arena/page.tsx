@@ -116,16 +116,16 @@ export default function ArenaPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex items-center justify-center">
                 <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col">
+        <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col">
             {/* Header */}
-            <nav className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 h-16 flex items-center justify-between px-4 lg:px-8">
+            <nav className="fixed top-0 w-full z-50 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border-b border-gray-200 dark:border-slate-700 h-16 flex items-center justify-between px-4 lg:px-8">
                 <div className="flex items-center gap-4">
                     <Link href="/student/dashboard" className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">E</div>
@@ -138,15 +138,15 @@ export default function ArenaPage() {
                                 placeholder="Tìm kiếm..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 pr-4 py-2 bg-gray-100 border-none rounded-full text-sm w-64 focus:ring-2 focus:ring-blue-600"
+                                className="pl-9 pr-4 py-2 bg-gray-100 dark:bg-slate-700 border-none rounded-full text-sm w-64 focus:ring-2 focus:ring-blue-600 dark:text-white dark:placeholder-gray-400"
                             />
                             <span className="absolute left-3 top-2 text-gray-400">🔍</span>
                         </div>
                     </div>
                 </div>
-                <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
-                    <Link href="/student/dashboard" className="hover:text-blue-600 flex items-center gap-1">🏠 Trang chủ</Link>
-                    <Link href="/resources" className="hover:text-blue-600 flex items-center gap-1">📚 Tài liệu</Link>
+                <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600 dark:text-gray-300">
+                    <Link href="/student/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1">🏠 Trang chủ</Link>
+                    <Link href="/resources" className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1">📚 Tài liệu</Link>
                 </div>
                 <div className="flex items-center gap-3">
                     <NotificationBell />
@@ -159,10 +159,10 @@ export default function ArenaPage() {
                 {/* Left - Arena List */}
                 <div className="lg:col-span-8">
                     {/* Breadcrumb */}
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-                        <Link href="/student/dashboard" className="hover:text-blue-600">🏠</Link>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
+                        <Link href="/student/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400">🏠</Link>
                         <span>›</span>
-                        <span className="font-medium text-gray-800">Đấu trường lý thuyết</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">Đấu trường lý thuyết</span>
                     </div>
 
                     {/* Title */}
@@ -173,7 +173,7 @@ export default function ArenaPage() {
                     </div>
 
                     {/* Status Tabs */}
-                    <div className="flex items-center gap-6 border-b border-gray-200 mb-6 overflow-x-auto">
+                    <div className="flex items-center gap-6 border-b border-gray-200 dark:border-slate-700 mb-6 overflow-x-auto">
                         {[
                             { key: "all", label: "Tất cả" },
                             { key: "vip", label: "Vip" },
@@ -188,7 +188,7 @@ export default function ArenaPage() {
                                     "pb-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors",
                                     selectedTab === tab.key
                                         ? "border-blue-600 text-blue-600"
-                                        : "border-transparent text-gray-500 hover:text-gray-700"
+                                        : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                                 )}
                             >
                                 {tab.label}
@@ -203,7 +203,7 @@ export default function ArenaPage() {
                             placeholder="Tìm kiếm..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none"
+                            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none dark:text-white dark:placeholder-gray-400"
                         />
                         <span className="absolute left-3 top-3.5 text-gray-400">🔍</span>
                     </div>
@@ -211,9 +211,9 @@ export default function ArenaPage() {
                     {/* Arena List */}
                     <div className="space-y-4">
                         {filteredSessions.length === 0 ? (
-                            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+                            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-slate-700">
                                 <span className="text-5xl mb-4 block">🎮</span>
-                                <p className="text-gray-500">Chưa có đợt thi nào</p>
+                                <p className="text-gray-500 dark:text-gray-400">Chưa có đợt thi nào</p>
                             </div>
                         ) : (
                             filteredSessions.map(session => {
@@ -223,7 +223,7 @@ export default function ArenaPage() {
                                 return (
                                     <div
                                         key={session.id}
-                                        className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden flex flex-col sm:flex-row"
+                                        className="bg-white dark:bg-slate-800 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-slate-700 overflow-hidden flex flex-col sm:flex-row"
                                     >
                                         {/* Left Icon Area */}
                                         <div className={cn(
@@ -248,7 +248,7 @@ export default function ArenaPage() {
                                         {/* Content */}
                                         <div className="p-5 flex-1 flex flex-col justify-between">
                                             <div>
-                                                <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2">{session.name}</h3>
+                                                <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2 line-clamp-2">{session.name}</h3>
                                                 <div className="flex flex-wrap gap-2 mb-4">
                                                     <span className={cn(
                                                         "px-2.5 py-0.5 rounded text-xs font-medium text-white flex items-center gap-1",
@@ -262,7 +262,7 @@ export default function ArenaPage() {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-3 mt-1">
+                                            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-slate-700 pt-3 mt-1">
                                                 <div className="flex items-center gap-4">
                                                     <div className="flex items-center gap-1">
                                                         <span>📅</span>
@@ -298,7 +298,8 @@ export default function ArenaPage() {
                         <div className="flex items-center justify-center gap-2 mt-8">
                             <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50">‹</button>
                             <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-600 text-white font-medium border border-blue-600">1</button>
-                            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50">›</button>
+                            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700">›</button>
+                            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700">‹</button>
                         </div>
                     )}
                 </div>
@@ -379,21 +380,21 @@ export default function ArenaPage() {
                     </div>
 
                     {/* Rest of Leaderboard */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 divide-y divide-gray-100 dark:divide-slate-700">
                         {topPlayers.slice(3, 10).map((player, i) => (
-                            <div key={i} className="p-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
-                                <span className="text-gray-400 font-bold w-4 text-center">{i + 4}</span>
-                                <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 font-bold flex items-center justify-center text-xs">
+                            <div key={i} className="p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                                <span className="text-gray-400 dark:text-gray-500 font-bold w-4 text-center">{i + 4}</span>
+                                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-600 text-gray-600 dark:text-gray-300 font-bold flex items-center justify-center text-xs">
                                     {player.profiles?.full_name?.[0] || "?"}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-sm text-gray-800 truncate">
+                                    <div className="font-medium text-sm text-gray-800 dark:text-gray-200 truncate">
                                         {player.profiles?.full_name || "Học sinh"}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-full">
+                                <div className="flex items-center gap-1 bg-yellow-50 dark:bg-yellow-900/30 px-2 py-1 rounded-full">
                                     <span className="text-yellow-500">🪙</span>
-                                    <span className="text-xs font-bold text-gray-700">{player.score?.toFixed(0) || 0}</span>
+                                    <span className="text-xs font-bold text-gray-700 dark:text-yellow-300">{player.score?.toFixed(0) || 0}</span>
                                 </div>
                                 {i < 2 && <span className="text-yellow-400">🎖️</span>}
                             </div>
