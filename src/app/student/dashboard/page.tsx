@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -90,8 +90,12 @@ export default function StudentDashboard() {
         router.push("/login")
     }
 
-    const hasSubmitted = (examId: string) => submissions.some(s => s.exam_id === examId)
-    const getSubmission = (examId: string) => submissions.find(s => s.exam_id === examId)
+    const submissionsMap = useMemo(() => {
+        return new Map(submissions.map(s => [s.exam_id, s]))
+    }, [submissions])
+
+    const hasSubmitted = (examId: string) => submissionsMap.has(examId)
+    const getSubmission = (examId: string) => submissionsMap.get(examId)
 
     if (loading) {
         return (
