@@ -8,12 +8,12 @@ import {
     Zap,
     Building2,
     Loader2,
-    ArrowLeft,
     Star,
     GraduationCap
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 
 interface Plan {
     id: string
@@ -107,16 +107,16 @@ export default function PricingPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
             {/* Navigation */}
-            <nav className="border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+            <nav className="border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
                         <div className="flex items-center gap-4">
@@ -125,13 +125,14 @@ export default function PricingPage() {
                                     <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                                         <GraduationCap className="w-5 h-5 text-white" />
                                     </div>
-                                    <span className="text-xl font-bold text-gray-900">LuyenDe 2026</span>
+                                    <span className="text-xl font-bold text-gray-900 dark:text-white">LuyenDe 2026</span>
                                 </div>
                             </Link>
                         </div>
                         <div className="flex items-center gap-3">
+                            <ThemeToggle />
                             <Link href="/login">
-                                <Button variant="ghost" className="text-gray-700 hover:text-blue-600 font-medium">
+                                <Button variant="ghost" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
                                     Đăng nhập
                                 </Button>
                             </Link>
@@ -149,30 +150,30 @@ export default function PricingPage() {
                 <div className="max-w-6xl mx-auto">
                     {/* Header */}
                     <div className="text-center mb-12">
-                        <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Bảng giá</h1>
-                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-4">Bảng giá</h1>
+                        <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                             Chọn gói phù hợp với nhu cầu của bạn. Tất cả các gói đều bao gồm thử nghiệm miễn phí.
                         </p>
                     </div>
 
                     {/* Current subscription notice */}
                     {currentSubscription && (
-                        <div className="mb-10 p-5 bg-green-50 border border-green-200 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="mb-10 p-5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                                    <Star className="w-6 h-6 text-green-600" />
+                                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+                                    <Star className="w-6 h-6 text-green-600 dark:text-green-400" />
                                 </div>
                                 <div>
-                                    <p className="text-green-800 font-semibold">
+                                    <p className="text-green-800 dark:text-green-300 font-semibold">
                                         Bạn đang sử dụng gói {currentSubscription.plan.name}
                                     </p>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
                                         Hết hạn: {new Date(currentSubscription.expires_at).toLocaleDateString("vi-VN")}
                                     </p>
                                 </div>
                             </div>
                             <Link href="/student/dashboard">
-                                <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-100">
+                                <Button variant="outline" className="border-green-300 dark:border-green-700 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30">
                                     Vào Dashboard
                                 </Button>
                             </Link>
@@ -181,14 +182,14 @@ export default function PricingPage() {
 
                     {/* Billing toggle */}
                     <div className="flex justify-center mb-12">
-                        <div className="inline-flex items-center bg-gray-100 rounded-xl p-1.5 shadow-inner">
+                        <div className="inline-flex items-center bg-gray-100 dark:bg-slate-800 rounded-xl p-1.5 shadow-inner">
                             <button
                                 onClick={() => setBillingCycle("monthly")}
                                 className={cn(
                                     "px-6 py-2.5 rounded-lg text-sm font-semibold transition-all",
                                     billingCycle === "monthly"
-                                        ? "bg-white text-gray-900 shadow-md"
-                                        : "text-gray-500 hover:text-gray-800"
+                                        ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-md"
+                                        : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                                 )}
                             >
                                 Hàng tháng
@@ -198,8 +199,8 @@ export default function PricingPage() {
                                 className={cn(
                                     "px-6 py-2.5 rounded-lg text-sm font-semibold transition-all relative",
                                     billingCycle === "yearly"
-                                        ? "bg-white text-gray-900 shadow-md"
-                                        : "text-gray-500 hover:text-gray-800"
+                                        ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-md"
+                                        : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                                 )}
                             >
                                 Hàng năm
@@ -213,7 +214,7 @@ export default function PricingPage() {
                     {/* Pricing cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {plans.map((plan, index) => {
-                            const isPopular = index === 1 // Pro is popular
+                            const isPopular = index === 1
                             const isCurrent = currentSubscription?.plan.id === plan.id
                             const price = billingCycle === "yearly" ? plan.price_yearly : plan.price_monthly
 
@@ -221,45 +222,41 @@ export default function PricingPage() {
                                 <div
                                     key={plan.id}
                                     className={cn(
-                                        "relative rounded-2xl border p-8 transition-all duration-300 bg-white",
+                                        "relative rounded-2xl border p-8 transition-all duration-300 bg-white dark:bg-slate-800",
                                         isPopular
                                             ? "border-blue-500 shadow-2xl shadow-blue-500/20 scale-105 z-10"
-                                            : "border-gray-200 shadow-lg hover:shadow-xl hover:border-gray-300"
+                                            : "border-gray-200 dark:border-slate-700 shadow-lg hover:shadow-xl hover:border-gray-300 dark:hover:border-slate-600"
                                     )}
                                 >
-                                    {/* Popular badge */}
                                     {isPopular && (
                                         <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full text-sm font-bold text-white shadow-lg">
                                             Phổ biến nhất
                                         </div>
                                     )}
 
-                                    {/* Icon */}
                                     <div className={cn(
                                         "w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-lg",
                                         isPopular
                                             ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
-                                            : "bg-gray-100 text-gray-700"
+                                            : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300"
                                     )}>
                                         {getPlanIcon(plan.name)}
                                     </div>
 
-                                    {/* Name & Price */}
-                                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                                    <p className="text-gray-500 text-sm mb-6 h-10">{plan.description}</p>
+                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{plan.name}</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 h-10">{plan.description}</p>
 
                                     <div className="mb-8">
-                                        <span className="text-5xl font-extrabold text-gray-900">
+                                        <span className="text-5xl font-extrabold text-gray-900 dark:text-white">
                                             {price === 0 ? "0đ" : formatPrice(price)}
                                         </span>
                                         {price > 0 && (
-                                            <span className="text-gray-500 font-medium">
+                                            <span className="text-gray-500 dark:text-gray-400 font-medium">
                                                 /{billingCycle === "yearly" ? "năm" : "tháng"}
                                             </span>
                                         )}
                                     </div>
 
-                                    {/* CTA */}
                                     <Button
                                         onClick={() => handleSubscribe(plan.id)}
                                         disabled={processing === plan.id || isCurrent}
@@ -268,8 +265,8 @@ export default function PricingPage() {
                                             isPopular
                                                 ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/20"
                                                 : isCurrent
-                                                    ? "bg-gray-100 text-gray-500"
-                                                    : "bg-gray-900 hover:bg-gray-800 text-white"
+                                                    ? "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400"
+                                                    : "bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-white text-white dark:text-gray-900"
                                         )}
                                     >
                                         {processing === plan.id ? (
@@ -283,7 +280,6 @@ export default function PricingPage() {
                                         )}
                                     </Button>
 
-                                    {/* Features */}
                                     <ul className="space-y-4">
                                         {(plan.features as string[]).map((feature, i) => (
                                             <li key={i} className="flex items-start gap-3">
@@ -291,7 +287,7 @@ export default function PricingPage() {
                                                     "w-5 h-5 shrink-0 mt-0.5",
                                                     isPopular ? "text-blue-600" : "text-green-600"
                                                 )} />
-                                                <span className="text-sm text-gray-700">{feature}</span>
+                                                <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
                                             </li>
                                         ))}
                                     </ul>
@@ -300,11 +296,10 @@ export default function PricingPage() {
                         })}
                     </div>
 
-                    {/* FAQ Link */}
                     <div className="text-center mt-16">
-                        <p className="text-gray-600">
+                        <p className="text-gray-600 dark:text-gray-400">
                             Có câu hỏi?{" "}
-                            <a href="mailto:support@luyende.vn" className="text-blue-600 font-medium hover:underline">
+                            <a href="mailto:support@luyende.vn" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">
                                 Liên hệ hỗ trợ
                             </a>
                         </p>
@@ -312,16 +307,15 @@ export default function PricingPage() {
                 </div>
             </div>
 
-            {/* Footer */}
-            <footer className="border-t border-gray-200 py-8 px-4 bg-white mt-12">
+            <footer className="border-t border-gray-200 dark:border-slate-800 py-8 px-4 bg-white dark:bg-slate-900 mt-12">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
                             <GraduationCap className="w-4 h-4 text-white" />
                         </div>
-                        <span className="font-semibold text-gray-900">LuyenDe 2026</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">LuyenDe 2026</span>
                     </div>
-                    <p className="text-gray-500 text-sm">
+                    <p className="text-gray-500 dark:text-gray-500 text-sm">
                         © 2026 LuyenDe. All rights reserved.
                     </p>
                 </div>

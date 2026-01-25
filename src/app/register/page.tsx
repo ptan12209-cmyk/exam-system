@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 
 type Role = "student" | "teacher"
 
@@ -78,9 +79,9 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-white">
+        <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+            <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <Link href="/" className="flex items-center space-x-4">
                         <div className="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-lg">
@@ -88,27 +89,28 @@ export default function RegisterPage() {
                         </div>
                     </Link>
                     <nav className="hidden md:flex items-center space-x-8">
-                        <Link href="/" className="text-gray-500 hover:text-blue-600">🏠</Link>
-                        <Link href="/resources" className="text-gray-500 hover:text-blue-600">📚</Link>
-                        <Link href="/arena" className="text-gray-500 hover:text-blue-600">🏆</Link>
+                        <Link href="/" className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">🏠</Link>
+                        <Link href="/resources" className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">📚</Link>
+                        <Link href="/arena" className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">🏆</Link>
                     </nav>
                     <div className="flex items-center space-x-4">
-                        <Link href="/login" className="text-gray-500 hover:text-blue-600 font-medium text-sm">Đăng nhập</Link>
+                        <ThemeToggle />
+                        <Link href="/login" className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium text-sm">Đăng nhập</Link>
                         <Link href="/register" className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium text-sm shadow-sm">Đăng ký</Link>
                     </div>
                 </div>
             </header>
 
             {/* Main */}
-            <main className="flex-grow flex items-center justify-center py-12 px-4 bg-gray-50">
+            <main className="flex-grow flex items-center justify-center py-12 px-4 bg-gray-50 dark:bg-slate-900">
                 <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                     {/* Left - Illustration */}
-                    <div className="hidden lg:block space-y-8 pr-8 border-r border-gray-200">
+                    <div className="hidden lg:block space-y-8 pr-8 border-r border-gray-200 dark:border-slate-700">
                         <div>
-                            <h1 className="text-4xl font-bold text-blue-600 mb-4">
+                            <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-4">
                                 Tạo tài khoản
                             </h1>
-                            <p className="text-lg text-gray-500 leading-relaxed">
+                            <p className="text-lg text-gray-500 dark:text-gray-400 leading-relaxed">
                                 Học tập và giao lưu với hàng triệu học viên trên mọi miền đất nước. Cùng chinh phục kỳ thi THPT Quốc gia 2026.
                             </p>
                         </div>
@@ -120,19 +122,19 @@ export default function RegisterPage() {
                     {/* Right - Form */}
                     <div className="w-full max-w-md mx-auto lg:max-w-none">
                         <div className="text-center mb-8">
-                            <h2 className="text-2xl font-bold text-gray-800 uppercase tracking-wide">
+                            <h2 className="text-2xl font-bold text-gray-800 dark:text-white uppercase tracking-wide">
                                 Đăng ký
                             </h2>
-                            <p className="mt-2 text-xs text-gray-500">
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                 Bằng việc đăng ký, bạn đồng ý với{" "}
-                                <a href="#" className="text-blue-600 hover:underline">Chính sách bảo mật</a> và{" "}
-                                <a href="#" className="text-blue-600 hover:underline">Điều khoản dịch vụ</a>.
+                                <a href="#" className="text-blue-600 dark:text-blue-400 hover:underline">Chính sách bảo mật</a> và{" "}
+                                <a href="#" className="text-blue-600 dark:text-blue-400 hover:underline">Điều khoản dịch vụ</a>.
                             </p>
                         </div>
 
                         <form onSubmit={handleRegister} className="space-y-5">
                             {error && (
-                                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
+                                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
                                     {error}
                                 </div>
                             )}
@@ -145,8 +147,8 @@ export default function RegisterPage() {
                                     className={cn(
                                         "p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
                                         role === "student"
-                                            ? "border-blue-500 bg-blue-50 text-blue-600"
-                                            : "border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300"
+                                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                                            : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-slate-600"
                                     )}
                                 >
                                     <span className="text-2xl">👤</span>
@@ -158,8 +160,8 @@ export default function RegisterPage() {
                                     className={cn(
                                         "p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
                                         role === "teacher"
-                                            ? "border-purple-500 bg-purple-50 text-purple-600"
-                                            : "border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300"
+                                            ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                                            : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-slate-600"
                                     )}
                                 >
                                     <span className="text-2xl">👨‍🏫</span>
@@ -168,7 +170,7 @@ export default function RegisterPage() {
                             </div>
 
                             <div>
-                                <label htmlFor="fullname" className="block text-sm font-medium text-gray-600 mb-1">
+                                <label htmlFor="fullname" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     Họ và tên <span className="text-red-500">*</span>
                                 </label>
                                 <input
@@ -178,13 +180,13 @@ export default function RegisterPage() {
                                     onChange={(e) => setFullName(e.target.value)}
                                     placeholder="Nhập họ và tên của bạn"
                                     required
-                                    className="w-full px-4 py-3 rounded-lg bg-gray-100 border border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none placeholder-gray-400"
+                                    className="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none placeholder-gray-400 dark:placeholder-gray-500"
                                 />
                             </div>
 
                             {role === "student" && (
                                 <div>
-                                    <label htmlFor="className" className="block text-sm font-medium text-gray-600 mb-1">
+                                    <label htmlFor="className" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                                         Lớp
                                     </label>
                                     <input
@@ -193,13 +195,13 @@ export default function RegisterPage() {
                                         value={className}
                                         onChange={(e) => setClassName(e.target.value)}
                                         placeholder="12A1"
-                                        className="w-full px-4 py-3 rounded-lg bg-gray-100 border border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none placeholder-gray-400"
+                                        className="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none placeholder-gray-400 dark:placeholder-gray-500"
                                     />
                                 </div>
                             )}
 
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-600 mb-1">
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     Email <span className="text-red-500">*</span>
                                 </label>
                                 <input
@@ -209,12 +211,12 @@ export default function RegisterPage() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="example@email.com"
                                     required
-                                    className="w-full px-4 py-3 rounded-lg bg-gray-100 border border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none placeholder-gray-400"
+                                    className="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none placeholder-gray-400 dark:placeholder-gray-500"
                                 />
                             </div>
 
                             <div>
-                                <label htmlFor="password" className="block text-sm font-medium text-gray-600 mb-1">
+                                <label htmlFor="password" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     Mật khẩu <span className="text-red-500">*</span>
                                 </label>
                                 <div className="relative">
@@ -226,12 +228,12 @@ export default function RegisterPage() {
                                         placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
                                         required
                                         minLength={6}
-                                        className="w-full px-4 py-3 rounded-lg bg-gray-100 border border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none placeholder-gray-400"
+                                        className="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none placeholder-gray-400 dark:placeholder-gray-500"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                                     >
                                         {showPassword ? "🙈" : "👁️"}
                                     </button>
@@ -239,7 +241,7 @@ export default function RegisterPage() {
                             </div>
 
                             <div>
-                                <label htmlFor="phone" className="block text-sm font-medium text-gray-600 mb-1">
+                                <label htmlFor="phone" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     Số điện thoại
                                 </label>
                                 <input
@@ -248,7 +250,7 @@ export default function RegisterPage() {
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     placeholder="09xx xxx xxx"
-                                    className="w-full px-4 py-3 rounded-lg bg-gray-100 border border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none placeholder-gray-400"
+                                    className="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none placeholder-gray-400 dark:placeholder-gray-500"
                                 />
                             </div>
 
@@ -275,9 +277,9 @@ export default function RegisterPage() {
                             </div>
 
                             <div className="text-center pt-2">
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                     Đã có tài khoản?{" "}
-                                    <Link href="/login" className="font-medium text-blue-600 hover:text-blue-700 hover:underline">
+                                    <Link href="/login" className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline">
                                         Đăng nhập
                                     </Link>
                                 </p>
@@ -288,20 +290,20 @@ export default function RegisterPage() {
             </main>
 
             {/* Footer */}
-            <footer className="bg-blue-600 text-white py-8 mt-auto">
+            <footer className="bg-blue-600 dark:bg-slate-800 text-white py-8 mt-auto">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center text-center">
                     <h3 className="text-xl font-bold mb-2">Thông tin liên hệ</h3>
-                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6 text-blue-100">
+                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6 text-blue-100 dark:text-gray-300">
                         <span className="flex items-center gap-2">
-                            <span>👤</span> ExamHub Team
+                            <span>👤</span> LuyenDe Team
                         </span>
                         <span className="hidden sm:inline opacity-50">|</span>
                         <span className="flex items-center gap-2">
-                            <span>📧</span> contact@examhub.id.vn
+                            <span>📧</span> contact@luyende.vn
                         </span>
                     </div>
-                    <p className="mt-6 text-xs text-blue-200 opacity-60">
-                        © 2026 ExamHub. All rights reserved.
+                    <p className="mt-6 text-xs text-blue-200 dark:text-gray-500 opacity-60">
+                        © 2026 LuyenDe. All rights reserved.
                     </p>
                 </div>
             </footer>

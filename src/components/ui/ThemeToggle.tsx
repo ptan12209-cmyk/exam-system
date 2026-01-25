@@ -6,9 +6,14 @@ import { Sun, Moon, Monitor } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
 export function ThemeToggle() {
-    const { theme, setTheme, resolvedTheme } = useTheme()
+    const [mounted, setMounted] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
+
+    // Only access theme context after mount
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -27,6 +32,36 @@ export function ThemeToggle() {
         { value: "system" as const, label: "Hệ thống", icon: Monitor },
     ]
 
+    // Show placeholder while not mounted
+    if (!mounted) {
+        return (
+            <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-lg hover:bg-muted"
+                aria-label="Chọn giao diện"
+            >
+                <Sun className="h-5 w-5" />
+            </Button>
+        )
+    }
+
+    // Now safe to use the hook
+    return <ThemeToggleInner isOpen={isOpen} setIsOpen={setIsOpen} dropdownRef={dropdownRef} themes={themes} />
+}
+
+function ThemeToggleInner({
+    isOpen,
+    setIsOpen,
+    dropdownRef,
+    themes
+}: {
+    isOpen: boolean
+    setIsOpen: (open: boolean) => void
+    dropdownRef: React.RefObject<HTMLDivElement | null>
+    themes: { value: "light" | "dark" | "system"; label: string; icon: typeof Sun }[]
+}) {
+    const { theme, setTheme, resolvedTheme } = useTheme()
     const CurrentIcon = resolvedTheme === "dark" ? Moon : Sun
 
     return (
