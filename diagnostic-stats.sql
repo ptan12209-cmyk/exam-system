@@ -67,7 +67,6 @@ FROM exams WHERE status = 'published';
 -- (Uncomment and run if stats are missing)
 -- =============================================
 
-/*
 -- Create/update student_stats based on actual submissions
 INSERT INTO student_stats (user_id, xp, level, streak_days, exams_completed, perfect_scores)
 SELECT 
@@ -83,4 +82,3 @@ ON CONFLICT (user_id) DO UPDATE SET
     exams_completed = EXCLUDED.exams_completed,
     perfect_scores = EXCLUDED.perfect_scores,
     xp = EXCLUDED.xp;
-*/
