@@ -82,14 +82,17 @@ export default function TeacherProfilePage() {
                 setRecentExams(exams.slice(0, 5))
 
                 // Count total submissions
-                // This is a naive loop, but fine for now as per original code logic
+                // Optimized: Fetch all submissions count in one query instead of looping
+                const examIds = exams.map((e) => e.id)
                 let totalSubs = 0
-                for (const exam of exams) {
+
+                if (examIds.length > 0) {
                     const { count } = await supabase
                         .from("submissions")
                         .select("*", { count: "exact", head: true })
-                        .eq("exam_id", exam.id)
-                    totalSubs += count || 0
+                        .in("exam_id", examIds)
+
+                    totalSubs = count || 0
                 }
                 setStats(prev => ({ ...prev, totalSubmissions: totalSubs }))
             }
