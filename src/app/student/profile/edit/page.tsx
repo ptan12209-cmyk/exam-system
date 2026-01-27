@@ -146,7 +146,7 @@ export default function StudentProfileEditPage() {
                 <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 p-6 space-y-6">
                     {/* Avatar */}
                     <div>
-                        <Label className="text-center block mb-4">Ảnh đại diện</Label>
+                        <Label className="text-center block mb-4 text-gray-700 dark:text-gray-300">Ảnh đại diện</Label>
                         <AvatarUpload
                             currentUrl={formData.avatar_url}
                             onUploadComplete={(url) => setFormData(prev => ({ ...prev, avatar_url: url }))}
@@ -158,7 +158,7 @@ export default function StudentProfileEditPage() {
 
                     {/* Full Name */}
                     <div>
-                        <Label htmlFor="full_name">
+                        <Label htmlFor="full_name" className="text-gray-700 dark:text-gray-300">
                             Họ và tên <span className="text-red-500">*</span>
                         </Label>
                         <Input
@@ -172,7 +172,7 @@ export default function StudentProfileEditPage() {
 
                     {/* Nickname */}
                     <div>
-                        <Label htmlFor="nickname">Biệt danh</Label>
+                        <Label htmlFor="nickname" className="text-gray-700 dark:text-gray-300">Biệt danh</Label>
                         <Input
                             id="nickname"
                             value={formData.nickname}
@@ -188,7 +188,7 @@ export default function StudentProfileEditPage() {
 
                     {/* Class */}
                     <div>
-                        <Label htmlFor="class">Lớp</Label>
+                        <Label htmlFor="class" className="text-gray-700 dark:text-gray-300">Lớp</Label>
                         <Input
                             id="class"
                             value={formData.class}
@@ -200,7 +200,7 @@ export default function StudentProfileEditPage() {
 
                     {/* Bio */}
                     <div>
-                        <Label htmlFor="bio">Giới thiệu bản thân</Label>
+                        <Label htmlFor="bio" className="text-gray-700 dark:text-gray-300">Giới thiệu bản thân</Label>
                         <Textarea
                             id="bio"
                             value={formData.bio}
@@ -217,7 +217,7 @@ export default function StudentProfileEditPage() {
 
                     {/* Phone */}
                     <div>
-                        <Label htmlFor="phone">Số điện thoại</Label>
+                        <Label htmlFor="phone" className="text-gray-700 dark:text-gray-300">Số điện thoại</Label>
                         <Input
                             id="phone"
                             type="tel"
