@@ -166,7 +166,7 @@ export default function StudentProfileEditPage() {
                             value={formData.full_name}
                             onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                             required
-                            className="mt-2"
+                            className="mt-2 text-gray-900 dark:text-white"
                         />
                     </div>
 
@@ -179,7 +179,7 @@ export default function StudentProfileEditPage() {
                             onChange={(e) => setFormData(prev => ({ ...prev, nickname: e.target.value }))}
                             placeholder="vd: hoc_sinh_gioi"
                             maxLength={20}
-                            className="mt-2"
+                            className="mt-2 text-gray-900 dark:text-white"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             3-20 ký tự, chỉ chữ cái, số và dấu gạch dưới
@@ -194,7 +194,7 @@ export default function StudentProfileEditPage() {
                             value={formData.class}
                             onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value }))}
                             placeholder="vd: 12A1"
-                            className="mt-2"
+                            className="mt-2 text-gray-900 dark:text-white"
                         />
                     </div>
 
@@ -208,7 +208,7 @@ export default function StudentProfileEditPage() {
                             placeholder="Viết vài dòng về bản thân..."
                             maxLength={200}
                             rows={4}
-                            className="mt-2"
+                            className="mt-2 text-gray-900 dark:text-white"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
                             {formData.bio.length}/200
@@ -224,7 +224,7 @@ export default function StudentProfileEditPage() {
                             value={formData.phone}
                             onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                             placeholder="0123456789"
-                            className="mt-2"
+                            className="mt-2 text-gray-900 dark:text-white"
                         />
                     </div>
 

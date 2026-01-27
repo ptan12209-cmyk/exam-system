@@ -162,7 +162,7 @@ export default function TeacherProfileEditPage() {
                             value={formData.full_name}
                             onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                             required
-                            className="mt-2"
+                            className="mt-2 text-gray-900 dark:text-white"
                         />
                     </div>
 
@@ -175,7 +175,7 @@ export default function TeacherProfileEditPage() {
                             onChange={(e) => setFormData(prev => ({ ...prev, nickname: e.target.value }))}
                             placeholder="vd: thay_giao_toan"
                             maxLength={20}
-                            className="mt-2"
+                            className="mt-2 text-gray-900 dark:text-white"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             3-20 ký tự, chỉ chữ cái, số và dấu gạch dưới
@@ -192,7 +192,7 @@ export default function TeacherProfileEditPage() {
                             placeholder="Viết vài dòng về bản thân và kinh nghiệm giảng dạy..."
                             maxLength={200}
                             rows={4}
-                            className="mt-2"
+                            className="mt-2 text-gray-900 dark:text-white"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
                             {formData.bio.length}/200
@@ -208,7 +208,7 @@ export default function TeacherProfileEditPage() {
                             value={formData.phone}
                             onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                             placeholder="0123456789"
-                            className="mt-2"
+                            className="mt-2 text-gray-900 dark:text-white"
                         />
                     </div>
 
