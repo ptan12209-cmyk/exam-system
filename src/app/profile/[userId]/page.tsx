@@ -63,7 +63,7 @@ export default function PublicProfilePage() {
 
                 setStats({
                     totalExams: exams?.length || 0,
-                    publishedExams: exams?.filter(e => e.status === "published").length || 0
+                    publishedExams: exams?.filter((e: { status: string }) => e.status === "published").length || 0
                 })
             }
 
