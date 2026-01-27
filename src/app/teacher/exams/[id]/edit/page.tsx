@@ -51,12 +51,20 @@ export default function EditExamPage() {
 
     useEffect(() => {
         const fetchExam = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
+            console.log("=== EDIT PAGE DEBUG ===")
+            console.log("Exam ID:", examId)
+
+            const { data: { user }, error: authError } = await supabase.auth.getUser()
+            console.log("Auth error:", authError)
+            console.log("User ID:", user?.id)
+
             if (!user) {
+                console.error("No user found, redirecting to login")
                 router.push("/login")
                 return
             }
 
+            console.log("Fetching exam with teacher_id:", user.id)
             const { data: exam, error: examError } = await supabase
                 .from("exams")
                 .select("*")
@@ -64,10 +72,37 @@ export default function EditExamPage() {
                 .eq("teacher_id", user.id)
                 .single()
 
-            if (examError || !exam) {
+            console.log("Exam fetch error:", examError)
+            console.log("Exam data:", exam)
+
+            if (examError) {
+                console.error("Exam query failed:", examError.message, examError.details, examError.hint)
+                alert(`Exam fetch error: ${examError.message}`)
+            }
+
+            if (!exam) {
+                console.error("No exam found, redirecting to dashboard")
+                // Try without teacher_id check
+                const { data: anyExam } = await supabase
+                    .from("exams")
+                    .select("teacher_id, title")
+                    .eq("id", examId)
+                    .single()
+
+                if (anyExam) {
+                    console.error("Exam exists but teacher_id mismatch!")
+                    console.error("Exam teacher_id:", anyExam.teacher_id)
+                    console.error("Current user ID:", user.id)
+                    alert(`Teacher ID mismatch!\nExam owner: ${anyExam.teacher_id?.slice(0, 8)}\nYour ID: ${user.id.slice(0, 8)}`)
+                } else {
+                    console.error("Exam does not exist at all!")
+                    alert("Exam not found in database!")
+                }
                 router.push("/teacher/dashboard")
                 return
             }
+
+            console.log("Exam loaded successfully:", exam.title)
 
             // Load exam data
             setTitle(exam.title)
