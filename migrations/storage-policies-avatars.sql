@@ -1,38 +1,41 @@
--- Storage Policies for avatars bucket
--- Run this in Supabase SQL Editor
+-- FIXED Storage Policies for avatars bucket
+-- DELETE old policies first, then run this
 
--- Allow authenticated users to upload their own avatars
-CREATE POLICY "Users can upload their own avatar"
+-- 1. Remove old policies (if any)
+DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can view avatars" ON storage.objects;
+
+-- 2. Simple policy: Allow authenticated users to upload to avatars bucket
+CREATE POLICY "Authenticated users can upload avatars"
 ON storage.objects
 FOR INSERT
 TO authenticated
-WITH CHECK (
-  bucket_id = 'avatars' AND
-  auth.uid()::text = (storage.foldername(name))[1]
-);
+WITH CHECK (bucket_id = 'avatars');
 
--- Allow authenticated users to update their own avatars
-CREATE POLICY "Users can update their own avatar"
+-- 3. Allow users to update files that start with their user ID
+CREATE POLICY "Users can update their own avatar files"
 ON storage.objects
 FOR UPDATE
 TO authenticated
 USING (
   bucket_id = 'avatars' AND
-  auth.uid()::text = (storage.foldername(name))[1]
+  (storage.filename(name)) LIKE (auth.uid()::text || '%')
 );
 
--- Allow authenticated users to delete their own avatars
-CREATE POLICY "Users can delete their own avatar"
+-- 4. Allow users to delete files that start with their user ID
+CREATE POLICY "Users can delete their own avatar files"
 ON storage.objects
 FOR DELETE
 TO authenticated
 USING (
   bucket_id = 'avatars' AND
-  auth.uid()::text = (storage.foldername(name))[1]
+  (storage.filename(name)) LIKE (auth.uid()::text || '%')
 );
 
--- Allow public to view avatars (read-only)
-CREATE POLICY "Anyone can view avatars"
+-- 5. Allow public to view avatars (read-only)
+CREATE POLICY "Public can view avatars"
 ON storage.objects
 FOR SELECT
 TO public
