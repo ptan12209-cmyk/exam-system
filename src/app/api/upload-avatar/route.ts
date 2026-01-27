@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         // Generate unique filename
         const fileExt = file.name.split(".").pop()
         const fileName = `${user.id}-${Date.now()}.${fileExt}`
-        const filePath = `avatars/${fileName}`
+        const filePath = fileName // No "avatars/" prefix - bucket already has it
 
         // Upload to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -86,8 +86,10 @@ export async function POST(request: NextRequest) {
         // Delete old avatar if exists
         if (profile?.avatar_url) {
             try {
-                const oldPath = profile.avatar_url.split("/").slice(-2).join("/")
-                await supabase.storage.from("avatars").remove([oldPath])
+                // Extract filename from URL (last segment after /)
+                const urlParts = profile.avatar_url.split("/")
+                const oldFileName = urlParts[urlParts.length - 1]
+                await supabase.storage.from("avatars").remove([oldFileName])
             } catch (e) {
                 console.error("Failed to delete old avatar:", e)
                 // Non-critical, continue
@@ -125,9 +127,10 @@ export async function DELETE(request: NextRequest) {
             .single()
 
         if (profile?.avatar_url) {
-            // Delete from storage
-            const oldPath = profile.avatar_url.split("/").slice(-2).join("/")
-            await supabase.storage.from("avatars").remove([oldPath])
+            // Delete from storage - extract filename from URL
+            const urlParts = profile.avatar_url.split("/")
+            const fileName = urlParts[urlParts.length - 1]
+            await supabase.storage.from("avatars").remove([fileName])
 
             // Update profile
             await supabase
