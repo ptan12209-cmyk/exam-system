@@ -16,6 +16,7 @@ import { BottomNav } from "@/components/BottomNav"
 import { StatsCard } from "@/components/shared"
 import { STUDENT_STAT_COLORS } from "@/lib/student-styles"
 import { FileText, CheckCircle, Trophy, Zap } from "lucide-react"
+import { PWAInstallBanner } from "@/components/PWAInstallBanner"
 
 interface Profile {
     id: string
@@ -432,6 +433,9 @@ export default function StudentDashboard() {
             {sidebarOpen && (
                 <div className="fixed inset-0 z-30 bg-black/50 sm:hidden" onClick={() => setSidebarOpen(false)} />
             )}
+
+            {/* PWA Install Banner */}
+            <PWAInstallBanner />
         </div>
     )
 }

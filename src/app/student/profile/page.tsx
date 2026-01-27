@@ -16,6 +16,7 @@ import { BottomNav } from "@/components/BottomNav"
 import { StatsCard } from "@/components/shared"
 import { STUDENT_STAT_COLORS } from "@/lib/student-styles"
 import { BookOpen, Star, Flame, Award } from "lucide-react"
+import { PWAInstallButton } from "@/components/PWAInstallButton"
 
 interface UserStats {
     xp: number
@@ -219,6 +220,20 @@ export default function ProfilePage() {
 
                     {/* Right Column - Leaderboard */}
                     <div className="space-y-6">
+                        {/* PWA Install Card */}
+                        <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-sm p-6 text-white">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                                    <span className="text-2xl">📱</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg">Cài đặt ứng dụng</h3>
+                                    <p className="text-xs text-blue-100">Truy cập nhanh hơn!</p>
+                                </div>
+                            </div>
+                            <PWAInstallButton />
+                        </div>
+
                         <LeaderboardCard currentUserId={userId || undefined} />
                     </div>
                 </div>
