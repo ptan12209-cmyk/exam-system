@@ -78,7 +78,7 @@ export default function RewardsPage() {
                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
                     <Link href="/student/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400">Trang chủ</Link>
                     <span>›</span>
-                    <span className="font-medium text-gray-800">Cửa hàng phần thưởng</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">Cửa hàng phần thưởng</span>
                 </div>
 
                 {/* Header Card */}
@@ -93,15 +93,15 @@ export default function RewardsPage() {
                 </div>
 
                 {/* Rewards Shop */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
                     <RewardsShop />
                 </div>
             </main>
 
             {/* Footer */}
-            <footer className="bg-blue-600 text-white py-8 mt-auto">
+            <footer className="bg-blue-600 dark:bg-blue-900 text-white py-8 mt-auto">
                 <div className="max-w-7xl mx-auto px-4 text-center">
-                    <p className="text-sm text-blue-200">© 2026 ExamHub. All rights reserved.</p>
+                    <p className="text-sm text-blue-200 dark:text-blue-300">© 2026 ExamHub. All rights reserved.</p>
                 </div>
             </footer>
 

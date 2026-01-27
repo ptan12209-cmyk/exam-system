@@ -264,10 +264,10 @@ export default function TeacherDashboard() {
 
                 {/* Mobile Title */}
                 <div className="lg:hidden mb-6">
-                    <h1 className="text-xl font-bold text-gray-800">
+                    <h1 className="text-xl font-bold text-gray-800 dark:text-white">
                         Xin chào, {profile?.full_name?.split(" ").pop()}! 👋
                     </h1>
-                    <p className="text-gray-500 text-sm">
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">
                         Quản lý lớp học và đề thi của bạn.
                     </p>
                 </div>
@@ -300,14 +300,14 @@ export default function TeacherDashboard() {
                             border: "border-purple-100"
                         },
                     ].map((stat, index) => (
-                        <Card key={index} className={cn("shadow-sm border", stat.border)}>
+                        <Card key={index} className={cn("shadow-sm border bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800", "")}>
                             <CardContent className="p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-500 text-sm font-medium">{stat.label}</p>
-                                        <p className="text-3xl font-bold text-gray-800 mt-2">{stat.value}</p>
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">{stat.label}</p>
+                                        <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">{stat.value}</p>
                                     </div>
-                                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", stat.bg)}>
+                                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center dark:bg-gray-800", stat.bg)}>
                                         <stat.icon className={cn("w-6 h-6", stat.color)} />
                                     </div>
                                 </div>
@@ -319,40 +319,40 @@ export default function TeacherDashboard() {
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                     <Link href="/teacher/exams/create" className="group">
-                        <Card className="border-dashed border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer h-full flex items-center justify-center p-6">
+                        <Card className="border-dashed border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all cursor-pointer h-full flex items-center justify-center p-6">
                             <div className="text-center">
-                                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-200 transition-colors">
-                                    <Plus className="w-6 h-6 text-blue-600" />
+                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-200 dark:group-hover:bg-blue-800 transition-colors">
+                                    <Plus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                 </div>
-                                <h3 className="font-semibold text-gray-800">Tạo đề thi mới</h3>
-                                <p className="text-sm text-gray-500 mt-1">Soạn từ ngân hàng hoặc tạo mới</p>
+                                <h3 className="font-semibold text-gray-800 dark:text-white">Tạo đề thi mới</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Soạn từ ngân hàng hoặc tạo mới</p>
                             </div>
                         </Card>
                     </Link>
 
                     <Link href="/resources" className="group">
-                        <Card className="border-gray-200 hover:shadow-md transition-all cursor-pointer h-full">
+                        <Card className="border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:shadow-md transition-all cursor-pointer h-full">
                             <CardContent className="p-6 flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center">
-                                    <BookOpen className="w-6 h-6 text-orange-600" />
+                                <div className="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                    <BookOpen className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-gray-800 group-hover:text-orange-600 transition-colors">Kho Tài Liệu</h3>
-                                    <p className="text-sm text-gray-500">Quản lý file và bài giảng</p>
+                                    <h3 className="font-bold text-gray-800 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">Kho Tài Liệu</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Quản lý file và bài giảng</p>
                                 </div>
                             </CardContent>
                         </Card>
                     </Link>
 
                     <Link href="/live" className="group">
-                        <Card className="border-gray-200 hover:shadow-md transition-all cursor-pointer h-full">
+                        <Card className="border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:shadow-md transition-all cursor-pointer h-full">
                             <CardContent className="p-6 flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
-                                    <Users className="w-6 h-6 text-red-600" />
+                                <div className="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                    <Users className="w-6 h-6 text-red-600 dark:text-red-400" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-gray-800 group-hover:text-red-600 transition-colors">Phòng Live</h3>
-                                    <p className="text-sm text-gray-500">Tổ chức chữa đề online</p>
+                                    <h3 className="font-bold text-gray-800 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">Phòng Live</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Tổ chức chữa đề online</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -360,12 +360,12 @@ export default function TeacherDashboard() {
                 </div>
 
                 {/* Exams List */}
-                <Card className="border-gray-200 shadow-sm bg-white">
-                    <CardHeader className="border-b border-gray-100 pb-4">
+                <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                    <CardHeader className="border-b border-gray-100 dark:border-slate-800 pb-4">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
-                                <CardTitle className="text-lg font-bold text-gray-800">Danh sách đề thi gần đây</CardTitle>
-                                <CardDescription className="text-gray-500">Quản lý và theo dõi trạng thái các đề thi</CardDescription>
+                                <CardTitle className="text-lg font-bold text-gray-800 dark:text-white">Danh sách đề thi gần đây</CardTitle>
+                                <CardDescription className="text-gray-500 dark:text-gray-400">Quản lý và theo dõi trạng thái các đề thi</CardDescription>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="relative">
@@ -375,25 +375,24 @@ export default function TeacherDashboard() {
                                         placeholder="Tìm kiếm..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-9 pr-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
+                                        className="pl-9 pr-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
                                     />
                                 </div>
-                                <Button variant="outline" size="icon" className="shrink-0">
-                                    <Filter className="w-4 h-4 text-gray-500" />
+                                <Button variant="outline" size="icon" className="shrink-0 border-gray-200 dark:border-slate-700 dark:bg-slate-800">
+                                    <Filter className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                                 </Button>
                             </div>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                        {/* Subject Filter Tabs */}
-                        <div className="flex items-center gap-2 p-4 overflow-x-auto border-b border-gray-50 hide-scrollbar">
+                        <div className="flex items-center gap-2 p-4 overflow-x-auto border-b border-gray-50 dark:border-slate-800 hide-scrollbar">
                             <button
                                 onClick={() => setSelectedSubject("all")}
                                 className={cn(
                                     "px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap",
                                     selectedSubject === "all"
-                                        ? "bg-gray-800 text-white"
-                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                        ? "bg-gray-800 dark:bg-white text-white dark:text-gray-900"
+                                        : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700"
                                 )}
                             >
                                 Tất cả
@@ -405,8 +404,8 @@ export default function TeacherDashboard() {
                                     className={cn(
                                         "px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2",
                                         selectedSubject === s.value
-                                            ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200"
-                                            : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                                            ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800"
+                                            : "bg-white dark:bg-slate-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800"
                                     )}
                                 >
                                     {s.icon} {s.label}
@@ -416,11 +415,11 @@ export default function TeacherDashboard() {
 
                         {filteredExams.length === 0 ? (
                             <div className="text-center py-16 px-4">
-                                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <FileText className="w-8 h-8 text-gray-300" />
+                                <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <FileText className="w-8 h-8 text-gray-300 dark:text-gray-600" />
                                 </div>
-                                <h3 className="text-gray-800 font-medium mb-1">Không tìm thấy đề thi</h3>
-                                <p className="text-gray-500 text-sm mb-6">Thử thay đổi bộ lọc hoặc tạo đề thi mới</p>
+                                <h3 className="text-gray-800 dark:text-white font-medium mb-1">Không tìm thấy đề thi</h3>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Thử thay đổi bộ lọc hoặc tạo đề thi mới</p>
                                 <Link href="/teacher/exams/create">
                                     <Button className="bg-blue-600 hover:bg-blue-700">
                                         <Plus className="w-4 h-4 mr-2" />
@@ -429,39 +428,36 @@ export default function TeacherDashboard() {
                                 </Link>
                             </div>
                         ) : (
-                            <div className="divide-y divide-gray-50">
+                            <div className="divide-y divide-gray-50 dark:divide-slate-800">
                                 {filteredExams.map((exam) => {
                                     const subjectInfo = getSubjectInfo(exam.subject || "other")
                                     return (
                                         <div
                                             key={exam.id}
-                                            className="group flex flex-col md:flex-row md:items-center justify-between p-4 hover:bg-gray-50 transition-colors gap-4"
+                                            className="group flex flex-col md:flex-row md:items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors gap-4"
                                         >
                                             <div className="flex items-start gap-4">
                                                 <div className={cn(
                                                     "w-12 h-12 rounded-xl flex shrink-0 items-center justify-center text-xl shadow-sm",
                                                     `bg-gradient-to-br ${subjectInfo.color.replace('text-', '').replace('from-', 'from-').replace('to-', 'to-')}`
-                                                    // Note: subjectInfo.color usually has full classes, we might need to adjust logic if it returns specific text classes
-                                                    // Assuming subjectInfo.color returns something like "from-blue-500 to-cyan-500" for gradients
-                                                    // safe fallback if it's just classes:
                                                 )}>
                                                     <span className="text-2xl">{subjectInfo.icon}</span>
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <h3 className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                                                        <h3 className="font-semibold text-gray-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                                             {exam.title}
                                                         </h3>
                                                         <span className={cn(
                                                             "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
                                                             exam.status === "published"
-                                                                ? "bg-green-100 text-green-700"
-                                                                : "bg-yellow-100 text-yellow-700"
+                                                                ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                                                                : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
                                                         )}>
                                                             {exam.status === "published" ? "Đã phát hành" : "Nháp"}
                                                         </span>
                                                     </div>
-                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
                                                         <span className="flex items-center gap-1">
                                                             <BookOpen className="w-3.5 h-3.5" />
                                                             {subjectInfo.label}
@@ -480,23 +476,23 @@ export default function TeacherDashboard() {
 
                                             <div className="flex items-center gap-2 self-end md:self-auto">
                                                 <Link href={`/teacher/exams/${exam.id}/scores`}>
-                                                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-600 hover:bg-blue-50">
+                                                    <Button variant="ghost" size="sm" className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                                                         <Users className="w-4 h-4 mr-2" />
                                                         Kết quả
                                                     </Button>
                                                 </Link>
-                                                <div className="h-4 w-px bg-gray-200 mx-1"></div>
+                                                <div className="h-4 w-px bg-gray-200 dark:bg-slate-700 mx-1"></div>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleToggleStatus(exam)}
-                                                    className="text-gray-400 hover:text-gray-800"
+                                                    className="text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                                                     title={exam.status === "published" ? "Ẩn đề thi" : "Phát hành"}
                                                 >
                                                     <Eye className="w-4 h-4" />
                                                 </Button>
                                                 <Link href={`/teacher/exams/${exam.id}/edit`}>
-                                                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-600">
+                                                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
                                                         <Edit className="w-4 h-4" />
                                                     </Button>
                                                 </Link>
@@ -504,7 +500,7 @@ export default function TeacherDashboard() {
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleDeleteExam(exam.id)}
-                                                    className="text-gray-400 hover:text-red-600"
+                                                    className="text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>

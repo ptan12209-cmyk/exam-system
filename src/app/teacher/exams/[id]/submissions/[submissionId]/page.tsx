@@ -134,7 +134,7 @@ export default function SubmissionDetailPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
             </div>
         )
     }
@@ -174,11 +174,11 @@ export default function SubmissionDetailPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     {/* Student Info Card */}
-                    <Card className="col-span-1 lg:col-span-2 border-gray-200 shadow-sm bg-white overflow-hidden">
-                        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 h-24 relative">
+                    <Card className="col-span-1 lg:col-span-2 border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
+                        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 h-24 relative">
                             <div className="absolute -bottom-10 left-6">
-                                <div className="w-20 h-20 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center">
-                                    <div className="w-full h-full rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-2xl">
+                                <div className="w-20 h-20 rounded-full border-4 border-white dark:border-slate-800 bg-white dark:bg-slate-800 shadow-md flex items-center justify-center">
+                                    <div className="w-full h-full rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-2xl">
                                         {profile?.full_name?.charAt(0) || <User className="w-8 h-8" />}
                                     </div>
                                 </div>
@@ -187,17 +187,17 @@ export default function SubmissionDetailPage() {
                         <CardContent className="pt-12 px-6 pb-6">
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-900">
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                                         {profile?.full_name || "Học sinh"}
                                     </h2>
-                                    <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
+                                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm mt-1">
                                         <Mail className="w-3.5 h-3.5" />
                                         {profile?.email || "Không có email"}
                                     </div>
                                 </div>
                                 <div className="flex gap-4 w-full md:w-auto">
-                                    <div className="flex-1 md:flex-none p-3 bg-gray-50 rounded-lg border border-gray-100 text-center min-w-[100px]">
-                                        <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Điểm số</p>
+                                    <div className="flex-1 md:flex-none p-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-100 dark:border-slate-700 text-center min-w-[100px]">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold mb-1">Điểm số</p>
                                         <div className={cn("text-3xl font-bold", getScoreColor(submission.score))}>
                                             {submission.score.toFixed(1)}
                                         </div>
@@ -205,53 +205,53 @@ export default function SubmissionDetailPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
+                            <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100 dark:border-slate-800">
                                 <div className="text-center">
-                                    <div className="w-10 h-10 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center mx-auto mb-2">
+                                    <div className="w-10 h-10 rounded-full bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 flex items-center justify-center mx-auto mb-2">
                                         <Trophy className="w-5 h-5" />
                                     </div>
-                                    <p className="text-lg font-bold text-gray-800">{submission.correct_count}/{exam.total_questions}</p>
-                                    <p className="text-xs text-gray-500">Số câu đúng</p>
+                                    <p className="text-lg font-bold text-gray-800 dark:text-white">{submission.correct_count}/{exam.total_questions}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Số câu đúng</p>
                                 </div>
                                 <div className="text-center">
-                                    <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-2">
+                                    <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-2">
                                         <Clock className="w-5 h-5" />
                                     </div>
-                                    <p className="text-lg font-bold text-gray-800">{formatTime(submission.time_spent)}</p>
-                                    <p className="text-xs text-gray-500">Thời gian làm</p>
+                                    <p className="text-lg font-bold text-gray-800 dark:text-white">{formatTime(submission.time_spent)}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Thời gian làm</p>
                                 </div>
                                 <div className="text-center">
-                                    <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-2">
+                                    <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto mb-2">
                                         <Calendar className="w-5 h-5" />
                                     </div>
-                                    <p className="text-sm font-bold text-gray-800 mt-2">{formatDate(submission.submitted_at)}</p>
-                                    <p className="text-xs text-gray-500">Thời gian nộp</p>
+                                    <p className="text-sm font-bold text-gray-800 dark:text-white mt-2">{formatDate(submission.submitted_at)}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Thời gian nộp</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Summary Stats or Actions (Optional - currently using space for layout balance) */}
-                    <Card className="border-gray-200 shadow-sm bg-white flex flex-col justify-center">
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 flex flex-col justify-center">
                         <CardContent className="p-6 text-center space-y-4">
-                            <div className="p-4 rounded-full bg-green-50 w-20 h-20 mx-auto flex items-center justify-center">
+                            <div className="p-4 rounded-full bg-green-50 dark:bg-green-900/20 w-20 h-20 mx-auto flex items-center justify-center">
                                 {(submission.score / 10) >= 0.5 ? (
-                                    <CheckCircle2 className="w-10 h-10 text-green-500" />
+                                    <CheckCircle2 className="w-10 h-10 text-green-500 dark:text-green-400" />
                                 ) : (
-                                    <XCircle className="w-10 h-10 text-red-500" />
+                                    <XCircle className="w-10 h-10 text-red-500 dark:text-red-400" />
                                 )}
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-gray-800">
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-white">
                                     {(submission.score / 10) >= 0.8 ? "Xuất sắc!" :
                                         (submission.score / 10) >= 0.65 ? "Làm tốt lắm!" :
                                             (submission.score / 10) >= 0.5 ? "Đạt yêu cầu" : "Cần cố gắng"}
                                 </h3>
-                                <p className="text-gray-500 text-sm mt-1">
+                                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
                                     Học sinh đã hoàn thành {Math.round((submission.correct_count / exam.total_questions) * 100)}% bài thi chính xác.
                                 </p>
                             </div>
-                            <Button className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 mt-2" variant="outline">
+                            <Button className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 mt-2" variant="outline">
                                 Gửi nhận xét (Coming soon)
                             </Button>
                         </CardContent>
@@ -260,9 +260,9 @@ export default function SubmissionDetailPage() {
 
                 {/* Multiple Choice Answers */}
                 {mcCorrectAnswers.length > 0 && (
-                    <Card className="border-gray-200 shadow-sm bg-white mb-6">
-                        <CardHeader className="border-b border-gray-100 bg-gray-50/50 pb-4">
-                            <CardTitle className="text-base text-gray-800 flex items-center gap-2">
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 mb-6">
+                        <CardHeader className="border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 pb-4">
+                            <CardTitle className="text-base text-gray-800 dark:text-white flex items-center gap-2">
                                 <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
                                 Trắc nghiệm ({mcCorrectAnswers.length} câu)
                             </CardTitle>
@@ -279,32 +279,32 @@ export default function SubmissionDetailPage() {
                                             className={cn(
                                                 "p-3 rounded-xl border flex flex-col items-center transition-all",
                                                 isCorrect
-                                                    ? "bg-green-50 border-green-200 shadow-sm"
-                                                    : "bg-red-50 border-red-200 shadow-sm"
+                                                    ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 shadow-sm"
+                                                    : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 shadow-sm"
                                             )}
                                         >
-                                            <div className="flex items-center gap-1.5 mb-2 w-full justify-center border-b border-black/5 pb-2">
-                                                <span className="text-xs font-semibold text-gray-500">Câu {correct.question}</span>
+                                            <div className="flex items-center gap-1.5 mb-2 w-full justify-center border-b border-black/5 dark:border-white/5 pb-2">
+                                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Câu {correct.question}</span>
                                                 {isCorrect ? (
-                                                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                                                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
                                                 ) : (
-                                                    <XCircle className="w-3.5 h-3.5 text-red-500" />
+                                                    <XCircle className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
                                                 )}
                                             </div>
                                             <div className="flex flex-col items-center gap-1 w-full">
                                                 <div className="flex items-center gap-2 w-full justify-center">
-                                                    <span className="text-xs text-gray-400">HS:</span>
+                                                    <span className="text-xs text-gray-400 dark:text-gray-500">HS:</span>
                                                     <span className={cn(
                                                         "w-6 h-6 rounded flex items-center justify-center text-xs font-bold",
-                                                        isCorrect ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                                                        isCorrect ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300" : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
                                                     )}>
                                                         {studentAnswer || "—"}
                                                     </span>
                                                 </div>
                                                 {!isCorrect && (
                                                     <div className="flex items-center gap-2 w-full justify-center">
-                                                        <span className="text-xs text-gray-400">ĐA:</span>
-                                                        <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold bg-green-100 text-green-700">
+                                                        <span className="text-xs text-gray-400 dark:text-gray-500">ĐA:</span>
+                                                        <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">
                                                             {correct.answer}
                                                         </span>
                                                     </div>
@@ -320,9 +320,9 @@ export default function SubmissionDetailPage() {
 
                 {/* True/False Answers */}
                 {tfAnswers.length > 0 && (
-                    <Card className="border-gray-200 shadow-sm bg-white mb-6">
-                        <CardHeader className="border-b border-gray-100 bg-gray-50/50 pb-4">
-                            <CardTitle className="text-base text-gray-800 flex items-center gap-2">
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 mb-6">
+                        <CardHeader className="border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 pb-4">
+                            <CardTitle className="text-base text-gray-800 dark:text-white flex items-center gap-2">
                                 <span className="w-1.5 h-6 bg-green-500 rounded-full"></span>
                                 Đúng/Sai ({tfAnswers.length} câu)
                             </CardTitle>
@@ -334,8 +334,8 @@ export default function SubmissionDetailPage() {
                                     const qNum = mcCount + 1 + index
 
                                     return (
-                                        <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                            <p className="text-sm font-bold text-gray-700 mb-3 border-b border-gray-200 pb-2">Câu {qNum}</p>
+                                        <div key={index} className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                                            <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 border-b border-gray-200 dark:border-slate-700 pb-2">Câu {qNum}</p>
                                             <div className="grid grid-cols-4 gap-2">
                                                 {(['a', 'b', 'c', 'd'] as const).map(opt => {
                                                     const correctVal = tf[opt]
@@ -348,23 +348,23 @@ export default function SubmissionDetailPage() {
                                                             className={cn(
                                                                 "p-2 rounded-lg text-center flex flex-col items-center justify-center border",
                                                                 isCorrect
-                                                                    ? "bg-green-50 border-green-200"
-                                                                    : "bg-red-50 border-red-200"
+                                                                    ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                                                                    : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
                                                             )}
                                                         >
-                                                            <span className="text-xs font-bold text-gray-500 uppercase mb-1">{opt}</span>
+                                                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{opt}</span>
                                                             <div className="flex items-center gap-1">
                                                                 {/* Student Answer */}
                                                                 <span className={cn(
                                                                     "font-bold text-sm",
-                                                                    studentVal ? "text-green-600" : "text-red-600"
+                                                                    studentVal ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                                                                 )}>
                                                                     {studentVal ? "Đ" : "S"}
                                                                 </span>
 
                                                                 {/* Correct Answer Indicator if wrong */}
                                                                 {!isCorrect && (
-                                                                    <span className="text-[10px] text-gray-400">
+                                                                    <span className="text-[10px] text-gray-400 dark:text-gray-500">
                                                                         ({correctVal ? "Đ" : "S"})
                                                                     </span>
                                                                 )}
@@ -383,9 +383,9 @@ export default function SubmissionDetailPage() {
 
                 {/* Short Answer */}
                 {saAnswers.length > 0 && (
-                    <Card className="border-gray-200 shadow-sm bg-white mb-6">
-                        <CardHeader className="border-b border-gray-100 bg-gray-50/50 pb-4">
-                            <CardTitle className="text-base text-gray-800 flex items-center gap-2">
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 mb-6">
+                        <CardHeader className="border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 pb-4">
+                            <CardTitle className="text-base text-gray-800 dark:text-white flex items-center gap-2">
                                 <span className="w-1.5 h-6 bg-purple-500 rounded-full"></span>
                                 Trả lời ngắn ({saAnswers.length} câu)
                             </CardTitle>
@@ -406,19 +406,19 @@ export default function SubmissionDetailPage() {
                                             className={cn(
                                                 "p-4 rounded-xl border transition-all",
                                                 isCorrect
-                                                    ? "bg-green-50/50 border-green-200 hover:shadow-sm"
-                                                    : "bg-red-50/50 border-red-200 hover:shadow-sm"
+                                                    ? "bg-green-50/50 dark:bg-green-900/10 border-green-200 dark:border-green-800 hover:shadow-sm"
+                                                    : "bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-800 hover:shadow-sm"
                                             )}
                                         >
-                                            <div className="flex items-center justify-between mb-3 border-b border-black/5 pb-2">
-                                                <span className="text-sm font-bold text-gray-700">Câu {qNum}</span>
+                                            <div className="flex items-center justify-between mb-3 border-b border-black/5 dark:border-white/5 pb-2">
+                                                <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Câu {qNum}</span>
                                                 {isCorrect ? (
-                                                    <div className="flex items-center text-green-600 text-xs font-medium">
+                                                    <div className="flex items-center text-green-600 dark:text-green-400 text-xs font-medium">
                                                         <CheckCircle2 className="w-4 h-4 mr-1" />
                                                         Đúng
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-center text-red-500 text-xs font-medium">
+                                                    <div className="flex items-center text-red-500 dark:text-red-400 text-xs font-medium">
                                                         <XCircle className="w-4 h-4 mr-1" />
                                                         Sai
                                                     </div>
@@ -427,18 +427,18 @@ export default function SubmissionDetailPage() {
 
                                             <div className="space-y-2 text-sm">
                                                 <div className="flex justify-between items-center">
-                                                    <span className="text-gray-500">Học sinh:</span>
+                                                    <span className="text-gray-500 dark:text-gray-400">Học sinh:</span>
                                                     <span className={cn(
                                                         "font-bold",
-                                                        isCorrect ? "text-green-700" : "text-red-700"
+                                                        isCorrect ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"
                                                     )}>
                                                         {studentSa?.answer || "—"}
                                                     </span>
                                                 </div>
                                                 {!isCorrect && (
-                                                    <div className="flex justify-between items-center pt-2 border-t border-dashed border-red-200">
-                                                        <span className="text-gray-500">Đáp án đúng:</span>
-                                                        <span className="font-bold text-green-700">
+                                                    <div className="flex justify-between items-center pt-2 border-t border-dashed border-red-200 dark:border-red-800">
+                                                        <span className="text-gray-500 dark:text-gray-400">Đáp án đúng:</span>
+                                                        <span className="font-bold text-green-700 dark:text-green-300">
                                                             {sa.answer}
                                                         </span>
                                                     </div>
@@ -454,7 +454,7 @@ export default function SubmissionDetailPage() {
 
                 <div className="flex justify-center mt-8">
                     <Link href={`/teacher/exams/${examId}/scores`}>
-                        <Button variant="outline" className="border-gray-300 text-gray-600 hover:bg-gray-50">
+                        <Button variant="outline" className="border-gray-300 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800">
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Quay lại danh sách
                         </Button>

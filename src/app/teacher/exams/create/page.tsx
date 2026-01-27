@@ -375,27 +375,27 @@ export default function CreateExamPage() {
                     <div className={cn(
                         "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors",
                         step === "info"
-                            ? "bg-blue-50 text-blue-700 border border-blue-200"
-                            : "bg-white text-gray-400 border border-gray-100"
+                            ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                            : "bg-white dark:bg-slate-800 text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-slate-700"
                     )}>
                         <div className={cn(
                             "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                            step === "info" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"
+                            step === "info" ? "bg-blue-600 text-white" : "bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-gray-400"
                         )}>
                             1
                         </div>
                         Thông tin
                     </div>
-                    <div className="h-px flex-1 bg-gray-200" />
+                    <div className="h-px flex-1 bg-gray-200 dark:bg-slate-700" />
                     <div className={cn(
                         "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors",
                         step === "answers"
-                            ? "bg-blue-50 text-blue-700 border border-blue-200"
-                            : "bg-white text-gray-400 border border-gray-100"
+                            ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                            : "bg-white dark:bg-slate-800 text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-slate-700"
                     )}>
                         <div className={cn(
                             "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                            step === "answers" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"
+                            step === "answers" ? "bg-blue-600 text-white" : "bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-gray-400"
                         )}>
                             2
                         </div>
@@ -404,7 +404,7 @@ export default function CreateExamPage() {
                 </div>
 
                 {error && (
-                    <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-600 mb-6 flex items-center gap-3">
+                    <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 mb-6 flex items-center gap-3">
                         <X className="w-5 h-5 flex-shrink-0" />
                         {error}
                     </div>
@@ -412,10 +412,10 @@ export default function CreateExamPage() {
 
                 {step === "info" ? (
                     <div className="space-y-6">
-                        <Card className="border-gray-200 shadow-sm bg-white">
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
                             <CardHeader>
-                                <CardTitle className="text-gray-800">Thông tin cơ bản</CardTitle>
-                                <CardDescription className="text-gray-500">
+                                <CardTitle className="text-gray-800 dark:text-white">Thông tin cơ bản</CardTitle>
+                                <CardDescription className="text-gray-500 dark:text-gray-400">
                                     Điền các thông tin bắt buộc cho đề thi
                                 </CardDescription>
                             </CardHeader>
@@ -432,8 +432,8 @@ export default function CreateExamPage() {
                                                 className={cn(
                                                     "p-3 rounded-xl border transition-all text-sm flex flex-col items-center justify-center gap-2",
                                                     subject === s.value
-                                                        ? `border-blue-500 bg-blue-50 text-blue-700 ring-1 ring-blue-500`
-                                                        : "border-gray-200 hover:border-blue-300 hover:bg-gray-50 text-gray-600"
+                                                        ? `border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 ring-1 ring-blue-500`
+                                                        : "border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-600 dark:text-gray-300"
                                                 )}
                                             >
                                                 <span className="text-2xl">{s.icon}</span>
@@ -444,13 +444,13 @@ export default function CreateExamPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="title" className="text-gray-700 font-medium">Tên đề thi</Label>
+                                    <Label htmlFor="title" className="text-gray-700 dark:text-gray-300 font-medium">Tên đề thi</Label>
                                     <Input
                                         id="title"
                                         placeholder="Ví dụ: Kiểm tra 15 phút Toán - Chương 1"
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
-                                        className="bg-white border-gray-300 focus:border-blue-500 text-gray-900"
+                                        className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 focus:border-blue-500 text-gray-900 dark:text-white"
                                     />
                                 </div>
 
@@ -468,7 +468,7 @@ export default function CreateExamPage() {
                                                 max={180}
                                                 value={duration}
                                                 onChange={(e) => setDuration(Number(e.target.value))}
-                                                className="pl-9 bg-white border-gray-300 text-gray-900"
+                                                className="pl-9 bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white"
                                             />
                                         </div>
                                     </div>
@@ -487,7 +487,7 @@ export default function CreateExamPage() {
                                                 setMcCount(val)
                                                 handleTotalQuestionsChange(val) // Sync with legacy logic
                                             }}
-                                            className="bg-white border-gray-300 text-gray-900"
+                                            className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white"
                                         />
                                     </div>
                                 </div>
@@ -500,7 +500,7 @@ export default function CreateExamPage() {
                                         id="maxAttempts"
                                         value={maxAttempts}
                                         onChange={(e) => setMaxAttempts(Number(e.target.value))}
-                                        className="w-full h-10 px-3 rounded-md bg-white border border-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                        className="w-full h-10 px-3 rounded-md bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                     >
                                         <option value={1}>1 lần (không làm lại)</option>
                                         <option value={2}>2 lần</option>
@@ -515,15 +515,15 @@ export default function CreateExamPage() {
                         <div className="grid md:grid-cols-2 gap-6">
                             <Card className={cn(
                                 "border transition-all cursor-pointer",
-                                isScheduled ? "border-orange-500 shadow-md ring-1 ring-orange-100" : "border-gray-200 hover:border-gray-300 bg-white"
+                                isScheduled ? "border-orange-500 shadow-md ring-1 ring-orange-100 dark:ring-orange-900/20 bg-white dark:bg-slate-900" : "border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 bg-white dark:bg-slate-900"
                             )}>
                                 <div onClick={() => setIsScheduled(!isScheduled)} className="p-6">
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2">
-                                            <div className={cn("p-2 rounded-lg", isScheduled ? "bg-orange-100 text-orange-600" : "bg-gray-100 text-gray-500")}>
+                                            <div className={cn("p-2 rounded-lg", isScheduled ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400")}>
                                                 <Calendar className="w-5 h-5" />
                                             </div>
-                                            <h3 className="font-semibold text-gray-800">Giới hạn thời gian</h3>
+                                            <h3 className="font-semibold text-gray-800 dark:text-white">Giới hạn thời gian</h3>
                                         </div>
                                         <div className={cn(
                                             "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
@@ -539,21 +539,21 @@ export default function CreateExamPage() {
                                     {isScheduled && (
                                         <div className="space-y-3 pt-3 border-t border-orange-100" onClick={e => e.stopPropagation()}>
                                             <div className="space-y-1">
-                                                <Label className="text-xs text-gray-600">Bắt đầu từ</Label>
+                                                <Label className="text-xs text-gray-600 dark:text-gray-400">Bắt đầu từ</Label>
                                                 <Input
                                                     type="datetime-local"
                                                     value={startTime}
                                                     onChange={(e) => setStartTime(e.target.value)}
-                                                    className="h-9 text-sm bg-white"
+                                                    className="h-9 text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white border-gray-300 dark:border-slate-700"
                                                 />
                                             </div>
                                             <div className="space-y-1">
-                                                <Label className="text-xs text-gray-600">Kết thúc lúc</Label>
+                                                <Label className="text-xs text-gray-600 dark:text-gray-400">Kết thúc lúc</Label>
                                                 <Input
                                                     type="datetime-local"
                                                     value={endTime}
                                                     onChange={(e) => setEndTime(e.target.value)}
-                                                    className="h-9 text-sm bg-white"
+                                                    className="h-9 text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white border-gray-300 dark:border-slate-700"
                                                 />
                                             </div>
                                         </div>
@@ -569,19 +569,19 @@ export default function CreateExamPage() {
                                     <div onClick={() => setEnableTF(!enableTF)} className="p-6">
                                         <div className="flex items-center justify-between mb-2">
                                             <div className="flex items-center gap-2">
-                                                <div className={cn("p-2 rounded-lg", enableTF ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500")}>
+                                                <div className={cn("p-2 rounded-lg", enableTF ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400")}>
                                                     <HelpCircle className="w-5 h-5" />
                                                 </div>
-                                                <h3 className="font-semibold text-gray-800">Đúng / Sai</h3>
+                                                <h3 className="font-semibold text-gray-800 dark:text-white">Đúng / Sai</h3>
                                             </div>
                                             <div className={cn(
                                                 "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
-                                                enableTF ? "bg-green-500 border-green-500" : "border-gray-300"
+                                                enableTF ? "bg-green-500 border-green-500" : "border-gray-300 dark:border-slate-600"
                                             )}>
                                                 {enableTF && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                                             </div>
                                         </div>
-                                        <p className="text-sm text-gray-500">Dạng câu hỏi 4 ý chọn Đúng/Sai</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Dạng câu hỏi 4 ý chọn Đúng/Sai</p>
 
                                         {enableTF && (
                                             <div className="mt-4 flex items-center gap-3" onClick={e => e.stopPropagation()}>
@@ -606,19 +606,19 @@ export default function CreateExamPage() {
                                     <div onClick={() => setEnableSA(!enableSA)} className="p-6">
                                         <div className="flex items-center justify-between mb-2">
                                             <div className="flex items-center gap-2">
-                                                <div className={cn("p-2 rounded-lg", enableSA ? "bg-purple-100 text-purple-600" : "bg-gray-100 text-gray-500")}>
+                                                <div className={cn("p-2 rounded-lg", enableSA ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400")}>
                                                     <FileText className="w-5 h-5" />
                                                 </div>
-                                                <h3 className="font-semibold text-gray-800">Trả lời ngắn</h3>
+                                                <h3 className="font-semibold text-gray-800 dark:text-white">Trả lời ngắn</h3>
                                             </div>
                                             <div className={cn(
                                                 "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
-                                                enableSA ? "bg-purple-500 border-purple-500" : "border-gray-300"
+                                                enableSA ? "bg-purple-500 border-purple-500" : "border-gray-300 dark:border-slate-600"
                                             )}>
                                                 {enableSA && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                                             </div>
                                         </div>
-                                        <p className="text-sm text-gray-500">Dạng điền đáp án ngắn (số, chữ)</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Dạng điền đáp án ngắn (số, chữ)</p>
 
                                         {enableSA && (
                                             <div className="mt-4 flex items-center gap-3" onClick={e => e.stopPropagation()}>
@@ -640,13 +640,13 @@ export default function CreateExamPage() {
 
                         {/* File Uploads */}
                         <div className="grid md:grid-cols-2 gap-6">
-                            <Card className="border-gray-200 shadow-sm bg-white">
+                            <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
                                 <CardHeader className="pb-4">
-                                    <CardTitle className="text-base text-gray-800 flex items-center gap-2">
-                                        <FileText className="w-4 h-4 text-blue-600" />
+                                    <CardTitle className="text-base text-gray-800 dark:text-white flex items-center gap-2">
+                                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                         File đề thi (PDF)
                                     </CardTitle>
-                                    <CardDescription>File này sẽ hiển thị cho học sinh</CardDescription>
+                                    <CardDescription className="text-gray-500 dark:text-gray-400">File này sẽ hiển thị cho học sinh</CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <div
@@ -677,12 +677,12 @@ export default function CreateExamPage() {
                                             </>
                                         ) : (
                                             <>
-                                                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                                <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                                                     <Upload className="w-6 h-6" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-gray-700">Tải lên file đề thi</p>
-                                                    <p className="text-xs text-gray-500 mt-1">Chỉ hỗ trợ PDF</p>
+                                                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Tải lên file đề thi</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Chỉ hỗ trợ PDF</p>
                                                 </div>
                                             </>
                                         )}
@@ -690,13 +690,13 @@ export default function CreateExamPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card className="border-gray-200 shadow-sm bg-white">
+                            <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
                                 <CardHeader className="pb-4">
-                                    <CardTitle className="text-base text-gray-800 flex items-center gap-2">
-                                        <Wand2 className="w-4 h-4 text-purple-600" />
+                                    <CardTitle className="text-base text-gray-800 dark:text-white flex items-center gap-2">
+                                        <Wand2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                                         Nhập nhanh từ PDF
                                     </CardTitle>
-                                    <CardDescription>AI tự động quét đáp án từ file</CardDescription>
+                                    <CardDescription className="text-gray-500 dark:text-gray-400">AI tự động quét đáp án từ file</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div
@@ -733,8 +733,8 @@ export default function CreateExamPage() {
                                         ) : (
                                             <>
                                                 <Sparkles className="w-8 h-8 text-purple-500" />
-                                                <p className="text-sm font-medium text-purple-700">Upload bảng đáp án</p>
-                                                <p className="text-xs text-purple-600">Hỗ trợ MC, A/B/C/D, Đúng/Sai</p>
+                                                <p className="text-sm font-medium text-purple-700 dark:text-purple-400">Upload bảng đáp án</p>
+                                                <p className="text-xs text-purple-600 dark:text-purple-300">Hỗ trợ MC, A/B/C/D, Đúng/Sai</p>
                                             </>
                                         )}
                                     </div>
@@ -798,12 +798,12 @@ export default function CreateExamPage() {
                     </div>
                 ) : (
                     /* Step 2: Answers */
-                    <Card className="border-gray-200 shadow-sm bg-white">
-                        <CardHeader className="border-b border-gray-100 pb-4">
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                        <CardHeader className="border-b border-gray-100 dark:border-slate-800 pb-4">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <CardTitle className="text-gray-800">Nhập đáp án</CardTitle>
-                                    <CardDescription className="text-gray-500 mt-1">
+                                    <CardTitle className="text-gray-800 dark:text-white">Nhập đáp án</CardTitle>
+                                    <CardDescription className="text-gray-500 dark:text-gray-400 mt-1">
                                         Tổng: {mcCount} câu hỏi
                                         {enableTF && ` • ${tfCount} Đ/S`}
                                         {enableSA && ` • ${saCount} điền đáp án`}
@@ -835,7 +835,7 @@ export default function CreateExamPage() {
                                             onClick={() => setAnswerTab("sa")}
                                             className={cn(
                                                 "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                                                answerTab === "sa" ? "bg-purple-50 text-purple-700 border border-purple-200" : "text-gray-500 hover:bg-gray-100"
+                                                answerTab === "sa" ? "bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800"
                                             )}
                                         >
                                             Điền đáp án
@@ -866,7 +866,7 @@ export default function CreateExamPage() {
                                                                 "w-full py-1.5 rounded textxs font-bold transition-all",
                                                                 (mcAnswers[i] || correctAnswers[i]) === option
                                                                     ? "bg-blue-600 text-white shadow-sm"
-                                                                    : "bg-white border border-gray-200 text-gray-400 hover:border-blue-300 hover:text-blue-600"
+                                                                    : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400"
                                                             )}
                                                         >
                                                             {option}
@@ -886,8 +886,8 @@ export default function CreateExamPage() {
                                         const qNum = mcCount + 1 + i
                                         const answer = tfAnswers.find(a => a.question === qNum) || { question: qNum, a: true, b: true, c: true, d: true }
                                         return (
-                                            <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                                <span className="text-sm font-bold text-gray-700 w-16">Câu {qNum}</span>
+                                            <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                                                <span className="text-sm font-bold text-gray-700 dark:text-gray-300 w-16">Câu {qNum}</span>
                                                 <div className="flex gap-6">
                                                     {(['a', 'b', 'c', 'd'] as const).map((sub) => (
                                                         <div key={sub} className="flex flex-col items-center gap-2">
@@ -977,17 +977,17 @@ export default function CreateExamPage() {
                             )}
 
                             {/* Notification Option */}
-                            <div className="mt-8 flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                            <div className="mt-8 flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
                                 <input
                                     type="checkbox"
                                     id="sendNotification"
                                     checked={sendNotification}
                                     onChange={(e) => setSendNotification(e.target.checked)}
-                                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    className="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-800"
                                 />
                                 <label htmlFor="sendNotification" className="flex-1 cursor-pointer">
-                                    <div className="font-medium text-blue-900">Gửi thông báo cho học sinh</div>
-                                    <div className="text-xs text-blue-700">Học sinh sẽ nhận được thông báo ngay khi đề thi được Publish</div>
+                                    <div className="font-medium text-blue-900 dark:text-blue-300">Gửi thông báo cho học sinh</div>
+                                    <div className="text-xs text-blue-700 dark:text-blue-400">Học sinh sẽ nhận được thông báo ngay khi đề thi được Publish</div>
                                 </label>
                             </div>
 
@@ -1024,6 +1024,6 @@ export default function CreateExamPage() {
                     </Card>
                 )}
             </div>
-        </div>
+        </div >
     )
 }

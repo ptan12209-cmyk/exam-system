@@ -206,8 +206,8 @@ export default function ExamResultPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
             </div>
         )
     }
@@ -251,7 +251,7 @@ export default function ExamResultPage() {
                     {/* Left Column: Score & Details (2/3) */}
                     <div className="md:col-span-2 space-y-6">
                         {/* Score Card */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden relative">
                             {/* Decorative Background */}
                             <div className={cn(
                                 "absolute top-0 left-0 w-full h-2",
@@ -261,7 +261,7 @@ export default function ExamResultPage() {
                             )} />
 
                             <div className="p-8 text-center relative z-10">
-                                <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gray-50 dark:bg-white/10 mb-6 shadow-inner relative">
+                                <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gray-50 dark:bg-white/5 mb-6 shadow-inner relative">
                                     <Trophy className={cn("w-14 h-14", getScoreColor(submission.score))} />
                                     {submission.score >= 9 && (
                                         <div className="absolute -top-2 -right-2 text-2xl animate-bounce">👑</div>
@@ -318,7 +318,7 @@ export default function ExamResultPage() {
                                 {/* MC Answers */}
                                 {exam.correct_answers && exam.correct_answers.length > 0 && (
                                     <div className="mb-8">
-                                        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-2">
+                                        <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4 flex items-center gap-2">
                                             <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                                             Trắc nghiệm
                                         </h3>
@@ -359,7 +359,7 @@ export default function ExamResultPage() {
                                 {/* True/False Answers */}
                                 {exam.tf_answers && exam.tf_answers.length > 0 && (
                                     <div className="mb-8">
-                                        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-2">
+                                        <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4 flex items-center gap-2">
                                             <span className="w-2 h-2 rounded-full bg-green-500"></span>
                                             Đúng / Sai
                                         </h3>

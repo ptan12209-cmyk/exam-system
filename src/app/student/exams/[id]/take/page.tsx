@@ -650,31 +650,33 @@ export default function TakeExamPage() {
                                     className="flex-1 w-full bg-white"
                                     title="Đề thi PDF"
                                 />
-                                <div className="p-2 bg-white border-t border-gray-100 flex items-center justify-center gap-4">
+                                <div className="p-2 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 flex items-center justify-center gap-4">
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setPdfPage(p => Math.max(1, p - 1))}
                                         disabled={pdfPage <= 1}
+                                        className="border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800"
                                     >
                                         <ChevronLeft className="w-4 h-4" />
                                     </Button>
-                                    <span className="text-sm font-medium text-gray-600">Trang {pdfPage}</span>
+                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Trang {pdfPage}</span>
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setPdfPage(p => p + 1)}
+                                        className="border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800"
                                     >
                                         <ChevronRight className="w-4 h-4" />
                                     </Button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                                    <FileText className="w-10 h-10 text-gray-300" />
+                            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
+                                <div className="w-20 h-20 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                                    <FileText className="w-10 h-10 text-gray-300 dark:text-gray-600" />
                                 </div>
-                                <p className="font-medium text-gray-500">Không có file đề thi</p>
+                                <p className="font-medium text-gray-500 dark:text-gray-400">Không có file đề thi</p>
                                 <p className="text-sm">Vui lòng đọc câu hỏi trực tiếp trên phiếu</p>
                             </div>
                         )}
@@ -838,9 +840,9 @@ export default function TakeExamPage() {
                                     {exam.sa_answers.map((sa, i) => {
                                         const studentSa = saStudentAnswers.find(a => a.question === sa.question)
                                         return (
-                                            <div key={i} className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+                                            <div key={i} className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-gray-100 dark:border-slate-800 shadow-sm">
                                                 <div className="flex items-center gap-3 mb-2">
-                                                    <span className="font-bold text-gray-700 w-16">Câu {sa.question}</span>
+                                                    <span className="font-bold text-gray-700 dark:text-gray-300 w-16">Câu {sa.question}</span>
                                                     <input
                                                         type="text"
                                                         value={studentSa?.answer || ""}
@@ -852,7 +854,7 @@ export default function TakeExamPage() {
                                                             setSaStudentAnswers(newSa)
                                                         }}
                                                         placeholder="Nhập đáp án của bạn..."
-                                                        className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                                                        className="flex-1 px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder:text-gray-400"
                                                     />
                                                 </div>
                                             </div>
@@ -878,18 +880,18 @@ export default function TakeExamPage() {
                 {/* Confirm Dialog */}
                 {showConfirm && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <Card className="w-full max-w-sm bg-white border-0 shadow-2xl">
+                        <Card className="w-full max-w-sm bg-white dark:bg-slate-900 border-0 shadow-2xl">
                             <CardContent className="p-6">
                                 <div className="flex flex-col items-center text-center mb-6">
-                                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                                        <FileText className="w-8 h-8 text-blue-600" />
+                                    <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
+                                        <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-800">Nộp bài thi?</h3>
-                                    <p className="text-gray-500 mt-2">
-                                        Bạn đã hoàn thành <span className="font-bold text-gray-800">{answeredCount}/{exam.total_questions}</span> câu hỏi.
+                                    <h3 className="text-xl font-bold text-gray-800 dark:text-white">Nộp bài thi?</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 mt-2">
+                                        Bạn đã hoàn thành <span className="font-bold text-gray-800 dark:text-white">{answeredCount}/{exam.total_questions}</span> câu hỏi.
                                     </p>
                                     {answeredCount < exam.total_questions && (
-                                        <div className="mt-4 px-4 py-2 bg-amber-50 text-amber-700 text-sm font-medium rounded-lg border border-amber-100">
+                                        <div className="mt-4 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-sm font-medium rounded-lg border border-amber-100 dark:border-amber-900">
                                             ⚠️ Bạn còn {exam.total_questions - answeredCount} câu chưa làm
                                         </div>
                                     )}
@@ -899,14 +901,14 @@ export default function TakeExamPage() {
                                     <Button
                                         variant="outline"
                                         onClick={() => setShowConfirm(false)}
-                                        className="border-gray-200 text-gray-600 hover:bg-gray-50"
+                                        className="border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800"
                                     >
                                         Làm tiếp
                                     </Button>
                                     <Button
                                         onClick={() => handleSubmit(false)}
                                         disabled={submitting}
-                                        className="bg-green-600 hover:bg-green-700 text-white shadow-green-200 shadow-md"
+                                        className="bg-green-600 hover:bg-green-700 text-white shadow-green-200 dark:shadow-none shadow-md"
                                     >
                                         {submitting ? (
                                             <>

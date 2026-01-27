@@ -227,21 +227,21 @@ export default function ArenaAdminPage() {
 
         if (now < start) {
             return (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
                     <Clock className="w-3 h-3 mr-1" />
                     Sắp diễn ra
                 </span>
             )
         } else if (now >= start && now <= end) {
             return (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 animate-pulse">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 animate-pulse">
                     <Play className="w-3 h-3 mr-1" />
                     Đang diễn ra
                 </span>
             )
         } else {
             return (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-300">
                     <CheckCircle className="w-3 h-3 mr-1" />
                     Đã kết thúc
                 </span>
@@ -290,13 +290,13 @@ export default function ArenaAdminPage() {
 
                 {/* Sessions List */}
                 {sessions.length === 0 ? (
-                    <Card className="border-gray-200 shadow-sm bg-white">
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
                         <CardContent className="p-12 text-center">
-                            <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <div className="w-16 h-16 bg-purple-50 dark:bg-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Swords className="w-8 h-8 text-purple-500" />
                             </div>
-                            <h2 className="text-xl font-bold text-gray-900 mb-2">Chưa có đợt thi nào</h2>
-                            <p className="text-gray-500 mb-6">Tạo đợt thi mới để tổ chức thi đấu cho học sinh</p>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Chưa có đợt thi nào</h2>
+                            <p className="text-gray-500 dark:text-gray-400 mb-6">Tạo đợt thi mới để tổ chức thi đấu cho học sinh</p>
                             <Button
                                 onClick={() => setShowCreate(true)}
                                 className="bg-purple-600 hover:bg-purple-700 text-white"
@@ -309,15 +309,15 @@ export default function ArenaAdminPage() {
                 ) : (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {sessions.map(session => (
-                            <Card key={session.id} className="border-gray-200 shadow-sm bg-white hover:shadow-md transition-shadow group">
-                                <CardHeader className="pb-3 border-b border-gray-50">
+                            <Card key={session.id} className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 hover:shadow-md transition-shadow group">
+                                <CardHeader className="pb-3 border-b border-gray-50 dark:border-slate-800">
                                     <div className="flex items-start justify-between mb-2">
                                         <div className="space-y-1">
-                                            <CardTitle className="text-lg font-bold text-gray-800 line-clamp-1" title={session.name}>
+                                            <CardTitle className="text-lg font-bold text-gray-800 dark:text-white line-clamp-1" title={session.name}>
                                                 {session.name}
                                             </CardTitle>
                                             {session.exam && (
-                                                <div className="flex items-center text-xs text-purple-600 font-medium bg-purple-50 px-2 py-0.5 rounded w-fit">
+                                                <div className="flex items-center text-xs text-purple-600 dark:text-purple-400 font-medium bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded w-fit">
                                                     <FileText className="w-3 h-3 mr-1" />
                                                     {session.exam.title}
                                                 </div>
@@ -329,7 +329,7 @@ export default function ArenaAdminPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="pt-4 space-y-4">
-                                    <div className="space-y-2 text-sm text-gray-600">
+                                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                                         <div className="flex items-center gap-2">
                                             <Calendar className="w-4 h-4 text-gray-400" />
                                             <span>
@@ -347,7 +347,7 @@ export default function ArenaAdminPage() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Users className="w-4 h-4 text-gray-400" />
-                                            <span className="font-medium text-gray-900">{session.participant_count || 0}</span>
+                                            <span className="font-medium text-gray-900 dark:text-white">{session.participant_count || 0}</span>
                                             <span>người tham gia</span>
                                         </div>
                                     </div>
@@ -357,7 +357,7 @@ export default function ArenaAdminPage() {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => handleEdit(session)}
-                                            className="flex-1 border-gray-200 text-gray-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
+                                            className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800"
                                         >
                                             <Edit className="w-4 h-4 mr-1" />
                                             Sửa
@@ -366,7 +366,7 @@ export default function ArenaAdminPage() {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => handleDelete(session.id)}
-                                            className="flex-1 border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                                            className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800"
                                         >
                                             <Trash2 className="w-4 h-4 mr-1" />
                                             Xóa
@@ -382,9 +382,9 @@ export default function ArenaAdminPage() {
             {/* Create/Edit Modal */}
             {showCreate && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <Card className="w-full max-w-lg border-gray-200 bg-white shadow-xl">
-                        <CardHeader className="flex flex-row items-center justify-between border-b border-gray-100 pb-4">
-                            <CardTitle className="text-gray-800 text-xl">
+                    <Card className="w-full max-w-lg border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl">
+                        <CardHeader className="flex flex-row items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4">
+                            <CardTitle className="text-gray-800 dark:text-white text-xl">
                                 {editingId ? "Cập nhật đợt thi" : "Tạo đợt thi mới"}
                             </CardTitle>
                             <Button
@@ -394,7 +394,7 @@ export default function ArenaAdminPage() {
                                     setShowCreate(false)
                                     resetForm()
                                 }}
-                                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 -mr-2"
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 -mr-2"
                             >
                                 <X className="w-5 h-5" />
                             </Button>
@@ -402,22 +402,22 @@ export default function ArenaAdminPage() {
                         <CardContent className="pt-6">
                             <form onSubmit={handleSubmit} className="space-y-5">
                                 <div className="space-y-2">
-                                    <Label className="text-gray-700 font-medium">Tên đợt thi <span className="text-red-500">*</span></Label>
+                                    <Label className="text-gray-700 dark:text-gray-300 font-medium">Tên đợt thi <span className="text-red-500">*</span></Label>
                                     <Input
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
                                         placeholder="VD: Kiểm tra Toán 15 phút - Lớp 12A"
-                                        className="bg-white border-gray-300 focus:ring-purple-500 focus:border-purple-500"
+                                        className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 text-gray-900 dark:text-white"
                                         required
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-gray-700 font-medium">Chọn đề thi <span className="text-red-500">*</span></Label>
+                                    <Label className="text-gray-700 dark:text-gray-300 font-medium">Chọn đề thi <span className="text-red-500">*</span></Label>
                                     <select
                                         value={examId}
                                         onChange={(e) => setExamId(e.target.value)}
-                                        className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white text-gray-900"
+                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
                                         required
                                     >
                                         <option value="">-- Chọn đề thi --</option>
@@ -435,41 +435,41 @@ export default function ArenaAdminPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-gray-700 font-medium">Mô tả</Label>
+                                    <Label className="text-gray-700 dark:text-gray-300 font-medium">Mô tả</Label>
                                     <Textarea
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
                                         placeholder="Thông tin thêm về đợt thi..."
-                                        className="bg-white border-gray-300 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                                        className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 resize-none text-gray-900 dark:text-white"
                                         rows={3}
                                     />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label className="text-gray-700 font-medium">Bắt đầu <span className="text-red-500">*</span></Label>
+                                        <Label className="text-gray-700 dark:text-gray-300 font-medium">Bắt đầu <span className="text-red-500">*</span></Label>
                                         <Input
                                             type="datetime-local"
                                             value={startTime}
                                             onChange={(e) => setStartTime(e.target.value)}
-                                            className="bg-white border-gray-300 focus:ring-purple-500 focus:border-purple-500"
+                                            className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 text-gray-900 dark:text-white"
                                             required
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-gray-700 font-medium">Kết thúc <span className="text-red-500">*</span></Label>
+                                        <Label className="text-gray-700 dark:text-gray-300 font-medium">Kết thúc <span className="text-red-500">*</span></Label>
                                         <Input
                                             type="datetime-local"
                                             value={endTime}
                                             onChange={(e) => setEndTime(e.target.value)}
-                                            className="bg-white border-gray-300 focus:ring-purple-500 focus:border-purple-500"
+                                            className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 text-gray-900 dark:text-white"
                                             required
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-gray-700 font-medium">Thời gian làm bài (phút)</Label>
+                                    <Label className="text-gray-700 dark:text-gray-300 font-medium">Thời gian làm bài (phút)</Label>
                                     <div className="relative">
                                         <Input
                                             type="number"
@@ -477,7 +477,7 @@ export default function ArenaAdminPage() {
                                             onChange={(e) => setDuration(Number(e.target.value))}
                                             min={5}
                                             max={180}
-                                            className="bg-white border-gray-300 focus:ring-purple-500 focus:border-purple-500 pl-10"
+                                            className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 pl-10 text-gray-900 dark:text-white"
                                         />
                                         <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                                     </div>
@@ -491,7 +491,7 @@ export default function ArenaAdminPage() {
                                             setShowCreate(false)
                                             resetForm()
                                         }}
-                                        className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
+                                        className="flex-1 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
                                     >
                                         Hủy
                                     </Button>

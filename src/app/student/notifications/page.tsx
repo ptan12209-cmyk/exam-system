@@ -107,7 +107,7 @@ export default function NotificationsPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
@@ -124,9 +124,9 @@ export default function NotificationsPage() {
                         </Link>
                     </div>
                     <nav className="hidden lg:flex items-center gap-1">
-                        <Link href="/student/dashboard" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">🏠</Link>
-                        <Link href="/student/exams" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">📝</Link>
-                        <Link href="/arena" className="p-3 text-gray-500 hover:text-blue-600 rounded-lg">🏆</Link>
+                        <Link href="/student/dashboard" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏠</Link>
+                        <Link href="/student/exams" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">📝</Link>
+                        <Link href="/arena" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏆</Link>
                     </nav>
                     <div className="flex items-center gap-3">
                         <NotificationBell />
@@ -138,16 +138,16 @@ export default function NotificationsPage() {
             {/* Main */}
             <main className="flex-grow max-w-3xl mx-auto px-4 py-8 w-full">
                 {/* Breadcrumb */}
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-                    <Link href="/student/dashboard" className="hover:text-blue-600">Trang chủ</Link>
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    <Link href="/student/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400">Trang chủ</Link>
                     <span>›</span>
-                    <span className="font-medium text-gray-800">Thông báo</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">Thông báo</span>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-                        <h1 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                            <Bell className="w-5 h-5 text-blue-600" />
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between bg-gray-50 dark:bg-slate-700/50">
+                        <h1 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                            <Bell className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                             Tất cả thông báo
                             {unreadCount > 0 && (
                                 <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
@@ -160,7 +160,7 @@ export default function NotificationsPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={markAllAsRead}
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs"
+                                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-xs"
                             >
                                 <Check className="w-3 h-3 mr-1" />
                                 Đánh dấu đã đọc
@@ -168,19 +168,19 @@ export default function NotificationsPage() {
                         )}
                     </div>
 
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 dark:divide-slate-700">
                         {notifications.length === 0 ? (
                             <div className="p-12 text-center">
-                                <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                <p className="text-gray-500">Bạn chưa có thông báo nào</p>
+                                <Bell className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                                <p className="text-gray-500 dark:text-gray-400">Bạn chưa có thông báo nào</p>
                             </div>
                         ) : (
                             notifications.map((notification) => (
                                 <div
                                     key={notification.id}
                                     className={cn(
-                                        "p-4 transition-colors hover:bg-gray-50",
-                                        !notification.is_read ? "bg-blue-50/60" : "bg-white"
+                                        "p-4 transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/50",
+                                        !notification.is_read ? "bg-blue-50/60 dark:bg-blue-900/10" : "bg-white dark:bg-slate-800"
                                     )}
                                 >
                                     <div className="flex gap-4">
@@ -197,15 +197,15 @@ export default function NotificationsPage() {
                                                 >
                                                     <div className="flex justify-between items-start">
                                                         <h3 className={cn(
-                                                            "text-sm font-medium mb-1 group-hover:text-blue-600 transition-colors",
-                                                            !notification.is_read ? "text-gray-900" : "text-gray-600"
+                                                            "text-sm font-medium mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors",
+                                                            !notification.is_read ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-300"
                                                         )}>
                                                             {notification.title}
                                                         </h3>
                                                         <ExternalLink className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                     </div>
                                                     {notification.message && (
-                                                        <p className="text-sm text-gray-500 mb-2 line-clamp-2">
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">
                                                             {notification.message}
                                                         </p>
                                                     )}
@@ -217,12 +217,12 @@ export default function NotificationsPage() {
                                                 >
                                                     <h3 className={cn(
                                                         "text-sm font-medium mb-1",
-                                                        !notification.is_read ? "text-gray-900" : "text-gray-600"
+                                                        !notification.is_read ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-300"
                                                     )}>
                                                         {notification.title}
                                                     </h3>
                                                     {notification.message && (
-                                                        <p className="text-sm text-gray-500 mb-2">
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                                                             {notification.message}
                                                         </p>
                                                     )}
@@ -241,9 +241,9 @@ export default function NotificationsPage() {
             </main>
 
             {/* Footer */}
-            <footer className="bg-blue-600 text-white py-8 mt-auto">
+            <footer className="bg-blue-600 dark:bg-blue-900 text-white py-8 mt-auto">
                 <div className="max-w-7xl mx-auto px-4 text-center">
-                    <p className="text-sm text-blue-200">© 2026 ExamHub. All rights reserved.</p>
+                    <p className="text-sm text-blue-200 dark:text-blue-300">© 2026 ExamHub. All rights reserved.</p>
                 </div>
             </footer>
 

@@ -56,7 +56,7 @@ export default function AchievementsPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
@@ -76,7 +76,7 @@ export default function AchievementsPage() {
                         <Link href="/student/dashboard" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏠</Link>
                         <Link href="/student/exams" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">📝</Link>
                         <Link href="/arena" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏆</Link>
-                        <Link href="/student/achievements" className="p-3 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-lg">🎯</Link>
+                        <Link href="/student/achievements" className="p-3 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg">🎯</Link>
                     </nav>
                     <div className="flex items-center gap-3">
                         <NotificationBell />
@@ -88,26 +88,26 @@ export default function AchievementsPage() {
             {/* Main */}
             <main className="flex-grow max-w-5xl mx-auto px-4 py-8 w-full">
                 {/* Breadcrumb */}
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-                    <Link href="/student/dashboard" className="hover:text-blue-600">Trang chủ</Link>
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    <Link href="/student/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400">Trang chủ</Link>
                     <span>›</span>
-                    <span className="font-medium text-gray-800">Thành tựu</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">Thành tựu</span>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* XP Progress */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
+                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+                            <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-4">
                                 ⚡ Tiến trình XP
                             </h2>
                             <XpBar xp={xp} size="lg" />
                         </div>
 
                         {/* Achievements Grid */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
+                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+                            <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-4">
                                 🏆 Thành tựu
                             </h2>
                             <AchievementsGrid />
@@ -117,24 +117,24 @@ export default function AchievementsPage() {
                     {/* Sidebar */}
                     <div className="space-y-6">
                         {/* Daily Check-in */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
+                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+                            <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-4">
                                 🔥 Điểm danh hàng ngày
                             </h2>
                             <DailyCheckIn onComplete={handleCheckInComplete} />
                         </div>
 
                         {/* Quick Links */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">🔗 Liên kết nhanh</h3>
+                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">🔗 Liên kết nhanh</h3>
                             <div className="space-y-2">
-                                <Link href="/student/rewards" className="block p-3 bg-purple-50 rounded-lg text-purple-700 hover:bg-purple-100 transition font-medium">
+                                <Link href="/student/rewards" className="block p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition font-medium">
                                     🎁 Đổi thưởng
                                 </Link>
-                                <Link href="/student/profile" className="block p-3 bg-blue-50 rounded-lg text-blue-700 hover:bg-blue-100 transition font-medium">
+                                <Link href="/student/profile" className="block p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition font-medium">
                                     👤 Hồ sơ cá nhân
                                 </Link>
-                                <Link href="/arena" className="block p-3 bg-orange-50 rounded-lg text-orange-700 hover:bg-orange-100 transition font-medium">
+                                <Link href="/arena" className="block p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition font-medium">
                                     ⚔️ Đấu trường
                                 </Link>
                             </div>
@@ -144,9 +144,9 @@ export default function AchievementsPage() {
             </main>
 
             {/* Footer */}
-            <footer className="bg-blue-600 text-white py-8 mt-auto">
+            <footer className="bg-blue-600 dark:bg-blue-900 text-white py-8 mt-auto">
                 <div className="max-w-7xl mx-auto px-4 text-center">
-                    <p className="text-sm text-blue-200">© 2026 ExamHub. All rights reserved.</p>
+                    <p className="text-sm text-blue-200 dark:text-blue-300">© 2026 ExamHub. All rights reserved.</p>
                 </div>
             </footer>
 

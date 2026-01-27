@@ -130,9 +130,9 @@ export default function ExamScoresPage() {
     }
 
     const getScoreColor = (score: number) => {
-        if (score >= 8) return "text-green-600 bg-green-50 border-green-200"
-        if (score >= 5) return "text-yellow-600 bg-yellow-50 border-yellow-200"
-        return "text-red-600 bg-red-50 border-red-200"
+        if (score >= 8) return "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
+        if (score >= 5) return "text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800"
+        return "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800"
     }
 
     // Statistics
@@ -171,7 +171,7 @@ export default function ExamScoresPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
             </div>
         )
     }
@@ -198,7 +198,7 @@ export default function ExamScoresPage() {
                         <Link href={`/teacher/exams/${examId}/edit`}>
                             <Button
                                 variant="outline"
-                                className="border-gray-300 text-gray-600 hover:bg-white hover:text-blue-600"
+                                className="border-gray-300 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400"
                             >
                                 <Edit3 className="w-4 h-4 mr-2" />
                                 Sửa đáp án
@@ -216,40 +216,40 @@ export default function ExamScoresPage() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <Card className="border-gray-200 shadow-sm bg-white">
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
                         <CardContent className="p-4 text-center">
-                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
-                                <Users className="w-5 h-5 text-blue-600" />
+                            <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-3">
+                                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                             </div>
-                            <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Đã nộp</p>
+                            <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.total}</p>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">Đã nộp</p>
                         </CardContent>
                     </Card>
-                    <Card className="border-gray-200 shadow-sm bg-white">
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
                         <CardContent className="p-4 text-center">
-                            <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mx-auto mb-3">
-                                <Trophy className="w-5 h-5 text-yellow-600" />
+                            <div className="w-10 h-10 rounded-full bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-center mx-auto mb-3">
+                                <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                             </div>
-                            <p className="text-2xl font-bold text-gray-800">{stats.avg}</p>
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Điểm TB</p>
+                            <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.avg}</p>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">Điểm TB</p>
                         </CardContent>
                     </Card>
-                    <Card className="border-gray-200 shadow-sm bg-white">
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
                         <CardContent className="p-4 text-center">
-                            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
-                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center mx-auto mb-3">
+                                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
                             </div>
-                            <p className="text-2xl font-bold text-gray-800">{stats.passed}</p>
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Đạt (≥5)</p>
+                            <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.passed}</p>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">Đạt (≥5)</p>
                         </CardContent>
                     </Card>
-                    <Card className="border-gray-200 shadow-sm bg-white">
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
                         <CardContent className="p-4 text-center">
-                            <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center mx-auto mb-3">
-                                <Medal className="w-5 h-5 text-purple-600" />
+                            <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center mx-auto mb-3">
+                                <Medal className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                             </div>
-                            <p className="text-2xl font-bold text-gray-800">{stats.highest}</p>
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-1">Cao nhất</p>
+                            <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.highest}</p>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">Cao nhất</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -261,55 +261,55 @@ export default function ExamScoresPage() {
                 </div>
 
                 {/* Submissions Table */}
-                <Card className="border-gray-200 shadow-sm bg-white overflow-hidden">
-                    <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
+                <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
+                    <CardHeader className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 pb-4">
                         <div className="flex justify-between items-center">
                             <div>
-                                <CardTitle className="text-lg font-bold text-gray-800">Danh sách học sinh</CardTitle>
-                                <CardDescription className="text-gray-500 mt-1">
+                                <CardTitle className="text-lg font-bold text-gray-800 dark:text-white">Danh sách học sinh</CardTitle>
+                                <CardDescription className="text-gray-500 dark:text-gray-400 mt-1">
                                     Xếp theo điểm từ cao đến thấp
                                 </CardDescription>
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
                                 {submissions.length} bản ghi
                             </div>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
                         {submissions.length === 0 ? (
-                            <div className="text-center py-16 text-gray-400">
-                                <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Users className="w-8 h-8 text-gray-300" />
+                            <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+                                <div className="bg-gray-50 dark:bg-slate-800 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Users className="w-8 h-8 text-gray-300 dark:text-gray-600" />
                                 </div>
-                                <p className="text-gray-500 font-medium">Chưa có học sinh nào nộp bài</p>
+                                <p className="text-gray-500 dark:text-gray-400 font-medium">Chưa có học sinh nào nộp bài</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full">
                                     <thead>
-                                        <tr className="bg-gray-50/50 border-b border-gray-100 text-left">
-                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase w-16 text-center">Hạng</th>
-                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase">Học sinh</th>
-                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Điểm</th>
-                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Số câu đúng</th>
-                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Thời gian</th>
-                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-right">Nộp lúc</th>
-                                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center w-24">Chi tiết</th>
+                                        <tr className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 text-left">
+                                            <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase w-16 text-center">Hạng</th>
+                                            <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Học sinh</th>
+                                            <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase text-center">Điểm</th>
+                                            <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase text-center">Số câu đúng</th>
+                                            <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase text-center">Thời gian</th>
+                                            <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase text-right">Nộp lúc</th>
+                                            <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase text-center w-24">Chi tiết</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                                         {submissions.map((sub, index) => (
                                             <tr
                                                 key={sub.id}
-                                                className="hover:bg-blue-50/30 transition-colors group"
+                                                className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group"
                                             >
                                                 <td className="p-4 text-center">
                                                     <span className={cn(
                                                         "w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs mx-auto shadow-sm",
-                                                        index === 0 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" :
-                                                            index === 1 ? "bg-gray-200 text-gray-700 border border-gray-300" :
-                                                                index === 2 ? "bg-orange-100 text-orange-700 border border-orange-200" :
-                                                                    "bg-white text-gray-500 border border-gray-200"
+                                                        index === 0 ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-700" :
+                                                            index === 1 ? "bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600" :
+                                                                index === 2 ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-700" :
+                                                                    "bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700"
                                                     )}>
                                                         {index + 1}
                                                     </span>
@@ -320,10 +320,10 @@ export default function ExamScoresPage() {
                                                             {sub.profile?.full_name?.charAt(0) || sub.student_id.charAt(0)}
                                                         </div>
                                                         <div>
-                                                            <p className="font-medium text-gray-900">
+                                                            <p className="font-medium text-gray-900 dark:text-white">
                                                                 {sub.profile?.full_name || `Học sinh ${sub.student_id.slice(0, 8)}`}
                                                             </p>
-                                                            <p className="text-xs text-gray-400 font-mono">
+                                                            <p className="text-xs text-gray-400 dark:text-gray-500 font-mono">
                                                                 #{sub.student_id.slice(0, 8)}
                                                             </p>
                                                         </div>
@@ -339,18 +339,18 @@ export default function ExamScoresPage() {
                                                 </td>
                                                 <td className="p-4 text-center">
                                                     <div className="inline-flex items-center gap-1 font-medium text-sm">
-                                                        <span className="text-green-600">{sub.correct_count}</span>
-                                                        <span className="text-gray-300">/</span>
-                                                        <span className="text-gray-500">{exam.total_questions}</span>
+                                                        <span className="text-green-600 dark:text-green-400">{sub.correct_count}</span>
+                                                        <span className="text-gray-300 dark:text-gray-600">/</span>
+                                                        <span className="text-gray-500 dark:text-gray-400">{exam.total_questions}</span>
                                                     </div>
                                                 </td>
                                                 <td className="p-4 text-center">
-                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-50 text-gray-600 text-xs font-medium border border-gray-100">
-                                                        <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400 text-xs font-medium border border-gray-100 dark:border-slate-700">
+                                                        <Clock className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                                                         <span>{formatTime(sub.time_spent)}</span>
                                                     </div>
                                                 </td>
-                                                <td className="p-4 text-right text-gray-500 text-sm">
+                                                <td className="p-4 text-right text-gray-500 dark:text-gray-400 text-sm">
                                                     {formatDate(sub.submitted_at)}
                                                 </td>
                                                 <td className="p-4 text-center">
@@ -358,7 +358,7 @@ export default function ExamScoresPage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                                                            className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                                                         >
                                                             <Eye className="w-5 h-5" />
                                                         </Button>
