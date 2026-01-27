@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import {
-    ArrowLeft,
     Plus,
     FileText,
     Upload,
@@ -23,10 +22,9 @@ import {
     CheckCircle,
     AlertTriangle,
     Sparkles,
-    Wand2,
-    Search
+    Wand2
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { PageHeader, PageContainer, FilterBar, EmptyState } from "@/components/teacher"
 
 interface ExamInBank {
     id: string
@@ -314,24 +312,13 @@ export default function ExamBankPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 md:p-8">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div className="flex items-center gap-4">
-                        <Link href="/teacher/dashboard">
-                            <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700">
-                                <ArrowLeft className="w-5 h-5" />
-                            </Button>
-                        </Link>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                                <FileText className="w-6 h-6 text-blue-600" />
-                                Ngân hàng Đề thi
-                            </h1>
-                            <p className="text-gray-500 text-sm mt-1">Lưu trữ và quản lý đề thi của bạn</p>
-                        </div>
-                    </div>
+        <PageContainer>
+            <PageHeader
+                title="Ngân hàng Đề thi"
+                subtitle="Lưu trữ và quản lý đề thi của bạn"
+                icon={FileText}
+                iconColor="text-blue-600 dark:text-blue-400"
+                actions={
                     <Button
                         onClick={() => {
                             resetForm()
@@ -342,107 +329,98 @@ export default function ExamBankPage() {
                         <Plus className="w-4 h-4 mr-2" />
                         Thêm đề thi
                     </Button>
-                </div>
+                }
+            />
 
-                {/* Filters (Optional Placeholder) */}
-                <div className="relative mb-6">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                        placeholder="Tìm kiếm đề thi..."
-                        className="pl-9 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white w-full md:w-96"
-                    />
-                </div>
+            {/* Filters */}
+            <FilterBar
+                searchPlaceholder="Tìm kiếm đề thi..."
+                showFilter={false}
+                className="mb-6"
+            />
 
-                {/* Exams Grid */}
-                {exams.length === 0 ? (
-                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-800">
-                        <CardContent className="p-12 text-center">
-                            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <FileText className="w-8 h-8 text-blue-500" />
-                            </div>
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Chưa có đề thi nào</h2>
-                            <p className="text-gray-500 dark:text-gray-400 mb-6">Create your first exam by uploading a PDF and answer key.</p>
-                            <Button
-                                onClick={() => setShowCreate(true)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Thêm đề thi đầu tiên
-                            </Button>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {exams.map(exam => (
-                            <Card key={exam.id} className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-800 hover:shadow-md transition-all group">
-                                <CardHeader className="pb-3 border-b border-gray-50 dark:border-slate-700">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <CardTitle className="text-lg font-bold text-gray-800 dark:text-white line-clamp-1" title={exam.title}>
-                                            {exam.title}
-                                        </CardTitle>
-                                        {exam.pdf_url ? (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-100">
-                                                <CheckCircle className="w-3 h-3 mr-1" />
-                                                PDF
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-100">
-                                                <AlertTriangle className="w-3 h-3 mr-1" />
-                                                No PDF
-                                            </span>
-                                        )}
+            {/* Exams Grid */}
+            {exams.length === 0 ? (
+                <EmptyState
+                    icon={FileText}
+                    title="Chưa có đề thi nào"
+                    description="Tạo đề thi đầu tiên bằng cách upload PDF và đáp án"
+                    actionLabel="Thêm đề thi đầu tiên"
+                    onAction={() => setShowCreate(true)}
+                    iconColor="text-blue-500"
+                    iconBgColor="bg-blue-50 dark:bg-blue-900/30"
+                />
+            ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {exams.map(exam => (
+                        <Card key={exam.id} className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-800 hover:shadow-md transition-all group">
+                            <CardHeader className="pb-3 border-b border-gray-50 dark:border-slate-700">
+                                <div className="flex items-start justify-between mb-2">
+                                    <CardTitle className="text-lg font-bold text-gray-800 dark:text-white line-clamp-1" title={exam.title}>
+                                        {exam.title}
+                                    </CardTitle>
+                                    {exam.pdf_url ? (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                                            <CheckCircle className="w-3 h-3 mr-1" />
+                                            PDF
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-100">
+                                            <AlertTriangle className="w-3 h-3 mr-1" />
+                                            No PDF
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded w-fit">
+                                    {SUBJECTS.find(s => s.value === exam.subject)?.label || exam.subject}
+                                </p>
+                            </CardHeader>
+                            <CardContent className="pt-4 space-y-4">
+                                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <div className="flex items-center gap-2">
+                                        <HelpCircle className="w-4 h-4 text-gray-400" />
+                                        <span>{exam.total_questions} câu hỏi</span>
                                     </div>
-                                    <p className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded w-fit">
-                                        {SUBJECTS.find(s => s.value === exam.subject)?.label || exam.subject}
-                                    </p>
-                                </CardHeader>
-                                <CardContent className="pt-4 space-y-4">
-                                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                                        <div className="flex items-center gap-2">
-                                            <HelpCircle className="w-4 h-4 text-gray-400" />
-                                            <span>{exam.total_questions} câu hỏi</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="w-4 h-4 text-gray-400" />
-                                            <span>{new Date(exam.created_at).toLocaleDateString("vi-VN")}</span>
-                                        </div>
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="w-4 h-4 text-gray-400" />
+                                        <span>{new Date(exam.created_at).toLocaleDateString("vi-VN")}</span>
                                     </div>
+                                </div>
 
-                                    <div className="flex gap-2 pt-2 border-t border-gray-50">
-                                        {exam.pdf_url && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setPreviewExam(exam)}
-                                                className="flex-1 border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200"
-                                            >
-                                                <Eye className="w-4 h-4 mr-1" />
-                                                Xem
-                                            </Button>
-                                        )}
+                                <div className="flex gap-2 pt-2 border-t border-gray-50">
+                                    {exam.pdf_url && (
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            onClick={() => handleEdit(exam)}
-                                            className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                                            onClick={() => setPreviewExam(exam)}
+                                            className="flex-1 border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200"
                                         >
-                                            Sửa
+                                            <Eye className="w-4 h-4 mr-1" />
+                                            Xem
                                         </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleDelete(exam.id)}
-                                            className="border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-            </div>
+                                    )}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleEdit(exam)}
+                                        className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                                    >
+                                        Sửa
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDelete(exam.id)}
+                                        className="border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
 
             {/* Create/Edit Modal */}
             {showCreate && (
@@ -606,18 +584,18 @@ export default function ExamBankPage() {
                                             />
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="space-y-2">
-                                    <Label className="text-gray-700 dark:text-gray-300 font-medium">Tổng số câu hỏi</Label>
-                                    <Input
-                                        type="number"
-                                        value={totalQuestions}
-                                        onChange={(e) => setTotalQuestions(Number(e.target.value))}
-                                        min={1}
-                                        max={200}
-                                        className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white w-32"
-                                    />
+                                    <div className="space-y-2">
+                                        <Label className="text-gray-700 dark:text-gray-300 font-medium">Tổng số câu hỏi</Label>
+                                        <Input
+                                            type="number"
+                                            value={totalQuestions}
+                                            onChange={(e) => setTotalQuestions(Number(e.target.value))}
+                                            min={1}
+                                            max={200}
+                                            className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white w-32"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
@@ -650,31 +628,34 @@ export default function ExamBankPage() {
                         </CardContent>
                     </Card>
                 </div>
-            )}
+            )
+            }
 
             {/* PDF Preview Modal */}
-            {previewExam && previewExam.pdf_url && (
-                <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <div className="w-full max-w-5xl h-[90vh] bg-white dark:bg-slate-900 rounded-lg overflow-hidden flex flex-col shadow-2xl">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800">
-                            <h3 className="text-gray-900 dark:text-white font-semibold text-lg">{previewExam.title}</h3>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setPreviewExam(null)}
-                                className="text-gray-500 hover:bg-gray-200 rounded-full"
-                            >
-                                <X className="w-5 h-5" />
-                            </Button>
+            {
+                previewExam && previewExam.pdf_url && (
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                        <div className="w-full max-w-5xl h-[90vh] bg-white dark:bg-slate-900 rounded-lg overflow-hidden flex flex-col shadow-2xl">
+                            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800">
+                                <h3 className="text-gray-900 dark:text-white font-semibold text-lg">{previewExam.title}</h3>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setPreviewExam(null)}
+                                    className="text-gray-500 hover:bg-gray-200 rounded-full"
+                                >
+                                    <X className="w-5 h-5" />
+                                </Button>
+                            </div>
+                            <iframe
+                                src={previewExam.pdf_url}
+                                className="w-full flex-1 bg-gray-100"
+                                title="PDF Preview"
+                            />
                         </div>
-                        <iframe
-                            src={previewExam.pdf_url}
-                            className="w-full flex-1 bg-gray-100"
-                            title="PDF Preview"
-                        />
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </PageContainer >
     )
 }

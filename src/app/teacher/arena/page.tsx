@@ -10,13 +10,11 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import {
-    ArrowLeft,
     Plus,
     Swords,
     Calendar,
     Clock,
     Users,
-    Trophy,
     Edit,
     Trash2,
     Loader2,
@@ -24,10 +22,9 @@ import {
     Pause,
     CheckCircle,
     FileText,
-    X,
-    Filter
+    X
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { PageHeader, PageContainer, EmptyState } from "@/components/teacher"
 
 interface ArenaSession {
     id: string
@@ -258,24 +255,13 @@ export default function ArenaAdminPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 md:p-8">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div className="flex items-center gap-4">
-                        <Link href="/teacher/dashboard">
-                            <Button variant="ghost" size="icon" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700">
-                                <ArrowLeft className="w-5 h-5" />
-                            </Button>
-                        </Link>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                                <Swords className="w-6 h-6 text-purple-600" />
-                                Quản lý Đấu trường
-                            </h1>
-                            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Tạo và quản lý các đợt thi tập trung</p>
-                        </div>
-                    </div>
+        <PageContainer maxWidth="6xl">
+            <PageHeader
+                title="Quản lý Đấu trường"
+                subtitle="Tạo và quản lý các đợt thi tập trung"
+                icon={Swords}
+                iconColor="text-purple-600 dark:text-purple-400"
+                actions={
                     <Button
                         onClick={() => {
                             resetForm()
@@ -286,98 +272,91 @@ export default function ArenaAdminPage() {
                         <Plus className="w-4 h-4 mr-2" />
                         Tạo đợt thi
                     </Button>
+                }
+            />
+
+            {/* Sessions List */}
+            {sessions.length === 0 ? (
+                <EmptyState
+                    icon={Swords}
+                    title="Chưa có đợt thi nào"
+                    description="Tạo đợt thi mới để tổ chức thi đấu cho học sinh"
+                    actionLabel="Tạo đợt thi đầu tiên"
+                    onAction={() => setShowCreate(true)}
+                    iconColor="text-purple-500"
+                    iconBgColor="bg-purple-50 dark:bg-purple-900/20"
+                />
+            ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {sessions.map(session => (
+                        <Card key={session.id} className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 hover:shadow-md transition-shadow group">
+                            <CardHeader className="pb-3 border-b border-gray-50 dark:border-slate-800">
+                                <div className="flex items-start justify-between mb-2">
+                                    <div className="space-y-1">
+                                        <CardTitle className="text-lg font-bold text-gray-800 dark:text-white line-clamp-1" title={session.name}>
+                                            {session.name}
+                                        </CardTitle>
+                                        {session.exam && (
+                                            <div className="flex items-center text-xs text-purple-600 dark:text-purple-400 font-medium bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded w-fit">
+                                                <FileText className="w-3 h-3 mr-1" />
+                                                {session.exam.title}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center mt-2">
+                                    {getStatusBadge(session)}
+                                </div>
+                            </CardHeader>
+                            <CardContent className="pt-4 space-y-4">
+                                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="w-4 h-4 text-gray-400" />
+                                        <span>
+                                            {new Date(session.start_time).toLocaleDateString("vi-VN", {
+                                                day: "2-digit",
+                                                month: "2-digit",
+                                                hour: "2-digit",
+                                                minute: "2-digit"
+                                            })}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-gray-400" />
+                                        <span>{session.duration} phút</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Users className="w-4 h-4 text-gray-400" />
+                                        <span className="font-medium text-gray-900 dark:text-white">{session.participant_count || 0}</span>
+                                        <span>người tham gia</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2 pt-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleEdit(session)}
+                                        className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800"
+                                    >
+                                        <Edit className="w-4 h-4 mr-1" />
+                                        Sửa
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDelete(session.id)}
+                                        className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800"
+                                    >
+                                        <Trash2 className="w-4 h-4 mr-1" />
+                                        Xóa
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
                 </div>
-
-                {/* Sessions List */}
-                {sessions.length === 0 ? (
-                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
-                        <CardContent className="p-12 text-center">
-                            <div className="w-16 h-16 bg-purple-50 dark:bg-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Swords className="w-8 h-8 text-purple-500" />
-                            </div>
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Chưa có đợt thi nào</h2>
-                            <p className="text-gray-500 dark:text-gray-400 mb-6">Tạo đợt thi mới để tổ chức thi đấu cho học sinh</p>
-                            <Button
-                                onClick={() => setShowCreate(true)}
-                                className="bg-purple-600 hover:bg-purple-700 text-white"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Tạo đợt thi đầu tiên
-                            </Button>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {sessions.map(session => (
-                            <Card key={session.id} className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 hover:shadow-md transition-shadow group">
-                                <CardHeader className="pb-3 border-b border-gray-50 dark:border-slate-800">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div className="space-y-1">
-                                            <CardTitle className="text-lg font-bold text-gray-800 dark:text-white line-clamp-1" title={session.name}>
-                                                {session.name}
-                                            </CardTitle>
-                                            {session.exam && (
-                                                <div className="flex items-center text-xs text-purple-600 dark:text-purple-400 font-medium bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded w-fit">
-                                                    <FileText className="w-3 h-3 mr-1" />
-                                                    {session.exam.title}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-between items-center mt-2">
-                                        {getStatusBadge(session)}
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="pt-4 space-y-4">
-                                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="w-4 h-4 text-gray-400" />
-                                            <span>
-                                                {new Date(session.start_time).toLocaleDateString("vi-VN", {
-                                                    day: "2-digit",
-                                                    month: "2-digit",
-                                                    hour: "2-digit",
-                                                    minute: "2-digit"
-                                                })}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Clock className="w-4 h-4 text-gray-400" />
-                                            <span>{session.duration} phút</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Users className="w-4 h-4 text-gray-400" />
-                                            <span className="font-medium text-gray-900 dark:text-white">{session.participant_count || 0}</span>
-                                            <span>người tham gia</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-2 pt-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleEdit(session)}
-                                            className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800"
-                                        >
-                                            <Edit className="w-4 h-4 mr-1" />
-                                            Sửa
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleDelete(session.id)}
-                                            className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800"
-                                        >
-                                            <Trash2 className="w-4 h-4 mr-1" />
-                                            Xóa
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-            </div>
+            )}
 
             {/* Create/Edit Modal */}
             {showCreate && (
@@ -513,7 +492,8 @@ export default function ArenaAdminPage() {
                         </CardContent>
                     </Card>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </PageContainer >
     )
 }

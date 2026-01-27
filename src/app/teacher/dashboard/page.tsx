@@ -22,14 +22,15 @@ import {
     BookOpen,
     Swords,
     Search,
-    Filter,
-    MoreVertical
+    Filter
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
 import { UserMenu } from "@/components/UserMenu"
 import { TeacherBottomNav } from "@/components/BottomNav"
 import { NotificationBell } from "@/components/NotificationBell"
+import { StatsCard, FilterBar } from "@/components/teacher"
+import { STAT_COLORS } from "@/lib/teacher-styles"
 
 interface Profile {
     id: string
@@ -274,46 +275,27 @@ export default function TeacherDashboard() {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    {[
-                        {
-                            label: "Tổng đề thi",
-                            value: stats.totalExams,
-                            icon: FileText,
-                            color: "text-blue-600",
-                            bg: "bg-blue-50",
-                            border: "border-blue-100"
-                        },
-                        {
-                            label: "Đang hoạt động",
-                            value: stats.publishedExams,
-                            icon: CheckCircle,
-                            color: "text-green-600",
-                            bg: "bg-green-50",
-                            border: "border-green-100"
-                        },
-                        {
-                            label: "Lượt làm bài",
-                            value: stats.totalSubmissions,
-                            icon: Users,
-                            color: "text-purple-600",
-                            bg: "bg-purple-50",
-                            border: "border-purple-100"
-                        },
-                    ].map((stat, index) => (
-                        <Card key={index} className={cn("shadow-sm border bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800", "")}>
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">{stat.label}</p>
-                                        <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">{stat.value}</p>
-                                    </div>
-                                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center dark:bg-gray-800", stat.bg)}>
-                                        <stat.icon className={cn("w-6 h-6", stat.color)} />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                    <StatsCard
+                        label="Tổng đề thi"
+                        value={stats.totalExams}
+                        icon={FileText}
+                        iconColor={STAT_COLORS.blue.icon}
+                        iconBgColor={STAT_COLORS.blue.bg}
+                    />
+                    <StatsCard
+                        label="Đang hoạt động"
+                        value={stats.publishedExams}
+                        icon={CheckCircle}
+                        iconColor={STAT_COLORS.green.icon}
+                        iconBgColor={STAT_COLORS.green.bg}
+                    />
+                    <StatsCard
+                        label="Lượt làm bài"
+                        value={stats.totalSubmissions}
+                        icon={Users}
+                        iconColor={STAT_COLORS.purple.icon}
+                        iconBgColor={STAT_COLORS.purple.bg}
+                    />
                 </div>
 
                 {/* Quick Actions */}
@@ -367,21 +349,12 @@ export default function TeacherDashboard() {
                                 <CardTitle className="text-lg font-bold text-gray-800 dark:text-white">Danh sách đề thi gần đây</CardTitle>
                                 <CardDescription className="text-gray-500 dark:text-gray-400">Quản lý và theo dõi trạng thái các đề thi</CardDescription>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <div className="relative">
-                                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Tìm kiếm..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-9 pr-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
-                                    />
-                                </div>
-                                <Button variant="outline" size="icon" className="shrink-0 border-gray-200 dark:border-slate-700 dark:bg-slate-800">
-                                    <Filter className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                                </Button>
-                            </div>
+                            <FilterBar
+                                searchValue={searchQuery}
+                                onSearchChange={setSearchQuery}
+                                searchPlaceholder="Tìm kiếm đề thi..."
+                                className="w-full md:w-auto"
+                            />
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
