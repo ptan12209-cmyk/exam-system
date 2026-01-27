@@ -146,9 +146,7 @@ export default function ProfilePage() {
                             )}
                         </div>
 
-                        <Link href="/student/profile/edit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm">
-                            ✏️ Chỉnh sửa
-                        </Link>
+                        {/* Edit button removed - feature coming soon */}
                     </div>
                 </div>
 
