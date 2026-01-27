@@ -39,14 +39,14 @@ const CATEGORIES = [
 ]
 
 const SUBJECT_TAG_COLORS: Record<string, string> = {
-    math: "bg-purple-100 text-purple-600",
-    physics: "bg-blue-100 text-blue-600",
-    chemistry: "bg-green-100 text-green-600",
-    biology: "bg-yellow-100 text-yellow-600",
-    english: "bg-red-100 text-red-600",
-    literature: "bg-pink-100 text-pink-600",
-    history: "bg-amber-100 text-amber-600",
-    geography: "bg-cyan-100 text-cyan-600",
+    math: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
+    physics: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
+    chemistry: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400",
+    biology: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400",
+    english: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
+    literature: "bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400",
+    history: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
+    geography: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400",
 }
 
 export default function StudentExamsPage() {
@@ -300,7 +300,7 @@ export default function StudentExamsPage() {
                                                         {subjectInfo && (
                                                             <span className={cn(
                                                                 "px-2 py-1 rounded text-xs font-bold uppercase tracking-wide",
-                                                                SUBJECT_TAG_COLORS[exam.subject || ""] || "bg-gray-100 text-gray-600"
+                                                                SUBJECT_TAG_COLORS[exam.subject || ""] || "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400"
                                                             )}>
                                                                 {subjectInfo.label}
                                                             </span>

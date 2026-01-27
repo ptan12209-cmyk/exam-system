@@ -424,7 +424,7 @@ export default function ExamBankPage() {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => handleEdit(exam)}
-                                            className="flex-1 border-gray-200 text-gray-600 hover:bg-gray-50"
+                                            className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
                                         >
                                             Sửa
                                         </Button>
@@ -432,7 +432,7 @@ export default function ExamBankPage() {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => handleDelete(exam.id)}
-                                            className="border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                                            className="border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
@@ -459,7 +459,7 @@ export default function ExamBankPage() {
                                     setShowCreate(false)
                                     resetForm()
                                 }}
-                                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 -mr-2"
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 -mr-2"
                             >
                                 <X className="w-5 h-5" />
                             </Button>

@@ -422,7 +422,7 @@ export default function CreateExamPage() {
                             <CardContent className="space-y-6">
                                 {/* Subject Selection */}
                                 <div className="space-y-3">
-                                    <Label className="text-gray-700 font-medium">Môn học</Label>
+                                    <Label className="text-gray-700 dark:text-gray-300 font-medium">Môn học</Label>
                                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                                         {SUBJECTS.map((s) => (
                                             <button
@@ -456,7 +456,7 @@ export default function CreateExamPage() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="duration" className="text-gray-700 font-medium">
+                                        <Label htmlFor="duration" className="text-gray-700 dark:text-gray-300 font-medium">
                                             Thời gian (phút)
                                         </Label>
                                         <div className="relative">
@@ -473,7 +473,7 @@ export default function CreateExamPage() {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="totalQuestions" className="text-gray-700 font-medium">
+                                        <Label htmlFor="totalQuestions" className="text-gray-700 dark:text-gray-300 font-medium">
                                             Số câu trắc nghiệm
                                         </Label>
                                         <Input
@@ -493,7 +493,7 @@ export default function CreateExamPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="maxAttempts" className="text-gray-700 font-medium">
+                                    <Label htmlFor="maxAttempts" className="text-gray-700 dark:text-gray-300 font-medium">
                                         Số lần làm bài
                                     </Label>
                                     <select

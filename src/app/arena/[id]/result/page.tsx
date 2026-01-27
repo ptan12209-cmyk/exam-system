@@ -125,11 +125,11 @@ export default function ArenaResultPage() {
     }
 
     const getGrade = (score: number) => {
-        if (score >= 9) return { label: "Xuất sắc", color: "text-amber-600 bg-amber-50 border-amber-200", emoji: "🏆" }
-        if (score >= 8) return { label: "Giỏi", color: "text-green-600 bg-green-50 border-green-200", emoji: "⭐" }
-        if (score >= 6.5) return { label: "Khá", color: "text-blue-600 bg-blue-50 border-blue-200", emoji: "👍" }
-        if (score >= 5) return { label: "Đạt", color: "text-gray-600 bg-gray-50 border-gray-200", emoji: "✓" }
-        return { label: "Chưa đạt", color: "text-red-600 bg-red-50 border-red-200", emoji: "📚" }
+        if (score >= 9) return { label: "Xuất sắc", color: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800", emoji: "🏆" }
+        if (score >= 8) return { label: "Giỏi", color: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800", emoji: "⭐" }
+        if (score >= 6.5) return { label: "Khá", color: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800", emoji: "👍" }
+        if (score >= 5) return { label: "Đạt", color: "text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700", emoji: "✓" }
+        return { label: "Chưa đạt", color: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800", emoji: "📚" }
     }
 
     const getRankIcon = (rank: number) => {
