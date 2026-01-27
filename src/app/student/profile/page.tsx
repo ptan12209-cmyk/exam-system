@@ -85,9 +85,9 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col">
+        <div className="min-h-screen bg-gray-100 dark:bg-slate-950 flex flex-col">
             {/* Header */}
-            <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-50">
+            <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         <Link href="/student/dashboard" className="flex items-center gap-2">
@@ -99,7 +99,10 @@ export default function ProfilePage() {
                         <Link href="/student/dashboard" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏠</Link>
                         <Link href="/student/exams" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">📝</Link>
                         <Link href="/arena" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏆</Link>
-                        <Link href="/student/profile" className="p-3 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-lg">👤</Link>
+                        <Link href="/student/dashboard" className="p-3 text-gray-500 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏠</Link>
+                        <Link href="/student/exams" className="p-3 text-gray-500 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">📝</Link>
+                        <Link href="/arena" className="p-3 text-gray-500 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏆</Link>
+                        <Link href="/student/profile" className="p-3 text-blue-600 bg-blue-50 dark:bg-blue-900/40 rounded-lg">👤</Link>
                     </nav>
                     <div className="flex items-center gap-3">
                         <NotificationBell />
@@ -118,7 +121,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Profile Header */}
-                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 mb-6">
+                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6 mb-6">
                     <div className="flex flex-col md:flex-row items-center gap-6">
                         {/* Avatar */}
                         <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-4xl font-bold text-white shadow-lg">
@@ -147,67 +150,69 @@ export default function ProfilePage() {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 text-center">
-                        <div className="text-3xl mb-2">📚</div>
-                        <div className="text-2xl font-bold text-gray-800">{stats?.exams_completed || 0}</div>
-                        <div className="text-xs text-gray-500">Bài đã làm</div>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
-                        <div className="text-3xl mb-2">⭐</div>
-                        <div className="text-2xl font-bold text-gray-800">{stats?.perfect_scores || 0}</div>
-                        <div className="text-xs text-gray-500">Điểm 10</div>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
-                        <div className="text-3xl mb-2">🔥</div>
-                        <div className="text-2xl font-bold text-gray-800">{stats?.streak_days || 0}</div>
-                        <div className="text-xs text-gray-500">Ngày streak</div>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
-                        <div className="text-3xl mb-2">🏅</div>
-                        <div className="text-2xl font-bold text-gray-800">{badges.length}</div>
-                        <div className="text-xs text-gray-500">Badges</div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Left Column */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Badges Section */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
-                                🎯 Badges đã đạt
-                            </h2>
-                            {badges.length > 0 ? (
-                                <BadgeGrid badges={badges} />
-                            ) : (
-                                <p className="text-center text-gray-500 py-8">
-                                    Chưa có badge nào. Hoàn thành bài thi để nhận badge đầu tiên!
-                                </p>
-                            )}
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 text-center">
+                            <div className="text-3xl mb-2">📚</div>
+                            <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats?.exams_completed || 0}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Bài đã làm</div>
                         </div>
-
-                        {/* Titles Section */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
-                                👑 Danh hiệu
-                            </h2>
-                            <TitleSelector />
+                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 text-center">
+                            <div className="text-3xl mb-2">⭐</div>
+                            <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats?.perfect_scores || 0}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Điểm 10</div>
                         </div>
-
-                        {/* Achievements Section */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
-                                🏆 Thành tựu
-                            </h2>
-                            <AchievementsGrid />
+                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 text-center">
+                            <div className="text-3xl mb-2">🔥</div>
+                            <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats?.streak_days || 0}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Ngày streak</div>
+                        </div>
+                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 text-center">
+                            <div className="text-3xl mb-2">🏅</div>
+                            <div className="text-2xl font-bold text-gray-800 dark:text-white">{badges.length}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Badges</div>
                         </div>
                     </div>
 
-                    {/* Right Column - Leaderboard */}
-                    <div className="space-y-6">
-                        <LeaderboardCard currentUserId={userId || undefined} />
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Left Column */}
+                        <div className="lg:col-span-2 space-y-6">
+                            {/* Badges Section */}
+                            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6">
+                                <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-4">
+                                    🎯 Badges đã đạt
+                                </h2>
+                                {badges.length > 0 ? (
+                                    <BadgeGrid badges={badges} />
+                                ) : (
+                                    <p className="text-center text-gray-500 py-8">
+                                        Chưa có badge nào. Hoàn thành bài thi để nhận badge đầu tiên!
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Titles Section */}
+                            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6">
+                                <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-4">
+                                    👑 Danh hiệu
+                                </h2>
+                                <TitleSelector />
+                            </div>
+
+                            {/* Achievements Section */}
+                            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6">
+                                <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-4">
+                                    🏆 Thành tựu
+                                </h2>
+                                <AchievementsGrid />
+                            </div>
+                        </div>
+
+                        {/* Right Column - Leaderboard */}
+                        <div className="space-y-6">
+                            <LeaderboardCard currentUserId={userId || undefined} />
+                        </div>
                     </div>
-                </div>
             </main>
 
             {/* Footer */}

@@ -114,9 +114,9 @@ export default function PricingPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
             {/* Navigation */}
-            <nav className="border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+            <nav className="border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
                         <div className="flex items-center gap-4">
@@ -222,10 +222,10 @@ export default function PricingPage() {
                                 <div
                                     key={plan.id}
                                     className={cn(
-                                        "relative rounded-2xl border p-8 transition-all duration-300 bg-white dark:bg-slate-800",
+                                        "relative rounded-2xl border p-8 transition-all duration-300 bg-white dark:bg-slate-900",
                                         isPopular
                                             ? "border-blue-500 shadow-2xl shadow-blue-500/20 scale-105 z-10"
-                                            : "border-gray-200 dark:border-slate-700 shadow-lg hover:shadow-xl hover:border-gray-300 dark:hover:border-slate-600"
+                                            : "border-gray-200 dark:border-slate-800 shadow-lg hover:shadow-xl hover:border-gray-300 dark:hover:border-slate-700"
                                     )}
                                 >
                                     {isPopular && (
@@ -307,7 +307,7 @@ export default function PricingPage() {
                 </div>
             </div>
 
-            <footer className="border-t border-gray-200 dark:border-slate-800 py-8 px-4 bg-white dark:bg-slate-900 mt-12">
+            <footer className="border-t border-gray-200 dark:border-slate-800 py-8 px-4 bg-white dark:bg-slate-950 mt-12">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">

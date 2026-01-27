@@ -522,7 +522,7 @@ export default function TakeExamPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
@@ -532,15 +532,15 @@ export default function TakeExamPage() {
 
     if (showSessionChoice && existingSession) {
         return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-                <Card className="w-full max-w-md bg-white border-gray-200 shadow-xl">
+            <div className="min-h-screen bg-gray-100 dark:bg-slate-950 flex items-center justify-center p-4">
+                <Card className="w-full max-w-md bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 shadow-xl">
                     <CardContent className="p-6 space-y-6">
                         <div className="text-center space-y-2">
-                            <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto">
+                            <div className="w-16 h-16 bg-yellow-50 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto">
                                 <AlertTriangle className="w-8 h-8 text-yellow-500" />
                             </div>
-                            <h2 className="text-xl font-bold text-gray-800">Phát hiện phiên làm bài</h2>
-                            <p className="text-gray-500 text-sm">
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Phát hiện phiên làm bài</h2>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">
                                 Bạn có một phiên làm bài chưa hoàn thành. Bạn muốn tiếp tục hay làm lại từ đầu?
                             </p>
                         </div>
@@ -587,25 +587,25 @@ export default function TakeExamPage() {
 
             {examStarted && <AntiCheatWarning />}
 
-            <div className="min-h-screen bg-gray-50 flex flex-col select-none">
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col select-none">
                 {/* Header */}
-                <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm h-16">
+                <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-50 shadow-sm h-16">
                     <div className="max-w-screen-2xl mx-auto px-4 h-full flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400">
                                 <FileText className="w-5 h-5" />
                             </div>
                             <div>
-                                <h1 className="font-bold text-gray-800 text-sm md:text-base truncate max-w-[200px] md:max-w-md">
+                                <h1 className="font-bold text-gray-800 dark:text-white text-sm md:text-base truncate max-w-[200px] md:max-w-md">
                                     {exam.title}
                                 </h1>
                                 {isRanked ? (
-                                    <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                                    <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
                                         <Shield className="w-3 h-3" />
                                         Tính xếp hạng
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                                         <AlertOctagon className="w-3 h-3" />
                                         Không xếp hạng
                                     </div>
@@ -618,10 +618,10 @@ export default function TakeExamPage() {
                             <div className={cn(
                                 "flex items-center gap-2 px-4 py-2 rounded-full font-mono font-bold shadow-sm border transition-colors",
                                 timeLeft <= 60
-                                    ? "bg-red-50 border-red-100 text-red-600 animate-pulse"
+                                    ? "bg-red-50 border-red-100 text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 animate-pulse"
                                     : timeLeft <= 300
-                                        ? "bg-yellow-50 border-yellow-100 text-yellow-600"
-                                        : "bg-white border-gray-100 text-blue-600"
+                                        ? "bg-yellow-50 border-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-400"
+                                        : "bg-white border-gray-100 text-blue-600 dark:bg-slate-800 dark:border-slate-700 dark:text-blue-400"
                             )}>
                                 <Clock className="w-4 h-4" />
                                 {formatTime(timeLeft)}
@@ -642,9 +642,9 @@ export default function TakeExamPage() {
 
                 <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
                     {/* Left Panel: Review Materials / Question List */}
-                    <div className="lg:w-1/2 flex flex-col p-4 overflow-hidden border-r border-gray-200 bg-white shadow-sm z-10">
+                    <div className="lg:w-1/2 flex flex-col p-4 overflow-hidden border-r border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm z-10">
                         {exam.pdf_url ? (
-                            <div className="flex-1 rounded-xl overflow-hidden border border-gray-100 flex flex-col bg-gray-50">
+                            <div className="flex-1 rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700 flex flex-col bg-gray-50 dark:bg-slate-800">
                                 <iframe
                                     src={`${exam.pdf_url}#page=${pdfPage}`}
                                     className="flex-1 w-full bg-white"
@@ -681,17 +681,17 @@ export default function TakeExamPage() {
                     </div>
 
                     {/* Right Panel: Answer Sheet */}
-                    <div className="lg:w-1/2 flex flex-col bg-gray-50 h-full overflow-hidden">
-                        <div className="p-4 bg-white border-b border-gray-200 shadow-sm z-20">
+                    <div className="lg:w-1/2 flex flex-col bg-gray-50 dark:bg-slate-950 h-full overflow-hidden">
+                        <div className="p-4 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm z-20">
                             <div className="flex items-center justify-between mb-4">
                                 <div>
-                                    <h2 className="font-bold text-gray-800 text-lg">Phiếu trả lời</h2>
-                                    <p className="text-sm text-gray-500">
-                                        Đã hoàn thành <span className="font-medium text-blue-600">{answeredCount}</span>/{exam.total_questions} câu
+                                    <h2 className="font-bold text-gray-800 dark:text-white text-lg">Phiếu trả lời</h2>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Đã hoàn thành <span className="font-medium text-blue-600 dark:text-blue-400">{answeredCount}</span>/{exam.total_questions} câu
                                     </p>
                                 </div>
                                 <div className="text-right">
-                                    <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="w-32 h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                                         <div
                                             className="h-full bg-blue-500 transition-all duration-500"
                                             style={{ width: `${(answeredCount / exam.total_questions) * 100}%` }}
@@ -702,12 +702,12 @@ export default function TakeExamPage() {
                             </div>
 
                             {/* Answer Type Tabs */}
-                            <div className="flex p-1 bg-gray-100 rounded-lg">
+                            <div className="flex p-1 bg-gray-100 dark:bg-slate-800 rounded-lg">
                                 <button
                                     onClick={() => setActiveTab("mc")}
                                     className={cn(
                                         "flex-1 py-2 text-sm font-medium rounded-md transition-all",
-                                        activeTab === "mc" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                                        activeTab === "mc" ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                                     )}
                                 >
                                     Trắc nghiệm
@@ -717,7 +717,7 @@ export default function TakeExamPage() {
                                         onClick={() => setActiveTab("tf")}
                                         className={cn(
                                             "flex-1 py-2 text-sm font-medium rounded-md transition-all",
-                                            activeTab === "tf" ? "bg-white text-green-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                                            activeTab === "tf" ? "bg-white dark:bg-slate-700 text-green-600 dark:text-green-400 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                                         )}
                                     >
                                         Đúng/Sai
@@ -728,7 +728,7 @@ export default function TakeExamPage() {
                                         onClick={() => setActiveTab("sa")}
                                         className={cn(
                                             "flex-1 py-2 text-sm font-medium rounded-md transition-all",
-                                            activeTab === "sa" ? "bg-white text-purple-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                                            activeTab === "sa" ? "bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                                         )}
                                     >
                                         Điền đáp án
@@ -743,9 +743,9 @@ export default function TakeExamPage() {
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                                         {Array.from({ length: exam.mc_answers?.length || exam.total_questions }, (_, i) => (
-                                            <div key={i} id={`q-${i}`} className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                            <div key={i} id={`q-${i}`} className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-sm font-bold text-gray-700">Câu {i + 1}</span>
+                                                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Câu {i + 1}</span>
                                                     {studentAnswers[i] && (
                                                         <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                                                     )}
@@ -758,8 +758,8 @@ export default function TakeExamPage() {
                                                             className={cn(
                                                                 "h-8 rounded text-sm font-medium transition-all active:scale-95",
                                                                 studentAnswers[i] === option
-                                                                    ? "bg-blue-600 text-white shadow-blue-200 shadow"
-                                                                    : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                                                                    ? "bg-blue-600 text-white shadow-blue-200 dark:shadow-none shadow"
+                                                                    : "bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700"
                                                             )}
                                                         >
                                                             {option}
@@ -779,9 +779,9 @@ export default function TakeExamPage() {
                                         const studentTf = tfStudentAnswers.find(a => a.question === tf.question) ||
                                             { question: tf.question, a: null, b: null, c: null, d: null }
                                         return (
-                                            <div key={i} className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
-                                                <div className="flex items-center justify-between mb-3 border-b border-gray-50 pb-2">
-                                                    <span className="font-bold text-gray-700">Câu {tf.question}</span>
+                                            <div key={i} className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-gray-100 dark:border-slate-800 shadow-sm">
+                                                <div className="flex items-center justify-between mb-3 border-b border-gray-50 dark:border-slate-800 pb-2">
+                                                    <span className="font-bold text-gray-700 dark:text-gray-300">Câu {tf.question}</span>
                                                 </div>
                                                 <div className="space-y-2">
                                                     {(['a', 'b', 'c', 'd'] as const).map((sub) => (

@@ -43,9 +43,9 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900">
+        <div className="min-h-screen flex flex-col bg-white dark:bg-slate-950">
             {/* Header */}
-            <header className="bg-white dark:bg-slate-900 shadow-sm border-b border-gray-100 dark:border-slate-800 py-4">
+            <header className="bg-white dark:bg-slate-950 shadow-sm border-b border-gray-100 dark:border-slate-800 py-4">
                 <div className="max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center">
                     <Link href="/" className="flex items-center space-x-2">
                         <div className="bg-blue-600 text-white p-2 rounded-lg">
@@ -69,15 +69,15 @@ export default function LoginPage() {
             </header>
 
             {/* Main */}
-            <main className="flex-grow flex items-center justify-center py-12 px-4 bg-gradient-to-br from-blue-50 to-white dark:from-slate-800 dark:to-slate-900">
+            <main className="flex-grow flex items-center justify-center py-12 px-4 bg-gradient-to-br from-blue-50 to-white dark:from-slate-900 dark:to-slate-950">
                 <div className="max-w-6xl w-full">
-                    <div className="flex flex-col md:flex-row items-stretch bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden min-h-[550px]">
+                    <div className="flex flex-col md:flex-row items-stretch bg-white dark:bg-slate-800/50 rounded-2xl shadow-xl overflow-hidden min-h-[550px] border border-gray-100 dark:border-slate-700">
                         {/* Left - Illustration */}
-                        <div className="w-full md:w-1/2 bg-gradient-to-b from-blue-50 to-blue-100 dark:from-slate-700 dark:to-slate-800 p-8 md:p-12 flex flex-col justify-center relative">
+                        <div className="w-full md:w-1/2 bg-gradient-to-b from-blue-50 to-blue-100 dark:from-slate-800 dark:to-slate-900 p-8 md:p-12 flex flex-col justify-center relative">
                             <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-50 pointer-events-none">
-                                <div className="absolute -top-10 -left-10 w-40 h-40 bg-purple-200 dark:bg-purple-900 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
-                                <div className="absolute top-0 -right-4 w-40 h-40 bg-blue-200 dark:bg-blue-900 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
-                                <div className="absolute -bottom-8 left-20 w-40 h-40 bg-indigo-200 dark:bg-indigo-900 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
+                                <div className="absolute -top-10 -left-10 w-40 h-40 bg-purple-200 dark:bg-purple-900/30 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
+                                <div className="absolute top-0 -right-4 w-40 h-40 bg-blue-200 dark:bg-blue-900/30 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
+                                <div className="absolute -bottom-8 left-20 w-40 h-40 bg-indigo-200 dark:bg-indigo-900/30 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
                             </div>
                             <div className="relative z-10">
                                 <h2 className="text-3xl md:text-4xl font-bold text-blue-600 dark:text-blue-400 mb-6 leading-tight">
@@ -99,7 +99,7 @@ export default function LoginPage() {
                         </div>
 
                         {/* Right - Form */}
-                        <div className="w-full md:w-1/2 p-8 md:p-12 bg-white dark:bg-slate-800 flex flex-col justify-center">
+                        <div className="w-full md:w-1/2 p-8 md:p-12 bg-white dark:bg-slate-900 flex flex-col justify-center">
                             <div className="max-w-md mx-auto w-full">
                                 <div className="text-center mb-8">
                                     <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-wide">Đăng nhập</h3>
@@ -130,7 +130,7 @@ export default function LoginPage() {
                                                 onChange={(e) => setEmail(e.target.value)}
                                                 placeholder="Nhập email của bạn"
                                                 required
-                                                className="block w-full pl-10 pr-3 py-3 border-none rounded-lg bg-blue-50 dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-600 sm:text-sm"
+                                                className="block w-full pl-10 pr-3 py-3 border-none rounded-lg bg-blue-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-600 sm:text-sm"
                                             />
                                         </div>
                                     </div>
@@ -150,7 +150,7 @@ export default function LoginPage() {
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 placeholder="Nhập mật khẩu"
                                                 required
-                                                className="block w-full pl-10 pr-10 py-3 border-none rounded-lg bg-blue-50 dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-600 sm:text-sm"
+                                                className="block w-full pl-10 pr-10 py-3 border-none rounded-lg bg-blue-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-600 sm:text-sm"
                                             />
                                             <button
                                                 type="button"
@@ -204,7 +204,7 @@ export default function LoginPage() {
             </main>
 
             {/* Footer */}
-            <footer className="bg-blue-600 dark:bg-slate-800 text-white py-12 border-t border-blue-700 dark:border-slate-700">
+            <footer className="bg-blue-600 dark:bg-slate-900 text-white py-12 border-t border-blue-700 dark:border-slate-800">
                 <div className="max-w-7xl mx-auto px-4 md:px-8">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                         <div>

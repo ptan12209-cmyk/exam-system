@@ -102,16 +102,16 @@ export default function StudentDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-slate-900">
+        <div className="min-h-screen bg-gray-100 dark:bg-slate-950">
             {/* Top Navbar - Fixed */}
-            <nav className="fixed top-0 z-50 w-full bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
+            <nav className="fixed top-0 z-50 w-full bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800">
                 <div className="px-3 py-3 lg:px-5">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center">
                             {/* Mobile menu button */}
                             <button
                                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="inline-flex items-center p-2 text-gray-500 dark:text-gray-400 rounded-lg sm:hidden hover:bg-gray-100 dark:hover:bg-slate-700"
+                                className="inline-flex items-center p-2 text-gray-500 dark:text-gray-400 rounded-lg sm:hidden hover:bg-gray-100 dark:hover:bg-slate-800"
                             >
                                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z" clipRule="evenodd" />
@@ -132,7 +132,7 @@ export default function StudentDashboard() {
                                 placeholder="Tìm kiếm đề thi, tài liệu..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="block w-full p-2 pl-10 text-sm text-gray-900 dark:text-white border border-gray-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700 focus:ring-blue-500 focus:border-blue-500"
+                                className="block w-full p-2 pl-10 text-sm text-gray-900 dark:text-white border border-gray-300 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-800 focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
                         {/* Right side */}
@@ -151,44 +151,44 @@ export default function StudentDashboard() {
 
             {/* Sidebar - Fixed */}
             <aside className={cn(
-                "fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700",
+                "fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800",
                 sidebarOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
             )}>
                 <div className="h-full px-3 pb-4 overflow-y-auto flex flex-col justify-between">
                     <ul className="space-y-2 font-medium">
                         <li>
-                            <Link href="/student/dashboard" className="flex items-center p-2 text-blue-600 rounded-lg bg-blue-50 dark:bg-blue-900/30 group">
+                            <Link href="/student/dashboard" className="flex items-center p-2 text-blue-600 rounded-lg bg-blue-50 dark:bg-blue-900/40 group">
                                 <span className="text-xl">🏠</span>
                                 <span className="ml-3">Trang chủ</span>
                             </Link>
                         </li>
                         <li>
-                            <Link href="/resources" className="flex items-center p-2 text-gray-900 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 group">
+                            <Link href="/resources" className="flex items-center p-2 text-gray-900 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 group">
                                 <span className="text-xl">📚</span>
                                 <span className="ml-3">Thư viện tài liệu</span>
                             </Link>
                         </li>
                         <li>
-                            <Link href="/student/exams" className="flex items-center p-2 text-gray-900 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 group">
+                            <Link href="/student/exams" className="flex items-center p-2 text-gray-900 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 group">
                                 <span className="text-xl">📝</span>
                                 <span className="ml-3">Luyện đề thi</span>
                             </Link>
                         </li>
                         <li>
-                            <Link href="/arena" className="flex items-center p-2 text-gray-900 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 group">
+                            <Link href="/arena" className="flex items-center p-2 text-gray-900 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 group">
                                 <span className="text-xl">🏆</span>
                                 <span className="ml-3">Đấu trường</span>
                             </Link>
                         </li>
                         <li>
-                            <Link href="/live" className="flex items-center p-2 text-gray-900 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 group">
+                            <Link href="/live" className="flex items-center p-2 text-gray-900 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 group">
                                 <span className="text-xl">📺</span>
                                 <span className="ml-3">Live Stream</span>
                             </Link>
                         </li>
 
                         {/* Divider */}
-                        <li className="pt-4 mt-4 border-t border-gray-200 dark:border-slate-700">
+                        <li className="pt-4 mt-4 border-t border-gray-200 dark:border-slate-800">
                             <span className="px-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Tiến độ học tập</span>
                             <div className="mt-3 px-2">
                                 <XpBar xp={userXp} size="sm" />
@@ -226,27 +226,27 @@ export default function StudentDashboard() {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-slate-800">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-xl">📊</div>
+                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center text-xl">📊</div>
                             <div>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{availableExams.length}</p>
-                                <p className="text-xs text-gray-500">Đề thi</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Đề thi</p>
                             </div>
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-slate-700">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-slate-800">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-xl">✅</div>
+                            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg flex items-center justify-center text-xl">✅</div>
                             <div>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{submissions.length}</p>
-                                <p className="text-xs text-gray-500">Hoàn thành</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Hoàn thành</p>
                             </div>
                         </div>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-slate-800">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-yellow-100 text-yellow-600 rounded-lg flex items-center justify-center text-xl">🏆</div>
+                            <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-lg flex items-center justify-center text-xl">🏆</div>
                             <div>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                                     {submissions.length > 0 ? Math.max(...submissions.map(s => s.score)).toFixed(1) : "--"}
@@ -255,9 +255,9 @@ export default function StudentDashboard() {
                             </div>
                         </div>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-slate-800">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center text-xl">⚡</div>
+                            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg flex items-center justify-center text-xl">⚡</div>
                             <div>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{userXp}</p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">XP hiện tại</p>
@@ -280,16 +280,16 @@ export default function StudentDashboard() {
                             </Link>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 divide-y divide-gray-100 dark:divide-slate-700">
+                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 divide-y divide-gray-100 dark:divide-slate-800">
                             {availableExams.slice(0, 5).map((exam) => {
                                 const submitted = hasSubmitted(exam.id)
                                 const submission = getSubmission(exam.id)
                                 const subjectInfo = getSubjectInfo(exam.subject || "other")
 
                                 return (
-                                    <div key={exam.id} className="p-4 flex items-start gap-4 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                                    <div key={exam.id} className="p-4 flex items-start gap-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <div className={cn(
-                                            "flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-xl bg-blue-100"
+                                            "flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-xl bg-blue-100 dark:bg-blue-900/30"
                                         )}>
                                             {subjectInfo.icon}
                                         </div>
@@ -298,20 +298,20 @@ export default function StudentDashboard() {
                                                 {exam.title}
                                             </h3>
                                             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                                <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded">
+                                                <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded">
                                                     {subjectInfo.label}
                                                 </span>
-                                                <span className="bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-300 px-2 py-0.5 rounded">
+                                                <span className="bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-300 px-2 py-0.5 rounded">
                                                     {exam.total_questions} câu
                                                 </span>
-                                                <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                                                <span className="bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-300 px-2 py-0.5 rounded">
                                                     {exam.duration} phút
                                                 </span>
                                                 {submitted && (
                                                     <span className={cn(
                                                         "px-2 py-0.5 rounded font-bold",
-                                                        submission && submission.score >= 8 ? "bg-green-100 text-green-800" :
-                                                            submission && submission.score >= 5 ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800"
+                                                        submission && submission.score >= 8 ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300" :
+                                                            submission && submission.score >= 5 ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300" : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
                                                     )}>
                                                         {submission?.score.toFixed(1)} điểm
                                                     </span>
@@ -323,7 +323,7 @@ export default function StudentDashboard() {
                                         </div>
                                         <Link href={submitted ? `/student/exams/${exam.id}/result` : `/student/exams/${exam.id}/take`}>
                                             <Button size="sm" variant={submitted ? "outline" : "default"} className={cn(
-                                                submitted ? "border-blue-600 text-blue-600" : "bg-blue-600 hover:bg-blue-700"
+                                                submitted ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20" : "bg-blue-600 hover:bg-blue-700"
                                             )}>
                                                 {submitted ? "Xem lại" : "Làm bài"}
                                             </Button>
@@ -344,7 +344,7 @@ export default function StudentDashboard() {
                     {/* Sidebar - Daily Check-in & Quick Stats */}
                     <div className="lg:col-span-1 space-y-6">
                         {/* Daily Check-in */}
-                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 p-4">
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="w-1 h-6 bg-yellow-500 rounded-full"></div>
                                 <h2 className="text-lg font-bold text-gray-900 dark:text-white uppercase">Điểm danh</h2>
@@ -353,7 +353,7 @@ export default function StudentDashboard() {
                         </div>
 
                         {/* Quick Links */}
-                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 p-4">
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="w-1 h-6 bg-purple-600 rounded-full"></div>
                                 <h2 className="text-lg font-bold text-gray-900 dark:text-white uppercase">Truy cập nhanh</h2>
@@ -391,14 +391,14 @@ export default function StudentDashboard() {
 
                         {/* Recent Results */}
                         {submissions.length > 0 && (
-                            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+                            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 p-4">
                                 <div className="flex items-center gap-2 mb-4">
                                     <div className="w-1 h-6 bg-green-500 rounded-full"></div>
                                     <h2 className="text-lg font-bold text-gray-900 dark:text-white uppercase">Kết quả gần đây</h2>
                                 </div>
                                 <div className="space-y-3">
                                     {submissions.slice(0, 3).map((sub, i) => (
-                                        <div key={sub.id} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-slate-700">
+                                        <div key={sub.id} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-slate-800">
                                             <div className="font-bold text-gray-400 dark:text-gray-500 w-4 text-center">{i + 1}</div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{sub.exam?.title || "Đề thi"}</p>

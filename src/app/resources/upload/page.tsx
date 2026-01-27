@@ -145,9 +145,9 @@ export default function UploadResourcePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
             {/* Navigation */}
-            <nav className="border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+            <nav className="border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
                         <Link href="/">
@@ -169,8 +169,8 @@ export default function UploadResourcePage() {
                     Quay lại Kho tài liệu
                 </Link>
 
-                <Card className="border-gray-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800">
-                    <CardHeader className="border-b border-gray-50 dark:border-slate-700">
+                <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                    <CardHeader className="border-b border-gray-50 dark:border-slate-800">
                         <CardTitle className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
                             <Upload className="w-5 h-5 text-blue-600" />
                             Tải lên tài liệu
@@ -191,10 +191,10 @@ export default function UploadResourcePage() {
                                 className={cn(
                                     "border-2 border-dashed rounded-xl p-8 text-center transition-all",
                                     isDragging
-                                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
+                                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/40"
                                         : file
-                                            ? "border-green-500 bg-green-50 dark:bg-green-900/30"
-                                            : "border-gray-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20"
+                                            ? "border-green-500 bg-green-50 dark:bg-green-900/40"
+                                            : "border-gray-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20"
                                 )}
                                 onDragOver={(e) => {
                                     e.preventDefault();
@@ -245,7 +245,7 @@ export default function UploadResourcePage() {
                                     onChange={(e) => setTitle(e.target.value)}
                                     required
                                     placeholder="VD: Đề thi thử THPT 2026 - Lần 5"
-                                    className="bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 dark:text-white"
+                                    className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 dark:text-white"
                                 />
                             </div>
 
@@ -256,7 +256,7 @@ export default function UploadResourcePage() {
                                     <select
                                         value={type}
                                         onChange={(e) => setType(e.target.value as "document" | "exam")}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 dark:text-white"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-800 dark:text-white"
                                     >
                                         <option value="document">📚 Tài liệu</option>
                                         <option value="exam">📝 Đề thi</option>
@@ -267,7 +267,7 @@ export default function UploadResourcePage() {
                                     <select
                                         value={subject}
                                         onChange={(e) => setSubject(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 dark:text-white"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-800 dark:text-white"
                                     >
                                         {SUBJECTS.map((s) => (
                                             <option key={s.value} value={s.value}>
@@ -286,7 +286,7 @@ export default function UploadResourcePage() {
                                     onChange={(e) => setDescription(e.target.value)}
                                     rows={3}
                                     placeholder="Mô tả ngắn về tài liệu..."
-                                    className="bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 resize-none dark:text-white"
+                                    className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 resize-none dark:text-white"
                                 />
                             </div>
 
@@ -298,7 +298,7 @@ export default function UploadResourcePage() {
                                     value={tags}
                                     onChange={(e) => setTags(e.target.value)}
                                     placeholder="VD: THPT 2026, đại số, khó"
-                                    className="bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 dark:text-white"
+                                    className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 dark:text-white"
                                 />
                             </div>
 
@@ -319,7 +319,7 @@ export default function UploadResourcePage() {
                                 className={cn(
                                     "w-full h-12 text-base font-semibold",
                                     !file || !title || uploading
-                                        ? "bg-gray-300 dark:bg-slate-600 text-gray-500 dark:text-gray-400"
+                                        ? "bg-gray-300 dark:bg-slate-700 text-gray-500 dark:text-gray-400"
                                         : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/20"
                                 )}
                             >

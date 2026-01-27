@@ -110,9 +110,9 @@ export default function ResourcesPage() {
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString("vi-VN");
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col">
+        <div className="min-h-screen bg-gray-100 dark:bg-slate-950 flex flex-col">
             {/* Header */}
-            <header className="bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-50">
+            <header className="bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-50 border-b border-gray-200 dark:border-slate-800">
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/student/dashboard" className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export default function ResourcesPage() {
                                 placeholder="Tìm kiếm..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="bg-gray-100 dark:bg-slate-700 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-600 w-64 dark:text-white dark:placeholder-gray-400"
+                                className="bg-gray-100 dark:bg-slate-800 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-600 w-64 dark:text-white dark:placeholder-gray-400 border border-transparent dark:border-slate-700"
                             />
                             <span className="absolute left-3 top-2 text-gray-400">🔍</span>
                         </div>
@@ -175,7 +175,7 @@ export default function ResourcesPage() {
                 {/* Sidebar */}
                 <aside className="w-full lg:w-1/4 space-y-6">
                     {/* Filter Card */}
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-5">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="font-bold text-lg flex items-center gap-2 dark:text-white">
                                 <span className="text-blue-600">⚙️</span> Bộ lọc
@@ -196,8 +196,8 @@ export default function ResourcesPage() {
                                         className={cn(
                                             "px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left flex items-center gap-2",
                                             filterSubject === s.value
-                                                ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
-                                                : "bg-gray-100 dark:bg-slate-700 hover:bg-blue-50 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300"
+                                                ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                                                : "bg-gray-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 border border-transparent dark:border-slate-700"
                                         )}
                                     >
                                         <span className={cn("w-2 h-2 rounded-full", `bg-${s.color}-500`)}></span>
@@ -263,7 +263,7 @@ export default function ResourcesPage() {
                                 placeholder="Tìm kiếm trong thư viện..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm dark:text-white dark:placeholder-gray-400"
+                                className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm dark:text-white dark:placeholder-gray-400"
                             />
                             <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
                         </div>
@@ -301,7 +301,7 @@ export default function ResourcesPage() {
                             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                     ) : filteredResources.length === 0 ? (
-                        <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                        <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800">
                             <div className="text-5xl mb-4">📭</div>
                             <p className="text-gray-500 dark:text-gray-400">Chưa có tài liệu nào</p>
                             {user?.role === "teacher" && (
@@ -317,7 +317,7 @@ export default function ResourcesPage() {
                             {filteredResources.map((resource) => (
                                 <div
                                     key={resource.id}
-                                    className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-700 transition-all group flex gap-4 items-start"
+                                    className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-800 transition-all group flex gap-4 items-start"
                                 >
                                     {/* Icon */}
                                     <div className={cn(
@@ -372,13 +372,13 @@ export default function ResourcesPage() {
                     {filteredResources.length > 0 && (
                         <div className="mt-8 flex justify-center">
                             <nav className="flex items-center gap-2">
-                                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 text-gray-500">‹</button>
+                                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-500 dark:text-gray-400">‹</button>
                                 <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-600 text-white font-medium shadow-md shadow-blue-500/30">1</button>
-                                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 text-gray-500">2</button>
-                                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 text-gray-500">3</button>
+                                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-500 dark:text-gray-400">2</button>
+                                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-500 dark:text-gray-400">3</button>
                                 <span className="text-gray-400 px-1">...</span>
-                                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 text-gray-500">16</button>
-                                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 text-gray-500">›</button>
+                                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-500 dark:text-gray-400">16</button>
+                                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-500 dark:text-gray-400">›</button>
                             </nav>
                         </div>
                     )}

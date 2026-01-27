@@ -137,9 +137,9 @@ export default function LiveRoomPage() {
     const canEdit = user?.email === ADMIN_EMAIL;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
             {/* Navigation */}
-            <nav className="border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+            <nav className="border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
                         <div className="flex items-center gap-4">
@@ -205,8 +205,8 @@ export default function LiveRoomPage() {
                 </Card>
 
                 {/* Schedule */}
-                <Card className="border-gray-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 mb-8">
-                    <CardHeader className="border-b border-gray-50 dark:border-slate-700 flex flex-row items-center justify-between">
+                <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 mb-8">
+                    <CardHeader className="border-b border-gray-50 dark:border-slate-800 flex flex-row items-center justify-between">
                         <CardTitle className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
                             <Calendar className="w-5 h-5 text-blue-600" />
                             Lịch Live Hàng Tuần
@@ -286,9 +286,9 @@ export default function LiveRoomPage() {
                 {/* Quick Links */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Link href="/resources">
-                        <Card className="border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:shadow-lg hover:border-blue-200 dark:hover:border-blue-700 transition-all cursor-pointer h-full">
+                        <Card className="border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-lg hover:border-blue-200 dark:hover:border-blue-700 transition-all cursor-pointer h-full">
                             <CardContent className="p-6">
-                                <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mb-4">
+                                <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center mb-4">
                                     <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <h4 className="text-gray-900 dark:text-white font-semibold mb-1">Kho Tài Liệu</h4>
@@ -298,9 +298,9 @@ export default function LiveRoomPage() {
                     </Link>
 
                     <Link href="/student/dashboard">
-                        <Card className="border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:shadow-lg hover:border-emerald-200 dark:hover:border-emerald-700 transition-all cursor-pointer h-full">
+                        <Card className="border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-lg hover:border-emerald-200 dark:hover:border-emerald-700 transition-all cursor-pointer h-full">
                             <CardContent className="p-6">
-                                <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
+                                <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center mb-4">
                                     <GraduationCap className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                                 </div>
                                 <h4 className="text-gray-900 dark:text-white font-semibold mb-1">Luyện Đề</h4>
@@ -310,9 +310,9 @@ export default function LiveRoomPage() {
                     </Link>
 
                     <Link href="/student/profile">
-                        <Card className="border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:shadow-lg hover:border-amber-200 dark:hover:border-amber-700 transition-all cursor-pointer h-full">
+                        <Card className="border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-lg hover:border-amber-200 dark:hover:border-amber-700 transition-all cursor-pointer h-full">
                             <CardContent className="p-6">
-                                <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center mb-4">
+                                <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/40 flex items-center justify-center mb-4">
                                     <User className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                                 </div>
                                 <h4 className="text-gray-900 dark:text-white font-semibold mb-1">Hồ Sơ</h4>
@@ -335,8 +335,8 @@ export default function LiveRoomPage() {
             {/* Editor Modal */}
             {showEditor && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <Card className="w-full max-w-md border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl">
-                        <CardHeader className="flex flex-row items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4">
+                    <Card className="w-full max-w-md border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl">
+                        <CardHeader className="flex flex-row items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-4">
                             <CardTitle className="text-gray-800 dark:text-white text-lg">
                                 {editItem ? "Sửa lịch" : "Thêm lịch mới"}
                             </CardTitle>
@@ -344,7 +344,7 @@ export default function LiveRoomPage() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setShowEditor(false)}
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800"
                             >
                                 <X className="w-5 h-5" />
                             </Button>
@@ -356,7 +356,7 @@ export default function LiveRoomPage() {
                                     value={formDay}
                                     onChange={(e) => setFormDay(e.target.value)}
                                     placeholder="VD: Thứ 7"
-                                    className="bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 dark:text-white"
+                                    className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 dark:text-white"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -365,7 +365,7 @@ export default function LiveRoomPage() {
                                     value={formTime}
                                     onChange={(e) => setFormTime(e.target.value)}
                                     placeholder="VD: 20:00 - 22:00"
-                                    className="bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 dark:text-white"
+                                    className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 dark:text-white"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -374,7 +374,7 @@ export default function LiveRoomPage() {
                                     value={formTopic}
                                     onChange={(e) => setFormTopic(e.target.value)}
                                     placeholder="VD: Chữa đề Toán THPT 2026"
-                                    className="bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 dark:text-white"
+                                    className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 dark:text-white"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -383,7 +383,7 @@ export default function LiveRoomPage() {
                                     value={formHost}
                                     onChange={(e) => setFormHost(e.target.value)}
                                     placeholder="VD: Thầy Ái"
-                                    className="bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 dark:text-white"
+                                    className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 dark:text-white"
                                 />
                             </div>
 
@@ -391,7 +391,7 @@ export default function LiveRoomPage() {
                                 <Button
                                     variant="outline"
                                     onClick={() => setShowEditor(false)}
-                                    className="flex-1 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300"
+                                    className="flex-1 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800"
                                 >
                                     Hủy
                                 </Button>

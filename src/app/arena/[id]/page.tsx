@@ -261,7 +261,7 @@ export default function ArenaBattlePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
@@ -269,14 +269,14 @@ export default function ArenaBattlePage() {
 
     if (alreadySubmitted) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                <Card className="w-full max-w-md bg-white shadow-xl">
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center p-4">
+                <Card className="w-full max-w-md bg-white dark:bg-slate-900 shadow-xl border-gray-200 dark:border-slate-800">
                     <CardContent className="p-8 text-center">
-                        <div className="w-20 h-20 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Trophy className="w-10 h-10 text-yellow-600" />
+                        <div className="w-20 h-20 bg-yellow-50 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Trophy className="w-10 h-10 text-yellow-600 dark:text-yellow-400" />
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Bạn đã hoàn thành bài thi!</h2>
-                        <p className="text-gray-500 mb-8">Kết quả của bạn đã được ghi nhận.</p>
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Bạn đã hoàn thành bài thi!</h2>
+                        <p className="text-gray-500 dark:text-gray-400 mb-8">Kết quả của bạn đã được ghi nhận.</p>
                         <Button
                             onClick={() => router.push(`/arena/${arenaId}/result`)}
                             className="w-full bg-blue-600 hover:bg-blue-700"
@@ -291,14 +291,14 @@ export default function ArenaBattlePage() {
 
     if (!arena || questions.length === 0) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                <Card className="w-full max-w-md bg-white shadow-xl">
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center p-4">
+                <Card className="w-full max-w-md bg-white dark:bg-slate-900 shadow-xl border-gray-200 dark:border-slate-800">
                     <CardContent className="p-8 text-center">
-                        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <div className="w-20 h-20 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
                             <AlertTriangle className="w-10 h-10 text-red-500" />
                         </div>
-                        <h2 className="text-xl font-bold text-gray-800 mb-2">Không tìm thấy câu hỏi</h2>
-                        <p className="text-gray-500 mb-8">Hệ thống chưa có đủ dữ liệu câu hỏi cho môn thi này.</p>
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Không tìm thấy câu hỏi</h2>
+                        <p className="text-gray-500 dark:text-gray-400 mb-8">Hệ thống chưa có đủ dữ liệu câu hỏi cho môn thi này.</p>
                         <Button
                             onClick={() => router.push("/arena")}
                             variant="outline"
@@ -314,37 +314,37 @@ export default function ArenaBattlePage() {
     const currentQuestion = questions[currentIndex]
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-50 h-16 shadow-sm">
+            <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-50 h-16 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+                        <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
                             <Swords className="w-5 h-5" />
                         </div>
                         <div>
-                            <span className="font-bold text-gray-800 block text-sm md:text-base">{arena.name}</span>
-                            <span className="text-xs text-gray-500 md:hidden">
+                            <span className="font-bold text-gray-800 dark:text-white block text-sm md:text-base">{arena.name}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 md:hidden">
                                 {answeredCount}/{questions.length} câu
                             </span>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-full border border-gray-100">
+                        <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-gray-50 dark:bg-slate-800 rounded-full border border-gray-100 dark:border-slate-700">
                             <Target className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm font-medium text-gray-600">
-                                Đã làm: <span className="text-blue-600">{answeredCount}</span>/{questions.length}
+                            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                                Đã làm: <span className="text-blue-600 dark:text-blue-400">{answeredCount}</span>/{questions.length}
                             </span>
                         </div>
 
                         <div className={cn(
                             "flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono font-bold border",
                             timeLeft <= 60
-                                ? "bg-red-50 border-red-100 text-red-600 animate-pulse"
+                                ? "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900 text-red-600 dark:text-red-400 animate-pulse"
                                 : timeLeft <= 300
-                                    ? "bg-yellow-50 border-yellow-100 text-yellow-600"
-                                    : "bg-white border-gray-200 text-blue-600"
+                                    ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-100 dark:border-yellow-900 text-yellow-600 dark:text-yellow-400"
+                                    : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-blue-600 dark:text-blue-400"
                         )}>
                             <Clock className="w-4 h-4" />
                             {formatTime(timeLeft)}
@@ -373,12 +373,12 @@ export default function ArenaBattlePage() {
             <div className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 grid md:grid-cols-[1fr_240px] gap-6">
                 {/* Question Area */}
                 <div className="flex flex-col gap-6">
-                    <Card className="border-gray-200 shadow-sm bg-white overflow-hidden">
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
                         <CardContent className="p-0">
                             {/* Question Header */}
-                            <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                            <div className="p-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className="px-3 py-1 rounded-md bg-white border border-gray-200 shadow-sm font-bold text-gray-700">
+                                    <div className="px-3 py-1 rounded-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm font-bold text-gray-700 dark:text-gray-300">
                                         Câu {currentIndex + 1}
                                     </div>
                                     <span className={cn("px-2 py-1 rounded text-xs font-medium border", getDifficultyColor(currentQuestion.difficulty))}>
@@ -389,7 +389,7 @@ export default function ArenaBattlePage() {
 
                             {/* Question Content */}
                             <div className="p-6 md:p-8">
-                                <div className="text-gray-800 text-lg leading-relaxed mb-8">
+                                <div className="text-gray-800 dark:text-white text-lg leading-relaxed mb-8">
                                     <MathRenderer content={currentQuestion.content} />
                                 </div>
 
@@ -405,8 +405,8 @@ export default function ArenaBattlePage() {
                                                 className={cn(
                                                     "w-full p-4 rounded-xl border-2 text-left transition-all relative group",
                                                     isSelected
-                                                        ? "border-blue-500 bg-blue-50 text-blue-900"
-                                                        : "border-gray-200 hover:border-blue-300 hover:bg-gray-50 text-gray-700"
+                                                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100"
+                                                        : "border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300"
                                                 )}
                                             >
                                                 <div className="flex items-start gap-4">
@@ -414,7 +414,7 @@ export default function ArenaBattlePage() {
                                                         "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center font-bold transition-colors",
                                                         isSelected
                                                             ? "bg-blue-500 text-white"
-                                                            : "bg-gray-100 text-gray-500 group-hover:bg-blue-100 group-hover:text-blue-600"
+                                                            : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 group-hover:text-blue-600 dark:group-hover:text-blue-400"
                                                     )}>
                                                         {optionLetter}
                                                     </div>
@@ -441,7 +441,7 @@ export default function ArenaBattlePage() {
                             variant="outline"
                             onClick={() => setCurrentIndex(prev => prev - 1)}
                             disabled={currentIndex === 0}
-                            className="bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                            className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
                         >
                             <ChevronLeft className="w-4 h-4 mr-2" />
                             Câu trước
@@ -474,9 +474,9 @@ export default function ArenaBattlePage() {
 
                 {/* Question Navigator Sidebar */}
                 <div className="hidden md:block">
-                    <Card className="border-gray-200 shadow-sm bg-white sticky top-20">
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 sticky top-20">
                         <CardContent className="p-4">
-                            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4 flex items-center gap-2">
                                 <Flag className="w-4 h-4" />
                                 Tổng quan
                             </h3>
@@ -493,10 +493,10 @@ export default function ArenaBattlePage() {
                                             className={cn(
                                                 "aspect-square rounded-lg text-sm font-bold transition-all flex items-center justify-center border",
                                                 isCurrent
-                                                    ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-200"
+                                                    ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-200 dark:ring-blue-900"
                                                     : isAnswered
-                                                        ? "bg-green-50 text-green-700 border-green-200"
-                                                        : "bg-white text-gray-400 border-gray-100 hover:border-blue-300"
+                                                        ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900"
+                                                        : "bg-white dark:bg-slate-800 text-gray-400 dark:text-gray-500 border-gray-100 dark:border-slate-700 hover:border-blue-300"
                                             )}
                                         >
                                             {idx + 1}
@@ -505,17 +505,17 @@ export default function ArenaBattlePage() {
                                 })}
                             </div>
 
-                            <div className="mt-6 pt-4 border-t border-gray-100 space-y-2">
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <div className="mt-6 pt-4 border-t border-gray-100 dark:border-slate-800 space-y-2">
+                                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                                     <div className="w-3 h-3 rounded bg-blue-600" />
                                     <span>Đang chọn</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                    <div className="w-3 h-3 rounded bg-green-50 border border-green-200" />
+                                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                    <div className="w-3 h-3 rounded bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-900" />
                                     <span>Đã trả lời</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                    <div className="w-3 h-3 rounded bg-white border border-gray-200" />
+                                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                    <div className="w-3 h-3 rounded bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700" />
                                     <span>Chưa trả lời</span>
                                 </div>
                             </div>

@@ -6,9 +6,9 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle"
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-900">
+    <div className="min-h-screen bg-white dark:bg-slate-950">
       {/* Navigation */}
-      <nav className="border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+      <nav className="border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-3">
@@ -40,9 +40,9 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-20 pb-32 px-4 bg-gradient-to-b from-blue-50/50 via-white to-white dark:from-slate-800 dark:via-slate-900 dark:to-slate-900">
+      <section className="pt-20 pb-32 px-4 bg-gradient-to-b from-blue-50/50 via-white to-white dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
         <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-sm font-medium mb-8 shadow-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-sm font-medium mb-8 shadow-sm">
             <Sparkles className="w-4 h-4" />
             Nền tảng luyện đề thi hàng đầu Việt Nam
           </div>
@@ -90,7 +90,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-24 px-4 bg-gray-50 dark:bg-slate-800/50">
+      <section className="py-24 px-4 bg-gray-50 dark:bg-slate-900">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
@@ -128,7 +128,7 @@ export default function HomePage() {
                 color: "bg-purple-600"
               }
             ].map((feature, index) => (
-              <Card key={index} className="border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-lg transition-all duration-300 group">
+              <Card key={index} className="border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm hover:shadow-lg transition-all duration-300 group">
                 <CardContent className="p-6">
                   <div className={`w-12 h-12 rounded-xl ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
                     <feature.icon className="w-6 h-6 text-white" />
@@ -143,9 +143,9 @@ export default function HomePage() {
       </section>
 
       {/* For Teachers & Students */}
-      <section className="py-24 px-4 bg-white dark:bg-slate-900">
+      <section className="py-24 px-4 bg-white dark:bg-slate-950">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12">
-          <div className="p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800">
+          <div className="p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-100 dark:border-blue-900">
             <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
               <GraduationCap className="w-7 h-7 text-white" />
             </div>
@@ -164,7 +164,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="p-8 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-100 dark:border-purple-800">
+          <div className="p-8 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/40 dark:to-pink-950/40 border border-purple-100 dark:border-purple-900">
             <div className="w-14 h-14 rounded-xl bg-purple-600 flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20">
               <Users className="w-7 h-7 text-white" />
             </div>
@@ -204,7 +204,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-slate-800 py-12 px-4 bg-gray-50 dark:bg-slate-900">
+      <footer className="border-t border-gray-200 dark:border-slate-800 py-12 px-4 bg-gray-50 dark:bg-slate-950">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center gap-3">
