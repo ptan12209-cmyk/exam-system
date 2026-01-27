@@ -125,8 +125,12 @@ export default function TeacherProfilePage() {
                 <CardContent className="pt-0 relative z-10">
                     <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-10 md:pl-6">
                         {/* Avatar */}
-                        <div className="w-24 h-24 rounded-full border-4 border-white dark:border-slate-800 bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-4xl font-bold text-gray-400 dark:text-gray-500 shadow-md">
-                            {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "?"}
+                        <div className="w-24 h-24 rounded-full border-4 border-white dark:border-slate-800 bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-4xl font-bold text-gray-400 dark:text-gray-500 shadow-md overflow-hidden">
+                            {profile?.avatar_url ? (
+                                <img src={profile.avatar_url} alt={profile.full_name || "Avatar"} className="w-full h-full object-cover" />
+                            ) : (
+                                profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "?"
+                            )}
                         </div>
 
                         <div className="flex-1 text-center md:text-left mb-4">
