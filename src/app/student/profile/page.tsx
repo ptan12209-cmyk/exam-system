@@ -41,6 +41,7 @@ export default function ProfilePage() {
     const [userId, setUserId] = useState<string | null>(null)
     const [fullName, setFullName] = useState("")
     const [userClass, setUserClass] = useState("")
+    const [profile, setProfile] = useState<{ avatar_url?: string | null, nickname?: string | null, bio?: string | null } | null>(null)
     const [stats, setStats] = useState<UserStats | null>(null)
     const [badges, setBadges] = useState<{ badge: Badge; earned_at: string }[]>([])
 
@@ -54,15 +55,16 @@ export default function ProfilePage() {
 
             setUserId(user.id)
 
-            const { data: profile } = await supabase
+            const { data: profileData } = await supabase
                 .from("profiles")
-                .select("full_name, class")
+                .select("full_name, class, avatar_url, nickname, bio")
                 .eq("id", user.id)
                 .single()
 
-            if (profile) {
-                setFullName(profile.full_name || "")
-                setUserClass(profile.class || "")
+            if (profileData) {
+                setFullName(profileData.full_name || "")
+                setUserClass(profileData.class || "")
+                setProfile(profileData)
             }
 
             const { stats: userStats, badges: userBadges } = await getUserStats(user.id)
@@ -128,8 +130,12 @@ export default function ProfilePage() {
                 <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6 mb-6">
                     <div className="flex flex-col md:flex-row items-center gap-6">
                         {/* Avatar */}
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-4xl font-bold text-white shadow-lg">
-                            {fullName ? fullName.charAt(0).toUpperCase() : "?"}
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-4xl font-bold text-white shadow-lg overflow-hidden relative">
+                            {profile?.avatar_url ? (
+                                <img src={profile.avatar_url} alt={fullName} className="w-full h-full object-cover" />
+                            ) : (
+                                fullName ? fullName.charAt(0).toUpperCase() : "?"
+                            )}
                         </div>
 
                         <div className="flex-1 text-center md:text-left">
@@ -146,7 +152,9 @@ export default function ProfilePage() {
                             )}
                         </div>
 
-                        {/* Edit button removed - feature coming soon */}
+                        <Link href="/student/profile/edit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm">
+                            ✏️ Chỉnh sửa
+                        </Link>
                     </div>
                 </div>
 

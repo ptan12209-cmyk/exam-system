@@ -21,6 +21,9 @@ import { cn } from "@/lib/utils"
 interface ProfileData {
     full_name: string | null
     email: string | null
+    avatar_url?: string | null
+    nickname?: string | null
+    bio?: string | null
 }
 
 interface ExamStats {
@@ -55,13 +58,16 @@ export default function TeacherProfilePage() {
             // Get profile
             const { data: profileData } = await supabase
                 .from("profiles")
-                .select("full_name")
+                .select("full_name, avatar_url, nickname, bio")
                 .eq("id", user.id)
                 .single()
 
             setProfile({
                 full_name: profileData?.full_name || null,
-                email: user.email || null
+                email: user.email || null,
+                avatar_url: profileData?.avatar_url || null,
+                nickname: profileData?.nickname || null,
+                bio: profileData?.bio || null
             })
 
             // Get exams
@@ -137,9 +143,11 @@ export default function TeacherProfilePage() {
                         </div>
 
                         <div className="mb-6 md:pr-6">
-                            <Button className="bg-white dark:bg-slate-800 border dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700">
-                                Chỉnh sửa hồ sơ
-                            </Button>
+                            <Link href="/teacher/profile/edit">
+                                <Button className="bg-white dark:bg-slate-800 border dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700">
+                                    Chỉnh sửa hồ sơ
+                                </Button>
+                            </Link>
                         </div>
                     </div>
                 </CardContent>
