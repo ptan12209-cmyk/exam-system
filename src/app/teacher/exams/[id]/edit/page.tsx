@@ -549,7 +549,7 @@ export default function EditExamPage() {
                                                                     "px-2.5 py-1 rounded-l-md text-xs font-bold border-y border-l transition-colors",
                                                                     answer[sub] === true
                                                                         ? "bg-green-600 border-green-600 text-white"
-                                                                        : "bg-white border-gray-200 text-gray-400 hover:bg-gray-50"
+                                                                        : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700"
                                                                 )}
                                                             >
                                                                 Đ
@@ -567,7 +567,7 @@ export default function EditExamPage() {
                                                                     "px-2.5 py-1 rounded-r-md text-xs font-bold border transition-colors",
                                                                     answer[sub] === false
                                                                         ? "bg-red-500 border-red-500 text-white"
-                                                                        : "bg-white border-gray-200 text-gray-400 hover:bg-gray-50"
+                                                                        : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700"
                                                                 )}
                                                             >
                                                                 S

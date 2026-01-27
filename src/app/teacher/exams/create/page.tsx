@@ -564,7 +564,7 @@ export default function CreateExamPage() {
                             <div className="space-y-4">
                                 <Card className={cn(
                                     "border transition-all cursor-pointer",
-                                    enableTF ? "border-green-500 shadow-md ring-1 ring-green-100" : "border-gray-200 hover:border-gray-300 bg-white"
+                                    enableTF ? "border-green-500 shadow-md ring-1 ring-green-100 dark:ring-green-900/30" : "border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 bg-white dark:bg-slate-900"
                                 )}>
                                     <div onClick={() => setEnableTF(!enableTF)} className="p-6">
                                         <div className="flex items-center justify-between mb-2">
@@ -585,14 +585,14 @@ export default function CreateExamPage() {
 
                                         {enableTF && (
                                             <div className="mt-4 flex items-center gap-3" onClick={e => e.stopPropagation()}>
-                                                <Label className="text-sm text-gray-700">Số câu:</Label>
+                                                <Label className="text-sm text-gray-700 dark:text-gray-300">Số câu:</Label>
                                                 <Input
                                                     type="number"
                                                     min={1}
                                                     max={20}
                                                     value={tfCount}
                                                     onChange={(e) => setTfCount(Math.max(1, Number(e.target.value)))}
-                                                    className="w-20 h-9 text-center bg-white"
+                                                    className="w-20 h-9 text-center bg-white dark:bg-slate-800 text-gray-900 dark:text-white border-gray-300 dark:border-slate-700"
                                                 />
                                             </div>
                                         )}
@@ -601,7 +601,7 @@ export default function CreateExamPage() {
 
                                 <Card className={cn(
                                     "border transition-all cursor-pointer",
-                                    enableSA ? "border-purple-500 shadow-md ring-1 ring-purple-100" : "border-gray-200 hover:border-gray-300 bg-white"
+                                    enableSA ? "border-purple-500 shadow-md ring-1 ring-purple-100 dark:ring-purple-900/30" : "border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 bg-white dark:bg-slate-900"
                                 )}>
                                     <div onClick={() => setEnableSA(!enableSA)} className="p-6">
                                         <div className="flex items-center justify-between mb-2">
@@ -622,14 +622,14 @@ export default function CreateExamPage() {
 
                                         {enableSA && (
                                             <div className="mt-4 flex items-center gap-3" onClick={e => e.stopPropagation()}>
-                                                <Label className="text-sm text-gray-700">Số câu:</Label>
+                                                <Label className="text-sm text-gray-700 dark:text-gray-300">Số câu:</Label>
                                                 <Input
                                                     type="number"
                                                     min={1}
                                                     max={20}
                                                     value={saCount}
                                                     onChange={(e) => setSaCount(Math.max(1, Number(e.target.value)))}
-                                                    className="w-20 h-9 text-center bg-white"
+                                                    className="w-20 h-9 text-center bg-white dark:bg-slate-800 text-gray-900 dark:text-white border-gray-300 dark:border-slate-700"
                                                 />
                                             </div>
                                         )}

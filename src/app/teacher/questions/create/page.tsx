@@ -126,23 +126,23 @@ export default function CreateQuestionPage() {
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    <Card className="border-gray-200 shadow-sm bg-white">
-                        <CardHeader className="border-b border-gray-50 pb-4">
-                            <CardTitle className="text-lg text-gray-800 flex items-center gap-2">
-                                <Plus className="w-5 h-5 text-blue-600" />
+                    <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                        <CardHeader className="border-b border-gray-50 dark:border-slate-800 pb-4">
+                            <CardTitle className="text-lg text-gray-800 dark:text-white flex items-center gap-2">
+                                <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                 Thông tin câu hỏi
                             </CardTitle>
-                            <CardDescription>Điền đầy đủ thông tin để tạo câu hỏi mới</CardDescription>
+                            <CardDescription className="text-gray-500 dark:text-gray-400">Điền đầy đủ thông tin để tạo câu hỏi mới</CardDescription>
                         </CardHeader>
                         <CardContent className="p-6 space-y-6">
                             {/* Subject & Difficulty */}
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <Label className="text-gray-700 font-medium">Môn học</Label>
+                                    <Label className="text-gray-700 dark:text-gray-300 font-medium">Môn học</Label>
                                     <select
                                         value={subject}
                                         onChange={(e) => setSubject(e.target.value)}
-                                        className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
                                     >
                                         {SUBJECTS.map(s => (
                                             <option key={s.value} value={s.value}>{s.label}</option>
@@ -150,11 +150,11 @@ export default function CreateQuestionPage() {
                                     </select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-gray-700 font-medium">Độ khó</Label>
+                                    <Label className="text-gray-700 dark:text-gray-300 font-medium">Độ khó</Label>
                                     <select
                                         value={difficulty}
                                         onChange={(e) => setDifficulty(Number(e.target.value))}
-                                        className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
                                     >
                                         {DIFFICULTIES.map(d => (
                                             <option key={d.value} value={d.value}>{d.label}</option>
@@ -165,16 +165,16 @@ export default function CreateQuestionPage() {
 
                             {/* Content */}
                             <div className="space-y-2">
-                                <Label className="text-gray-700 font-medium flex items-center justify-between">
+                                <Label className="text-gray-700 dark:text-gray-300 font-medium flex items-center justify-between">
                                     Nội dung câu hỏi
-                                    <span className="text-xs font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Hỗ trợ LaTeX ($...$)</span>
+                                    <span className="text-xs font-normal text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 px-2 py-0.5 rounded">Hỗ trợ LaTeX ($...$)</span>
                                 </Label>
                                 <Textarea
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
                                     placeholder="Nhập nội dung câu hỏi... Ví dụ: $E=mc^2$"
                                     rows={4}
-                                    className="bg-white border-gray-300 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                    className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900 dark:text-white"
                                 />
                             </div>
 
@@ -190,8 +190,8 @@ export default function CreateQuestionPage() {
                                                 className={cn(
                                                     "w-10 h-10 rounded-lg font-bold transition-all flex-shrink-0 flex items-center justify-center shadow-sm border",
                                                     correctAnswer === letter
-                                                        ? "bg-green-600 text-white border-green-600 ring-2 ring-green-100"
-                                                        : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"
+                                                        ? "bg-green-600 text-white border-green-600 ring-2 ring-green-100 dark:ring-green-900/30"
+                                                        : "bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400"
                                                 )}
                                                 title={`Chọn ${letter} là đáp án đúng`}
                                             >
@@ -203,8 +203,8 @@ export default function CreateQuestionPage() {
                                                     onChange={(e) => handleOptionChange(idx, e.target.value)}
                                                     placeholder={`Nhập nội dung đáp án ${letter}...`}
                                                     className={cn(
-                                                        "bg-white focus:ring-blue-500 focus:border-blue-500",
-                                                        correctAnswer === letter ? "border-green-500 ring-1 ring-green-100" : "border-gray-300"
+                                                        "bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500",
+                                                        correctAnswer === letter ? "border-green-500 ring-1 ring-green-100 dark:ring-green-900/30" : "border-gray-300 dark:border-slate-700"
 
                                                     )}
                                                 />
@@ -220,34 +220,34 @@ export default function CreateQuestionPage() {
 
                             {/* Explanation */}
                             <div className="space-y-2">
-                                <Label className="text-gray-700 font-medium">Giải thích chi tiết (Tùy chọn)</Label>
+                                <Label className="text-gray-700 dark:text-gray-300 font-medium">Giải thích chi tiết (Tùy chọn)</Label>
                                 <Textarea
                                     value={explanation}
                                     onChange={(e) => setExplanation(e.target.value)}
                                     placeholder="Giải thích cách giải hoặc lý do chọn đáp án đúng..."
                                     rows={3}
-                                    className="bg-white border-gray-300 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                    className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900 dark:text-white"
                                 />
                             </div>
 
                             {/* Tags */}
                             <div className="space-y-2">
-                                <Label className="text-gray-700 font-medium">Tags phân loại</Label>
+                                <Label className="text-gray-700 dark:text-gray-300 font-medium">Tags phân loại</Label>
                                 <Input
                                     value={tags}
                                     onChange={(e) => setTags(e.target.value)}
                                     placeholder="VD: động học, lực, chuyển động thẳng đều (cách nhau bởi dấu phẩy)"
-                                    className="bg-white border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                                    className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white"
                                 />
                             </div>
 
                             {/* Actions */}
-                            <div className="flex gap-4 pt-6 mt-6 border-t border-gray-100">
+                            <div className="flex gap-4 pt-6 mt-6 border-t border-gray-100 dark:border-slate-800">
                                 <Link href="/teacher/exam-bank" className="flex-1">
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
+                                        className="w-full border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800"
                                     >
                                         Hủy bỏ
                                     </Button>
