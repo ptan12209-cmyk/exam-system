@@ -67,11 +67,29 @@ export default function ExamScoresPage() {
                 .eq("teacher_id", user.id)
                 .single()
 
-            if (examError || !examData) {
+            if (examError) {
+                console.error("Exam fetch error:", examError)
+            }
+
+            if (!examData) {
+                console.error("No exam found for ID:", examId, "and teacher:", user.id)
+                // Try without teacher_id check for debugging
+                const { data: anyExam } = await supabase
+                    .from("exams")
+                    .select("teacher_id")
+                    .eq("id", examId)
+                    .single()
+
+                if (anyExam) {
+                    console.error("Exam exists but teacher_id mismatch. Exam owner:", anyExam.teacher_id, "Current user:", user.id)
+                    alert(`Exam belongs to another teacher. Exam owner ID: ${anyExam.teacher_id?.slice(0, 8)}, Your ID: ${user.id.slice(0, 8)}`)
+                }
+
                 router.push("/teacher/dashboard")
                 return
             }
 
+            console.log("Exam loaded successfully:", examData.title)
             setExam(examData)
 
             // Get submissions with student profiles
