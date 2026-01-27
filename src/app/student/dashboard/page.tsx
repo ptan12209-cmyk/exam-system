@@ -13,6 +13,9 @@ import { getUserStats } from "@/lib/gamification"
 import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
 import { UserMenu } from "@/components/UserMenu"
 import { BottomNav } from "@/components/BottomNav"
+import { StatsCard } from "@/components/shared"
+import { STUDENT_STAT_COLORS } from "@/lib/student-styles"
+import { FileText, CheckCircle, Trophy, Zap } from "lucide-react"
 
 interface Profile {
     id: string
@@ -226,44 +229,34 @@ export default function StudentDashboard() {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-slate-800">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center text-xl">📊</div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{availableExams.length}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Đề thi</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-slate-800">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg flex items-center justify-center text-xl">✅</div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{submissions.length}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Hoàn thành</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-slate-800">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-lg flex items-center justify-center text-xl">🏆</div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                    {submissions.length > 0 ? Math.max(...submissions.map(s => s.score)).toFixed(1) : "--"}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Điểm cao nhất</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-slate-800">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg flex items-center justify-center text-xl">⚡</div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{userXp}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">XP hiện tại</p>
-                            </div>
-                        </div>
-                    </div>
+                    <StatsCard
+                        label="Đề thi"
+                        value={availableExams.length}
+                        icon={FileText}
+                        iconColor={STUDENT_STAT_COLORS.exams.icon}
+                        iconBgColor={STUDENT_STAT_COLORS.exams.bg}
+                    />
+                    <StatsCard
+                        label="Hoàn thành"
+                        value={submissions.length}
+                        icon={CheckCircle}
+                        iconColor={STUDENT_STAT_COLORS.completed.icon}
+                        iconBgColor={STUDENT_STAT_COLORS.completed.bg}
+                    />
+                    <StatsCard
+                        label="Điểm cao nhất"
+                        value={submissions.length > 0 ? Math.max(...submissions.map(s => s.score)).toFixed(1) : "--"}
+                        icon={Trophy}
+                        iconColor={STUDENT_STAT_COLORS.score.icon}
+                        iconBgColor={STUDENT_STAT_COLORS.score.bg}
+                    />
+                    <StatsCard
+                        label="XP hiện tại"
+                        value={userXp}
+                        icon={Zap}
+                        iconColor={STUDENT_STAT_COLORS.xp.icon}
+                        iconBgColor={STUDENT_STAT_COLORS.xp.bg}
+                    />
                 </div>
 
                 {/* Main Grid */}

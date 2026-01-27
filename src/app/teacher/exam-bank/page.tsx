@@ -24,7 +24,7 @@ import {
     Sparkles,
     Wand2
 } from "lucide-react"
-import { PageHeader, PageContainer, FilterBar, EmptyState } from "@/components/teacher"
+import { PageHeader, PageContainer, FilterBar, EmptyState } from "@/components/shared"
 
 interface ExamInBank {
     id: string

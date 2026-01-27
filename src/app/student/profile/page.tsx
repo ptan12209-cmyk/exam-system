@@ -13,6 +13,9 @@ import { AchievementsGrid } from "@/components/gamification/AchievementsGrid"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { BottomNav } from "@/components/BottomNav"
+import { StatsCard } from "@/components/shared"
+import { STUDENT_STAT_COLORS } from "@/lib/student-styles"
+import { BookOpen, Star, Flame, Award } from "lucide-react"
 
 interface UserStats {
     xp: number
@@ -150,26 +153,34 @@ export default function ProfilePage() {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 text-center">
-                        <div className="text-3xl mb-2">📚</div>
-                        <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats?.exams_completed || 0}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Bài đã làm</div>
-                    </div>
-                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 text-center">
-                        <div className="text-3xl mb-2">⭐</div>
-                        <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats?.perfect_scores || 0}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Điểm 10</div>
-                    </div>
-                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 text-center">
-                        <div className="text-3xl mb-2">🔥</div>
-                        <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats?.streak_days || 0}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Ngày streak</div>
-                    </div>
-                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 text-center">
-                        <div className="text-3xl mb-2">🏅</div>
-                        <div className="text-2xl font-bold text-gray-800 dark:text-white">{badges.length}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Badges</div>
-                    </div>
+                    <StatsCard
+                        label="Bài đã làm"
+                        value={stats?.exams_completed || 0}
+                        icon={BookOpen}
+                        iconColor={STUDENT_STAT_COLORS.completed.icon}
+                        iconBgColor={STUDENT_STAT_COLORS.completed.bg}
+                    />
+                    <StatsCard
+                        label="Điểm 10"
+                        value={stats?.perfect_scores || 0}
+                        icon={Star}
+                        iconColor={STUDENT_STAT_COLORS.score.icon}
+                        iconBgColor={STUDENT_STAT_COLORS.score.bg}
+                    />
+                    <StatsCard
+                        label="Ngày streak"
+                        value={stats?.streak_days || 0}
+                        icon={Flame}
+                        iconColor={STUDENT_STAT_COLORS.streak.icon}
+                        iconBgColor={STUDENT_STAT_COLORS.streak.bg}
+                    />
+                    <StatsCard
+                        label="Badges"
+                        value={badges.length}
+                        icon={Award}
+                        iconColor={STUDENT_STAT_COLORS.achievement.icon}
+                        iconBgColor={STUDENT_STAT_COLORS.achievement.bg}
+                    />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

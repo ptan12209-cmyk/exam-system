@@ -14,8 +14,8 @@ import {
     BarChart3,
     Loader2
 } from "lucide-react"
-import { PageHeader, PageContainer, StatsCard } from "@/components/teacher"
-import { STAT_COLORS } from "@/lib/teacher-styles"
+import { PageHeader, PageContainer, StatsCard } from "@/components/shared"
+import { STAT_COLORS } from "@/lib/shared-styles"
 import { cn } from "@/lib/utils"
 
 interface ProfileData {

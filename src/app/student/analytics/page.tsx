@@ -19,6 +19,8 @@ import {
 import { ProgressLineChart } from "@/components/analytics/ProgressLineChart"
 import { ActivityHeatmap, generateActivityData } from "@/components/analytics/ActivityHeatmap"
 import { StrengthRadarChart, calculateStrengthBySubject } from "@/components/analytics/StrengthRadarChart"
+import { StatsCard } from "@/components/shared"
+import { STUDENT_STAT_COLORS } from "@/lib/student-styles"
 
 interface Submission {
     id: string
@@ -197,29 +199,35 @@ export default function StudentAnalyticsPage() {
 
                 {/* Stats Overview */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 text-center">
-                        <Calendar className="w-6 h-6 mx-auto text-blue-500 dark:text-blue-400 mb-2" />
-                        <div className="text-2xl font-bold text-gray-800 dark:text-white">{summary.totalExams}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Bài thi</div>
-                    </div>
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 text-center">
-                        <Target className="w-6 h-6 mx-auto text-purple-500 dark:text-purple-400 mb-2" />
-                        <div className="text-2xl font-bold text-gray-800 dark:text-white">{summary.averageScore.toFixed(1)}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Điểm TB</div>
-                    </div>
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 text-center">
-                        <TrendingUp className={`w-6 h-6 mx-auto mb-2 ${summary.recentTrend >= 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`} />
-                        <div className="text-2xl font-bold text-gray-800 dark:text-white">
-                            {summary.recentTrend >= 0 ? '+' : ''}{summary.recentTrend.toFixed(1)}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Xu hướng</div>
-                    </div>
+                    <StatsCard
+                        label="Bài thi"
+                        value={summary.totalExams}
+                        icon={Calendar}
+                        iconColor={STUDENT_STAT_COLORS.exams.icon}
+                        iconBgColor={STUDENT_STAT_COLORS.exams.bg}
+                    />
+                    <StatsCard
+                        label="Điểm TB"
+                        value={summary.averageScore.toFixed(1)}
+                        icon={Target}
+                        iconColor={STUDENT_STAT_COLORS.score.icon}
+                        iconBgColor={STUDENT_STAT_COLORS.score.bg}
+                    />
+                    <StatsCard
+                        label="Xu hướng"
+                        value={(summary.recentTrend >= 0 ? '+' : '') + summary.recentTrend.toFixed(1)}
+                        icon={TrendingUp}
+                        iconColor={summary.recentTrend >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}
+                        iconBgColor={summary.recentTrend >= 0 ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"}
+                    />
                     {stats && (
-                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 text-center">
-                            <div className="w-6 h-6 mx-auto text-orange-500 dark:text-orange-400 mb-2 font-bold flex items-center justify-center">XP</div>
-                            <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats.xp}</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Lv.{stats.level}</div>
-                        </div>
+                        <StatsCard
+                            label={`Lv.${stats.level}`}
+                            value={stats.xp}
+                            icon={BarChart3}
+                            iconColor={STUDENT_STAT_COLORS.xp.icon}
+                            iconBgColor={STUDENT_STAT_COLORS.xp.bg}
+                        />
                     )}
                 </div>
 

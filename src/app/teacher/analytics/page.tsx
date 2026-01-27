@@ -21,8 +21,8 @@ import {
 import { ScoreDistributionChart, generateScoreDistribution } from "@/components/analytics/ScoreDistributionChart"
 import { QuestionAnalysisTable, analyzeQuestions } from "@/components/analytics/QuestionAnalysisTable"
 import { exportAnalyticsToExcel } from "@/lib/excel-export"
-import { PageHeader, PageContainer, StatsCard } from "@/components/teacher"
-import { STAT_COLORS } from "@/lib/teacher-styles"
+import { PageHeader, PageContainer, StatsCard } from "@/components/shared"
+import { STAT_COLORS } from "@/lib/shared-styles"
 
 interface Exam {
     id: string

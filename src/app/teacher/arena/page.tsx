@@ -24,7 +24,7 @@ import {
     FileText,
     X
 } from "lucide-react"
-import { PageHeader, PageContainer, EmptyState } from "@/components/teacher"
+import { PageHeader, PageContainer, EmptyState } from "@/components/shared"
 
 interface ArenaSession {
     id: string

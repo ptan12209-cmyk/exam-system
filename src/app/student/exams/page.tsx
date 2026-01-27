@@ -10,6 +10,8 @@ import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { BottomNav } from "@/components/BottomNav"
 import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
+import { EmptyState } from "@/components/shared"
+import { FileText } from "lucide-react"
 
 interface Exam {
     id: string
@@ -272,11 +274,13 @@ export default function StudentExamsPage() {
 
                         {/* Exam Grid */}
                         {filteredExams.length === 0 ? (
-                            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-slate-800">
-                                <span className="text-5xl mb-4 block">📝</span>
-                                <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">Chưa có đề thi nào</h3>
-                                <p className="text-gray-500 dark:text-gray-400">Hãy quay lại sau khi có đề thi mới</p>
-                            </div>
+                            <EmptyState
+                                icon={FileText}
+                                title="Chưa có đề thi nào"
+                                description="Hãy quay lại sau khi có đề thi mới"
+                                iconColor="text-blue-500"
+                                iconBgColor="bg-blue-50 dark:bg-blue-900/20"
+                            />
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {filteredExams.map((exam) => {

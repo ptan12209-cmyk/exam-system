@@ -29,8 +29,8 @@ import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
 import { UserMenu } from "@/components/UserMenu"
 import { TeacherBottomNav } from "@/components/BottomNav"
 import { NotificationBell } from "@/components/NotificationBell"
-import { StatsCard, FilterBar } from "@/components/teacher"
-import { STAT_COLORS } from "@/lib/teacher-styles"
+import { StatsCard, FilterBar } from "@/components/shared"
+import { STAT_COLORS } from "@/lib/shared-styles"
 
 interface Profile {
     id: string
