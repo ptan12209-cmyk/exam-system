@@ -403,6 +403,62 @@ export default function ExamResultPage() {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Short Answer Answers */}
+                                {exam.sa_answers && exam.sa_answers.length > 0 && (
+                                    <div className="mb-8">
+                                        <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4 flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                                            Trả lời ngắn
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {exam.sa_answers.map((sa, i) => {
+                                                const studentSa = submission.sa_student_answers?.find(a => a.question === sa.question)
+                                                const correctVal = parseFloat(sa.answer.toString().replace(',', '.'))
+                                                const studentVal = studentSa?.answer ? parseFloat(studentSa.answer.replace(',', '.')) : NaN
+                                                const tolerance = Math.abs(correctVal) * 0.05
+                                                const isCorrect = !isNaN(studentVal) && Math.abs(correctVal - studentVal) <= tolerance
+
+                                                return (
+                                                    <div key={i} className={cn(
+                                                        "p-4 rounded-lg border",
+                                                        isCorrect
+                                                            ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                                                            : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                                                    )}>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="font-medium text-gray-700 dark:text-gray-300">Câu {sa.question}</span>
+                                                            {isCorrect ? (
+                                                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                                            ) : (
+                                                                <XCircle className="w-5 h-5 text-red-600" />
+                                                            )}
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                                            <div>
+                                                                <span className="text-gray-500 dark:text-gray-400">Câu trả lời:</span>
+                                                                <p className={cn(
+                                                                    "font-bold",
+                                                                    isCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
+                                                                )}>
+                                                                    {studentSa?.answer || "-"}
+                                                                </p>
+                                                            </div>
+                                                            {!isCorrect && (
+                                                                <div>
+                                                                    <span className="text-gray-500 dark:text-gray-400">Đáp án đúng:</span>
+                                                                    <p className="font-bold text-green-700 dark:text-green-400">
+                                                                        {sa.answer}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>

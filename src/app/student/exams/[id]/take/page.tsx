@@ -150,6 +150,11 @@ export default function TakeExamPage() {
             setTimeLeft(examData.duration * 60)
             setUserId(user.id)
 
+            // Disable anti-cheat if exam has PDF (mobile can't display inline)
+            if (examData.pdf_url) {
+                setAntiCheatEnabled(false)
+            }
+
             // Check for existing session
             const { data: existingSessionData } = await supabase
                 .from("exam_sessions")
@@ -648,33 +653,11 @@ export default function TakeExamPage() {
                     <div className="lg:w-1/2 flex flex-col p-4 overflow-hidden border-r border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm z-10">
                         {exam.pdf_url ? (
                             <div className="flex-1 rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700 flex flex-col bg-gray-50 dark:bg-slate-800">
-                                <PDFViewer
-                                    url={exam.pdf_url}
-                                    page={pdfPage}
-                                    className="flex-1 bg-white"
+                                <iframe
+                                    src={`${exam.pdf_url}#page=${pdfPage}`}
+                                    className="flex-1 w-full bg-white"
+                                    title="Đề thi PDF"
                                 />
-                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border-t border-blue-100 dark:border-blue-800">
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
-                                            <FileText className="w-3 h-3" />
-                                            <span>Nếu PDF không hiển thị, click nút bên dưới (không bị phạt)</span>
-                                        </div>
-                                        <Button
-                                            onClick={() => {
-                                                // Set whitelist flag
-                                                localStorage.setItem('pdf-open-allowed', 'true')
-                                                // Open PDF in new tab
-                                                window.open(exam.pdf_url!, '_blank')
-                                            }}
-                                            variant="outline"
-                                            size="sm"
-                                            className="w-full border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                                        >
-                                            <ExternalLink className="w-4 h-4 mr-2" />
-                                            📄 Mở đề thi ở tab mới
-                                        </Button>
-                                    </div>
-                                </div>
                                 <div className="p-2 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 flex items-center justify-center gap-4">
                                     <Button
                                         variant="outline"
