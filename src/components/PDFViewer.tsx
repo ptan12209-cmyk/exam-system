@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { Loader2 } from 'lucide-react'
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css'
-import 'react-pdf/dist/esm/Page/TextLayer.css'
 
 // Set worker path
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
