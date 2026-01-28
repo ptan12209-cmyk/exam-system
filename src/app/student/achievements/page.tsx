@@ -4,18 +4,34 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AchievementsGrid } from "@/components/gamification/AchievementsGrid"
 import { DailyCheckIn } from "@/components/gamification/DailyCheckIn"
 import { XpBar } from "@/components/gamification/XpBar"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { BottomNav } from "@/components/BottomNav"
+import {
+    GraduationCap,
+    FileText,
+    LogOut,
+    Loader2,
+    BookOpen,
+    Swords,
+    BarChart3,
+    Award,
+    User,
+    Zap,
+    Gift,
+    Flame
+} from "lucide-react"
 
 export default function AchievementsPage() {
     const router = useRouter()
     const supabase = createClient()
     const [xp, setXp] = useState(0)
     const [fullName, setFullName] = useState("")
+    const [userClass, setUserClass] = useState("")
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -28,11 +44,14 @@ export default function AchievementsPage() {
 
             const { data: profile } = await supabase
                 .from("profiles")
-                .select("full_name")
+                .select("full_name, class")
                 .eq("id", user.id)
                 .single()
 
-            if (profile) setFullName(profile.full_name || "")
+            if (profile) {
+                setFullName(profile.full_name || "")
+                setUserClass(profile.class || "")
+            }
 
             fetch("/api/daily-checkin")
                 .then(res => res.json())
@@ -55,101 +74,204 @@ export default function AchievementsPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col">
-            {/* Header */}
-            <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                        <Link href="/student/dashboard" className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-md">E</div>
-                            <span className="font-bold text-xl text-blue-600 hidden md:block">ExamHub</span>
-                        </Link>
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex">
+            {/* Sidebar - Fixed */}
+            <aside className="fixed left-0 top-0 h-full w-64 border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 hidden lg:block z-50">
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-blue-900/30">
+                        <GraduationCap className="w-6 h-6 text-white" />
                     </div>
-                    <nav className="hidden lg:flex items-center gap-1">
-                        <Link href="/student/dashboard" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏠</Link>
-                        <Link href="/student/exams" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">📝</Link>
-                        <Link href="/arena" className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">🏆</Link>
-                        <Link href="/student/achievements" className="p-3 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg">🎯</Link>
-                    </nav>
-                    <div className="flex items-center gap-3">
-                        <NotificationBell />
-                        <UserMenu userName={fullName} onLogout={handleLogout} role="student" />
+                    <span className="text-xl font-bold text-gray-800 dark:text-white">ExamHub</span>
+                </div>
+
+                <nav className="space-y-1">
+                    <Link
+                        href="/student/dashboard"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <BarChart3 className="w-5 h-5" />
+                        Tổng quan
+                    </Link>
+                    <Link
+                        href="/student/exams"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <FileText className="w-5 h-5" />
+                        Làm đề thi
+                    </Link>
+                    <div className="pt-4 pb-2">
+                        <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Khám phá</p>
                     </div>
+                    <Link
+                        href="/resources"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <BookOpen className="w-5 h-5" />
+                        Thư viện tài liệu
+                    </Link>
+                    <Link
+                        href="/arena"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <Swords className="w-5 h-5" />
+                        Đấu trường
+                    </Link>
+                    <Link
+                        href="/student/achievements"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium"
+                    >
+                        <Award className="w-5 h-5" />
+                        Thành tích
+                    </Link>
+                    <Link
+                        href="/student/profile"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <User className="w-5 h-5" />
+                        Hồ sơ cá nhân
+                    </Link>
+
+                    {/* XP Progress */}
+                    <div className="pt-6 pb-2">
+                        <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tiến độ</p>
+                        <div className="mt-3 px-4">
+                            <XpBar xp={xp} size="sm" />
+                        </div>
+                    </div>
+                </nav>
+
+                <div className="absolute bottom-6 left-6 right-6">
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full font-medium"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        Đăng xuất
+                    </button>
+                </div>
+            </aside>
+
+            {/* Mobile Header */}
+            <header className="lg:hidden fixed top-0 w-full z-50 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 h-16 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <GraduationCap className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-lg font-bold text-gray-800 dark:text-white">ExamHub</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <NotificationBell />
+                    <UserMenu
+                        userName={fullName}
+                        userClass={userClass || undefined}
+                        onLogout={handleLogout}
+                        role="student"
+                    />
                 </div>
             </header>
 
-            {/* Main */}
-            <main className="flex-grow max-w-5xl mx-auto px-4 py-8 w-full">
-                {/* Breadcrumb */}
-                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
-                    <Link href="/student/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400">Trang chủ</Link>
-                    <span>›</span>
-                    <span className="font-medium text-gray-800 dark:text-gray-200">Thành tựu</span>
+            {/* Main Content */}
+            <main className="flex-1 lg:ml-64 p-4 lg:p-8 pt-20 lg:pt-8 pb-24 lg:pb-8">
+                {/* Desktop Header */}
+                <div className="hidden lg:flex items-center justify-between mb-8">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Thành tích</h1>
+                        <p className="text-gray-500 dark:text-gray-400">Theo dõi tiến độ và thành tựu của bạn</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <NotificationBell />
+                        <UserMenu
+                            userName={fullName}
+                            userClass={userClass || undefined}
+                            onLogout={handleLogout}
+                            role="student"
+                        />
+                    </div>
+                </div>
+
+                {/* Mobile Title */}
+                <div className="lg:hidden mb-6">
+                    <h1 className="text-xl font-bold text-gray-800 dark:text-white">Thành tích</h1>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">Xem tiến độ học tập</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* XP Progress */}
-                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
-                            <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-4">
-                                ⚡ Tiến trình XP
-                            </h2>
-                            <XpBar xp={xp} size="lg" />
-                        </div>
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                            <CardHeader className="border-b border-gray-100 dark:border-slate-800">
+                                <CardTitle className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                    <Zap className="w-5 h-5 text-yellow-500" />
+                                    Tiến trình XP
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <XpBar xp={xp} size="lg" />
+                            </CardContent>
+                        </Card>
 
                         {/* Achievements Grid */}
-                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
-                            <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-4">
-                                🏆 Thành tựu
-                            </h2>
-                            <AchievementsGrid />
-                        </div>
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                            <CardHeader className="border-b border-gray-100 dark:border-slate-800">
+                                <CardTitle className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                    <Award className="w-5 h-5 text-blue-500" />
+                                    Thành tựu
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <AchievementsGrid />
+                            </CardContent>
+                        </Card>
                     </div>
 
                     {/* Sidebar */}
                     <div className="space-y-6">
                         {/* Daily Check-in */}
-                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
-                            <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-4">
-                                🔥 Điểm danh hàng ngày
-                            </h2>
-                            <DailyCheckIn onComplete={handleCheckInComplete} />
-                        </div>
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                            <CardHeader className="border-b border-gray-100 dark:border-slate-800">
+                                <CardTitle className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                    <Flame className="w-5 h-5 text-orange-500" />
+                                    Điểm danh hàng ngày
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <DailyCheckIn onComplete={handleCheckInComplete} />
+                            </CardContent>
+                        </Card>
 
                         {/* Quick Links */}
-                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
-                            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">🔗 Liên kết nhanh</h3>
-                            <div className="space-y-2">
-                                <Link href="/student/rewards" className="block p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition font-medium">
-                                    🎁 Đổi thưởng
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                            <CardHeader className="border-b border-gray-100 dark:border-slate-800">
+                                <CardTitle className="text-base font-bold text-gray-800 dark:text-white">Liên kết nhanh</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 space-y-2">
+                                <Link href="/student/rewards" className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition font-medium">
+                                    <Gift className="w-5 h-5" />
+                                    Đổi thưởng
                                 </Link>
-                                <Link href="/student/profile" className="block p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition font-medium">
-                                    👤 Hồ sơ cá nhân
+                                <Link href="/student/profile" className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition font-medium">
+                                    <User className="w-5 h-5" />
+                                    Hồ sơ cá nhân
                                 </Link>
-                                <Link href="/arena" className="block p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition font-medium">
-                                    ⚔️ Đấu trường
+                                <Link href="/arena" className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition font-medium">
+                                    <Swords className="w-5 h-5" />
+                                    Đấu trường
                                 </Link>
-                            </div>
-                        </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
             </main>
 
-            {/* Footer */}
-            <footer className="bg-blue-600 dark:bg-blue-900 text-white py-8 mt-auto">
-                <div className="max-w-7xl mx-auto px-4 text-center">
-                    <p className="text-sm text-blue-200 dark:text-blue-300">© 2026 ExamHub. All rights reserved.</p>
-                </div>
-            </footer>
-
+            {/* Mobile Bottom Nav */}
             <BottomNav />
         </div>
     )

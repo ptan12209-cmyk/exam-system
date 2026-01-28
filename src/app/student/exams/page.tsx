@@ -5,13 +5,30 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+    GraduationCap,
+    FileText,
+    Clock,
+    LogOut,
+    Loader2,
+    BookOpen,
+    Swords,
+    BarChart3,
+    Award,
+    User,
+    ChevronRight,
+    CheckCircle,
+    Calendar
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NotificationBell } from "@/components/NotificationBell"
+import { XpBar } from "@/components/gamification/XpBar"
+import { getUserStats } from "@/lib/gamification"
+import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
 import { UserMenu } from "@/components/UserMenu"
 import { BottomNav } from "@/components/BottomNav"
-import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
-import { EmptyState } from "@/components/shared"
-import { FileText } from "lucide-react"
+import { FilterBar, EmptyState } from "@/components/shared"
 
 interface Exam {
     id: string
@@ -32,25 +49,6 @@ interface Submission {
     score: number
 }
 
-const CATEGORIES = [
-    { value: "all", label: "Tất cả" },
-    { value: "thpt", label: "Đề thi thử THPT" },
-    { value: "hsa", label: "ĐGNL HSA" },
-    { value: "tsa", label: "ĐGTD TSA" },
-    { value: "vact", label: "ĐGNL V-ACT" },
-]
-
-const SUBJECT_TAG_COLORS: Record<string, string> = {
-    math: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
-    physics: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
-    chemistry: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400",
-    biology: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400",
-    english: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
-    literature: "bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400",
-    history: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
-    geography: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400",
-}
-
 export default function StudentExamsPage() {
     const router = useRouter()
     const supabase = createClient()
@@ -58,11 +56,10 @@ export default function StudentExamsPage() {
     const [exams, setExams] = useState<Exam[]>([])
     const [submissions, setSubmissions] = useState<Map<string, number>>(new Map())
     const [loading, setLoading] = useState(true)
-    const [user, setUser] = useState<{ id: string; full_name?: string } | null>(null)
-    const [filterSubject, setFilterSubject] = useState("")
-    const [filterCategory, setFilterCategory] = useState("all")
+    const [user, setUser] = useState<{ id: string; full_name?: string; class?: string } | null>(null)
+    const [userXp, setUserXp] = useState(0)
+    const [selectedSubject, setSelectedSubject] = useState("all")
     const [searchQuery, setSearchQuery] = useState("")
-    const [sortBy, setSortBy] = useState("newest")
 
     useEffect(() => {
         async function fetchData() {
@@ -72,8 +69,11 @@ export default function StudentExamsPage() {
                 return
             }
 
-            const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", authUser.id).single()
-            setUser({ id: authUser.id, full_name: profile?.full_name })
+            const { data: profile } = await supabase.from("profiles").select("full_name, class").eq("id", authUser.id).single()
+            setUser({ id: authUser.id, full_name: profile?.full_name, class: profile?.class })
+
+            const { stats } = await getUserStats(authUser.id)
+            setUserXp(stats.xp)
 
             const { data: examsData } = await supabase
                 .from("exams")
@@ -118,294 +118,308 @@ export default function StudentExamsPage() {
     }
 
     const filteredExams = exams
-        .filter(e => !filterSubject || e.subject === filterSubject)
+        .filter(e => selectedSubject === "all" || e.subject === selectedSubject)
         .filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()))
-
-    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString("vi-VN")
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-slate-950 flex flex-col">
-            {/* Header */}
-            <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                        <Link href="/student/dashboard" className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-md">E</div>
-                            <span className="font-bold text-xl text-blue-600 hidden md:block">ExamHub</span>
-                        </Link>
-                        <div className="hidden md:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full px-4 py-2 w-80">
-                            <span className="text-gray-400 mr-2">🔍</span>
-                            <input
-                                type="text"
-                                placeholder="Tìm kiếm đề thi..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="bg-transparent border-none outline-none text-sm w-full focus:ring-0 text-gray-900 dark:text-white placeholder-gray-500"
-                            />
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex">
+            {/* Sidebar - Fixed */}
+            <aside className="fixed left-0 top-0 h-full w-64 border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 hidden lg:block z-50">
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-blue-900/30">
+                        <GraduationCap className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-xl font-bold text-gray-800 dark:text-white">ExamHub</span>
+                </div>
+
+                <nav className="space-y-1">
+                    <Link
+                        href="/student/dashboard"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <BarChart3 className="w-5 h-5" />
+                        Tổng quan
+                    </Link>
+                    <Link
+                        href="/student/exams"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium"
+                    >
+                        <FileText className="w-5 h-5" />
+                        Làm đề thi
+                    </Link>
+                    <div className="pt-4 pb-2">
+                        <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Khám phá</p>
+                    </div>
+                    <Link
+                        href="/resources"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <BookOpen className="w-5 h-5" />
+                        Thư viện tài liệu
+                    </Link>
+                    <Link
+                        href="/arena"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <Swords className="w-5 h-5" />
+                        Đấu trường
+                    </Link>
+                    <Link
+                        href="/student/achievements"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <Award className="w-5 h-5" />
+                        Thành tích
+                    </Link>
+                    <Link
+                        href="/student/profile"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <User className="w-5 h-5" />
+                        Hồ sơ cá nhân
+                    </Link>
+
+                    {/* XP Progress */}
+                    <div className="pt-6 pb-2">
+                        <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tiến độ</p>
+                        <div className="mt-3 px-4">
+                            <XpBar xp={userXp} size="sm" />
                         </div>
                     </div>
-                    <nav className="hidden lg:flex items-center gap-1">
-                        <Link href="/student/dashboard" className="p-3 text-gray-500 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg"><span className="text-2xl">🏠</span></Link>
-                        <Link href="/resources" className="p-3 text-gray-500 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg"><span className="text-2xl">📚</span></Link>
-                        <Link href="/student/exams" className="p-3 text-blue-600 bg-blue-50 dark:bg-blue-900/40 rounded-lg"><span className="text-2xl">📝</span></Link>
-                        <Link href="/arena" className="p-3 text-gray-500 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg"><span className="text-2xl">🏆</span></Link>
-                        <Link href="/student/profile" className="p-3 text-gray-500 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg">👤</Link>
-                    </nav>
-                    <div className="flex items-center gap-3">
-                        <NotificationBell />
-                        <UserMenu userName={user?.full_name || ""} onLogout={handleLogout} role="student" />
+                </nav>
+
+                <div className="absolute bottom-6 left-6 right-6">
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full font-medium"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        Đăng xuất
+                    </button>
+                </div>
+            </aside>
+
+            {/* Mobile Header */}
+            <header className="lg:hidden fixed top-0 w-full z-50 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 h-16 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <GraduationCap className="w-4 h-4 text-white" />
                     </div>
+                    <span className="text-lg font-bold text-gray-800 dark:text-white">ExamHub</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <NotificationBell />
+                    <UserMenu
+                        userName={user?.full_name || ""}
+                        userClass={user?.class ?? undefined}
+                        onLogout={handleLogout}
+                        role="student"
+                    />
                 </div>
             </header>
 
-            {/* Main */}
-            <main className="flex-grow max-w-7xl mx-auto px-4 py-8 w-full">
-                {/* Breadcrumb */}
-                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
-                    <span>📝</span>
-                    <span>›</span>
-                    <span className="font-medium text-gray-800 dark:text-gray-200">Đề thi</span>
+            {/* Main Content */}
+            <main className="flex-1 lg:ml-64 p-4 lg:p-8 pt-20 lg:pt-8 pb-24 lg:pb-8">
+                {/* Desktop Header */}
+                <div className="hidden lg:flex items-center justify-between mb-8">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+                            Danh sách đề thi
+                        </h1>
+                        <p className="text-gray-500 dark:text-gray-400">Chọn đề thi và bắt đầu luyện tập</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <NotificationBell />
+                        <UserMenu
+                            userName={user?.full_name || ""}
+                            userClass={user?.class ?? undefined}
+                            onLogout={handleLogout}
+                            role="student"
+                        />
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    {/* Sidebar - Filters */}
-                    <div className="lg:col-span-1 space-y-6">
-                        {/* Mobile Search */}
-                        <div className="md:hidden flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg px-4 py-3 shadow-sm">
-                            <input
-                                type="text"
-                                placeholder="Tìm kiếm đề thi..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="bg-transparent border-none outline-none text-sm w-full focus:ring-0 text-gray-900 dark:text-white"
+                {/* Mobile Title */}
+                <div className="lg:hidden mb-6">
+                    <h1 className="text-xl font-bold text-gray-800 dark:text-white">
+                        Làm đề thi
+                    </h1>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        {exams.length} đề thi có sẵn
+                    </p>
+                </div>
+
+                {/* Exams Card */}
+                <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                    <CardHeader className="border-b border-gray-100 dark:border-slate-800 pb-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <CardTitle className="text-lg font-bold text-gray-800 dark:text-white">Đề thi có sẵn</CardTitle>
+                                <CardDescription className="text-gray-500 dark:text-gray-400">
+                                    {filteredExams.length} đề thi • {submissions.size} đã hoàn thành
+                                </CardDescription>
+                            </div>
+                            <FilterBar
+                                searchValue={searchQuery}
+                                onSearchChange={setSearchQuery}
+                                searchPlaceholder="Tìm kiếm đề thi..."
+                                className="w-full md:w-auto"
                             />
-                            <span className="text-blue-600">🔍</span>
                         </div>
-
-                        {/* Filter Card */}
-                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-800">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-bold text-lg text-blue-600">Bộ lọc</h3>
-                                <span className="text-gray-400">⚙️</span>
-                            </div>
-
-                            {/* Subject Filter */}
-                            <div className="mb-6">
-                                <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 font-medium mb-3">
-                                    <span className="text-gray-500">📚</span> Môn học
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    <button
-                                        onClick={() => setFilterSubject("")}
-                                        className={cn(
-                                            "px-3 py-1.5 text-xs rounded-md transition-colors",
-                                            !filterSubject
-                                                ? "bg-blue-100 text-blue-600 font-medium ring-1 ring-blue-200"
-                                                : "bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600"
-                                        )}
-                                    >
-                                        Tất cả
-                                    </button>
-                                    {SUBJECTS.filter(s => s.value).map((s) => (
-                                        <button
-                                            key={s.value}
-                                            onClick={() => setFilterSubject(s.value)}
-                                            className={cn(
-                                                "px-3 py-1.5 text-xs rounded-md transition-colors",
-                                                filterSubject === s.value
-                                                    ? "bg-blue-100 text-blue-600 font-medium ring-1 ring-blue-200"
-                                                    : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400"
-                                            )}
-                                        >
-                                            {s.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <hr className="border-gray-100 mb-6" />
-
-                            {/* Category Filter */}
-                            <div className="mb-2">
-                                <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 font-medium mb-3">
-                                    <span className="text-gray-500">📂</span> Phân loại
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                    {CATEGORIES.map((c) => (
-                                        <label key={c.value} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={filterCategory === c.value}
-                                                onChange={() => setFilterCategory(c.value)}
-                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-600 h-4 w-4"
-                                            />
-                                            <span>{c.label}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Main Content */}
-                    <div className="lg:col-span-3">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Danh sách đề thi</h2>
-                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                <span>Sắp xếp:</span>
-                                <select
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value)}
-                                    className="border-none bg-transparent font-medium text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer"
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {/* Subject Filter Tabs */}
+                        <div className="flex items-center gap-2 p-4 overflow-x-auto border-b border-gray-50 dark:border-slate-800 hide-scrollbar">
+                            <button
+                                onClick={() => setSelectedSubject("all")}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap",
+                                    selectedSubject === "all"
+                                        ? "bg-gray-800 dark:bg-white text-white dark:text-gray-900"
+                                        : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700"
+                                )}
+                            >
+                                Tất cả
+                            </button>
+                            {SUBJECTS.filter(s => exams.some(e => e.subject === s.value)).map((s) => (
+                                <button
+                                    key={s.value}
+                                    onClick={() => setSelectedSubject(s.value)}
+                                    className={cn(
+                                        "px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2",
+                                        selectedSubject === s.value
+                                            ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800"
+                                            : "bg-white dark:bg-slate-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800"
+                                    )}
                                 >
-                                    <option value="newest">Mới nhất</option>
-                                    <option value="popular">Nhiều người thi</option>
-                                </select>
-                            </div>
+                                    {s.icon} {s.label}
+                                </button>
+                            ))}
                         </div>
 
-                        {/* Exam Grid */}
                         {filteredExams.length === 0 ? (
                             <EmptyState
                                 icon={FileText}
-                                title="Chưa có đề thi nào"
-                                description="Hãy quay lại sau khi có đề thi mới"
+                                title="Không tìm thấy đề thi"
+                                description="Thử thay đổi bộ lọc hoặc quay lại sau"
                                 iconColor="text-blue-500"
                                 iconBgColor="bg-blue-50 dark:bg-blue-900/20"
                             />
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="divide-y divide-gray-50 dark:divide-slate-800">
                                 {filteredExams.map((exam) => {
                                     const hasSubmitted = submissions.has(exam.id)
                                     const bestScore = submissions.get(exam.id)
                                     const available = isExamAvailable(exam)
-                                    const subjectInfo = exam.subject ? getSubjectInfo(exam.subject) : null
+                                    const subjectInfo = getSubjectInfo(exam.subject || "other")
 
                                     return (
                                         <div
                                             key={exam.id}
-                                            className="bg-white dark:bg-slate-900 rounded-xl shadow-sm hover:shadow-md transition-all border border-gray-100 dark:border-slate-800 flex flex-col h-full group"
+                                            className="group flex flex-col md:flex-row md:items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors gap-4"
                                         >
-                                            <div className="p-5 flex flex-col h-full">
-                                                {/* Tags */}
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="flex gap-2 flex-wrap">
-                                                        <span className="px-2 py-1 rounded bg-orange-100 text-orange-600 text-xs font-bold uppercase tracking-wide">
-                                                            THPT
-                                                        </span>
-                                                        {subjectInfo && (
-                                                            <span className={cn(
-                                                                "px-2 py-1 rounded text-xs font-bold uppercase tracking-wide",
-                                                                SUBJECT_TAG_COLORS[exam.subject || ""] || "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400"
-                                                            )}>
-                                                                {subjectInfo.label}
-                                                            </span>
-                                                        )}
-                                                        {hasSubmitted && (
-                                                            <span className="px-2 py-1 rounded bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-bold">
-                                                                ✓ Đã làm
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <span className="px-2 py-1 rounded bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 text-xs font-medium">
-                                                        {exam.duration} phút
-                                                    </span>
+                                            <div className="flex items-start gap-4">
+                                                <div className={cn(
+                                                    "w-12 h-12 rounded-xl flex shrink-0 items-center justify-center text-xl shadow-sm bg-blue-100 dark:bg-blue-900/30"
+                                                )}>
+                                                    <span className="text-2xl">{subjectInfo.icon}</span>
                                                 </div>
-
-                                                {/* Title */}
-                                                <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
-                                                    {exam.title}
-                                                </h3>
-
-                                                {/* Description */}
-                                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
-                                                    {exam.description || `Đề thi ${exam.total_questions} câu hỏi, thời gian ${exam.duration} phút`}
-                                                </p>
-
-                                                {/* Score if submitted */}
-                                                {hasSubmitted && (
-                                                    <div className="mb-4 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg text-green-700 dark:text-green-400 text-sm font-medium">
-                                                        🏆 Điểm cao nhất: {bestScore?.toFixed(1)}
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h3 className="font-semibold text-gray-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                            {exam.title}
+                                                        </h3>
+                                                        {hasSubmitted && (
+                                                            <span className={cn(
+                                                                "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                                                                bestScore && bestScore >= 8
+                                                                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                                                                    : bestScore && bestScore >= 5
+                                                                        ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
+                                                                        : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                                                            )}>
+                                                                {bestScore?.toFixed(1)} điểm
+                                                            </span>
+                                                        )}
+                                                        {!available && (
+                                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-100 dark:bg-slate-800 text-gray-500">
+                                                                Chưa mở
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                )}
-
-                                                {/* Footer */}
-                                                <div className="mt-auto pt-4 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
-                                                    <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                                        <div className="flex items-center gap-1">
-                                                            <span>❓</span> {exam.total_questions} câu
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <span>📅</span> {formatDate(exam.created_at)}
-                                                        </div>
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
+                                                        <span className="flex items-center gap-1">
+                                                            <BookOpen className="w-3.5 h-3.5" />
+                                                            {subjectInfo.label}
+                                                        </span>
+                                                        <span className="flex items-center gap-1">
+                                                            <Clock className="w-3.5 h-3.5" />
+                                                            {exam.duration} phút
+                                                        </span>
+                                                        <span className="flex items-center gap-1">
+                                                            <FileText className="w-3.5 h-3.5" />
+                                                            {exam.total_questions} câu
+                                                        </span>
+                                                        <span className="flex items-center gap-1">
+                                                            <Calendar className="w-3.5 h-3.5" />
+                                                            {new Date(exam.created_at).toLocaleDateString("vi-VN")}
+                                                        </span>
                                                     </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 self-end md:self-auto">
+                                                {hasSubmitted ? (
+                                                    <>
+                                                        <Link href={`/student/exams/${exam.id}/result`}>
+                                                            <Button variant="outline" size="sm" className="border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300">
+                                                                <CheckCircle className="w-4 h-4 mr-1" />
+                                                                Kết quả
+                                                            </Button>
+                                                        </Link>
+                                                        {available && (
+                                                            <Link href={`/student/exams/${exam.id}/take`}>
+                                                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                                                                    Làm lại
+                                                                </Button>
+                                                            </Link>
+                                                        )}
+                                                    </>
+                                                ) : (
                                                     <Link href={available ? `/student/exams/${exam.id}/take` : "#"}>
-                                                        <button
+                                                        <Button
+                                                            size="sm"
                                                             disabled={!available}
                                                             className={cn(
-                                                                "w-8 h-8 rounded-full flex items-center justify-center transition-all",
                                                                 available
-                                                                    ? "bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-600 dark:hover:text-white"
-                                                                    : "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-gray-600"
+                                                                    ? "bg-blue-600 hover:bg-blue-700"
+                                                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
                                                             )}
                                                         >
-                                                            →
-                                                        </button>
+                                                            {available ? "Làm bài" : "Chưa mở"}
+                                                            <ChevronRight className="w-4 h-4 ml-1" />
+                                                        </Button>
                                                     </Link>
-                                                </div>
+                                                )}
                                             </div>
                                         </div>
                                     )
                                 })}
                             </div>
                         )}
-
-                        {/* Pagination */}
-                        {filteredExams.length > 0 && (
-                            <div className="mt-8 flex justify-center">
-                                <nav className="flex items-center gap-1 bg-white dark:bg-slate-900 shadow-sm rounded-lg p-1 border border-gray-100 dark:border-slate-800">
-                                    <button className="w-9 h-9 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800">‹</button>
-                                    <button className="w-9 h-9 flex items-center justify-center rounded-md bg-blue-600 text-white font-medium shadow-sm">1</button>
-                                    <button className="w-9 h-9 flex items-center justify-center rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800">2</button>
-                                    <button className="w-9 h-9 flex items-center justify-center rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800">3</button>
-                                    <span className="w-9 h-9 flex items-center justify-center text-gray-400">...</span>
-                                    <button className="w-9 h-9 flex items-center justify-center rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800">10</button>
-                                    <button className="w-9 h-9 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800">›</button>
-                                </nav>
-                            </div>
-                        )}
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
             </main>
 
-            {/* Footer */}
-            <footer className="bg-blue-600 text-white pt-12 pb-6 mt-auto">
-                <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center">
-                    <div className="w-full max-w-lg text-center mb-8">
-                        <h4 className="font-bold text-lg mb-6 uppercase">Liên hệ</h4>
-                        <ul className="space-y-3 text-sm text-blue-100">
-                            <li className="flex items-center justify-center gap-3">
-                                <span>🌐</span> examhub.id.vn
-                            </li>
-                            <li className="flex items-center justify-center gap-3">
-                                <span>📧</span> contact@examhub.id.vn
-                            </li>
-                        </ul>
-                    </div>
-                    <div className="w-full border-t border-blue-400/30 pt-6 text-center text-sm text-blue-200">
-                        © 2026 ExamHub. All rights reserved.
-                    </div>
-                </div>
-            </footer>
-
+            {/* Mobile Bottom Nav */}
             <BottomNav />
         </div>
     )
