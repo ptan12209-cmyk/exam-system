@@ -15,7 +15,8 @@ import {
     ChevronRight,
     Shield,
     AlertOctagon,
-    Maximize
+    Maximize,
+    ExternalLink
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AntiCheatProvider } from "@/components/exam/AntiCheatProvider"
@@ -652,6 +653,28 @@ export default function TakeExamPage() {
                                     page={pdfPage}
                                     className="flex-1 bg-white"
                                 />
+                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border-t border-blue-100 dark:border-blue-800">
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                                            <FileText className="w-3 h-3" />
+                                            <span>Nếu PDF không hiển thị, click nút bên dưới (không bị phạt)</span>
+                                        </div>
+                                        <Button
+                                            onClick={() => {
+                                                // Set whitelist flag
+                                                localStorage.setItem('pdf-open-allowed', 'true')
+                                                // Open PDF in new tab
+                                                window.open(exam.pdf_url!, '_blank')
+                                            }}
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                                        >
+                                            <ExternalLink className="w-4 h-4 mr-2" />
+                                            📄 Mở đề thi ở tab mới
+                                        </Button>
+                                    </div>
+                                </div>
                                 <div className="p-2 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 flex items-center justify-center gap-4">
                                     <Button
                                         variant="outline"

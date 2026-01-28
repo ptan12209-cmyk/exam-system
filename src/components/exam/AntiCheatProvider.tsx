@@ -104,6 +104,16 @@ export function AntiCheatProvider({
 
         const handleVisibilityChange = () => {
             if (document.hidden) {
+                // Check if PDF is being opened (whitelisted)
+                const pdfOpenAllowed = localStorage.getItem('pdf-open-allowed')
+
+                if (pdfOpenAllowed === 'true') {
+                    // Clear flag and don't count as violation
+                    localStorage.removeItem('pdf-open-allowed')
+                    console.log('PDF open detected - not counting as violation')
+                    return
+                }
+
                 const newCount = tabSwitches + fullscreenExits + 1
                 addViolation(
                     "tab_switch",
