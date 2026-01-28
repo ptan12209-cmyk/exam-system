@@ -22,9 +22,14 @@ import {
     Pause,
     CheckCircle,
     FileText,
-    X
+    X,
+    GraduationCap
 } from "lucide-react"
-import { PageHeader, PageContainer, EmptyState } from "@/components/shared"
+import { EmptyState } from "@/components/shared"
+import { TeacherSidebar } from "@/components/TeacherSidebar"
+import { NotificationBell } from "@/components/NotificationBell"
+import { UserMenu } from "@/components/UserMenu"
+import { TeacherBottomNav } from "@/components/BottomNav"
 
 interface ArenaSession {
     id: string
@@ -62,6 +67,7 @@ export default function ArenaAdminPage() {
     const [loading, setLoading] = useState(true)
     const [showCreate, setShowCreate] = useState(false)
     const [saving, setSaving] = useState(false)
+    const [fullName, setFullName] = useState("")
 
     // Form state
     const [name, setName] = useState("")
@@ -83,10 +89,10 @@ export default function ArenaAdminPage() {
             return
         }
 
-        // Check if teacher
+        // Check if teacher and get profile
         const { data: profile } = await supabase
             .from("profiles")
-            .select("role")
+            .select("role, full_name")
             .eq("id", user.id)
             .single()
 
@@ -94,6 +100,8 @@ export default function ArenaAdminPage() {
             router.push("/student/dashboard")
             return
         }
+
+        setFullName(profile.full_name || "")
 
         // Fetch exams for dropdown
         const { data: examsData } = await supabase
@@ -254,246 +262,295 @@ export default function ArenaAdminPage() {
         )
     }
 
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
+        router.push("/login")
+    }
+
     return (
-        <PageContainer maxWidth="6xl">
-            <PageHeader
-                title="Quản lý Đấu trường"
-                subtitle="Tạo và quản lý các đợt thi tập trung"
-                icon={Swords}
-                iconColor="text-purple-600 dark:text-purple-400"
-                actions={
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex">
+            {/* Sidebar */}
+            <TeacherSidebar onLogout={handleLogout} />
+
+            {/* Mobile Header */}
+            <header className="lg:hidden fixed top-0 w-full z-50 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 h-16 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <GraduationCap className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-lg font-bold text-gray-800 dark:text-white">ExamHub</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <NotificationBell />
+                    <UserMenu userName={fullName} userClass="Giáo viên" onLogout={handleLogout} role="teacher" />
+                </div>
+            </header>
+
+            {/* Main Content */}
+            <main className="flex-1 lg:ml-64 p-4 lg:p-8 pt-20 lg:pt-8 pb-24 lg:pb-8">
+                {/* Desktop Header */}
+                <div className="hidden lg:flex items-center justify-between mb-8">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                            <Swords className="w-6 h-6 text-purple-600" />
+                            Quản lý Đấu trường
+                        </h1>
+                        <p className="text-gray-500 dark:text-gray-400">Tạo và quản lý các đợt thi tập trung</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <Button
+                            onClick={() => {
+                                resetForm()
+                                setShowCreate(true)
+                            }}
+                            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-sm"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Tạo đợt thi
+                        </Button>
+                        <NotificationBell />
+                        <UserMenu userName={fullName} userClass="Giáo viên" onLogout={handleLogout} role="teacher" />
+                    </div>
+                </div>
+
+                {/* Add button for mobile */}
+                <div className="lg:hidden mb-4">
                     <Button
                         onClick={() => {
                             resetForm()
                             setShowCreate(true)
                         }}
-                        className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-sm"
+                        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-sm"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Tạo đợt thi
                     </Button>
-                }
-            />
+                </div>
 
-            {/* Sessions List */}
-            {sessions.length === 0 ? (
-                <EmptyState
-                    icon={Swords}
-                    title="Chưa có đợt thi nào"
-                    description="Tạo đợt thi mới để tổ chức thi đấu cho học sinh"
-                    actionLabel="Tạo đợt thi đầu tiên"
-                    onAction={() => setShowCreate(true)}
-                    iconColor="text-purple-500"
-                    iconBgColor="bg-purple-50 dark:bg-purple-900/20"
-                />
-            ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {sessions.map(session => (
-                        <Card key={session.id} className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 hover:shadow-md transition-shadow group">
-                            <CardHeader className="pb-3 border-b border-gray-50 dark:border-slate-800">
-                                <div className="flex items-start justify-between mb-2">
-                                    <div className="space-y-1">
-                                        <CardTitle className="text-lg font-bold text-gray-800 dark:text-white line-clamp-1" title={session.name}>
-                                            {session.name}
-                                        </CardTitle>
-                                        {session.exam && (
-                                            <div className="flex items-center text-xs text-purple-600 dark:text-purple-400 font-medium bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded w-fit">
-                                                <FileText className="w-3 h-3 mr-1" />
-                                                {session.exam.title}
-                                            </div>
+
+                {/* Sessions List */}
+                {sessions.length === 0 ? (
+                    <EmptyState
+                        icon={Swords}
+                        title="Chưa có đợt thi nào"
+                        description="Tạo đợt thi mới để tổ chức thi đấu cho học sinh"
+                        actionLabel="Tạo đợt thi đầu tiên"
+                        onAction={() => setShowCreate(true)}
+                        iconColor="text-purple-500"
+                        iconBgColor="bg-purple-50 dark:bg-purple-900/20"
+                    />
+                ) : (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {sessions.map(session => (
+                            <Card key={session.id} className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 hover:shadow-md transition-shadow group">
+                                <CardHeader className="pb-3 border-b border-gray-50 dark:border-slate-800">
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className="space-y-1">
+                                            <CardTitle className="text-lg font-bold text-gray-800 dark:text-white line-clamp-1" title={session.name}>
+                                                {session.name}
+                                            </CardTitle>
+                                            {session.exam && (
+                                                <div className="flex items-center text-xs text-purple-600 dark:text-purple-400 font-medium bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded w-fit">
+                                                    <FileText className="w-3 h-3 mr-1" />
+                                                    {session.exam.title}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center mt-2">
+                                        {getStatusBadge(session)}
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="pt-4 space-y-4">
+                                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className="w-4 h-4 text-gray-400" />
+                                            <span>
+                                                {new Date(session.start_time).toLocaleDateString("vi-VN", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    hour: "2-digit",
+                                                    minute: "2-digit"
+                                                })}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="w-4 h-4 text-gray-400" />
+                                            <span>{session.duration} phút</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Users className="w-4 h-4 text-gray-400" />
+                                            <span className="font-medium text-gray-900 dark:text-white">{session.participant_count || 0}</span>
+                                            <span>người tham gia</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2 pt-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleEdit(session)}
+                                            className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800"
+                                        >
+                                            <Edit className="w-4 h-4 mr-1" />
+                                            Sửa
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleDelete(session.id)}
+                                            className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800"
+                                        >
+                                            <Trash2 className="w-4 h-4 mr-1" />
+                                            Xóa
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+
+                {/* Create/Edit Modal */}
+                {showCreate && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                        <Card className="w-full max-w-lg border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl">
+                            <CardHeader className="flex flex-row items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4">
+                                <CardTitle className="text-gray-800 dark:text-white text-xl">
+                                    {editingId ? "Cập nhật đợt thi" : "Tạo đợt thi mới"}
+                                </CardTitle>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                        setShowCreate(false)
+                                        resetForm()
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 -mr-2"
+                                >
+                                    <X className="w-5 h-5" />
+                                </Button>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                <form onSubmit={handleSubmit} className="space-y-5">
+                                    <div className="space-y-2">
+                                        <Label className="text-gray-700 dark:text-gray-300 font-medium">Tên đợt thi <span className="text-red-500">*</span></Label>
+                                        <Input
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            placeholder="VD: Kiểm tra Toán 15 phút - Lớp 12A"
+                                            className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 text-gray-900 dark:text-white"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-gray-700 dark:text-gray-300 font-medium">Chọn đề thi <span className="text-red-500">*</span></Label>
+                                        <select
+                                            value={examId}
+                                            onChange={(e) => setExamId(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
+                                            required
+                                        >
+                                            <option value="">-- Chọn đề thi --</option>
+                                            {exams.map(exam => (
+                                                <option key={exam.id} value={exam.id}>
+                                                    {exam.title} ({exam.total_questions} câu - {exam.subject})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {exams.length === 0 && (
+                                            <p className="text-sm text-yellow-600 bg-yellow-50 p-2 rounded border border-yellow-200">
+                                                ⚠ Bạn chưa có đề thi nào. <Link href="/teacher/exams/create" className="underline font-medium hover:text-yellow-800">Tạo ngay</Link>
+                                            </p>
                                         )}
                                     </div>
-                                </div>
-                                <div className="flex justify-between items-center mt-2">
-                                    {getStatusBadge(session)}
-                                </div>
-                            </CardHeader>
-                            <CardContent className="pt-4 space-y-4">
-                                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="w-4 h-4 text-gray-400" />
-                                        <span>
-                                            {new Date(session.start_time).toLocaleDateString("vi-VN", {
-                                                day: "2-digit",
-                                                month: "2-digit",
-                                                hour: "2-digit",
-                                                minute: "2-digit"
-                                            })}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Clock className="w-4 h-4 text-gray-400" />
-                                        <span>{session.duration} phút</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Users className="w-4 h-4 text-gray-400" />
-                                        <span className="font-medium text-gray-900 dark:text-white">{session.participant_count || 0}</span>
-                                        <span>người tham gia</span>
-                                    </div>
-                                </div>
 
-                                <div className="flex gap-2 pt-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleEdit(session)}
-                                        className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800"
-                                    >
-                                        <Edit className="w-4 h-4 mr-1" />
-                                        Sửa
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleDelete(session.id)}
-                                        className="flex-1 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800"
-                                    >
-                                        <Trash2 className="w-4 h-4 mr-1" />
-                                        Xóa
-                                    </Button>
-                                </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-gray-700 dark:text-gray-300 font-medium">Mô tả</Label>
+                                        <Textarea
+                                            value={description}
+                                            onChange={(e) => setDescription(e.target.value)}
+                                            placeholder="Thông tin thêm về đợt thi..."
+                                            className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 resize-none text-gray-900 dark:text-white"
+                                            rows={3}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-gray-700 dark:text-gray-300 font-medium">Bắt đầu <span className="text-red-500">*</span></Label>
+                                            <Input
+                                                type="datetime-local"
+                                                value={startTime}
+                                                onChange={(e) => setStartTime(e.target.value)}
+                                                className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 text-gray-900 dark:text-white"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-gray-700 dark:text-gray-300 font-medium">Kết thúc <span className="text-red-500">*</span></Label>
+                                            <Input
+                                                type="datetime-local"
+                                                value={endTime}
+                                                onChange={(e) => setEndTime(e.target.value)}
+                                                className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 text-gray-900 dark:text-white"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-gray-700 dark:text-gray-300 font-medium">Thời gian làm bài (phút)</Label>
+                                        <div className="relative">
+                                            <Input
+                                                type="number"
+                                                value={duration}
+                                                onChange={(e) => setDuration(Number(e.target.value))}
+                                                min={5}
+                                                max={180}
+                                                className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 pl-10 text-gray-900 dark:text-white"
+                                            />
+                                            <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-3 pt-4 font-medium">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setShowCreate(false)
+                                                resetForm()
+                                            }}
+                                            className="flex-1 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                                        >
+                                            Hủy
+                                        </Button>
+                                        <Button
+                                            type="submit"
+                                            disabled={saving}
+                                            className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+                                        >
+                                            {saving ? (
+                                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                            ) : editingId ? (
+                                                "Cập nhật"
+                                            ) : (
+                                                <><Plus className="w-4 h-4 mr-2" /> Tạo đợt thi</>
+                                            )}
+                                        </Button>
+                                    </div>
+                                </form>
                             </CardContent>
                         </Card>
-                    ))}
-                </div>
-            )}
+                    </div>
+                )
+                }
+            </main>
 
-            {/* Create/Edit Modal */}
-            {showCreate && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <Card className="w-full max-w-lg border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl">
-                        <CardHeader className="flex flex-row items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4">
-                            <CardTitle className="text-gray-800 dark:text-white text-xl">
-                                {editingId ? "Cập nhật đợt thi" : "Tạo đợt thi mới"}
-                            </CardTitle>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                    setShowCreate(false)
-                                    resetForm()
-                                }}
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 -mr-2"
-                            >
-                                <X className="w-5 h-5" />
-                            </Button>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                            <form onSubmit={handleSubmit} className="space-y-5">
-                                <div className="space-y-2">
-                                    <Label className="text-gray-700 dark:text-gray-300 font-medium">Tên đợt thi <span className="text-red-500">*</span></Label>
-                                    <Input
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        placeholder="VD: Kiểm tra Toán 15 phút - Lớp 12A"
-                                        className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 text-gray-900 dark:text-white"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-gray-700 dark:text-gray-300 font-medium">Chọn đề thi <span className="text-red-500">*</span></Label>
-                                    <select
-                                        value={examId}
-                                        onChange={(e) => setExamId(e.target.value)}
-                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
-                                        required
-                                    >
-                                        <option value="">-- Chọn đề thi --</option>
-                                        {exams.map(exam => (
-                                            <option key={exam.id} value={exam.id}>
-                                                {exam.title} ({exam.total_questions} câu - {exam.subject})
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {exams.length === 0 && (
-                                        <p className="text-sm text-yellow-600 bg-yellow-50 p-2 rounded border border-yellow-200">
-                                            ⚠ Bạn chưa có đề thi nào. <Link href="/teacher/exams/create" className="underline font-medium hover:text-yellow-800">Tạo ngay</Link>
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-gray-700 dark:text-gray-300 font-medium">Mô tả</Label>
-                                    <Textarea
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                        placeholder="Thông tin thêm về đợt thi..."
-                                        className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 resize-none text-gray-900 dark:text-white"
-                                        rows={3}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-gray-700 dark:text-gray-300 font-medium">Bắt đầu <span className="text-red-500">*</span></Label>
-                                        <Input
-                                            type="datetime-local"
-                                            value={startTime}
-                                            onChange={(e) => setStartTime(e.target.value)}
-                                            className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 text-gray-900 dark:text-white"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-gray-700 dark:text-gray-300 font-medium">Kết thúc <span className="text-red-500">*</span></Label>
-                                        <Input
-                                            type="datetime-local"
-                                            value={endTime}
-                                            onChange={(e) => setEndTime(e.target.value)}
-                                            className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 text-gray-900 dark:text-white"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-gray-700 dark:text-gray-300 font-medium">Thời gian làm bài (phút)</Label>
-                                    <div className="relative">
-                                        <Input
-                                            type="number"
-                                            value={duration}
-                                            onChange={(e) => setDuration(Number(e.target.value))}
-                                            min={5}
-                                            max={180}
-                                            className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500 pl-10 text-gray-900 dark:text-white"
-                                        />
-                                        <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3 pt-4 font-medium">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => {
-                                            setShowCreate(false)
-                                            resetForm()
-                                        }}
-                                        className="flex-1 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
-                                    >
-                                        Hủy
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        disabled={saving}
-                                        className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
-                                    >
-                                        {saving ? (
-                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                        ) : editingId ? (
-                                            "Cập nhật"
-                                        ) : (
-                                            <><Plus className="w-4 h-4 mr-2" /> Tạo đợt thi</>
-                                        )}
-                                    </Button>
-                                </div>
-                            </form>
-                        </CardContent>
-                    </Card>
-                </div>
-            )
-            }
-        </PageContainer >
+            {/* Mobile Bottom Nav */}
+            <TeacherBottomNav />
+        </div>
     )
 }
