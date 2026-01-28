@@ -16,7 +16,8 @@ import {
     Medal,
     ArrowRight,
     Share2,
-    RotateCcw
+    RotateCcw,
+    GraduationCap
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { updateStudentStats } from "@/lib/gamification"
@@ -229,8 +230,10 @@ export default function ExamResultPage() {
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         <Link href="/student/dashboard" className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-md">E</div>
-                            <span className="font-bold text-xl text-blue-600 hidden md:block">ExamHub</span>
+                            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-blue-900/30">
+                                <GraduationCap className="w-6 h-6 text-white" />
+                            </div>
+                            <span className="font-bold text-xl text-gray-800 dark:text-white hidden md:block">ExamHub</span>
                         </Link>
                     </div>
                     <div className="flex items-center gap-3">
