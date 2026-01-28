@@ -15,8 +15,7 @@ import {
     ChevronRight,
     Shield,
     AlertOctagon,
-    Maximize,
-    ExternalLink
+    Maximize
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AntiCheatProvider } from "@/components/exam/AntiCheatProvider"
@@ -49,8 +48,6 @@ interface Exam {
     end_time?: string
     max_attempts?: number
 }
-
-import { PDFViewer } from "@/components/PDFViewer"
 
 export default function TakeExamPage() {
     const router = useRouter()

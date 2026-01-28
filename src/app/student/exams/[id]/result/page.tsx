@@ -409,7 +409,7 @@ export default function ExamResultPage() {
                                     <div className="mb-8">
                                         <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4 flex items-center gap-2">
                                             <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                                            Trả lời ngắn
+                                            Trả lời ngắn ({exam.sa_answers.length} câu)
                                         </h3>
                                         <div className="space-y-3">
                                             {exam.sa_answers.map((sa, i) => {
@@ -444,14 +444,12 @@ export default function ExamResultPage() {
                                                                     {studentSa?.answer || "-"}
                                                                 </p>
                                                             </div>
-                                                            {!isCorrect && (
-                                                                <div>
-                                                                    <span className="text-gray-500 dark:text-gray-400">Đáp án đúng:</span>
-                                                                    <p className="font-bold text-green-700 dark:text-green-400">
-                                                                        {sa.answer}
-                                                                    </p>
-                                                                </div>
-                                                            )}
+                                                            <div>
+                                                                <span className="text-gray-500 dark:text-gray-400">Đáp án đúng:</span>
+                                                                <p className="font-bold text-green-700 dark:text-green-400">
+                                                                    {sa.answer}
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 )
