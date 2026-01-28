@@ -49,6 +49,8 @@ interface Exam {
     max_attempts?: number
 }
 
+import { PDFViewer } from "@/components/PDFViewer"
+
 export default function TakeExamPage() {
     const router = useRouter()
     const params = useParams()
@@ -645,10 +647,10 @@ export default function TakeExamPage() {
                     <div className="lg:w-1/2 flex flex-col p-4 overflow-hidden border-r border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm z-10">
                         {exam.pdf_url ? (
                             <div className="flex-1 rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700 flex flex-col bg-gray-50 dark:bg-slate-800">
-                                <iframe
-                                    src={`${exam.pdf_url}#page=${pdfPage}`}
-                                    className="flex-1 w-full bg-white"
-                                    title="Đề thi PDF"
+                                <PDFViewer
+                                    url={exam.pdf_url}
+                                    page={pdfPage}
+                                    className="flex-1 bg-white"
                                 />
                                 <div className="p-2 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 flex items-center justify-center gap-4">
                                     <Button
