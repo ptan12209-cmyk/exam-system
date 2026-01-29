@@ -302,7 +302,27 @@ export default function ExamBankPage() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Xóa đề thi này?")) return
+        const examToDelete = exams.find(e => e.id === id)
+        if (!confirm(`Xóa đề thi "${examToDelete?.title}"?`)) return
+
+        // Get students who submitted this exam
+        const { data: submissions } = await supabase
+            .from("submissions")
+            .select("student_id")
+            .eq("exam_id", id)
+
+        // Send notifications to students
+        if (submissions && submissions.length > 0) {
+            const studentIds = [...new Set(submissions.map((s: { student_id: string }) => s.student_id))]
+            const notifications = studentIds.map(studentId => ({
+                user_id: studentId,
+                type: "exam_deleted",
+                title: "Đề thi đã bị xóa",
+                message: `Đề thi "${examToDelete?.title}" đã bị giáo viên xóa khỏi hệ thống.`,
+                read: false
+            }))
+            await supabase.from("notifications").insert(notifications)
+        }
 
         const { error } = await supabase
             .from("exams")
@@ -316,6 +336,7 @@ export default function ExamBankPage() {
 
         await fetchExams()
     }
+
 
     if (loading) {
         return (

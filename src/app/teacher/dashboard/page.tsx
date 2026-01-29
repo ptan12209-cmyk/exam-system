@@ -127,11 +127,33 @@ export default function TeacherDashboard() {
     }
 
     const handleDeleteExam = async (examId: string) => {
-        if (!confirm("Bạn có chắc muốn xóa đề thi này?")) return
+        const examToDelete = exams.find(e => e.id === examId)
+        if (!confirm(`Bạn có chắc muốn xóa đề thi "${examToDelete?.title}"?`)) return
 
+        // Get students who submitted this exam
+        const { data: submissions } = await supabase
+            .from("submissions")
+            .select("student_id")
+            .eq("exam_id", examId)
+
+        // Send notifications to students
+        if (submissions && submissions.length > 0) {
+            const studentIds = [...new Set(submissions.map((s: { student_id: string }) => s.student_id))]
+            const notifications = studentIds.map(studentId => ({
+                user_id: studentId,
+                type: "exam_deleted",
+                title: "Đề thi đã bị xóa",
+                message: `Đề thi "${examToDelete?.title}" đã bị giáo viên xóa khỏi hệ thống.`,
+                read: false
+            }))
+            await supabase.from("notifications").insert(notifications)
+        }
+
+        // Delete exam
         await supabase.from("exams").delete().eq("id", examId)
         setExams(exams.filter(e => e.id !== examId))
     }
+
 
     const handleToggleStatus = async (exam: Exam) => {
         const newStatus = exam.status === "published" ? "draft" : "published"
