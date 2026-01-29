@@ -43,7 +43,6 @@ interface Resource {
     download_count: number;
     created_at: string;
     uploader_id: string;
-    profiles?: { full_name: string | null };
 }
 
 const SUBJECTS = [
@@ -93,13 +92,14 @@ export default function ResourcesPage() {
         setLoading(true);
         let query = supabase
             .from("resources")
-            .select("*, profiles!uploader_id(full_name)")
+            .select("*")
             .order("created_at", { ascending: false });
 
         if (filterType) query = query.eq("type", filterType);
         if (filterSubject) query = query.eq("subject", filterSubject);
 
         const { data, error } = await query;
+        console.log("Resources fetch:", { data, error }); // Debug log
         if (!error && data) setResources(data);
         setLoading(false);
     };

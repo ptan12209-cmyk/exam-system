@@ -319,7 +319,7 @@ export default function ExamBankPage() {
                 type: "exam_deleted",
                 title: "Đề thi đã bị xóa",
                 message: `Đề thi "${examToDelete?.title}" đã bị giáo viên xóa khỏi hệ thống.`,
-                read: false
+                is_read: false
             }))
             await supabase.from("notifications").insert(notifications)
         }
