@@ -268,80 +268,17 @@ export default function EditExamPage() {
                 })
                 .eq("id", examId)
 
-            // Get all submissions for this exam
-            const { data: submissions } = await supabase
-                .from("submissions")
-                .select("id, answers, tf_answers, sa_answers")
-                .eq("exam_id", examId)
+            // Call RPC to regrade on server side
+            const { data: updatedCount, error: rpcError } = await supabase
+                .rpc("regrade_exam", { p_exam_id: examId })
 
-            if (!submissions || submissions.length === 0) {
+            if (rpcError) throw rpcError
+
+            if (updatedCount === 0) {
                 setSuccess("Không có bài nộp nào để chấm lại.")
-                setRegrading(false)
-                return
+            } else {
+                setSuccess(`✅ Đã chấm lại ${updatedCount} bài nộp thành công!`)
             }
-
-            // Recalculate each submission
-            let updatedCount = 0
-            for (const sub of submissions) {
-                let correctCount = 0
-                const totalQuestions = mcCount + tfCount + saCount
-
-                // Grade MC answers
-                if (sub.answers && mcAnswers.length > 0) {
-                    const studentMc = sub.answers as string[]
-                    for (let i = 0; i < mcAnswers.length; i++) {
-                        if (mcAnswers[i] && studentMc[i]?.toUpperCase() === mcAnswers[i]) {
-                            correctCount++
-                        }
-                    }
-                }
-
-                // Grade TF answers (0.25 per correct sub-part)
-                if (sub.tf_answers && finalTfAnswers.length > 0) {
-                    const studentTf = sub.tf_answers as TFAnswer[]
-                    for (let i = 0; i < finalTfAnswers.length; i++) {
-                        const correct = finalTfAnswers[i]
-                        const student = studentTf.find(t => t.question === correct.question)
-                        if (student && correct) {
-                            let tfScore = 0
-                            if (student.a === correct.a) tfScore += 0.25
-                            if (student.b === correct.b) tfScore += 0.25
-                            if (student.c === correct.c) tfScore += 0.25
-                            if (student.d === correct.d) tfScore += 0.25
-                            correctCount += tfScore
-                        }
-                    }
-                }
-
-                // Grade SA answers
-                if (sub.sa_answers && finalSaAnswers.length > 0) {
-                    const studentSa = sub.sa_answers as SAAnswer[]
-                    for (let i = 0; i < finalSaAnswers.length; i++) {
-                        const correct = finalSaAnswers[i]
-                        const student = studentSa.find(s => s.question === correct.question)
-                        if (student && correct) {
-                            const correctVal = correct.answer?.toString().trim().toLowerCase()
-                            const studentVal = student.answer?.toString().trim().toLowerCase()
-                            if (correctVal && studentVal && correctVal === studentVal) {
-                                correctCount++
-                            }
-                        }
-                    }
-                }
-
-                // Calculate score
-                const score = totalQuestions > 0 ? (correctCount / totalQuestions) * 10 : 0
-
-                // Update submission
-                await supabase
-                    .from("submissions")
-                    .update({ score, correct_count: Math.round(correctCount * 100) / 100 })
-                    .eq("id", sub.id)
-
-                updatedCount++
-            }
-
-            setSuccess(`✅ Đã chấm lại ${updatedCount} bài nộp thành công!`)
         } catch (err) {
             setError("Lỗi chấm lại: " + (err as Error).message)
         } finally {
