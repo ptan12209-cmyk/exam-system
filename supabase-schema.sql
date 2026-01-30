@@ -90,10 +90,28 @@ create table public.submissions (
   time_spent integer not null default 0, -- seconds
   started_at timestamptz default now(),
   submitted_at timestamptz default now() not null,
+
+  -- Session tracking
+  session_id uuid,
+  is_ranked boolean DEFAULT true,
+  cheat_flags jsonb DEFAULT '{}',
+
+  -- Detailed answers
+  mc_student_answers jsonb DEFAULT '[]',
+  tf_student_answers jsonb DEFAULT '[]',
+  sa_student_answers jsonb DEFAULT '[]',
+  mc_correct integer DEFAULT 0,
+  tf_correct integer DEFAULT 0,
+  sa_correct integer DEFAULT 0,
+  attempt_number integer DEFAULT 1,
   
   -- Unique constraint: one submission per student per exam
   unique(exam_id, student_id)
 );
+
+COMMENT ON COLUMN public.submissions.session_id IS 'Optional session ID for ranked exams';
+COMMENT ON COLUMN public.submissions.is_ranked IS 'Whether this submission counts for leaderboard';
+COMMENT ON COLUMN public.submissions.cheat_flags IS 'Cheat detection data {tab_switches, multi_browser, etc}';
 
 -- Enable RLS
 alter table public.submissions enable row level security;
