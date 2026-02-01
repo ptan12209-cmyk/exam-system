@@ -25,10 +25,9 @@ import { cn } from "@/lib/utils"
 
 interface Question {
     id: string
-    content: string
+    question_text: string
     options: string[]
-    correct_answer: string
-    difficulty: number
+    correct_answer: number
 }
 
 interface ArenaSession {
@@ -110,52 +109,32 @@ export default function ArenaBattlePage() {
         setArena(arenaData)
         setTimeLeft(arenaData.duration * 60)
 
-        // Shuffle options for a question
-        const shuffleOptions = (q: Question): Question => {
-            const letters = ["A", "B", "C", "D"]
-
-            // Create array with original indices
-            const optionsWithIndex = q.options.map((opt, idx) => ({
-                text: opt,
-                originalLetter: letters[idx]
-            }))
-
-            // Fisher-Yates shuffle
-            for (let i = optionsWithIndex.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [optionsWithIndex[i], optionsWithIndex[j]] = [optionsWithIndex[j], optionsWithIndex[i]]
-            }
-
-            // Find new position of correct answer
-            const newCorrectIndex = optionsWithIndex.findIndex(o => o.originalLetter === q.correct_answer)
-
-            return {
-                ...q,
-                options: optionsWithIndex.map((o, idx) => {
-                    const newLetter = letters[idx]
-                    return o.text.replace(/^[A-D]\./, `${newLetter}.`)
-                }),
-                correct_answer: letters[newCorrectIndex]
-            }
+        // Get questions from the exam linked to this arena session
+        if (!arenaData.exam_id) {
+            console.error("Arena session has no exam_id")
+            setLoading(false)
+            return
         }
 
         const { data: questionsData, error: questionsError } = await supabase
             .from("questions")
-            .select("id, content, options, correct_answer, difficulty")
-            .eq("subject", arenaData.subject)
-            .limit(arenaData.total_questions * 2)
+            .select("id, question_text, options, correct_answer")
+            .eq("exam_id", arenaData.exam_id)
+            .order("order_index")
 
         if (questionsError) {
             console.error("Error fetching questions:", questionsError)
         }
 
         if (questionsData && questionsData.length > 0) {
-            // Shuffle and limit questions
-            const shuffled = questionsData.sort(() => Math.random() - 0.5)
-            const selected = shuffled.slice(0, arenaData.total_questions)
-            // Sort by difficulty
-            const sorted = selected.sort((a: Question, b: Question) => a.difficulty - b.difficulty)
-            setQuestions(sorted.map(shuffleOptions))
+            // Map to correct format
+            const mappedQuestions = questionsData.map((q: any) => ({
+                id: q.id,
+                question_text: q.question_text,
+                options: q.options || ['A', 'B', 'C', 'D'],
+                correct_answer: ['A', 'B', 'C', 'D'][q.correct_answer] || 'A'
+            }))
+            setQuestions(mappedQuestions)
         }
 
         setLoading(false)
@@ -198,12 +177,13 @@ export default function ArenaBattlePage() {
             let correct = 0
             const answerDetails = questions.map(q => {
                 const userAnswer = answers[q.id] || null
-                const isCorrect = userAnswer === q.correct_answer
+                const correctAnswerLetter = ['A', 'B', 'C', 'D'][q.correct_answer] || 'A'
+                const isCorrect = userAnswer === correctAnswerLetter
                 if (isCorrect) correct++
                 return {
                     question_id: q.id,
                     answer: userAnswer,
-                    correct_answer: q.correct_answer,
+                    correct_answer: correctAnswerLetter,
                     is_correct: isCorrect
                 }
             })
@@ -381,16 +361,13 @@ export default function ArenaBattlePage() {
                                     <div className="px-3 py-1 rounded-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm font-bold text-gray-700 dark:text-gray-300">
                                         Câu {currentIndex + 1}
                                     </div>
-                                    <span className={cn("px-2 py-1 rounded text-xs font-medium border", getDifficultyColor(currentQuestion.difficulty))}>
-                                        {getDifficultyLabel(currentQuestion.difficulty)}
-                                    </span>
                                 </div>
                             </div>
 
                             {/* Question Content */}
                             <div className="p-6 md:p-8">
                                 <div className="text-gray-800 dark:text-white text-lg leading-relaxed mb-8">
-                                    <MathRenderer content={currentQuestion.content} />
+                                    <MathRenderer content={currentQuestion.question_text} />
                                 </div>
 
                                 <div className="grid gap-3">
