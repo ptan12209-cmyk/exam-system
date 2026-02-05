@@ -70,7 +70,7 @@ export default function RootLayout({
             {children}
           </div>
           <MobileNav />
-          <InstallPrompt />
+          {/* <InstallPrompt /> */}
         </ThemeProvider>
       </body>
     </html>
