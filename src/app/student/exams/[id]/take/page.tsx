@@ -37,16 +37,17 @@ interface Exam {
     duration: number
     total_questions: number
     pdf_url: string | null
-    correct_answers: string[]
-    // New multi-type fields
-    mc_answers?: { question: number; answer: string }[]
-    tf_answers?: TFAnswer[]
-    sa_answers?: SAAnswer[]
+    // REMOVED: correct_answers, mc_answers, tf_answers, sa_answers - these are SECRET
+    // Safe question structures (no answers)
+    mc_questions?: { question: number }[]
+    tf_questions?: { question: number }[]
+    sa_questions?: { question: number }[]
     // Scheduling fields
     is_scheduled?: boolean
     start_time?: string
     end_time?: string
     max_attempts?: number
+    attempts_used?: number
 }
 
 export default function TakeExamPage() {
@@ -101,47 +102,27 @@ export default function TakeExamPage() {
                 return
             }
 
-            // Get exam first to check max_attempts
-            const { data: examData, error } = await supabase
-                .from("exams")
-                .select("*")
-                .eq("id", examId)
-                .eq("status", "published")
-                .single()
+            // Get exam questions via SECURE API (no answer keys exposed)
+            const examResponse = await fetch(`/api/exams/${examId}/questions`)
 
-            if (error || !examData) {
+            if (!examResponse.ok) {
+                const errorData = await examResponse.json()
+                if (examResponse.status === 403) {
+                    if (errorData.error === 'Maximum attempts reached') {
+                        router.push(`/student/exams/${examId}/result`)
+                        return
+                    }
+                    if (errorData.start_time) {
+                        alert(`Đề thi này sẽ mở lúc ${new Date(errorData.start_time).toLocaleString("vi-VN")}`)
+                    } else {
+                        alert(errorData.error || "Không thể truy cập đề thi")
+                    }
+                }
                 router.push("/student/dashboard")
                 return
             }
 
-            // Check if exam is scheduled and within time window
-            if (examData.is_scheduled) {
-                const now = new Date()
-                if (examData.start_time && new Date(examData.start_time) > now) {
-                    alert(`Đề thi này sẽ mở lúc ${new Date(examData.start_time).toLocaleString("vi-VN")}`)
-                    router.push("/student/dashboard")
-                    return
-                }
-                if (examData.end_time && new Date(examData.end_time) < now) {
-                    alert("Đề thi này đã hết hạn làm bài")
-                    router.push("/student/dashboard")
-                    return
-                }
-            }
-
-            // Check attempt count
-            const maxAttempts = examData.max_attempts ?? 1
-            const { count: attemptCount } = await supabase
-                .from("submissions")
-                .select("id", { count: "exact", head: true })
-                .eq("exam_id", examId)
-                .eq("student_id", user.id)
-
-            // If max_attempts is not 0 (unlimited) and attempts exceeded, redirect to result
-            if (maxAttempts !== 0 && (attemptCount ?? 0) >= maxAttempts) {
-                router.push(`/student/exams/${examId}/result`)
-                return
-            }
+            const examData = await examResponse.json()
 
             setExam(examData)
             setTimeLeft(examData.duration * 60)
@@ -216,7 +197,7 @@ export default function TakeExamPage() {
             }
 
             // Create shuffle order for MC questions (consistent per student per exam)
-            const mcCount = examData.mc_answers?.length || examData.total_questions || 12
+            const mcCount = examData.mc_questions?.length || examData.total_questions || 12
             if (shuffleEnabled) {
                 const seed = createShuffleSeed(examId, user.id)
                 const indices = Array.from({ length: mcCount }, (_, i) => i)
@@ -238,8 +219,8 @@ export default function TakeExamPage() {
                 setStudentAnswers(Array(mcCount).fill(null))
 
                 // Initialize TF student answers
-                if (examData.tf_answers && examData.tf_answers.length > 0) {
-                    const tfInit: TFStudentAnswer[] = examData.tf_answers.map((tf: TFAnswer) => ({
+                if (examData.tf_questions && examData.tf_questions.length > 0) {
+                    const tfInit: TFStudentAnswer[] = examData.tf_questions.map((tf: { question: number }) => ({
                         question: tf.question,
                         a: null, b: null, c: null, d: null
                     }))
@@ -247,8 +228,8 @@ export default function TakeExamPage() {
                 }
 
                 // Initialize SA student answers
-                if (examData.sa_answers && examData.sa_answers.length > 0) {
-                    const saInit: SAStudentAnswer[] = examData.sa_answers.map((sa: SAAnswer) => ({
+                if (examData.sa_questions && examData.sa_questions.length > 0) {
+                    const saInit: SAStudentAnswer[] = examData.sa_questions.map((sa: { question: number }) => ({
                         question: sa.question,
                         answer: ""
                     }))
@@ -328,119 +309,48 @@ export default function TakeExamPage() {
         setSubmitting(true)
 
         try {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user || !exam) return
-
-            // Calculate MC score
-            let mcCorrect = 0
-            const mcTotal = exam.mc_answers?.length || exam.correct_answers?.length || 0
-            studentAnswers.forEach((answer, i) => {
-                if (exam.mc_answers && exam.mc_answers[i]) {
-                    if (answer === exam.mc_answers[i].answer) mcCorrect++
-                } else if (exam.correct_answers && answer === exam.correct_answers[i]) {
-                    mcCorrect++
-                }
-            })
-
-            // Calculate TF score
-            let tfCorrect = 0
-            const tfTotal = exam.tf_answers?.length || 0
-            if (exam.tf_answers) {
-                tfStudentAnswers.forEach(studentTf => {
-                    const correctTf = exam.tf_answers?.find((t: TFAnswer) => t.question === studentTf.question)
-                    if (correctTf) {
-                        let subCorrect = 0
-                        if (studentTf.a === correctTf.a) subCorrect++
-                        if (studentTf.b === correctTf.b) subCorrect++
-                        if (studentTf.c === correctTf.c) subCorrect++
-                        if (studentTf.d === correctTf.d) subCorrect++
-                        tfCorrect += subCorrect / 4
-                    }
-                })
+            if (!exam) {
+                setSubmitting(false)
+                return
             }
 
-            // Calculate SA score
-            let saCorrect = 0
-            const saTotal = exam.sa_answers?.length || 0
-            if (exam.sa_answers) {
-                saStudentAnswers.forEach(studentSa => {
-                    const correctSa = exam.sa_answers?.find((s: SAAnswer) => s.question === studentSa.question)
-                    if (correctSa) {
-                        const correctVal = parseFloat(correctSa.answer.toString().replace(',', '.'))
-                        const studentVal = parseFloat(studentSa.answer.replace(',', '.'))
-                        const tolerance = Math.abs(correctVal) * 0.05
-                        if (Math.abs(correctVal - studentVal) <= tolerance) {
-                            saCorrect++
-                        }
-                    }
-                })
-            }
-
-            const totalQuestions = mcTotal + tfTotal + saTotal
-            const totalCorrect = mcCorrect + tfCorrect + saCorrect
-            const score = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 10 : 0
             const timeSpent = Math.floor((Date.now() - startTime) / 1000)
 
-            const { count } = await supabase
-                .from("submissions")
-                .select("*", { count: "exact", head: true })
-                .eq("exam_id", examId)
-                .eq("student_id", user.id)
-
-            const attemptNumber = (count ?? 0) + 1
-
-            // Save submission
-            const { error } = await supabase
-                .from("submissions")
-                .insert({
+            // SECURE SUBMIT: Send answers to server API, server calculates score
+            const response = await fetch('/api/exams/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
                     exam_id: examId,
-                    student_id: user.id,
-                    student_answers: studentAnswers,
-                    mc_student_answers: studentAnswers.map((a, i) => ({ question: i + 1, answer: a })),
-                    tf_student_answers: tfStudentAnswers,
-                    sa_student_answers: saStudentAnswers,
-                    score,
-                    correct_count: Math.round(totalCorrect),
-                    mc_correct: mcCorrect,
-                    tf_correct: Math.round(tfCorrect),
-                    sa_correct: saCorrect,
-                    submitted_at: new Date().toISOString(),
-                    time_spent: timeSpent,
-                    attempt_number: attemptNumber,
+                    mc_answers: studentAnswers,
+                    tf_answers: tfStudentAnswers,
+                    sa_answers: saStudentAnswers,
                     session_id: sessionId,
-                    is_ranked: isRanked,
+                    time_spent: timeSpent,
                     cheat_flags: {
                         tab_switches: tabSwitchCount,
                         multi_browser: false
                     }
                 })
+            })
 
-            if (error) throw error
-
-            if (sessionId) {
-                await supabase
-                    .from("exam_sessions")
-                    .update({
-                        status: "completed",
-                        ended_at: new Date().toISOString(),
-                        time_spent: timeSpent
-                    })
-                    .eq("id", sessionId)
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Submission failed')
             }
 
-            await supabase
-                .from("exam_participants")
-                .update({ status: "submitted", last_active: new Date().toISOString() })
-                .eq("exam_id", examId)
-                .eq("user_id", user.id)
+            // Server returns the score (we don't calculate it client-side anymore)
+            const result = await response.json()
+            console.log('Submission result:', result)
 
             localStorage.removeItem(LOCAL_STORAGE_KEY)
             router.push(`/student/exams/${examId}/result`)
         } catch (err) {
             console.error("Submit error:", err)
+            alert("Lỗi nộp bài: " + (err instanceof Error ? err.message : 'Unknown error'))
             setSubmitting(false)
         }
-    }, [exam, examId, studentAnswers, tfStudentAnswers, saStudentAnswers, startTime, supabase, router, submitting, LOCAL_STORAGE_KEY, sessionId, isRanked, tabSwitchCount])
+    }, [exam, examId, studentAnswers, tfStudentAnswers, saStudentAnswers, startTime, router, submitting, LOCAL_STORAGE_KEY, sessionId, tabSwitchCount])
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60)
@@ -719,7 +629,7 @@ export default function TakeExamPage() {
                                 >
                                     Trắc nghiệm
                                 </button>
-                                {exam.tf_answers && exam.tf_answers.length > 0 && (
+                                {exam.tf_questions && exam.tf_questions.length > 0 && (
                                     <button
                                         onClick={() => setActiveTab("tf")}
                                         className={cn(
@@ -730,7 +640,7 @@ export default function TakeExamPage() {
                                         Đúng/Sai
                                     </button>
                                 )}
-                                {exam.sa_answers && exam.sa_answers.length > 0 && (
+                                {exam.sa_questions && exam.sa_questions.length > 0 && (
                                     <button
                                         onClick={() => setActiveTab("sa")}
                                         className={cn(
@@ -749,7 +659,7 @@ export default function TakeExamPage() {
                             {activeTab === "mc" && (
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                                        {Array.from({ length: exam.mc_answers?.length || exam.total_questions }, (_, i) => (
+                                        {Array.from({ length: exam.mc_questions?.length || exam.total_questions }, (_, i) => (
                                             <div key={i} id={`q-${i}`} className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Câu {i + 1}</span>
@@ -780,9 +690,9 @@ export default function TakeExamPage() {
                             )}
 
                             {/* True/False Grid */}
-                            {activeTab === "tf" && exam.tf_answers && (
+                            {activeTab === "tf" && exam.tf_questions && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                    {exam.tf_answers.map((tf, i) => {
+                                    {exam.tf_questions.map((tf: { question: number }, i: number) => {
                                         const studentTf = tfStudentAnswers.find(a => a.question === tf.question) ||
                                             { question: tf.question, a: null, b: null, c: null, d: null }
                                         return (
@@ -840,9 +750,9 @@ export default function TakeExamPage() {
                             )}
 
                             {/* Short Answer Grid */}
-                            {activeTab === "sa" && exam.sa_answers && (
+                            {activeTab === "sa" && exam.sa_questions && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {exam.sa_answers.map((sa, i) => {
+                                    {exam.sa_questions.map((sa: { question: number }, i: number) => {
                                         const studentSa = saStudentAnswers.find(a => a.question === sa.question)
                                         return (
                                             <div key={i} className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-gray-100 dark:border-slate-800 shadow-sm">
