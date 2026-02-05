@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimiters, getClientIP, rateLimitResponse } from '@/lib/rate-limit'
+import { invalidateCache } from '@/lib/cache'
 
 // Type definitions
 type TFStudentAnswer = { question: number; a: boolean | null; b: boolean | null; c: boolean | null; d: boolean | null }
@@ -256,6 +257,9 @@ export async function POST(request: NextRequest) {
         } catch (auditErr) {
             console.warn('Audit log failed:', auditErr)
         }
+
+        // 🚀 Invalidate leaderboard cache for this exam
+        invalidateCache.submission(exam_id)
 
         // Return result (score is now trustworthy)
         return NextResponse.json({
