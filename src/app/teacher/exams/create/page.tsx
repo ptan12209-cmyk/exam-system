@@ -27,6 +27,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SUBJECTS } from "@/lib/subjects"
+import { ExamLinkDialog } from "@/components/ExamLinkDialog"
 
 const OPTIONS = ["A", "B", "C", "D"] as const
 type Option = typeof OPTIONS[number]
@@ -81,6 +82,14 @@ export default function CreateExamPage() {
     const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || "http://localhost:8000"
 
     const [sendNotification, setSendNotification] = useState(true)
+
+    // Score visibility settings
+    const [scoreVisibilityMode, setScoreVisibilityMode] = useState<'always' | 'never' | 'threshold'>('always')
+    const [scoreThreshold, setScoreThreshold] = useState(5.0)
+
+    // Exam link dialog
+    const [showLinkDialog, setShowLinkDialog] = useState(false)
+    const [createdExamId, setCreatedExamId] = useState<string | null>(null)
 
     const handleTotalQuestionsChange = (value: number) => {
         const newValue = Math.max(1, Math.min(100, value))
@@ -316,12 +325,20 @@ export default function CreateExamPage() {
                     subject,
                     is_scheduled: isScheduled,
                     start_time: isScheduled && startTime ? new Date(startTime).toISOString() : null,
-                    end_time: isScheduled && endTime ? new Date(endTime).toISOString() : null
+                    end_time: isScheduled && endTime ? new Date(endTime).toISOString() : null,
+                    score_visibility_mode: scoreVisibilityMode,
+                    score_visibility_threshold: scoreVisibilityMode === 'threshold' ? scoreThreshold : null
                 })
                 .select()
                 .single()
 
             if (insertError) throw insertError
+
+            // Show link dialog after successful creation
+            if (data) {
+                setCreatedExamId(data.id)
+                setShowLinkDialog(true)
+            }
 
             if (publish && sendNotification && data) {
                 try {
@@ -344,7 +361,8 @@ export default function CreateExamPage() {
                 }
             }
 
-            router.push("/teacher/dashboard")
+            // Don't auto-redirect, let user close the dialog first
+            // router.push("/teacher/dashboard")
         } catch (err) {
             setError("Lỗi lưu đề thi: " + (err as Error).message)
         } finally {
@@ -637,6 +655,76 @@ export default function CreateExamPage() {
                                 </Card>
                             </div>
                         </div>
+
+                        {/* Score Visibility Card */}
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                            <CardHeader>
+                                <CardTitle className="text-gray-800 dark:text-white flex items-center gap-2">
+                                    <Eye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    Hiển thị điểm
+                                </CardTitle>
+                                <CardDescription className="text-gray-500 dark:text-gray-400">
+                                    Kiểm soát khi nào học sinh có thể xem kết quả bài làm
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="scoreVisibility" className="text-gray-700 dark:text-gray-300 font-medium">
+                                        Chế độ hiển thị
+                                    </Label>
+                                    <select
+                                        id="scoreVisibility"
+                                        value={scoreVisibilityMode}
+                                        onChange={(e) => setScoreVisibilityMode(e.target.value as 'always' | 'never' | 'threshold')}
+                                        className="w-full h-10 px-3 rounded-md bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                    >
+                                        <option value="always">✅ Luôn cho xem điểm</option>
+                                        <option value="never">🔒 Không cho xem điểm</option>
+                                        <option value="threshold">📊 Chỉ hiện khi đạt ngưỡng</option>
+                                    </select>
+
+                                    {scoreVisibilityMode === 'always' && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                            Học sinh sẽ thấy điểm và chi tiết bài làm ngay sau khi nộp
+                                        </p>
+                                    )}
+                                    {scoreVisibilityMode === 'never' && (
+                                        <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
+                                            ⚠️ Học sinh sẽ KHÔNG thấy điểm, chi tiết câu trả lời và bảng xếp hạng
+                                        </p>
+                                    )}
+                                    {scoreVisibilityMode === 'threshold' && (
+                                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                                            💡 Chỉ học sinh đạt ngưỡng mới xem được kết quả
+                                        </p>
+                                    )}
+                                </div>
+
+                                {scoreVisibilityMode === 'threshold' && (
+                                    <div className="space-y-2 pt-3 border-t border-gray-100 dark:border-slate-700">
+                                        <Label htmlFor="scoreThreshold" className="text-gray-700 dark:text-gray-300 font-medium">
+                                            Điểm tối thiểu để xem kết quả
+                                        </Label>
+                                        <div className="flex items-center gap-3">
+                                            <Input
+                                                id="scoreThreshold"
+                                                type="number"
+                                                min={0}
+                                                max={10}
+                                                step={0.5}
+                                                value={scoreThreshold}
+                                                onChange={(e) => setScoreThreshold(Math.max(0, Math.min(10, Number(e.target.value))))}
+                                                className="w-24 text-center font-bold text-lg bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white"
+                                            />
+                                            <span className="text-gray-500 dark:text-gray-400">/ 10.0 điểm</span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Học sinh cần đạt ≥ {scoreThreshold.toFixed(1)} điểm để xem được kết quả chi tiết
+                                        </p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
 
                         {/* File Uploads */}
                         <div className="grid md:grid-cols-2 gap-6">
@@ -1024,6 +1112,19 @@ export default function CreateExamPage() {
                     </Card>
                 )}
             </div>
+
+            {/* Exam Link Dialog */}
+            {createdExamId && (
+                <ExamLinkDialog
+                    examId={createdExamId}
+                    examTitle={title}
+                    open={showLinkDialog}
+                    onClose={() => {
+                        setShowLinkDialog(false)
+                        router.push("/teacher/dashboard")
+                    }}
+                />
+            )}
         </div >
     )
 }
