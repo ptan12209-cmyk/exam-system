@@ -213,6 +213,15 @@ export default function ExamScoresPage() {
                         </div>
                     </div>
                     <div className="flex gap-3">
+                        <Link href={`/teacher/exams/${examId}/monitor`}>
+                            <Button
+                                variant="outline"
+                                className="border-green-300 dark:border-green-700 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
+                            >
+                                <Eye className="w-4 h-4 mr-2" />
+                                Monitor Live
+                            </Button>
+                        </Link>
                         <Link href={`/teacher/exams/${examId}/edit`}>
                             <Button
                                 variant="outline"
@@ -223,11 +232,19 @@ export default function ExamScoresPage() {
                             </Button>
                         </Link>
                         <Button
+                            onClick={() => window.open(`/api/exams/${examId}/export?format=csv`, '_blank')}
+                            variant="outline"
+                            className="border-gray-300 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-slate-800"
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            CSV
+                        </Button>
+                        <Button
                             onClick={handleExportExcel}
                             className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
                         >
                             <Download className="w-4 h-4 mr-2" />
-                            Xuất Excel
+                            Excel
                         </Button>
                     </div>
                 </div>
