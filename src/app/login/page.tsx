@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { Captcha, useCaptcha } from "@/components/Captcha"
 
 export default function LoginPage() {
     const router = useRouter()
@@ -15,11 +16,19 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const { verified: captchaVerified, onVerify: onCaptchaVerify, onExpire: onCaptchaExpire } = useCaptcha()
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
         setError(null)
+
+        // 🔒 CAPTCHA verification
+        if (!captchaVerified) {
+            setError("Vui lòng xác nhận bạn không phải robot")
+            setLoading(false)
+            return
+        }
 
         const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
@@ -171,6 +180,15 @@ export default function LoginPage() {
                                         Bằng việc đăng nhập, bạn đồng ý với{" "}
                                         <a href="#" className="text-blue-500 hover:underline">Điều khoản dịch vụ</a> và{" "}
                                         <a href="#" className="text-blue-500 hover:underline">Chính sách bảo mật</a>.
+                                    </div>
+
+                                    {/* CAPTCHA */}
+                                    <div className="py-2">
+                                        <Captcha
+                                            onVerify={onCaptchaVerify}
+                                            onExpire={onCaptchaExpire}
+                                            theme="auto"
+                                        />
                                     </div>
 
                                     <button

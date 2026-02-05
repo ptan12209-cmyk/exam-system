@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { rateLimiters, getClientIP, rateLimitResponse } from '@/lib/rate-limit'
 
 // Type definitions
 type TFStudentAnswer = { question: number; a: boolean | null; b: boolean | null; c: boolean | null; d: boolean | null }
@@ -18,11 +19,14 @@ interface SubmitRequest {
         tab_switches: number
         multi_browser: boolean
     }
+    fingerprint?: string // Device fingerprint for anti-cheat
 }
 
 export async function POST(request: NextRequest) {
     try {
         const supabase = await createClient()
+        const clientIP = getClientIP(request)
+        const userAgent = request.headers.get('user-agent') || 'unknown'
 
         // Get authenticated user
         const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -30,9 +34,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        // 🔒 RATE LIMITING - Check submission rate
+        const rateLimitResult = rateLimiters.submission(user.id)
+        if (!rateLimitResult.success) {
+            console.warn(`Rate limit exceeded for user ${user.id}, IP: ${clientIP}`)
+            return rateLimitResponse(rateLimitResult)
+        }
+
         // Parse request body
         const body: SubmitRequest = await request.json()
-        const { exam_id, mc_answers, tf_answers, sa_answers, session_id, time_spent, cheat_flags } = body
+        const { exam_id, mc_answers, tf_answers, sa_answers, session_id, time_spent, cheat_flags, fingerprint } = body
 
         if (!exam_id) {
             return NextResponse.json({ error: 'exam_id is required' }, { status: 400 })
@@ -58,6 +69,39 @@ export async function POST(request: NextRequest) {
             }
             if (exam.end_time && new Date(exam.end_time) < now) {
                 return NextResponse.json({ error: 'Exam has ended' }, { status: 403 })
+            }
+        }
+
+        // 🔒 SERVER-SIDE TIMER VALIDATION
+        if (session_id) {
+            const { data: session } = await supabase
+                .from('exam_sessions')
+                .select('created_at, started_at')
+                .eq('id', session_id)
+                .single()
+
+            if (session) {
+                const sessionStart = new Date(session.started_at || session.created_at).getTime()
+                const now = Date.now()
+                const elapsed = now - sessionStart
+                const maxAllowedTime = (exam.duration * 60 * 1000) + (60 * 1000) // duration + 1 min buffer
+
+                if (elapsed > maxAllowedTime) {
+                    console.warn(`Timer exceeded for user ${user.id}: elapsed=${elapsed}ms, max=${maxAllowedTime}ms`)
+                    // Log to audit
+                    await supabase.from('submission_audit_log').insert({
+                        exam_id,
+                        student_id: user.id,
+                        action: 'TIMER_EXCEEDED',
+                        details: { elapsed, maxAllowedTime, session_id },
+                        ip_address: clientIP,
+                        user_agent: userAgent
+                    })
+                    return NextResponse.json({
+                        error: 'Time limit exceeded. Your session has expired.',
+                        code: 'TIMER_EXCEEDED'
+                    }, { status: 403 })
+                }
             }
         }
 
@@ -192,6 +236,26 @@ export async function POST(request: NextRequest) {
             .update({ status: 'submitted', last_active: new Date().toISOString() })
             .eq('exam_id', exam_id)
             .eq('user_id', user.id)
+
+        // 🔒 12. Log to audit (IP & fingerprint tracking)
+        try {
+            await supabase.from('submission_audit_log').insert({
+                submission_id: submission.id,
+                exam_id,
+                student_id: user.id,
+                action: 'SUBMISSION_SUCCESS',
+                details: {
+                    score: Math.round(score * 100) / 100,
+                    time_spent,
+                    cheat_flags,
+                    fingerprint: fingerprint || 'not_provided'
+                },
+                ip_address: clientIP,
+                user_agent: userAgent
+            })
+        } catch (auditErr) {
+            console.warn('Audit log failed:', auditErr)
+        }
 
         // Return result (score is now trustworthy)
         return NextResponse.json({

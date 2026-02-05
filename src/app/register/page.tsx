@@ -6,6 +6,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { Captcha, useCaptcha } from "@/components/Captcha"
 
 type Role = "student" | "teacher"
 
@@ -22,11 +23,19 @@ export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const { verified: captchaVerified, onVerify: onCaptchaVerify, onExpire: onCaptchaExpire } = useCaptcha()
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
         setError(null)
+
+        // 🔒 CAPTCHA verification
+        if (!captchaVerified) {
+            setError("Vui lòng xác nhận bạn không phải robot")
+            setLoading(false)
+            return
+        }
 
         if (role === "teacher") {
             const { data: whitelistCheck } = await supabase
@@ -251,6 +260,15 @@ export default function RegisterPage() {
                                     onChange={(e) => setPhone(e.target.value)}
                                     placeholder="09xx xxx xxx"
                                     className="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none placeholder-gray-400 dark:placeholder-gray-500"
+                                />
+                            </div>
+
+                            {/* CAPTCHA */}
+                            <div className="pt-2">
+                                <Captcha
+                                    onVerify={onCaptchaVerify}
+                                    onExpire={onCaptchaExpire}
+                                    theme="auto"
                                 />
                             </div>
 
