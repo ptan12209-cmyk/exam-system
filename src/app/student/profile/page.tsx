@@ -85,7 +85,8 @@ export default function ProfilePage() {
 
             const { stats: userStats, badges: userBadges } = await getUserStats(user.id)
             setStats(userStats)
-            setBadges(userBadges as any)
+            // 🐛 FIX BUG-003: Cast with proper type instead of `as any`
+            setBadges(userBadges as { badge: Badge; earned_at: string }[])
 
             setLoading(false)
         }

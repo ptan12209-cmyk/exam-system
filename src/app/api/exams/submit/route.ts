@@ -85,7 +85,8 @@ export async function POST(request: NextRequest) {
                 const sessionStart = new Date(session.started_at || session.created_at).getTime()
                 const now = Date.now()
                 const elapsed = now - sessionStart
-                const maxAllowedTime = (exam.duration * 60 * 1000) + (60 * 1000) // duration + 1 min buffer
+                // 🐛 FIX BUG-005: Reduced buffer from 60s to 15s to prevent exploitation
+                const maxAllowedTime = (exam.duration * 60 * 1000) + (15 * 1000) // duration + 15s buffer for network latency
 
                 if (elapsed > maxAllowedTime) {
                     console.warn(`Timer exceeded for user ${user.id}: elapsed=${elapsed}ms, max=${maxAllowedTime}ms`)

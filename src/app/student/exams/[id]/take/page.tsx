@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -54,7 +54,10 @@ export default function TakeExamPage() {
     const router = useRouter()
     const params = useParams()
     const examId = params.id as string
-    const supabase = createClient()
+    const supabase = useMemo(() => createClient(), [])
+
+    // Race condition guard for submit
+    const isSubmittingRef = useRef(false)
 
     const [exam, setExam] = useState<Exam | null>(null)
     const [studentAnswers, setStudentAnswers] = useState<(Option | null)[]>([])
@@ -91,8 +94,11 @@ export default function TakeExamPage() {
     } | null>(null)
     const [tabSwitchCount, setTabSwitchCount] = useState(0)
 
-    // Load from localStorage
-    const LOCAL_STORAGE_KEY = `exam_${examId}_answers`
+    // 🐛 FIX BUG-007: Load from localStorage with userId to prevent conflicts
+    const LOCAL_STORAGE_KEY = useMemo(() =>
+        userId ? `exam_${examId}_${userId}_answers` : `exam_${examId}_answers`,
+        [examId, userId]
+    )
 
     useEffect(() => {
         const fetchExam = async () => {
@@ -251,7 +257,11 @@ export default function TakeExamPage() {
             setTimeLeft(prev => {
                 if (prev <= 1) {
                     clearInterval(timer)
-                    handleSubmit(true) // Auto-submit
+                    // 🐛 FIX BUG-001: Guard against race condition
+                    if (!isSubmittingRef.current) {
+                        isSubmittingRef.current = true
+                        handleSubmit(true) // Auto-submit
+                    }
                     return 0
                 }
                 return prev - 1
@@ -273,24 +283,37 @@ export default function TakeExamPage() {
     }, [studentAnswers, tfStudentAnswers, saStudentAnswers, LOCAL_STORAGE_KEY])
 
     // Sync to server periodically (every 30s)
+    const [syncError, setSyncError] = useState(false)
+
     useEffect(() => {
         if (!sessionId) return
 
         const syncInterval = setInterval(async () => {
-            // Save answers snapshot to session
-            await supabase
-                .from("exam_sessions")
-                .update({
-                    answers_snapshot: {
-                        mc: studentAnswers,
-                        tf: tfStudentAnswers,
-                        sa: saStudentAnswers
-                    },
-                    last_active_at: new Date().toISOString(),
-                    tab_switch_count: tabSwitchCount
-                })
-                .eq("id", sessionId)
-            console.log("Auto-saved to server")
+            try {
+                // 🐛 FIX BUG-002: Add error handling for sync
+                const { error } = await supabase
+                    .from("exam_sessions")
+                    .update({
+                        answers_snapshot: {
+                            mc: studentAnswers,
+                            tf: tfStudentAnswers,
+                            sa: saStudentAnswers
+                        },
+                        last_active_at: new Date().toISOString(),
+                        tab_switch_count: tabSwitchCount
+                    })
+                    .eq("id", sessionId)
+
+                if (error) {
+                    console.warn("Sync failed:", error.message)
+                    setSyncError(true)
+                } else {
+                    setSyncError(false)
+                }
+            } catch (err) {
+                console.warn("Sync error:", err)
+                setSyncError(true)
+            }
         }, 30000)
 
         return () => clearInterval(syncInterval)
@@ -389,7 +412,13 @@ export default function TakeExamPage() {
         setSessionNumber(existingSession.session_number)
 
         if (existingSession.answers_snapshot) {
-            const snapshot = existingSession.answers_snapshot as any
+            // 🐛 FIX BUG-004: Proper type definition instead of `as any`
+            interface AnswerSnapshot {
+                mc?: (Option | null)[]
+                tf?: TFStudentAnswer[]
+                sa?: SAStudentAnswer[]
+            }
+            const snapshot = existingSession.answers_snapshot as AnswerSnapshot
             if (snapshot.mc) setStudentAnswers(snapshot.mc)
             if (snapshot.tf) setTfStudentAnswers(snapshot.tf)
             if (snapshot.sa) setSaStudentAnswers(snapshot.sa)

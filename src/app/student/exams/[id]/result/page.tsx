@@ -168,7 +168,18 @@ export default function ExamResultPage() {
                 .limit(10)
 
             if (leaderboardData) {
-                setLeaderboard(leaderboardData as any)
+                // Transform data to match LeaderboardEntry type
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const transformedData = leaderboardData.map((item: any) => {
+                    const profileData = Array.isArray(item.profile) ? item.profile[0] : item.profile
+                    return {
+                        id: item.id,
+                        score: item.score,
+                        time_spent: item.time_spent,
+                        profile: { full_name: profileData?.full_name ?? null }
+                    }
+                })
+                setLeaderboard(transformedData)
             }
 
             // Award XP logic

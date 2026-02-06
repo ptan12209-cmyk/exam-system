@@ -218,15 +218,25 @@ export async function getLeaderboard(limit: number = 10): Promise<{
         .order("xp", { ascending: false })
         .limit(limit)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (data || []).map((item: any, index: number) => ({
-        rank: index + 1,
-        userId: item.user_id,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        fullName: (item.profile as any)?.full_name || "Học sinh",
-        xp: item.xp,
-        level: item.level
-    }))
+    // 🐛 FIX BUG-003: Proper type definition instead of `as any`
+    interface LeaderboardItem {
+        user_id: string
+        xp: number
+        level: number
+        profile: { full_name: string | null } | { full_name: string | null }[] | null
+    }
+
+    return (data || []).map((item: LeaderboardItem, index: number) => {
+        // Handle both single object and array responses from Supabase
+        const profile = Array.isArray(item.profile) ? item.profile[0] : item.profile
+        return {
+            rank: index + 1,
+            userId: item.user_id,
+            fullName: profile?.full_name || "Học sinh",
+            xp: item.xp,
+            level: item.level
+        }
+    })
 }
 
 // Get user stats
