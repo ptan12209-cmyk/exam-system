@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useMemo } from "react"
 import katex from "katex"
 import "katex/dist/katex.min.css"
 
@@ -12,9 +12,8 @@ interface MathRendererProps {
 // Render LaTeX math formulas in text
 // Supports inline math: $formula$ and display math: $$formula$$
 export function MathRenderer({ content, className = "" }: MathRendererProps) {
-    const [renderedHtml, setRenderedHtml] = useState("")
-
-    useEffect(() => {
+    const renderedHtml = useMemo(() => {
+        if (!content) return ""
         let html = content
 
         // Replace display math $$...$$ first
@@ -41,7 +40,7 @@ export function MathRenderer({ content, className = "" }: MathRendererProps) {
             }
         })
 
-        setRenderedHtml(html)
+        return html
     }, [content])
 
     return (

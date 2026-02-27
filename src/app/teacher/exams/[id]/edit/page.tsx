@@ -32,6 +32,7 @@ export default function EditExamPage() {
     const supabase = createClient()
 
     const [loading, setLoading] = useState(true)
+    const [authError, setAuthError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
     const [regrading, setRegrading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -93,12 +94,13 @@ export default function EditExamPage() {
                     console.error("Exam exists but teacher_id mismatch!")
                     console.error("Exam teacher_id:", anyExam.teacher_id)
                     console.error("Current user ID:", user.id)
-                    alert(`Teacher ID mismatch!\nExam owner: ${anyExam.teacher_id?.slice(0, 8)}\nYour ID: ${user.id.slice(0, 8)}`)
+                    setAuthError(`Bạn không có quyền chỉnh sửa đề thi này. Đề thi thuộc về giáo viên khác.`)
                 } else {
                     console.error("Exam does not exist at all!")
-                    alert("Exam not found in database!")
+                    router.push("/teacher/dashboard")
                 }
-                router.push("/teacher/dashboard")
+
+                setLoading(false)
                 return
             }
 
@@ -353,6 +355,25 @@ export default function EditExamPage() {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+        )
+    }
+
+    if (authError) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
+                <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-red-100 dark:border-slate-700 p-6 text-center">
+                    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Không đủ quyền truy cập</h2>
+                    <p className="text-gray-500 dark:text-gray-400 mb-6">{authError}</p>
+                    <Link href="/teacher/dashboard">
+                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+                            Quay lại Dashboard
+                        </Button>
+                    </Link>
+                </div>
             </div>
         )
     }

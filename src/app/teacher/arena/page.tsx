@@ -126,8 +126,7 @@ export default function ArenaAdminPage() {
             .order("created_at", { ascending: false })
 
         if (sessionsData) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const formatted = sessionsData.map((s: any) => ({
+            const formatted = sessionsData.map((s: { id: string, name: string, description: string | null, exam_id: string | null, start_time: string, end_time: string, duration: number, status: string, created_at: string, arena_results: { count: number }[], exams: Exam }) => ({
                 ...s,
                 participant_count: s.arena_results?.[0]?.count || 0,
                 exam: s.exams

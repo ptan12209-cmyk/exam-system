@@ -43,18 +43,15 @@ export function SubmissionFeed({ examId, className, maxItems = 5 }: SubmissionFe
 
             if (!error && data) {
                 // Get student names
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const studentIds = data.map((s: any) => s.student_id)
+                const studentIds = data.map((s: { student_id: string }) => s.student_id)
                 const { data: profiles } = await supabase
                     .from("profiles")
                     .select("id, full_name")
                     .in("id", studentIds)
 
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const profileMap = new Map(profiles?.map((p: any) => [p.id, p.full_name]) || [])
+                const profileMap = new Map(profiles?.map((p: { id: string; full_name: string }) => [p.id, p.full_name]) || [])
 
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const enrichedSubmissions = data.map((s: any) => ({
+                const enrichedSubmissions = data.map((s: { id: string; student_id: string; score: number; exams: { total_questions: number } | { total_questions: number }[]; submitted_at: string }) => ({
                     id: s.id,
                     student_id: s.student_id,
                     student_name: profileMap.get(s.student_id) || "Học sinh",
@@ -81,8 +78,7 @@ export function SubmissionFeed({ examId, className, maxItems = 5 }: SubmissionFe
                     table: "submissions",
                     filter: `exam_id=eq.${examId}`
                 },
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                async (payload: any) => {
+                async (payload: { new: { id: string; student_id: string; score: number; submitted_at: string } }) => {
                     const newSub = payload.new as { id: string; student_id: string; score: number; submitted_at: string }
 
                     // Get student name

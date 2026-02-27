@@ -128,7 +128,7 @@ export default function ArenaBattlePage() {
 
         if (questionsData && questionsData.length > 0) {
             // Map to correct format
-            const mappedQuestions = questionsData.map((q: any) => ({
+            const mappedQuestions = questionsData.map((q: { id: string, question_text: string, options: string[] | null, correct_answer: number }) => ({
                 id: q.id,
                 question_text: q.question_text,
                 options: q.options || ['A', 'B', 'C', 'D'],

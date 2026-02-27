@@ -16,7 +16,8 @@ import {
     CheckCircle2,
     Medal,
     Eye,
-    Edit3
+    Edit3,
+    AlertCircle
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { LiveParticipants } from "@/components/realtime/LiveParticipants"
@@ -50,6 +51,7 @@ export default function ExamScoresPage() {
     const [exam, setExam] = useState<Exam | null>(null)
     const [submissions, setSubmissions] = useState<Submission[]>([])
     const [loading, setLoading] = useState(true)
+    const [authError, setAuthError] = useState<string | null>(null)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -82,10 +84,12 @@ export default function ExamScoresPage() {
 
                 if (anyExam) {
                     console.error("Exam exists but teacher_id mismatch. Exam owner:", anyExam.teacher_id, "Current user:", user.id)
-                    alert(`Exam belongs to another teacher. Exam owner ID: ${anyExam.teacher_id?.slice(0, 8)}, Your ID: ${user.id.slice(0, 8)}`)
+                    setAuthError(`Bạn không có quyền truy cập đề thi này. Đề thi thuộc về giáo viên khác.`)
+                } else {
+                    router.push("/teacher/dashboard")
                 }
 
-                router.push("/teacher/dashboard")
+                setLoading(false)
                 return
             }
 
@@ -195,6 +199,25 @@ export default function ExamScoresPage() {
     }
 
     if (!exam) return null
+
+    if (authError) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
+                <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-red-100 dark:border-slate-700 p-6 text-center">
+                    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Không đủ quyền truy cập</h2>
+                    <p className="text-gray-500 dark:text-gray-400 mb-6">{authError}</p>
+                    <Link href="/teacher/dashboard">
+                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+                            Quay lại Dashboard
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 md:p-8">

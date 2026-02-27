@@ -88,8 +88,7 @@ export default function TeacherProfilePage() {
                 .order("created_at", { ascending: false })
 
             if (exams) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const published = exams.filter((e: any) => e.status === "published").length
+                const published = exams.filter((e: { status: string }) => e.status === "published").length
                 setStats({
                     totalExams: exams.length,
                     publishedExams: published,

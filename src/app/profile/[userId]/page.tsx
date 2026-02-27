@@ -26,7 +26,7 @@ export default function PublicProfilePage() {
 
     const [loading, setLoading] = useState(true)
     const [profile, setProfile] = useState<PublicProfile | null>(null)
-    const [stats, setStats] = useState<any>(null)
+    const [stats, setStats] = useState<{ total_xp?: number, streak_days?: number, correct_answers?: number, total_questions?: number, totalExams?: number, publishedExams?: number } | null>(null)
 
     useEffect(() => {
         async function fetchProfile() {

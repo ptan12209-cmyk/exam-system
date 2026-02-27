@@ -40,8 +40,7 @@ interface ExamInBank {
     answer_key: string | null // JSON string of answers
     total_questions: number
     created_at: string
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    questions?: any[] // Parsed from AI or manual input
+    questions?: Array<{ question: string, options: string[], answer: string }> // Parsed from AI or manual input
 }
 
 const SUBJECTS = [
@@ -74,8 +73,7 @@ export default function ExamBankPage() {
     // AI Scan state
     const [answerPdfFile, setAnswerPdfFile] = useState<File | null>(null)
     const [scanning, setScanning] = useState(false)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [scanResult, setScanResult] = useState<any>(null)
+    const [scanResult, setScanResult] = useState<{ multiple_choice?: string[], true_false?: string[] } | null>(null)
 
     // Form state
     const [title, setTitle] = useState("")
@@ -117,8 +115,7 @@ export default function ExamBankPage() {
             .order("created_at", { ascending: false })
 
         if (examsData) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            setExams(examsData.map((e: any) => ({
+            setExams(examsData.map((e: { id: string, title: string, subject: string, description: string | null, pdf_url: string | null, answer_key: string | null, total_questions: number, created_at: string, questions: Array<{ question: string, options: string[], answer: string }> }) => ({
                 id: e.id,
                 title: e.title,
                 subject: e.subject || "physics",
@@ -641,7 +638,7 @@ export default function ExamBankPage() {
                                                     <p className="text-green-600 dark:text-green-400 font-medium">
                                                         ✓ Tìm thấy: {scanResult.multiple_choice?.length || 0} câu trắc nghiệm
                                                     </p>
-                                                    {scanResult.true_false?.length > 0 && (
+                                                    {scanResult.true_false && scanResult.true_false.length > 0 && (
                                                         <p className="text-blue-600 font-medium">
                                                             + {scanResult.true_false.length} câu đúng/sai
                                                         </p>

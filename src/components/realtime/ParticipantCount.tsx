@@ -44,8 +44,7 @@ export function ParticipantCount({ examId, className, showLabel = true }: Partic
                     table: "exam_participants",
                     filter: `exam_id=eq.${examId}`
                 },
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (payload: any) => {
+                (payload: { eventType: string; new: { status: string }; old: { status: string } }) => {
                     if (payload.eventType === "INSERT") {
                         if ((payload.new as { status: string }).status === "active") {
                             setCount(prev => prev + 1)

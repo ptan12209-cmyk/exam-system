@@ -152,8 +152,7 @@ async function checkAndAwardBadges(
         .select("badge_id")
         .eq("user_id", userId)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const earnedIds = new Set(earnedBadges?.map((b: any) => b.badge_id) || [])
+    const earnedIds = new Set(earnedBadges?.map((b: { badge_id: string }) => b.badge_id) || [])
     const newBadgeNames: string[] = []
 
     for (const badge of badges || []) {

@@ -5,7 +5,7 @@ import { AlertTriangle, Eye, Smartphone, CheckCircle } from "lucide-react"
 
 interface GazeTrackerProps {
     enabled: boolean
-    onViolation?: (type: string, details: any) => void
+    onViolation?: (type: string, details: { duration?: number; threshold?: number; confidence?: number; count?: number }) => void
     maxWarnings?: number
     onMaxWarningsReached?: () => void
     lookAwayThreshold?: number // seconds before warning
@@ -46,7 +46,7 @@ export function GazeTracker({
 
     const animationFrameRef = useRef<number | null>(null)
     const lookAwayTimerRef = useRef<NodeJS.Timeout | null>(null)
-    const phoneDetectorRef = useRef<any>(null)
+    const phoneDetectorRef = useRef<unknown>(null)
 
     // Calibration points (5-point calibration)
     const calibrationPoints = [
@@ -169,11 +169,12 @@ export function GazeTracker({
         if (!phoneDetectorRef.current || !videoRef.current) return
 
         try {
-            const predictions = await phoneDetectorRef.current.detect(videoRef.current)
+            const detector = phoneDetectorRef.current as { detect: (v: HTMLVideoElement) => Promise<Array<{ class: string, score: number }>> }
+            const predictions = await detector.detect(videoRef.current)
 
             // Look for cell phone class
             const phoneDetection = predictions.find(
-                (p: any) => p.class === "cell phone" && p.score > 0.5
+                (p: { class: string; score: number }) => p.class === "cell phone" && p.score > 0.5
             )
 
             if (phoneDetection) {
@@ -197,7 +198,7 @@ export function GazeTracker({
         }
     }, [onViolation])
 
-    const onFaceMeshResults = useCallback((results: any) => {
+    const onFaceMeshResults = useCallback((results: { multiFaceLandmarks?: Array<Array<{ x: number; y: number; z: number }>> }) => {
         if (!results.multiFaceLandmarks) return
 
         const faceCount = results.multiFaceLandmarks.length
@@ -273,7 +274,7 @@ export function GazeTracker({
         }
     }, [onViolation])
 
-    const drawFaceMesh = (landmarks: any[], canvas: HTMLCanvasElement) => {
+    const drawFaceMesh = (landmarks: Array<{ x: number; y: number; z: number }>, canvas: HTMLCanvasElement) => {
         const ctx = canvas.getContext("2d")
         if (!ctx) return
 
@@ -367,8 +368,8 @@ export function GazeTracker({
                         <div className="h-1 bg-slate-700 rounded-full overflow-hidden">
                             <div
                                 className={`h-full transition-all duration-1000 ${gazeState.currentLookAwayDuration >= lookAwayThreshold
-                                        ? "bg-red-500"
-                                        : "bg-yellow-500"
+                                    ? "bg-red-500"
+                                    : "bg-yellow-500"
                                     }`}
                                 style={{
                                     width: `${Math.min(100, (gazeState.currentLookAwayDuration / lookAwayThreshold) * 100)}%`

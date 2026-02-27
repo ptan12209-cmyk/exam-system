@@ -103,7 +103,7 @@ export default function StudentAnalyticsPage() {
                 .order("submitted_at", { ascending: true })
 
             if (subsData) {
-                const transformedData = subsData.map((sub: any) => ({
+                const transformedData = subsData.map((sub: { id: string, exam_id: string, score: number, submitted_at: string, exam: { id: string, title: string, subject: string | null } | { id: string, title: string, subject: string | null }[] | null }) => ({
                     ...sub,
                     exam: Array.isArray(sub.exam) ? sub.exam[0] : sub.exam
                 })) as Submission[]

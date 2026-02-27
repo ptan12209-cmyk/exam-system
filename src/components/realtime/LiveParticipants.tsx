@@ -52,8 +52,7 @@ export function LiveParticipants({ examId, className }: LiveParticipantsProps) {
                     table: "exam_participants",
                     filter: `exam_id=eq.${examId}`
                 },
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (payload: any) => {
+                (payload: { eventType: string; new: Participant; old: { id: string } }) => {
                     if (payload.eventType === "INSERT") {
                         setParticipants(prev => [payload.new as Participant, ...prev])
                     } else if (payload.eventType === "UPDATE") {
