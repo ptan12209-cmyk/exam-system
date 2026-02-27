@@ -9,7 +9,8 @@ import {
     Building2,
     Loader2,
     Star,
-    GraduationCap
+    GraduationCap,
+    ArrowRight
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -69,15 +70,9 @@ export default function PricingPage() {
             const res = await fetch("/api/payments", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    type: "subscription",
-                    planId,
-                    billingCycle,
-                }),
+                body: JSON.stringify({ type: "subscription", planId, billingCycle }),
             })
-
             const data = await res.json()
-
             if (data.free) {
                 alert("Đã kích hoạt gói miễn phí!")
                 fetchData()
@@ -107,37 +102,38 @@ export default function PricingPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                    <p className="text-sm text-muted-foreground">Đang tải...</p>
+                </div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+        <div className="min-h-screen bg-background">
             {/* Navigation */}
-            <nav className="border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
+            <nav className="glass-nav sticky top-0 z-50 safe-top">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
-                        <div className="flex items-center gap-4">
-                            <Link href="/">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                        <GraduationCap className="w-5 h-5 text-white" />
-                                    </div>
-                                    <span className="text-xl font-bold text-gray-900 dark:text-white">LuyenDe 2026</span>
-                                </div>
-                            </Link>
-                        </div>
+                        <Link href="/" className="flex items-center gap-3 group">
+                            <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                                <GraduationCap className="w-5 h-5 text-white" />
+                            </div>
+                            <span className="text-xl font-bold text-foreground">
+                                Exam<span className="text-gradient">Hub</span>
+                            </span>
+                        </Link>
                         <div className="flex items-center gap-3">
                             <ThemeToggle />
                             <Link href="/login">
-                                <Button variant="ghost" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                                <Button variant="ghost" className="text-muted-foreground hover:text-foreground font-medium hidden sm:inline-flex">
                                     Đăng nhập
                                 </Button>
                             </Link>
                             <Link href="/register">
-                                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                                <Button className="gradient-primary hover:opacity-90 text-white border-0 shadow-lg shadow-indigo-500/25 font-semibold">
                                     Đăng ký ngay
                                 </Button>
                             </Link>
@@ -146,34 +142,45 @@ export default function PricingPage() {
                 </div>
             </nav>
 
-            <div className="py-12 px-4">
-                <div className="max-w-6xl mx-auto">
+            <div className="py-16 px-4 relative">
+                {/* Background */}
+                <div className="absolute inset-0 gradient-mesh pointer-events-none" />
+                <div className="absolute top-32 left-1/4 w-72 h-72 bg-indigo-400/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-32 right-1/4 w-96 h-96 bg-violet-400/5 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="max-w-6xl mx-auto relative z-10">
                     {/* Header */}
-                    <div className="text-center mb-12">
-                        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-4">Bảng giá</h1>
-                        <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                            Chọn gói phù hợp với nhu cầu của bạn. Tất cả các gói đều bao gồm thử nghiệm miễn phí.
+                    <div className="text-center mb-14">
+                        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-sm font-medium mb-4">
+                            <Zap className="w-3.5 h-3.5" />
+                            Pricing
+                        </span>
+                        <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4">
+                            Chọn gói <span className="text-gradient-animated">phù hợp</span>
+                        </h1>
+                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                            Tất cả các gói đều bao gồm thử nghiệm miễn phí. Nâng cấp bất cứ lúc nào.
                         </p>
                     </div>
 
                     {/* Current subscription notice */}
                     {currentSubscription && (
-                        <div className="mb-10 p-5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="mb-10 p-5 glass-card rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 border-emerald-500/20">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
-                                    <Star className="w-6 h-6 text-green-600 dark:text-green-400" />
+                                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                                    <Star className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                                 </div>
                                 <div>
-                                    <p className="text-green-800 dark:text-green-300 font-semibold">
+                                    <p className="text-emerald-700 dark:text-emerald-300 font-semibold">
                                         Bạn đang sử dụng gói {currentSubscription.plan.name}
                                     </p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    <p className="text-sm text-muted-foreground">
                                         Hết hạn: {new Date(currentSubscription.expires_at).toLocaleDateString("vi-VN")}
                                     </p>
                                 </div>
                             </div>
                             <Link href="/student/dashboard">
-                                <Button variant="outline" className="border-green-300 dark:border-green-700 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30">
+                                <Button variant="outline" className="border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400">
                                     Vào Dashboard
                                 </Button>
                             </Link>
@@ -181,15 +188,15 @@ export default function PricingPage() {
                     )}
 
                     {/* Billing toggle */}
-                    <div className="flex justify-center mb-12">
-                        <div className="inline-flex items-center bg-gray-100 dark:bg-slate-800 rounded-xl p-1.5 shadow-inner">
+                    <div className="flex justify-center mb-14">
+                        <div className="inline-flex items-center glass-card rounded-2xl p-1.5">
                             <button
                                 onClick={() => setBillingCycle("monthly")}
                                 className={cn(
-                                    "px-6 py-2.5 rounded-lg text-sm font-semibold transition-all",
+                                    "px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200",
                                     billingCycle === "monthly"
-                                        ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-md"
-                                        : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                                        ? "gradient-primary text-white shadow-lg shadow-indigo-500/20"
+                                        : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
                                 Hàng tháng
@@ -197,14 +204,14 @@ export default function PricingPage() {
                             <button
                                 onClick={() => setBillingCycle("yearly")}
                                 className={cn(
-                                    "px-6 py-2.5 rounded-lg text-sm font-semibold transition-all relative",
+                                    "px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 relative",
                                     billingCycle === "yearly"
-                                        ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-md"
-                                        : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                                        ? "gradient-primary text-white shadow-lg shadow-indigo-500/20"
+                                        : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
                                 Hàng năm
-                                <span className="absolute -top-3 -right-3 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow">
+                                <span className="absolute -top-3 -right-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow">
                                     -17%
                                 </span>
                             </button>
@@ -212,7 +219,7 @@ export default function PricingPage() {
                     </div>
 
                     {/* Pricing cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {plans.map((plan, index) => {
                             const isPopular = index === 1
                             const isCurrent = currentSubscription?.plan.id === plan.id
@@ -222,36 +229,48 @@ export default function PricingPage() {
                                 <div
                                     key={plan.id}
                                     className={cn(
-                                        "relative rounded-2xl border p-8 transition-all duration-300 bg-white dark:bg-slate-900",
+                                        "relative rounded-3xl p-8 transition-all duration-300",
                                         isPopular
-                                            ? "border-blue-500 shadow-2xl shadow-blue-500/20 scale-105 z-10"
-                                            : "border-gray-200 dark:border-slate-800 shadow-lg hover:shadow-xl hover:border-gray-300 dark:hover:border-slate-700"
+                                            ? "gradient-primary text-white scale-[1.03] shadow-2xl shadow-indigo-500/30 z-10"
+                                            : "glass-card hover:shadow-xl"
                                     )}
                                 >
                                     {isPopular && (
-                                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full text-sm font-bold text-white shadow-lg">
-                                            Phổ biến nhất
+                                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-1.5 bg-white rounded-full text-sm font-bold text-indigo-600 shadow-lg">
+                                            ⭐ Phổ biến nhất
                                         </div>
                                     )}
 
                                     <div className={cn(
                                         "w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-lg",
                                         isPopular
-                                            ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
-                                            : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300"
+                                            ? "bg-white/15 backdrop-blur-sm text-white"
+                                            : "gradient-primary-soft text-indigo-600 dark:text-indigo-400"
                                     )}>
                                         {getPlanIcon(plan.name)}
                                     </div>
 
-                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{plan.name}</h3>
-                                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 h-10">{plan.description}</p>
+                                    <h3 className={cn(
+                                        "text-2xl font-bold mb-2",
+                                        isPopular ? "text-white" : "text-foreground"
+                                    )}>{plan.name}</h3>
+                                    <p className={cn(
+                                        "text-sm mb-6 h-10",
+                                        isPopular ? "text-white/70" : "text-muted-foreground"
+                                    )}>{plan.description}</p>
 
                                     <div className="mb-8">
-                                        <span className="text-5xl font-extrabold text-gray-900 dark:text-white">
+                                        <span className={cn(
+                                            "text-5xl font-extrabold",
+                                            isPopular ? "text-white" : "text-foreground"
+                                        )}>
                                             {price === 0 ? "0đ" : formatPrice(price)}
                                         </span>
                                         {price > 0 && (
-                                            <span className="text-gray-500 dark:text-gray-400 font-medium">
+                                            <span className={cn(
+                                                "font-medium",
+                                                isPopular ? "text-white/60" : "text-muted-foreground"
+                                            )}>
                                                 /{billingCycle === "yearly" ? "năm" : "tháng"}
                                             </span>
                                         )}
@@ -261,12 +280,12 @@ export default function PricingPage() {
                                         onClick={() => handleSubscribe(plan.id)}
                                         disabled={processing === plan.id || isCurrent}
                                         className={cn(
-                                            "w-full mb-8 h-12 text-base font-semibold",
+                                            "w-full mb-8 h-12 text-base font-semibold rounded-xl",
                                             isPopular
-                                                ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/20"
+                                                ? "bg-white hover:bg-white/90 text-indigo-600 shadow-lg"
                                                 : isCurrent
-                                                    ? "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400"
-                                                    : "bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-white text-white dark:text-gray-900"
+                                                    ? "bg-muted text-muted-foreground"
+                                                    : "gradient-primary text-white border-0 shadow-lg shadow-indigo-500/20 hover:opacity-90"
                                         )}
                                     >
                                         {processing === plan.id ? (
@@ -274,20 +293,28 @@ export default function PricingPage() {
                                         ) : isCurrent ? (
                                             "Đang sử dụng"
                                         ) : price === 0 ? (
-                                            "Bắt đầu miễn phí"
+                                            <>Bắt đầu miễn phí <ArrowRight className="w-4 h-4 ml-1" /></>
                                         ) : (
-                                            "Đăng ký ngay"
+                                            <>Đăng ký ngay <ArrowRight className="w-4 h-4 ml-1" /></>
                                         )}
                                     </Button>
 
                                     <ul className="space-y-4">
                                         {(plan.features as string[]).map((feature, i) => (
                                             <li key={i} className="flex items-start gap-3">
-                                                <Check className={cn(
-                                                    "w-5 h-5 shrink-0 mt-0.5",
-                                                    isPopular ? "text-blue-600" : "text-green-600"
-                                                )} />
-                                                <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
+                                                <div className={cn(
+                                                    "w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
+                                                    isPopular ? "bg-white/15" : "bg-emerald-500/10"
+                                                )}>
+                                                    <Check className={cn(
+                                                        "w-3 h-3",
+                                                        isPopular ? "text-white" : "text-emerald-600 dark:text-emerald-400"
+                                                    )} />
+                                                </div>
+                                                <span className={cn(
+                                                    "text-sm",
+                                                    isPopular ? "text-white/80" : "text-muted-foreground"
+                                                )}>{feature}</span>
                                             </li>
                                         ))}
                                     </ul>
@@ -297,9 +324,9 @@ export default function PricingPage() {
                     </div>
 
                     <div className="text-center mt-16">
-                        <p className="text-gray-600 dark:text-gray-400">
+                        <p className="text-muted-foreground">
                             Có câu hỏi?{" "}
-                            <a href="mailto:support@luyende.vn" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">
+                            <a href="mailto:support@luyende.vn" className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
                                 Liên hệ hỗ trợ
                             </a>
                         </p>
@@ -307,16 +334,16 @@ export default function PricingPage() {
                 </div>
             </div>
 
-            <footer className="border-t border-gray-200 dark:border-slate-800 py-8 px-4 bg-white dark:bg-slate-950 mt-12">
+            <footer className="border-t border-border py-8 px-4 bg-card">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
+                        <div className="w-8 h-8 gradient-primary rounded-lg flex items-center justify-center">
                             <GraduationCap className="w-4 h-4 text-white" />
                         </div>
-                        <span className="font-semibold text-gray-900 dark:text-white">LuyenDe 2026</span>
+                        <span className="font-semibold text-foreground">ExamHub</span>
                     </div>
-                    <p className="text-gray-500 dark:text-gray-500 text-sm">
-                        © 2026 LuyenDe. All rights reserved.
+                    <p className="text-muted-foreground text-sm">
+                        © 2026 ExamHub. All rights reserved.
                     </p>
                 </div>
             </footer>

@@ -9,7 +9,8 @@ import {
     BookOpen,
     Swords,
     User,
-    LogOut
+    LogOut,
+    ChevronRight
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -33,15 +34,17 @@ export function TeacherSidebar({ onLogout }: TeacherSidebarProps) {
     const pathname = usePathname()
 
     return (
-        <aside className="fixed left-0 top-0 h-full w-64 border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 hidden lg:block z-50">
-            <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-blue-900/30">
-                    <GraduationCap className="w-6 h-6 text-white" />
+        <aside className="fixed left-0 top-0 h-full w-64 glass-sidebar p-5 hidden lg:flex lg:flex-col z-50">
+            {/* Logo */}
+            <div className="flex items-center gap-3 mb-8 px-2">
+                <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 dark:shadow-indigo-500/10">
+                    <GraduationCap className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-bold text-gray-800 dark:text-white">ExamHub</span>
+                <span className="text-xl font-bold text-foreground">ExamHub</span>
             </div>
 
-            <nav className="space-y-1">
+            {/* Navigation */}
+            <nav className="space-y-1 flex-1">
                 {NAV_ITEMS.map((item) => {
                     const isActive = pathname === item.href
                     return (
@@ -49,20 +52,26 @@ export function TeacherSidebar({ onLogout }: TeacherSidebarProps) {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group",
                                 isActive
-                                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium"
-                                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                                    ? "gradient-primary-soft text-indigo-700 dark:text-indigo-400 font-semibold nav-active-indicator"
+                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200"
                             )}
                         >
-                            <item.icon className="w-5 h-5" />
-                            {item.label}
+                            <item.icon className={cn(
+                                "w-5 h-5 transition-colors",
+                                isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+                            )} />
+                            <span className="text-sm">{item.label}</span>
+                            {isActive && (
+                                <ChevronRight className="w-4 h-4 ml-auto text-indigo-400 dark:text-indigo-500" />
+                            )}
                         </Link>
                     )
                 })}
 
-                <div className="pt-4 pb-2">
-                    <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Quản lý</p>
+                <div className="pt-5 pb-2">
+                    <p className="px-3 text-[11px] font-semibold text-slate-400 dark:text-slate-600 uppercase tracking-widest">Quản lý</p>
                 </div>
 
                 {MANAGE_ITEMS.map((item) => {
@@ -72,25 +81,32 @@ export function TeacherSidebar({ onLogout }: TeacherSidebarProps) {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group",
                                 isActive
-                                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium"
-                                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                                    ? "gradient-primary-soft text-indigo-700 dark:text-indigo-400 font-semibold nav-active-indicator"
+                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200"
                             )}
                         >
-                            <item.icon className="w-5 h-5" />
-                            {item.label}
+                            <item.icon className={cn(
+                                "w-5 h-5 transition-colors",
+                                isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+                            )} />
+                            <span className="text-sm">{item.label}</span>
+                            {isActive && (
+                                <ChevronRight className="w-4 h-4 ml-auto text-indigo-400 dark:text-indigo-500" />
+                            )}
                         </Link>
                     )
                 })}
             </nav>
 
-            <div className="absolute bottom-6 left-6 right-6">
+            {/* Logout */}
+            <div className="pt-4 border-t border-slate-200/60 dark:border-slate-700/40">
                 <button
                     onClick={onLogout}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full font-medium"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200 w-full font-medium text-sm group"
                 >
-                    <LogOut className="w-5 h-5" />
+                    <LogOut className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
                     Đăng xuất
                 </button>
             </div>

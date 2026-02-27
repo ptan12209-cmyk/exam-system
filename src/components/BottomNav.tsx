@@ -17,8 +17,8 @@ export function BottomNav() {
     const pathname = usePathname()
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-lg border-t border-slate-700/50 lg:hidden safe-area-bottom">
-            <div className="flex justify-around items-center h-16 px-2">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 glass-nav lg:hidden safe-area-bottom">
+            <div className="flex justify-around items-center h-16 px-1">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                     return (
@@ -26,14 +26,23 @@ export function BottomNav() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all touch-target",
+                                "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-all duration-200 touch-target relative",
                                 isActive
-                                    ? "text-blue-400"
-                                    : "text-slate-400 hover:text-white active:scale-95"
+                                    ? "text-indigo-600 dark:text-indigo-400"
+                                    : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 active:scale-95"
                             )}
                         >
-                            <item.icon className={cn("w-5 h-5", isActive && "text-blue-400")} />
-                            <span className="text-[10px] font-medium">{item.label}</span>
+                            {isActive && (
+                                <span className="absolute -top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full gradient-primary" />
+                            )}
+                            <item.icon className={cn(
+                                "w-5 h-5 transition-transform duration-200",
+                                isActive && "scale-110"
+                            )} />
+                            <span className={cn(
+                                "text-[10px] font-medium transition-all",
+                                isActive && "font-semibold"
+                            )}>{item.label}</span>
                         </Link>
                     )
                 })}
@@ -55,8 +64,8 @@ export function TeacherBottomNav() {
     const pathname = usePathname()
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-lg border-t border-slate-700/50 lg:hidden safe-area-bottom">
-            <div className="flex justify-around items-center h-16 px-2">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 glass-nav lg:hidden safe-area-bottom">
+            <div className="flex justify-around items-center h-16 px-1">
                 {teacherNavItems.map((item) => {
                     const isActive = pathname === item.href || pathname.startsWith(item.href.replace("/create", ""))
                     return (
@@ -64,14 +73,23 @@ export function TeacherBottomNav() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all touch-target",
+                                "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-all duration-200 touch-target relative",
                                 isActive
-                                    ? "text-blue-400"
-                                    : "text-slate-400 hover:text-white active:scale-95"
+                                    ? "text-indigo-600 dark:text-indigo-400"
+                                    : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 active:scale-95"
                             )}
                         >
-                            <item.icon className={cn("w-5 h-5", isActive && "text-blue-400")} />
-                            <span className="text-[10px] font-medium">{item.label}</span>
+                            {isActive && (
+                                <span className="absolute -top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full gradient-primary" />
+                            )}
+                            <item.icon className={cn(
+                                "w-5 h-5 transition-transform duration-200",
+                                isActive && "scale-110"
+                            )} />
+                            <span className={cn(
+                                "text-[10px] font-medium transition-all",
+                                isActive && "font-semibold"
+                            )}>{item.label}</span>
                         </Link>
                     )
                 })}

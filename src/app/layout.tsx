@@ -1,19 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
-import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { MobileNav } from "@/components/pwa/MobileNav";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin", "vietnamese"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -33,12 +28,11 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#030712" },
   ],
 };
 
-// Script to prevent theme flash on load
 const themeScript = `
   (function() {
     try {
@@ -61,19 +55,15 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${inter.variable} antialiased`}>
         <ThemeProvider>
           <ServiceWorkerRegister />
           <div className="pb-16 md:pb-0">
             {children}
           </div>
           <MobileNav />
-          {/* <InstallPrompt /> */}
         </ThemeProvider>
       </body>
     </html>
   );
 }
-
