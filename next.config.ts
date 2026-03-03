@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Disable static optimization for dynamic pages
-  experimental: {
-    // Force dynamic rendering
+  // Generate unique build ID to bust browser cache on each deploy
+  generateBuildId: async () => {
+    return `build-${Date.now()}`
   },
   async headers() {
     return [
@@ -25,6 +25,11 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
+  },
+  // Required for react-pdf worker
+  webpack: (config) => {
+    config.resolve.alias.canvas = false;
+    return config;
   },
 };
 
