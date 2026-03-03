@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   generateBuildId: async () => {
     return `build-${Date.now()}`
   },
+  // Explicitly use webpack (avoid turbopack conflicts)
+  turbopack: {},
   async headers() {
     return [
       {
@@ -26,7 +28,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Required for react-pdf worker
+  // Required for react-pdf (canvas SSR polyfill)
   webpack: (config) => {
     config.resolve.alias.canvas = false;
     return config;
