@@ -1,26 +1,22 @@
-// ExamHub Service Worker v2 - Enhanced PWA Support
-const CACHE_VERSION = 'examhub-v3';
+// ExamHub Service Worker v4 - Fixed aggressive caching
+const CACHE_VERSION = 'examhub-v4';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 
-// Static assets to precache
+// Only cache truly static assets (manifests, icons)
 const PRECACHE_ASSETS = [
-    '/',
-    '/login',
-    '/register',
-    '/student/dashboard',
     '/manifest.json',
     '/offline.html',
 ];
 
 // Cache size limits
 const CACHE_LIMITS = {
-    dynamic: 50,
+    dynamic: 30,
     images: 30,
 };
 
-// Install event - precache static assets
+// Install event - precache minimal assets + force activate immediately
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(STATIC_CACHE)
@@ -29,7 +25,7 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up ALL old caches aggressively
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
@@ -70,24 +66,7 @@ const strategies = {
         }
     },
 
-    // Cache first - for static assets
-    cacheFirst: async (request, cacheName) => {
-        const cached = await caches.match(request);
-        if (cached) return cached;
-
-        try {
-            const response = await fetch(request);
-            if (response.ok) {
-                const cache = await caches.open(cacheName);
-                cache.put(request, response.clone());
-            }
-            return response;
-        } catch (error) {
-            return caches.match('/offline.html');
-        }
-    },
-
-    // Stale while revalidate - for images
+    // Stale while revalidate - for images only
     staleWhileRevalidate: async (request, cacheName) => {
         const cached = await caches.match(request);
 
@@ -114,7 +93,7 @@ self.addEventListener('fetch', (event) => {
     // Skip non-GET requests
     if (request.method !== 'GET') return;
 
-    // Skip non-http/https requests (e.g. chrome-extension://)
+    // Skip non-http/https requests
     if (!url.protocol.startsWith('http')) return;
 
     // Skip API requests - always network
@@ -126,25 +105,14 @@ self.addEventListener('fetch', (event) => {
     // Skip exam taking and arena - require fresh data
     if (url.pathname.includes('/take') || url.pathname.includes('/arena')) return;
 
-    // Images - stale while revalidate
+    // Images only - stale while revalidate
     if (request.destination === 'image' || url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico)$/i)) {
         event.respondWith(strategies.staleWhileRevalidate(request, IMAGE_CACHE));
         return;
     }
 
-    // Static assets - cache first
-    if (url.pathname.match(/\.(js|css|woff2?|ttf|eot)$/i) || PRECACHE_ASSETS.includes(url.pathname)) {
-        event.respondWith(strategies.cacheFirst(request, STATIC_CACHE));
-        return;
-    }
-
-    // HTML pages - network first
-    if (request.headers.get('accept')?.includes('text/html')) {
-        event.respondWith(strategies.networkFirst(request, DYNAMIC_CACHE));
-        return;
-    }
-
-    // Default - network first
+    // EVERYTHING ELSE (JS, CSS, HTML, fonts) - Network First
+    // This ensures users always get the latest code after deploy
     event.respondWith(strategies.networkFirst(request, DYNAMIC_CACHE));
 });
 
@@ -179,13 +147,11 @@ self.addEventListener('notificationclick', (event) => {
     const url = event.notification.data?.url || '/';
     event.waitUntil(
         clients.matchAll({ type: 'window' }).then((clientList) => {
-            // Focus existing window if open
             for (const client of clientList) {
                 if (client.url === url && 'focus' in client) {
                     return client.focus();
                 }
             }
-            // Open new window
             if (clients.openWindow) {
                 return clients.openWindow(url);
             }
@@ -201,7 +167,5 @@ self.addEventListener('sync', (event) => {
 });
 
 async function syncOfflineSubmissions() {
-    // This would sync any offline exam submissions when back online
-    // Implementation depends on IndexedDB storage of pending submissions
     console.log('[SW] Background sync triggered');
 }
