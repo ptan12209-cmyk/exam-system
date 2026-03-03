@@ -23,7 +23,12 @@ import {
     Calendar,
     HelpCircle,
     Copy,
-    Trash
+    Trash,
+    Shield,
+    ShieldCheck,
+    ShieldAlert,
+    Camera,
+    Mic
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SUBJECTS } from "@/lib/subjects"
@@ -86,6 +91,9 @@ export default function CreateExamPage() {
     // Score visibility settings
     const [scoreVisibilityMode, setScoreVisibilityMode] = useState<'always' | 'never' | 'threshold'>('always')
     const [scoreThreshold, setScoreThreshold] = useState(5.0)
+
+    // Security level
+    const [securityLevel, setSecurityLevel] = useState(1)
 
     // Exam link dialog
     const [showLinkDialog, setShowLinkDialog] = useState(false)
@@ -327,7 +335,8 @@ export default function CreateExamPage() {
                     start_time: isScheduled && startTime ? new Date(startTime).toISOString() : null,
                     end_time: isScheduled && endTime ? new Date(endTime).toISOString() : null,
                     score_visibility_mode: scoreVisibilityMode,
-                    score_visibility_threshold: scoreVisibilityMode === 'threshold' ? scoreThreshold : null
+                    score_visibility_threshold: scoreVisibilityMode === 'threshold' ? scoreThreshold : null,
+                    security_level: securityLevel
                 })
                 .select()
                 .single()
@@ -723,6 +732,64 @@ export default function CreateExamPage() {
                                         </p>
                                     </div>
                                 )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Security Level Card */}
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                            <CardHeader>
+                                <CardTitle className="text-gray-800 dark:text-white flex items-center gap-2">
+                                    <Shield className="w-5 h-5 text-red-600 dark:text-red-400" />
+                                    Mức độ bảo mật
+                                </CardTitle>
+                                <CardDescription className="text-gray-500 dark:text-gray-400">
+                                    Chọn mức giám sát chống gian lận cho bài thi
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {[
+                                    { level: 0, icon: Shield, label: "Tắt bảo mật", desc: "Không giám sát", color: "gray" },
+                                    { level: 1, icon: ShieldCheck, label: "Cơ bản", desc: "Chặn chuyển tab, fullscreen, copy/paste", color: "blue" },
+                                    { level: 2, icon: Camera, label: "Webcam", desc: "Bật camera giám sát + chụp ảnh định kỳ", color: "amber" },
+                                    { level: 3, icon: Mic, label: "Webcam + Micro", desc: "Giám sát camera + phát hiện tiếng ồn", color: "orange" },
+                                    { level: 4, icon: ShieldAlert, label: "Tối đa", desc: "Camera + Micro + AI nhận diện khuôn mặt", color: "red" },
+                                ].map(({ level, icon: Icon, label, desc, color }) => (
+                                    <button
+                                        key={level}
+                                        type="button"
+                                        onClick={() => setSecurityLevel(level)}
+                                        className={cn(
+                                            "w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left",
+                                            securityLevel === level
+                                                ? `border-${color}-500 bg-${color}-50 dark:bg-${color}-900/20 ring-1 ring-${color}-500`
+                                                : "border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "p-2 rounded-lg flex-shrink-0",
+                                            securityLevel === level
+                                                ? `bg-${color}-100 dark:bg-${color}-900/30 text-${color}-600 dark:text-${color}-400`
+                                                : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400"
+                                        )}>
+                                            <Icon className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className={cn("font-semibold text-sm", securityLevel === level ? "text-gray-800 dark:text-white" : "text-gray-700 dark:text-gray-300")}>
+                                                    Mức {level}: {label}
+                                                </span>
+                                                {level >= 3 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold">PRO</span>}
+                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{desc}</p>
+                                        </div>
+                                        <div className={cn(
+                                            "w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors",
+                                            securityLevel === level ? `bg-${color}-500 border-${color}-500` : "border-gray-300 dark:border-slate-600"
+                                        )}>
+                                            {securityLevel === level && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                                        </div>
+                                    </button>
+                                ))}
                             </CardContent>
                         </Card>
 

@@ -30,7 +30,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             .select(`
                 id, title, duration, total_questions, pdf_url, status,
                 is_scheduled, start_time, end_time, max_attempts,
-                mc_answers, tf_answers, sa_answers, correct_answers
+                mc_answers, tf_answers, sa_answers, correct_answers,
+                security_level
             `)
             .eq('id', examId)
             .eq('status', 'published')
@@ -82,6 +83,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             end_time: exam.end_time,
             max_attempts: exam.max_attempts,
             attempts_used: attemptCount ?? 0,
+            security_level: exam.security_level ?? 1,
 
             // MC questions: Only question numbers, NO correct answers
             mc_questions: exam.mc_answers

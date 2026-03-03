@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Save, Loader2, CheckCircle2, RefreshCw, AlertCircle } from "lucide-react"
+import { ArrowLeft, Save, Loader2, CheckCircle2, RefreshCw, AlertCircle, Shield, ShieldCheck, ShieldAlert, Camera, Mic } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const OPTIONS = ["A", "B", "C", "D"] as const
@@ -24,6 +24,7 @@ export default function EditExamPage() {
     const [mcCount, setMcCount] = useState(12); const [tfCount, setTfCount] = useState(4); const [saCount, setSaCount] = useState(6)
     const [mcAnswers, setMcAnswers] = useState<(Option | null)[]>([]); const [tfAnswers, setTfAnswers] = useState<TFAnswer[]>([]); const [saAnswers, setSaAnswers] = useState<SAAnswer[]>([])
     const [answerTab, setAnswerTab] = useState<"mc" | "tf" | "sa">("mc")
+    const [securityLevel, setSecurityLevel] = useState(1)
 
     useEffect(() => {
         const fetchExam = async () => {
@@ -45,6 +46,7 @@ export default function EditExamPage() {
             } else if (exam.correct_answers) { setMcCount(exam.correct_answers.length); setMcAnswers(exam.correct_answers) }
             if (exam.tf_answers && exam.tf_answers.length > 0) { setTfCount(exam.tf_answers.length); setTfAnswers(exam.tf_answers) } else { setTfCount(0); setTfAnswers([]) }
             if (exam.sa_answers && exam.sa_answers.length > 0) { setSaCount(exam.sa_answers.length); setSaAnswers(exam.sa_answers) } else { setSaCount(0); setSaAnswers([]) }
+            setSecurityLevel(exam.security_level ?? 1)
             setLoading(false)
         }
         fetchExam()
@@ -61,7 +63,7 @@ export default function EditExamPage() {
             const mcAnswerObjects = mcAnswers.map((ans, i) => ({ question: i + 1, answer: ans })).filter(a => a.answer !== null)
             const finalTfAnswers = tfAnswers.length > 0 ? tfAnswers.map((tf, i) => ({ ...tf, question: mcCount + 1 + i })) : Array.from({ length: tfCount }, (_, i) => ({ question: mcCount + 1 + i, a: true, b: true, c: true, d: true }))
             const finalSaAnswers = saAnswers.length > 0 ? saAnswers.map((sa, i) => ({ ...sa, question: mcCount + tfCount + 1 + i })) : Array.from({ length: saCount }, (_, i) => ({ question: mcCount + tfCount + 1 + i, answer: "" }))
-            const { error: updateError } = await supabase.from("exams").update({ title: title.trim(), duration, total_questions: mcCount + tfCount + saCount, correct_answers: mcAnswers, mc_answers: mcAnswerObjects, tf_answers: tfCount > 0 ? finalTfAnswers : [], sa_answers: saCount > 0 ? finalSaAnswers : [] }).eq("id", examId)
+            const { error: updateError } = await supabase.from("exams").update({ title: title.trim(), duration, total_questions: mcCount + tfCount + saCount, correct_answers: mcAnswers, mc_answers: mcAnswerObjects, tf_answers: tfCount > 0 ? finalTfAnswers : [], sa_answers: saCount > 0 ? finalSaAnswers : [], security_level: securityLevel }).eq("id", examId)
             if (updateError) throw updateError
             router.push("/teacher/dashboard")
         } catch (err) { setError("Lỗi cập nhật: " + (err as Error).message) } finally { setSaving(false) }
@@ -133,6 +135,30 @@ export default function EditExamPage() {
                             <div className="space-y-2"><Label className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold uppercase">Đúng/Sai</Label><Input type="number" value={tfCount} onChange={(e) => handleTfCountChange(Math.max(0, parseInt(e.target.value) || 0))} className="bg-card border-emerald-200 dark:border-emerald-900 rounded-xl h-10" /></div>
                             <div className="space-y-2"><Label className="text-xs text-violet-600 dark:text-violet-400 font-semibold uppercase">Điền đáp án</Label><Input type="number" value={saCount} onChange={(e) => handleSaCountChange(Math.max(0, parseInt(e.target.value) || 0))} className="bg-card border-violet-200 dark:border-violet-900 rounded-xl h-10" /></div>
                         </div>
+                    </div>
+                </div>
+
+                {/* Security Level */}
+                <div className="glass-card rounded-2xl p-5 mb-6">
+                    <h3 className="text-base font-bold text-foreground mb-3 flex items-center gap-2"><Shield className="w-5 h-5 text-red-500" />Mức bảo mật</h3>
+                    <div className="grid grid-cols-5 gap-2">
+                        {[
+                            { level: 0, icon: Shield, label: "Tắt", color: "gray" },
+                            { level: 1, icon: ShieldCheck, label: "Cơ bản", color: "blue" },
+                            { level: 2, icon: Camera, label: "Webcam", color: "amber" },
+                            { level: 3, icon: Mic, label: "+Micro", color: "orange" },
+                            { level: 4, icon: ShieldAlert, label: "Tối đa", color: "red" },
+                        ].map(({ level, icon: Icon, label, color }) => (
+                            <button key={level} type="button" onClick={() => setSecurityLevel(level)} className={cn(
+                                "flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all text-center",
+                                securityLevel === level
+                                    ? `border-${color}-500 bg-${color}-50 dark:bg-${color}-900/20 ring-1 ring-${color}-500`
+                                    : "border-border hover:border-muted-foreground/30"
+                            )}>
+                                <Icon className={cn("w-5 h-5", securityLevel === level ? `text-${color}-600 dark:text-${color}-400` : "text-muted-foreground")} />
+                                <span className={cn("text-xs font-medium", securityLevel === level ? "text-foreground" : "text-muted-foreground")}>{label}</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
 

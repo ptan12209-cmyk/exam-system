@@ -8,6 +8,9 @@ import { Clock, Send, AlertTriangle, Loader2, FileText, ChevronLeft, ChevronRigh
 import { cn } from "@/lib/utils"
 import { AntiCheatProvider } from "@/components/exam/AntiCheatProvider"
 import { AntiCheatWarning, FullscreenPrompt, ViolationIndicator } from "@/components/exam/AntiCheatUI"
+import { WebcamProctor } from "@/components/exam/WebcamProctor"
+import { AudioProctor } from "@/components/exam/AudioProctor"
+import { InlinePdfViewer } from "@/components/exam/InlinePdfViewer"
 import { createShuffleSeed, shuffleWithMapping } from "@/lib/shuffle"
 
 const OPTIONS = ["A", "B", "C", "D"] as const
@@ -21,6 +24,7 @@ interface Exam {
     id: string; title: string; duration: number; total_questions: number; pdf_url: string | null
     mc_questions?: { question: number }[]; tf_questions?: { question: number }[]; sa_questions?: { question: number }[]
     is_scheduled?: boolean; start_time?: string; end_time?: string; max_attempts?: number; attempts_used?: number
+    security_level?: number
 }
 
 export default function TakeExamPage() {
@@ -68,7 +72,8 @@ export default function TakeExamPage() {
             }
             const examData = await examResponse.json()
             setExam(examData); setTimeLeft(examData.duration * 60); setUserId(user.id)
-            if (examData.pdf_url) setAntiCheatEnabled(false)
+            const secLevel = examData.security_level ?? 1
+            setAntiCheatEnabled(secLevel >= 1)
 
             const { data: existingSessionData } = await supabase.from("exam_sessions").select("*").eq("exam_id", examId).eq("student_id", user.id).eq("status", "in_progress").order("created_at", { ascending: false }).limit(1).single()
             if (existingSessionData) { setExistingSession(existingSessionData); setShowSessionChoice(true); setLoading(false); return }
@@ -190,6 +195,27 @@ export default function TakeExamPage() {
             {!examStarted && antiCheatEnabled && <FullscreenPrompt onStart={() => setExamStarted(true)} />}
             {examStarted && <AntiCheatWarning />}
 
+            {/* Proctoring components based on security level */}
+            {examStarted && exam && (exam.security_level ?? 1) >= 2 && (
+                <WebcamProctor
+                    enabled={true}
+                    enableFaceDetection={(exam.security_level ?? 1) >= 4}
+                    onViolation={(type, msg) => {
+                        console.warn(`Webcam violation: ${type}`, msg)
+                        handleViolation("tab_switch", tabSwitchCount + 1)
+                    }}
+                />
+            )}
+            {examStarted && exam && (exam.security_level ?? 1) >= 3 && (
+                <AudioProctor
+                    enabled={true}
+                    onViolation={(msg) => {
+                        console.warn(`Audio violation:`, msg)
+                        handleViolation("tab_switch", tabSwitchCount + 1)
+                    }}
+                />
+            )}
+
             <div className="min-h-screen bg-background flex flex-col select-none">
                 <header className="glass-nav sticky top-0 z-50 border-b border-border/50 h-16">
                     <div className="max-w-screen-2xl mx-auto px-4 h-full flex items-center justify-between">
@@ -215,12 +241,7 @@ export default function TakeExamPage() {
                     <div className="lg:w-1/2 flex flex-col p-4 overflow-hidden border-r border-border/50 bg-card shadow-sm z-10">
                         {exam.pdf_url ? (
                             <div className="flex-1 rounded-xl overflow-hidden border border-border/50 flex flex-col bg-muted/20">
-                                <iframe src={`${exam.pdf_url}#page=${pdfPage}`} className="flex-1 w-full bg-white" title="Đề thi PDF" />
-                                <div className="p-2 bg-card border-t border-border/50 flex items-center justify-center gap-4">
-                                    <Button variant="outline" size="sm" onClick={() => setPdfPage(p => Math.max(1, p - 1))} disabled={pdfPage <= 1} className="border-border text-muted-foreground"><ChevronLeft className="w-4 h-4" /></Button>
-                                    <span className="text-sm font-medium text-muted-foreground">Trang {pdfPage}</span>
-                                    <Button variant="outline" size="sm" onClick={() => setPdfPage(p => p + 1)} className="border-border text-muted-foreground"><ChevronRight className="w-4 h-4" /></Button>
-                                </div>
+                                <InlinePdfViewer url={exam.pdf_url} className="flex-1" />
                             </div>
                         ) : (
                             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
@@ -323,6 +344,6 @@ export default function TakeExamPage() {
                     </div>
                 )}
             </div>
-        </AntiCheatProvider>
+        </AntiCheatProvider >
     )
 }
