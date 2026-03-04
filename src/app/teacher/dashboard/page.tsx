@@ -108,25 +108,40 @@ export default function TeacherDashboard() {
         const examToDelete = exams.find(e => e.id === examId)
         if (!confirm(`Bạn có chắc muốn xóa đề thi "${examToDelete?.title}"?`)) return
 
-        const { data: submissions } = await supabase
-            .from("submissions")
-            .select("student_id")
-            .eq("exam_id", examId)
+        try {
+            // Notify students who submitted
+            const { data: submissions } = await supabase
+                .from("submissions")
+                .select("student_id")
+                .eq("exam_id", examId)
 
-        if (submissions && submissions.length > 0) {
-            const studentIds = [...new Set(submissions.map((s: { student_id: string }) => s.student_id))]
-            const notifications = studentIds.map(studentId => ({
-                user_id: studentId,
-                type: "exam_deleted",
-                title: "Đề thi đã bị xóa",
-                message: `Đề thi "${examToDelete?.title}" đã bị giáo viên xóa khỏi hệ thống.`,
-                is_read: false
-            }))
-            await supabase.from("notifications").insert(notifications)
+            if (submissions && submissions.length > 0) {
+                const studentIds = [...new Set(submissions.map((s: { student_id: string }) => s.student_id))]
+                const notifications = studentIds.map(studentId => ({
+                    user_id: studentId,
+                    type: "exam_deleted",
+                    title: "Đề thi đã bị xóa",
+                    message: `Đề thi "${examToDelete?.title}" đã bị giáo viên xóa khỏi hệ thống.`,
+                    is_read: false
+                }))
+                await supabase.from("notifications").insert(notifications)
+            }
+
+            // Delete child records first (in case ON DELETE CASCADE is missing)
+            await supabase.from("exam_participants").delete().eq("exam_id", examId)
+            await supabase.from("exam_sessions").delete().eq("exam_id", examId)
+            await supabase.from("submission_audit_log").delete().eq("exam_id", examId)
+            await supabase.from("submissions").delete().eq("exam_id", examId)
+
+            // Now delete the exam
+            const { error } = await supabase.from("exams").delete().eq("id", examId)
+            if (error) throw error
+
+            setExams(exams.filter(e => e.id !== examId))
+        } catch (err) {
+            console.error("Delete exam error:", err)
+            alert("Lỗi xóa đề thi: " + (err as Error).message)
         }
-
-        await supabase.from("exams").delete().eq("id", examId)
-        setExams(exams.filter(e => e.id !== examId))
     }
 
     const handleToggleStatus = async (exam: Exam) => {

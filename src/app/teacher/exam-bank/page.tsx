@@ -162,15 +162,26 @@ export default function ExamBankPage() {
     const handleDelete = async (id: string) => {
         const examToDelete = exams.find(e => e.id === id)
         if (!confirm(`Xóa đề thi "${examToDelete?.title}"?`)) return
-        const { data: submissions } = await supabase.from("submissions").select("student_id").eq("exam_id", id)
-        if (submissions && submissions.length > 0) {
-            const studentIds = [...new Set(submissions.map((s: { student_id: string }) => s.student_id))]
-            const notifications = studentIds.map(studentId => ({ user_id: studentId, type: "exam_deleted", title: "Đề thi đã bị xóa", message: `Đề thi "${examToDelete?.title}" đã bị giáo viên xóa khỏi hệ thống.`, is_read: false }))
-            await supabase.from("notifications").insert(notifications)
+        try {
+            const { data: submissions } = await supabase.from("submissions").select("student_id").eq("exam_id", id)
+            if (submissions && submissions.length > 0) {
+                const studentIds = [...new Set(submissions.map((s: { student_id: string }) => s.student_id))]
+                const notifications = studentIds.map(studentId => ({ user_id: studentId, type: "exam_deleted", title: "Đề thi đã bị xóa", message: `Đề thi "${examToDelete?.title}" đã bị giáo viên xóa khỏi hệ thống.`, is_read: false }))
+                await supabase.from("notifications").insert(notifications)
+            }
+            // Delete child records first (in case ON DELETE CASCADE is missing)
+            await supabase.from("exam_participants").delete().eq("exam_id", id)
+            await supabase.from("exam_sessions").delete().eq("exam_id", id)
+            await supabase.from("submission_audit_log").delete().eq("exam_id", id)
+            await supabase.from("submissions").delete().eq("exam_id", id)
+            // Now delete the exam
+            const { error } = await supabase.from("exams").delete().eq("id", id)
+            if (error) throw error
+            await fetchExams()
+        } catch (err) {
+            console.error("Delete exam error:", err)
+            alert("Lỗi xóa: " + (err as Error).message)
         }
-        const { error } = await supabase.from("exams").delete().eq("id", id)
-        if (error) { alert("Lỗi xóa: " + error.message); return }
-        await fetchExams()
     }
 
     const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login") }
