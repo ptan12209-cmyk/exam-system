@@ -21,7 +21,9 @@ import {
     Award,
     User,
     ChevronRight,
-    ArrowRight
+    ArrowRight,
+    ListTodo,
+    Calendar
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NotificationBell } from "@/components/NotificationBell"
@@ -137,6 +139,7 @@ export default function StudentDashboard() {
         { href: "/resources", label: "Thư viện tài liệu", icon: BookOpen },
         { href: "/arena", label: "Đấu trường", icon: Swords },
         { href: "/student/achievements", label: "Thành tích", icon: Award },
+        { href: "/student/checklist", label: "Checklist học tập", icon: ListTodo },
         { href: "/student/profile", label: "Hồ sơ cá nhân", icon: User },
     ]
 

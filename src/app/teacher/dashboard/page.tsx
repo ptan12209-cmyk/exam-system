@@ -21,7 +21,8 @@ import {
     Swords,
     ArrowRight,
     ChevronRight,
-    LogOut
+    LogOut,
+    Calendar
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
@@ -170,6 +171,7 @@ export default function TeacherDashboard() {
         { href: "/teacher/exam-bank", label: "Ngân hàng đề", icon: BookOpen },
         { href: "/teacher/arena", label: "Đấu trường", icon: Swords },
         { href: "/teacher/analytics", label: "Thống kê chi tiết", icon: BarChart3 },
+        { href: "/teacher/timetable", label: "Thời khóa biểu", icon: Calendar },
     ]
 
     return (
