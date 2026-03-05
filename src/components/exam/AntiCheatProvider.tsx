@@ -170,6 +170,10 @@ export function AntiCheatProvider({
             if (e.key === "F12") {
                 e.preventDefault()
             }
+            // Block Ctrl+Shift+I (DevTools)
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "i") {
+                e.preventDefault()
+            }
         }
 
         document.addEventListener("copy", handleCopy)
@@ -182,6 +186,70 @@ export function AntiCheatProvider({
             document.removeEventListener("keydown", handleKeyDown)
         }
     }, [enabled])
+
+    // Split-screen / Floating window detection
+    useEffect(() => {
+        if (!enabled) return
+
+        let blurTimeout: NodeJS.Timeout | null = null
+        const initialWidth = window.innerWidth
+
+        // 1. Window blur detection — fires when floating window overlays
+        const handleWindowBlur = () => {
+            // Small delay to avoid false positives from permission dialogs
+            blurTimeout = setTimeout(() => {
+                if (document.hidden) return // Already handled by visibility change
+                const newCount = tabSwitches + fullscreenExits + 1
+                addViolation(
+                    "tab_switch",
+                    `⚠️ Cảnh báo ${newCount}/${MAX_VIOLATIONS}: Phát hiện cửa sổ nổi/chia màn hình! Vui lòng quay lại bài thi.`
+                )
+            }, 500)
+        }
+
+        const handleWindowFocus = () => {
+            if (blurTimeout) { clearTimeout(blurTimeout); blurTimeout = null }
+        }
+
+        // 2. Window resize detection — split-screen changes viewport
+        const handleResize = () => {
+            const currentWidth = window.innerWidth
+            const ratio = currentWidth / screen.width
+
+            // If window shrinks to < 75% of screen width → split-screen detected
+            if (ratio < 0.75 && initialWidth > 0 && currentWidth < initialWidth * 0.8) {
+                const newCount = tabSwitches + fullscreenExits + 1
+                addViolation(
+                    "tab_switch",
+                    `⚠️ Cảnh báo ${newCount}/${MAX_VIOLATIONS}: Phát hiện chia màn hình! Vui lòng sử dụng toàn bộ màn hình cho bài thi.`
+                )
+            }
+        }
+
+        window.addEventListener("blur", handleWindowBlur)
+        window.addEventListener("focus", handleWindowFocus)
+        window.addEventListener("resize", handleResize)
+
+        // 3. Periodic viewport check (catches PiP/overlay that doesn't trigger resize)
+        const viewportCheck = setInterval(() => {
+            const ratio = window.innerWidth / screen.width
+            if (ratio < 0.6) {
+                const newCount = tabSwitches + fullscreenExits + 1
+                addViolation(
+                    "tab_switch",
+                    `⚠️ Cảnh báo ${newCount}/${MAX_VIOLATIONS}: Cửa sổ bài thi quá nhỏ! Vui lòng phóng to toàn màn hình.`
+                )
+            }
+        }, 10000) // Check every 10 seconds
+
+        return () => {
+            window.removeEventListener("blur", handleWindowBlur)
+            window.removeEventListener("focus", handleWindowFocus)
+            window.removeEventListener("resize", handleResize)
+            clearInterval(viewportCheck)
+            if (blurTimeout) clearTimeout(blurTimeout)
+        }
+    }, [enabled, tabSwitches, fullscreenExits, addViolation])
 
     const enterFullscreen = useCallback(async () => {
         try {
