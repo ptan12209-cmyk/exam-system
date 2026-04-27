@@ -11,6 +11,7 @@ import httpx
 import asyncio
 import json
 import re
+import time
 from typing import Optional, Dict, Any, List
 
 # ============================================================================
@@ -33,52 +34,37 @@ MODELS = [
     "gemini-2.5-pro",          # Most capable fallback
 ]
 
+# Retry config
+MAX_RETRIES = 1
+RETRY_DELAY = 2.0  # seconds
+RETRYABLE_STATUS_CODES = {429, 503, 502, 500}
+
 # ============================================================================
-# ANSWER EXTRACTION PROMPT (User's improved version)
+# ANSWER EXTRACTION PROMPT
 # ============================================================================
 
-EXTRACTION_PROMPT = """# VAI TRÒ
-Bạn là một trợ lý AI chuyên xử lý và trích xuất dữ liệu từ các tài liệu giáo dục. Nhiệm vụ của bạn là định vị chính xác phần "ĐÁP ÁN" hoặc "HƯỚNG DẪN CHẤM" (thường nằm ở cuối tài liệu) và trích xuất thông tin đó ra một định dạng có cấu trúc.
+EXTRACTION_PROMPT = """CHỈ TRẢ VỀ JSON THUẦN TÚY. KHÔNG giải thích, KHÔNG markdown, KHÔNG thêm bất kỳ text nào khác.
 
-# NHIỆM VỤ CỤ THỂ
-1. **Quét tài liệu:** Bỏ qua nội dung các câu hỏi đề bài. Hãy tìm các từ khóa báo hiệu phần đáp án như: "ĐÁP ÁN", "BẢNG ĐÁP ÁN", "HƯỚNG DẪN CHẤM", hoặc các bảng biểu nằm ở trang cuối cùng.
-2. **Nhận diện định dạng:** Đề thi có thể bao gồm một hoặc kết hợp các phần sau:
-   - **Phần 1 (Trắc nghiệm 4 lựa chọn):** Thường có dạng 1.A, 2.B...
-   - **Phần 2 (Đúng/Sai):** Thường có dạng Câu 1: a) Đ, b) S, c) Đ, d) S...
-   - **Phần 3 (Trả lời ngắn):** Thường có dạng Câu 1: 5.6, Câu 2: -10...
-3. **Trích xuất & Chuẩn hóa:** Chuyển đổi dữ liệu tìm được thành định dạng JSON.
+Bạn là AI trích xuất đáp án từ văn bản đề thi THPT Việt Nam.
 
-# QUY TẮC XỬ LÝ
-- Nếu đáp án nằm trong bảng kẻ ô, hãy đọc theo từng hàng/cột tương ứng.
-- Nếu đáp án viết liền (VD: 1A 2B 3C), hãy tách riêng từng câu.
-- Với dạng Đúng/Sai: Phải ghi rõ từng ý nhỏ (a, b, c, d) là Đúng hay Sai.
-- Loại bỏ các ký tự thừa, chỉ giữ lại số thứ tự câu và giá trị đáp án.
-- **QUAN TRỌNG:** Nếu đề chỉ có trắc nghiệm thuần (30-40 câu A/B/C/D), thì phan_dung_sai và phan_tra_loi_ngan phải là mảng rỗng [].
+NHIỆM VỤ: Tìm phần "ĐÁP ÁN" / "BẢNG ĐÁP ÁN" / "HƯỚNG DẪN CHẤM" và trích xuất thành JSON.
 
-# ĐỊNH DẠNG ĐẦU RA (JSON - không markdown, không giải thích)
-{{
-  "phan_trac_nghiem": [
-    {{"cau": 1, "dap_an": "A"}},
-    {{"cau": 2, "dap_an": "C"}}
-  ],
-  "phan_dung_sai": [
-    {{
-      "cau": 13,
-      "y_a": "Đúng",
-      "y_b": "Sai",
-      "y_c": "Đúng",
-      "y_d": "Sai"
-    }}
-  ],
-  "phan_tra_loi_ngan": [
-    {{"cau": 17, "dap_an": "2024"}},
-    {{"cau": 18, "dap_an": "4.5"}}
-  ]
-}}
+QUY TẮC:
+- Phần 1 (Trắc nghiệm): đáp án A/B/C/D → mảng "phan_trac_nghiem"
+- Phần 2 (Đúng/Sai): mỗi ý a,b,c,d → mảng "phan_dung_sai"
+- Phần 3 (Trả lời ngắn): giá trị số → mảng "phan_tra_loi_ngan"
+- Nếu đề chỉ có trắc nghiệm thuần → phan_dung_sai và phan_tra_loi_ngan là []
+- Đáp án viết liền (1A 2B 3C) → tách riêng từng câu
+- Đáp án trong bảng → đọc theo hàng/cột
 
-# VĂN BẢN CẦN XỬ LÝ
-{text}
-"""
+VÍ DỤ 1 — Đề chỉ có trắc nghiệm:
+{{"phan_trac_nghiem":[{{"cau":1,"dap_an":"D"}},{{"cau":2,"dap_an":"C"}}],"phan_dung_sai":[],"phan_tra_loi_ngan":[]}}
+
+VÍ DỤ 2 — Đề có cả 3 phần:
+{{"phan_trac_nghiem":[{{"cau":1,"dap_an":"A"}}],"phan_dung_sai":[{{"cau":13,"y_a":"Đúng","y_b":"Sai","y_c":"Đúng","y_d":"Sai"}}],"phan_tra_loi_ngan":[{{"cau":17,"dap_an":"2024"}}]}}
+
+VĂN BẢN CẦN XỬ LÝ:
+{text}"""
 
 
 # ============================================================================
@@ -92,23 +78,25 @@ class GeminiClient:
         self.api_key = api_key or GEMINI_API_KEY
         self.base_url = (base_url or GEMINI_BASE_URL).rstrip('/')
         self.timeout = timeout
+        self._client: Optional[httpx.AsyncClient] = None
         logger.info(f"GeminiClient initialized with base URL: {self.base_url}")
+    
+    async def _get_client(self) -> httpx.AsyncClient:
+        """Get or create a reusable HTTP client."""
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(timeout=self.timeout)
+        return self._client
     
     async def extract_answers(self, pdf_text: str) -> Dict[str, Any]:
         """
         Use AI to extract answers from PDF text.
-        
-        Args:
-            pdf_text: Extracted text from PDF
-            
-        Returns:
-            Dict with multiple_choice, true_false, short_answer arrays
+        Tries each model with retry logic for transient errors.
         """
-        prompt = EXTRACTION_PROMPT.format(text=pdf_text[:15000])  # Limit text length
+        prompt = EXTRACTION_PROMPT.format(text=pdf_text[:15000])
         
         for model in MODELS:
             logger.info(f"Trying model: {model}")
-            result = await self._try_model(model, prompt)
+            result = await self._try_model_with_retry(model, prompt)
             if result:
                 return result
         
@@ -119,6 +107,24 @@ class GeminiClient:
             "short_answer": [],
             "error": "AI extraction failed - all models unavailable"
         }
+    
+    async def _try_model_with_retry(self, model: str, prompt: str) -> Optional[Dict]:
+        """Try a model with retry on transient errors (429, 503)."""
+        for attempt in range(MAX_RETRIES + 1):
+            result = await self._try_model(model, prompt)
+            if result is not None:
+                return result
+            
+            # Check if we should retry (only if _try_model stored a retryable status)
+            if attempt < MAX_RETRIES and self._last_status in RETRYABLE_STATUS_CODES:
+                logger.info(f"Retrying {model} in {RETRY_DELAY}s (attempt {attempt + 1})...")
+                await asyncio.sleep(RETRY_DELAY)
+            else:
+                break
+        
+        return None
+    
+    _last_status: int = 0
     
     async def _try_model(self, model: str, prompt: str) -> Optional[Dict]:
         """Try a specific model."""
@@ -133,37 +139,42 @@ class GeminiClient:
             payload = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.1,  # Low temp for consistent extraction
+                "temperature": 0.1,
                 "max_tokens": 8192
             }
             
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.post(url, headers=headers, json=payload)
+            client = await self._get_client()
+            response = await client.post(url, headers=headers, json=payload)
+            self._last_status = response.status_code
+            
+            if response.status_code == 200:
+                data = response.json()
+                text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
                 
-                if response.status_code == 200:
-                    data = response.json()
-                    text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                    
-                    if text:
-                        # Parse JSON from response
-                        result = self._parse_json_response(text)
-                        if result:
-                            result["model"] = model
-                            logger.info(f"Success with model: {model}")
-                            return result
-                
-                logger.warning(f"Model {model} returned status {response.status_code}")
-                
+                if text:
+                    result = self._parse_json_response(text)
+                    if result:
+                        result["model"] = model
+                        logger.info(f"Success with model: {model}")
+                        return result
+            
+            logger.warning(f"Model {model} returned status {response.status_code}")
+            
+        except httpx.TimeoutException:
+            logger.error(f"Model {model} timed out")
+            self._last_status = 0
         except Exception as e:
             logger.error(f"Model {model} failed: {e}")
+            self._last_status = 0
         
         return None
     
     def _parse_json_response(self, text: str) -> Optional[Dict]:
-        """Parse JSON from AI response, handling potential markdown formatting."""
+        """Parse JSON from AI response with robust fallbacks."""
         try:
-            # Remove markdown code blocks if present
             text = text.strip()
+            
+            # Step 1: Strip markdown code blocks
             if text.startswith("```json"):
                 text = text[7:]
             elif text.startswith("```"):
@@ -172,108 +183,114 @@ class GeminiClient:
                 text = text[:-3]
             text = text.strip()
             
-            # Debug: print first part of response
-            print(f"🔍 AI Raw Response (first 500 chars): {text[:500]}")
+            # Step 2: Extract JSON object from surrounding text
+            # Gemini sometimes adds explanation before/after the JSON
+            json_match = re.search(r'\{[\s\S]*\}', text)
+            if json_match:
+                text = json_match.group(0)
             
-            # Try direct parsing first
+            logger.info(f"AI response preview: {text[:300]}")
+            
+            # Step 3: Fix common LLM JSON errors
+            # Remove trailing commas before ] or }
+            text = re.sub(r',\s*([}\]])', r'\1', text)
+            
+            # Step 4: Try parsing
             try:
                 data = json.loads(text)
             except json.JSONDecodeError:
-                # Try to fix common issues
-                # 1. Truncated JSON - try to close brackets
+                # Try to fix truncated JSON
                 if text.count('{') > text.count('}'):
                     text += '}' * (text.count('{') - text.count('}'))
                 if text.count('[') > text.count(']'):
                     text += ']' * (text.count('[') - text.count(']'))
                 
-                # 2. Try parsing again
                 try:
                     data = json.loads(text)
                 except json.JSONDecodeError:
-                    # 3. Try to extract just the MC answers using regex
-                    mc_match = re.search(r'"multiple_choice"\s*:\s*\[(.*?)\]', text, re.DOTALL)
-                    if mc_match:
-                        mc_str = mc_match.group(1)
-                        # Extract individual answers
-                        answers = re.findall(r'"([A-D])"', mc_str)
-                        if answers:
-                            print(f"⚡ Fallback: Extracted {len(answers)} MC answers via regex")
-                            return {
-                                "multiple_choice": answers,
-                                "true_false": [],
-                                "short_answer": []
-                            }
-                    
-                    # Try Vietnamese regex fallback
-                    vn_match = re.search(r'"phan_trac_nghiem"\s*:\s*\[(.*?)\]', text, re.DOTALL)
-                    if vn_match:
-                        # Extract from Vietnamese format
-                        answers = re.findall(r'"dap_an"\s*:\s*"([A-D])"', vn_match.group(1))
-                        if answers:
-                            print(f"⚡ Fallback VN: Extracted {len(answers)} MC answers via regex")
-                            return {
-                                "multiple_choice": answers,
-                                "true_false": [],
-                                "short_answer": []
-                            }
-                    
-                    print(f"❌ Cannot parse JSON, raw text: {text[:1000]}")
-                    return None
+                    # Last resort: regex extraction
+                    return self._regex_fallback(text)
             
-            # Handle Vietnamese format and convert to English
-            if "phan_trac_nghiem" in data:
-                # Convert from Vietnamese format
-                mc_list = data.get("phan_trac_nghiem", [])
-                multiple_choice = [item.get("dap_an", "").upper() for item in mc_list if isinstance(item, dict)]
-                
-                tf_list = data.get("phan_dung_sai", [])
-                true_false = []
-                for item in tf_list:
-                    if isinstance(item, dict):
-                        true_false.append({
-                            "question": item.get("cau", 0),
-                            "answers": {
-                                "a": item.get("y_a", "").lower() == "đúng",
-                                "b": item.get("y_b", "").lower() == "đúng",
-                                "c": item.get("y_c", "").lower() == "đúng",
-                                "d": item.get("y_d", "").lower() == "đúng"
-                            }
-                        })
-                
-                sa_list = data.get("phan_tra_loi_ngan", [])
-                short_answer = []
-                for item in sa_list:
-                    if isinstance(item, dict):
-                        short_answer.append({
-                            "question": item.get("cau", 0),
-                            "answer": str(item.get("dap_an", ""))
-                        })
-                
-                result = {
-                    "multiple_choice": multiple_choice,
-                    "true_false": true_false,
-                    "short_answer": short_answer
-                }
-            else:
-                # Already in English format
-                result = {
-                    "multiple_choice": data.get("multiple_choice", []),
-                    "true_false": data.get("true_false", []),
-                    "short_answer": data.get("short_answer", [])
-                }
-            
-            # Normalize MC answers to uppercase
-            result["multiple_choice"] = [
-                ans.upper() if isinstance(ans, str) else ans 
-                for ans in result["multiple_choice"]
-            ]
-            
-            return result
+            # Step 5: Normalize to English keys
+            return self._normalize_response(data)
             
         except Exception as e:
             logger.error(f"JSON parse error: {e}")
-            print(f"❌ JSON parse exception: {e}")
             return None
+    
+    def _regex_fallback(self, text: str) -> Optional[Dict]:
+        """Extract answers via regex when JSON parsing fails entirely."""
+        # Try Vietnamese format
+        vn_match = re.search(r'"phan_trac_nghiem"\s*:\s*\[(.*?)\]', text, re.DOTALL)
+        if vn_match:
+            answers = re.findall(r'"dap_an"\s*:\s*"([A-D])"', vn_match.group(1))
+            if answers:
+                logger.info(f"Regex fallback (VN): extracted {len(answers)} MC answers")
+                return {"multiple_choice": answers, "true_false": [], "short_answer": []}
+        
+        # Try English format
+        en_match = re.search(r'"multiple_choice"\s*:\s*\[(.*?)\]', text, re.DOTALL)
+        if en_match:
+            answers = re.findall(r'"([A-D])"', en_match.group(1))
+            if answers:
+                logger.info(f"Regex fallback (EN): extracted {len(answers)} MC answers")
+                return {"multiple_choice": answers, "true_false": [], "short_answer": []}
+        
+        logger.error(f"All parsing failed. Raw text: {text[:500]}")
+        return None
+    
+    def _normalize_response(self, data: Dict) -> Dict:
+        """Convert Vietnamese or English format to standardized output."""
+        if "phan_trac_nghiem" in data:
+            # Vietnamese format → convert
+            mc_list = data.get("phan_trac_nghiem", [])
+            multiple_choice = [
+                item.get("dap_an", "").upper() 
+                for item in mc_list if isinstance(item, dict)
+            ]
+            
+            tf_list = data.get("phan_dung_sai", [])
+            true_false = []
+            for item in tf_list:
+                if isinstance(item, dict):
+                    true_false.append({
+                        "question": item.get("cau", 0),
+                        "answers": {
+                            "a": item.get("y_a", "").lower() == "đúng",
+                            "b": item.get("y_b", "").lower() == "đúng",
+                            "c": item.get("y_c", "").lower() == "đúng",
+                            "d": item.get("y_d", "").lower() == "đúng"
+                        }
+                    })
+            
+            sa_list = data.get("phan_tra_loi_ngan", [])
+            short_answer = []
+            for item in sa_list:
+                if isinstance(item, dict):
+                    short_answer.append({
+                        "question": item.get("cau", 0),
+                        "answer": str(item.get("dap_an", ""))
+                    })
+            
+            result = {
+                "multiple_choice": multiple_choice,
+                "true_false": true_false,
+                "short_answer": short_answer
+            }
+        else:
+            result = {
+                "multiple_choice": data.get("multiple_choice", []),
+                "true_false": data.get("true_false", []),
+                "short_answer": data.get("short_answer", [])
+            }
+        
+        # Normalize MC to uppercase
+        result["multiple_choice"] = [
+            ans.upper() if isinstance(ans, str) else ans 
+            for ans in result["multiple_choice"]
+        ]
+        
+        return result
 
 # ============================================================================
 # GLOBAL INSTANCE
@@ -285,34 +302,16 @@ gemini_client = GeminiClient()
 # VISION PROMPT FOR IMAGE-BASED ANSWER KEYS (Vietnamese format)
 # ============================================================================
 
-VISION_PROMPT = """# VAI TRÒ
-Bạn là AI trích xuất đáp án từ ảnh bảng đáp án đề thi THPT Việt Nam.
+VISION_PROMPT = """CHỈ TRẢ VỀ JSON THUẦN TÚY. KHÔNG giải thích, KHÔNG markdown.
 
-# NHIỆM VỤ
 Đọc bảng đáp án trong ảnh và trích xuất:
-- **Phần 1 (Trắc nghiệm):** Đáp án A/B/C/D
-- **Phần 2 (Đúng/Sai):** Mỗi ý a,b,c,d là Đúng hay Sai
-- **Phần 3 (Trả lời ngắn):** Giá trị số (giữ nguyên dấu phẩy)
-
-# LƯU Ý
+- Phần 1 (Trắc nghiệm): A/B/C/D → "phan_trac_nghiem"
+- Phần 2 (Đúng/Sai): mỗi ý a,b,c,d → "phan_dung_sai"  
+- Phần 3 (Trả lời ngắn): giá trị số → "phan_tra_loi_ngan"
 - Nếu chỉ có trắc nghiệm thuần → phan_dung_sai và phan_tra_loi_ngan là []
-- Đọc theo thứ tự hàng/cột trong bảng
 
-# OUTPUT JSON (không markdown)
-{
-  "phan_trac_nghiem": [
-    {"cau": 1, "dap_an": "A"},
-    {"cau": 2, "dap_an": "C"}
-  ],
-  "phan_dung_sai": [
-    {"cau": 13, "y_a": "Đúng", "y_b": "Sai", "y_c": "Đúng", "y_d": "Sai"}
-  ],
-  "phan_tra_loi_ngan": [
-    {"cau": 17, "dap_an": "2,5"}
-  ]
-}
-
-CHỈ TRẢ VỀ JSON."""
+VÍ DỤ:
+{"phan_trac_nghiem":[{"cau":1,"dap_an":"A"}],"phan_dung_sai":[{"cau":13,"y_a":"Đúng","y_b":"Sai","y_c":"Đúng","y_d":"Sai"}],"phan_tra_loi_ngan":[{"cau":17,"dap_an":"2,5"}]}"""
 
 
 # ============================================================================
@@ -320,16 +319,7 @@ CHỈ TRẢ VỀ JSON."""
 # ============================================================================
 
 async def extract_answers_from_image(image_base64: str, mime_type: str = "image/png") -> Dict[str, Any]:
-    """
-    Extract answers from an image of answer key using Gemini Vision.
-    
-    Args:
-        image_base64: Base64 encoded image data
-        mime_type: MIME type of the image (image/png, image/jpeg)
-        
-    Returns:
-        Dict with answer data
-    """
+    """Extract answers from an image of answer key using Gemini Vision."""
     try:
         url = f"{gemini_client.base_url}/v1/chat/completions"
         
@@ -338,9 +328,8 @@ async def extract_answers_from_image(image_base64: str, mime_type: str = "image/
             "Content-Type": "application/json"
         }
         
-        # Message with image for vision model
         payload = {
-            "model": "gemini-2.5-flash",  # Vision capable
+            "model": "gemini-2.5-flash",
             "messages": [{
                 "role": "user",
                 "content": [
@@ -357,32 +346,29 @@ async def extract_answers_from_image(image_base64: str, mime_type: str = "image/
             "max_tokens": 4096
         }
         
-        print(f"🖼️ Sending image to Gemini Vision...")
+        logger.info("Sending image to Gemini Vision...")
         
-        async with httpx.AsyncClient(timeout=90.0) as client:
-            response = await client.post(url, headers=headers, json=payload)
+        client = await gemini_client._get_client()
+        response = await client.post(url, headers=headers, json=payload)
+        
+        if response.status_code == 200:
+            data = response.json()
+            text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
             
-            if response.status_code == 200:
-                data = response.json()
-                text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                
-                print(f"🖼️ Vision response: {text[:500]}")
-                
-                if text:
-                    result = gemini_client._parse_json_response(text)
-                    if result:
-                        result["model"] = "gemini-2.0-flash-vision"
-                        result["extraction_method"] = "vision"
-                        print(f"✅ Vision extraction successful!")
-                        return result
-            else:
-                print(f"❌ Vision API error: {response.status_code}")
-                print(f"Response: {response.text[:500]}")
+            logger.info(f"Vision response preview: {text[:300]}")
+            
+            if text:
+                result = gemini_client._parse_json_response(text)
+                if result:
+                    result["model"] = "gemini-2.5-flash-vision"
+                    result["extraction_method"] = "vision"
+                    logger.info("Vision extraction successful!")
+                    return result
+        else:
+            logger.error(f"Vision API error: {response.status_code} - {response.text[:300]}")
                 
     except Exception as e:
-        print(f"❌ Vision extraction error: {e}")
-        import traceback
-        print(traceback.format_exc())
+        logger.error(f"Vision extraction error: {e}", exc_info=True)
     
     return {
         "multiple_choice": [],
@@ -396,13 +382,5 @@ async def extract_answers_from_image(image_base64: str, mime_type: str = "image/
 # ============================================================================
 
 async def extract_answers_with_ai(pdf_text: str) -> Dict[str, Any]:
-    """
-    Main function to extract answers using AI (text mode).
-    
-    Args:
-        pdf_text: Text extracted from PDF
-        
-    Returns:
-        Dict with answer data
-    """
+    """Main function to extract answers using AI (text mode)."""
     return await gemini_client.extract_answers(pdf_text)

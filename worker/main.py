@@ -7,12 +7,18 @@ Provides endpoints for:
 """
 
 import io
-import tempfile
+import time
+import logging
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import pdfplumber
 
 from pdf_parser import parse_pdf_content, extract_answer_key
+
+logger = logging.getLogger("worker")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+
+MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
 
 app = FastAPI(
     title="Exam PDF Worker",
@@ -28,6 +34,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/")
+def root():
+    """Root endpoint for Render health check."""
+    return {"service": "exam-pdf-worker", "version": "1.1.0", "status": "ok"}
 
 
 @app.get("/health")
@@ -94,8 +106,12 @@ async def extract_answers(file: UploadFile, use_ai: bool = True):
     if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
     
+    start_time = time.time()
     try:
         content = await file.read()
+        
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail=f"File too large ({len(content) // 1024 // 1024}MB). Max: 20MB")
         
         full_text = ""
         last_page_has_text = True
@@ -111,12 +127,11 @@ async def extract_answers(file: UploadFile, use_ai: bool = True):
                 if i == page_count - 1:
                     last_page_has_text = bool(text and len(text.strip()) > 50)
         
-        print(f"📄 PDF has {page_count} pages")
-        print(f"📄 Last page has text: {last_page_has_text}")
+        logger.info(f"PDF has {page_count} pages, last page has text: {last_page_has_text}")
         
         # If last page is an image (no text), try vision extraction
         if not last_page_has_text and page_count > 0:
-            print("🖼️ Last page appears to be an image, trying Vision extraction...")
+            logger.info("Last page is image-based, trying Vision extraction...")
             try:
                 from pdf2image import convert_from_bytes
                 import base64
@@ -130,7 +145,7 @@ async def extract_answers(file: UploadFile, use_ai: bool = True):
                     images[0].save(img_buffer, format='PNG')
                     img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
                     
-                    print(f"🖼️ Converted last page to image ({len(img_base64)} bytes)")
+                    logger.info(f"Converted last page to image ({len(img_base64)} bytes)")
                     
                     # Use vision extraction
                     from gemini_service import extract_answers_from_image
@@ -148,23 +163,18 @@ async def extract_answers(file: UploadFile, use_ai: bool = True):
                             "short_answer": vision_result.get("short_answer", [])
                         }
             except Exception as e:
-                print(f"⚠️ Vision extraction failed: {e}, falling back to text")
+                logger.warning(f"Vision extraction failed: {e}, falling back to text")
         
-        # DEBUG: Print full extracted text
-        print("=" * 50)
-        print("📄 FULL PDF TEXT EXTRACTED:")
-        print("=" * 50)
-        print(full_text[:2000] if len(full_text) > 2000 else full_text)
-        print("=" * 50)
+        logger.info(f"Extracted text preview ({len(full_text)} chars): {full_text[:500]}")
         
         # Try AI extraction first
         ai_result = None
         if use_ai:
             try:
-                print(f"🤖 Starting AI extraction for: {file.filename}")
+                logger.info(f"Starting AI extraction for: {file.filename}")
                 from gemini_service import extract_answers_with_ai
                 ai_result = await extract_answers_with_ai(full_text)
-                print(f"🤖 AI result: {ai_result}")
+                logger.info(f"AI result keys: {list(ai_result.keys())}, MC count: {len(ai_result.get('multiple_choice', []))}")
                 
                 # Check if AI returned meaningful data
                 has_data = (
@@ -174,7 +184,8 @@ async def extract_answers(file: UploadFile, use_ai: bool = True):
                 )
                 
                 if has_data:
-                    print(f"✅ AI extraction successful! Model: {ai_result.get('model')}")
+                    elapsed = round(time.time() - start_time, 2)
+                    logger.info(f"AI extraction successful! Model: {ai_result.get('model')}, elapsed: {elapsed}s")
                     return {
                         "answers": ai_result.get("multiple_choice", []),
                         "total": len(ai_result.get("multiple_choice", [])),
@@ -183,14 +194,13 @@ async def extract_answers(file: UploadFile, use_ai: bool = True):
                         "model": ai_result.get("model", "unknown"),
                         "multiple_choice": ai_result.get("multiple_choice", []),
                         "true_false": ai_result.get("true_false", []),
-                        "short_answer": ai_result.get("short_answer", [])
+                        "short_answer": ai_result.get("short_answer", []),
+                        "elapsed_seconds": elapsed
                     }
                 else:
-                    print(f"⚠️ AI returned empty data, falling back to regex")
+                    logger.warning("AI returned empty data, falling back to regex")
             except Exception as e:
-                import traceback
-                print(f"❌ AI extraction failed: {e}")
-                print(traceback.format_exc())
+                logger.error(f"AI extraction failed: {e}", exc_info=True)
         
         # Fallback to regex extraction
         answer_data = extract_answer_key(full_text)
