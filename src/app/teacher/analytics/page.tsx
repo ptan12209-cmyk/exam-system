@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -61,6 +61,28 @@ export default function TeacherAnalyticsPage() {
     const [submissions, setSubmissions] = useState<Submission[]>([])
     const [fullName, setFullName] = useState("")
     const [stats, setStats] = useState({ totalStudents: 0, averageScore: 0, highestScore: 0, lowestScore: 0, passRate: 0 })
+    const [timeRange, setTimeRange] = useState<"7d" | "30d" | "all">("all")
+
+    // Filter submissions by time range
+    const filteredSubmissions = useMemo(() => {
+        if (timeRange === "all") return submissions
+        const now = new Date()
+        const days = timeRange === "7d" ? 7 : 30
+        const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+        return submissions.filter(s => new Date(s.submitted_at) >= cutoff)
+    }, [submissions, timeRange])
+
+    // Recompute stats when filtered submissions change
+    useEffect(() => {
+        const scores = filteredSubmissions.map(s => s.score)
+        if (scores.length > 0) {
+            const avg = scores.reduce((a, b) => a + b, 0) / scores.length
+            const passing = scores.filter(s => s >= 5).length
+            setStats({ totalStudents: scores.length, averageScore: avg, highestScore: Math.max(...scores), lowestScore: Math.min(...scores), passRate: (passing / scores.length) * 100 })
+        } else {
+            setStats({ totalStudents: 0, averageScore: 0, highestScore: 0, lowestScore: 0, passRate: 0 })
+        }
+    }, [filteredSubmissions])
 
     useEffect(() => {
         async function fetchExams() {
@@ -85,12 +107,6 @@ export default function TeacherAnalyticsPage() {
                     student: { full_name: string | null; class: string | null } | { full_name: string | null; class: string | null }[] | null
                 }) => ({ ...sub, student: Array.isArray(sub.student) ? sub.student[0] : sub.student })) as Submission[]
                 setSubmissions(transformedData)
-                const scores = transformedData.map(s => s.score)
-                if (scores.length > 0) {
-                    const avg = scores.reduce((a, b) => a + b, 0) / scores.length
-                    const passing = scores.filter(s => s >= 5).length
-                    setStats({ totalStudents: scores.length, averageScore: avg, highestScore: Math.max(...scores), lowestScore: Math.min(...scores), passRate: (passing / scores.length) * 100 })
-                } else { setStats({ totalStudents: 0, averageScore: 0, highestScore: 0, lowestScore: 0, passRate: 0 }) }
             }
         }
         fetchSubmissions()
@@ -217,6 +233,16 @@ export default function TeacherAnalyticsPage() {
                                 {exams.map((exam) => (<option key={exam.id} value={exam.id}>{exam.title}</option>))}
                             </select>
                         </div>
+                        <div className="flex items-center gap-2 w-full md:w-auto">
+                            <span className="text-sm font-medium text-foreground whitespace-nowrap">Khoảng thời gian:</span>
+                            <select value={timeRange} onChange={(e) => setTimeRange(e.target.value as "7d" | "30d" | "all")}
+                                className="px-3 py-2 rounded-xl border border-border bg-card text-foreground focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                            >
+                                <option value="7d">7 ngày qua</option>
+                                <option value="30d">30 ngày qua</option>
+                                <option value="all">Tất cả</option>
+                            </select>
+                        </div>
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
                         <Button variant="outline" onClick={handleExportExcel} disabled={submissions.length === 0} className="flex-1 md:flex-none border-border text-muted-foreground hover:text-foreground">
@@ -264,7 +290,7 @@ export default function TeacherAnalyticsPage() {
                                 <h3 className="flex items-center gap-2 text-lg font-bold text-foreground"><BarChart3 className="w-5 h-5 text-indigo-500" />Phân bố điểm số</h3>
                                 <p className="text-muted-foreground text-sm">Biểu đồ phổ điểm của học sinh</p>
                             </div>
-                            <div className="p-5"><ScoreDistributionChart data={generateScoreDistribution(submissions.map(s => s.score))} /></div>
+                            <div className="p-5"><ScoreDistributionChart data={generateScoreDistribution(filteredSubmissions.map(s => s.score))} /></div>
                         </div>
 
                         {/* Top Students */}
@@ -285,7 +311,7 @@ export default function TeacherAnalyticsPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-border/30">
-                                            {submissions.slice(0, 10).map((sub, index) => (
+                                            {filteredSubmissions.slice(0, 10).map((sub, index) => (
                                                 <tr key={sub.id} className="hover:bg-muted/20 transition-colors">
                                                     <td className="px-4 py-3 text-center font-medium text-foreground">{index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}</td>
                                                     <td className="px-4 py-3 text-foreground font-medium">{sub.student?.full_name || "Ẩn danh"}</td>
@@ -300,9 +326,9 @@ export default function TeacherAnalyticsPage() {
                         </div>
 
                         {/* Question Analysis */}
-                        {selectedExam && (
+                        {selectedExam && filteredSubmissions.length > 0 && (
                             <div className="lg:col-span-2">
-                                <QuestionAnalysisTable data={analyzeQuestions(submissions.map(s => ({ student_answers: s.student_answers })), selectedExam.correct_answers)} />
+                                <QuestionAnalysisTable data={analyzeQuestions(filteredSubmissions.map(s => ({ student_answers: s.student_answers })), selectedExam.correct_answers)} />
                             </div>
                         )}
                     </div>

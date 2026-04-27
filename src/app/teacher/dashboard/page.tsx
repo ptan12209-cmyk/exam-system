@@ -82,16 +82,25 @@ export default function TeacherDashboard() {
 
             const { data: examsData } = await supabase
                 .from("exams")
-                .select("*")
+                .select("*, submissions(count)")
                 .eq("teacher_id", user.id)
                 .order("created_at", { ascending: false })
 
             if (examsData) {
-                setExams(examsData)
+                // Map submission count onto each exam
+                const examsWithCounts = examsData.map((e: Record<string, unknown>) => ({
+                    ...e,
+                    submission_count: Array.isArray(e.submissions) && e.submissions.length > 0
+                        ? (e.submissions[0] as { count: number }).count
+                        : 0
+                }))
+                setExams(examsWithCounts)
+
+                const totalSubs = examsWithCounts.reduce((sum: number, e: { submission_count: number }) => sum + e.submission_count, 0)
                 setStats({
-                    totalExams: examsData.length,
-                    publishedExams: examsData.filter((e: { status: string }) => e.status === "published").length,
-                    totalSubmissions: 0
+                    totalExams: examsWithCounts.length,
+                    publishedExams: examsWithCounts.filter((e: { status: string }) => e.status === "published").length,
+                    totalSubmissions: totalSubs
                 })
             }
 
@@ -415,6 +424,7 @@ export default function TeacherDashboard() {
                                                     <span className="flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" />{subjectInfo.label}</span>
                                                     <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{exam.duration} phút</span>
                                                     <span className="flex items-center gap-1"><FileText className="w-3.5 h-3.5" />{exam.total_questions} câu</span>
+                                                    <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{exam.submission_count || 0} lượt nộp</span>
                                                 </div>
                                             </div>
                                         </div>
