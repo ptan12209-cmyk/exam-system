@@ -26,12 +26,11 @@ logger = logging.getLogger("gemini_service")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "sk-ewNhLj4fTcPUGWDstbRMibwnhjtZ5gB4q4CxMhEQ0gg5xZlx")
 GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "https://v98store.com")
 
-# Models to try
+# Models to try (must match v98store supported models)
 MODELS = [
-    "gemini-1.5-pro",          # Highly capable 
-    "gemini-2.0-flash",        # Fallback - fast + cheap
+    "gemini-2.5-flash",        # Fast, reliable, cheap
     "gemini-3-flash-preview",  # Next gen
-    "gemini-1.5-flash",        # Very reliable fallback
+    "gemini-2.5-pro",          # Most capable fallback
 ]
 
 # ============================================================================
@@ -341,7 +340,7 @@ async def extract_answers_from_image(image_base64: str, mime_type: str = "image/
         
         # Message with image for vision model
         payload = {
-            "model": "gemini-2.0-flash",  # Vision capable
+            "model": "gemini-2.5-flash",  # Vision capable
             "messages": [{
                 "role": "user",
                 "content": [
