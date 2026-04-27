@@ -167,6 +167,9 @@ export default function CreateExamPage() {
         setError(null)
         setParseSuccess(false)
 
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 90000) // 90s timeout
+
         try {
             const formData = new FormData()
             formData.append("file", targetFile)
@@ -174,23 +177,29 @@ export default function CreateExamPage() {
             const response = await fetch(`${WORKER_URL}/extract-answers`, {
                 method: "POST",
                 body: formData,
+                signal: controller.signal,
             })
 
             if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.detail || "Không thể parse PDF")
+                let detail = "Không thể parse PDF"
+                try {
+                    const errorData = await response.json()
+                    detail = errorData.detail || detail
+                } catch { /* response might not be JSON */ }
+                throw new Error(detail)
             }
 
             const data = await response.json()
             console.log("API Response:", data)
 
-            const mcData = data.multiple_choice || []
+            // Validate response structure
+            const mcData = Array.isArray(data.multiple_choice) ? data.multiple_choice : []
             const validMc = mcData.filter((a: string | null) =>
-                a && ["A", "B", "C", "D"].includes(a.toUpperCase())
+                a && typeof a === "string" && ["A", "B", "C", "D"].includes(a.toUpperCase())
             )
             if (validMc.length > 0) {
                 const parsedMc: (Option | null)[] = mcData.map((a: string | null) => {
-                    if (a && ["A", "B", "C", "D"].includes(a.toUpperCase())) {
+                    if (a && typeof a === "string" && ["A", "B", "C", "D"].includes(a.toUpperCase())) {
                         return a.toUpperCase() as Option
                     }
                     return null
@@ -203,7 +212,7 @@ export default function CreateExamPage() {
 
             const parsedMcCount = validMc.length > 0 ? validMc.length : mcCount
 
-            const tfData = data.true_false || []
+            const tfData = Array.isArray(data.true_false) ? data.true_false : []
             if (tfData.length > 0) {
                 const parsedTf: TFAnswer[] = tfData.map((tf: { question: number; answers?: { a: boolean; b: boolean; c: boolean; d: boolean }; a?: boolean; b?: boolean; c?: boolean; d?: boolean }, index: number) => {
                     const correctQNum = parsedMcCount + 1 + index
@@ -230,7 +239,7 @@ export default function CreateExamPage() {
                 setEnableTF(true)
             }
 
-            const saData = data.short_answer || []
+            const saData = Array.isArray(data.short_answer) ? data.short_answer : []
             if (saData.length > 0) {
                 const effectiveTfCount = tfData.length || tfCount
                 const parsedSa: SAAnswer[] = saData.map((sa: { question: number; answer: number | string }, index: number) => ({
@@ -245,11 +254,16 @@ export default function CreateExamPage() {
             if (validMc.length > 0 || tfData.length > 0 || saData.length > 0) {
                 setParseSuccess(true)
             } else {
-                throw new Error("Không tìm thấy đáp án trong PDF")
+                throw new Error("Không tìm thấy đáp án trong PDF. Hãy kiểm tra lại file.")
             }
         } catch (err) {
-            setError("Lỗi parse PDF: " + (err as Error).message)
+            if ((err as Error).name === "AbortError") {
+                setError("Quá thời gian chờ (90s). Server AI đang quá tải, vui lòng thử lại.")
+            } else {
+                setError("Lỗi parse PDF: " + (err as Error).message)
+            }
         } finally {
+            clearTimeout(timeout)
             setParsingPdf(false)
         }
     }
