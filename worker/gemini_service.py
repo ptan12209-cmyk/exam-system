@@ -28,8 +28,10 @@ GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "https://v98store.com")
 
 # Models to try
 MODELS = [
+    "gemini-1.5-pro",          # Highly capable 
     "gemini-2.0-flash",        # Fallback - fast + cheap
-    "gemini-3-flash-preview",  # Try first - more capable
+    "gemini-3-flash-preview",  # Next gen
+    "gemini-1.5-flash",        # Very reliable fallback
 ]
 
 # ============================================================================
