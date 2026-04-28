@@ -119,12 +119,24 @@ export default function TakeExamPage() {
         if (!sessionId) return
         const syncInterval = setInterval(async () => {
             try {
-                const { error } = await supabase.from("exam_sessions").update({ answers_snapshot: { mc: studentAnswers, tf: tfStudentAnswers, sa: saStudentAnswers }, last_active_at: new Date().toISOString(), tab_switch_count: tabSwitchCount }).eq("id", sessionId)
-                if (error) { console.warn("Sync failed:", error.message); setSyncError(true) } else setSyncError(false)
+                const timeSpent = Math.floor((Date.now() - startTime) / 1000)
+                const response = await fetch("/api/exams/sync-draft", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        mc_answers: studentAnswers,
+                        tf_answers: tfStudentAnswers,
+                        sa_answers: saStudentAnswers,
+                        time_spent: timeSpent,
+                        cheat_flags: { tab_switches: tabSwitchCount, multi_browser: false }
+                    })
+                })
+                if (!response.ok) { console.warn("Sync failed with status:", response.status); setSyncError(true) } else setSyncError(false)
             } catch (err) { console.warn("Sync error:", err); setSyncError(true) }
         }, 30000)
         return () => clearInterval(syncInterval)
-    }, [sessionId, studentAnswers, tfStudentAnswers, saStudentAnswers, tabSwitchCount, supabase])
+    }, [sessionId, studentAnswers, tfStudentAnswers, saStudentAnswers, tabSwitchCount, startTime])
 
     const handleAnswerSelect = (questionIndex: number, option: Option) => { setStudentAnswers(prev => { const newAnswers = [...prev]; newAnswers[questionIndex] = option; return newAnswers }) }
 

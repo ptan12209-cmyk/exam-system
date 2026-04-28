@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 🔒 RATE LIMITING - Check submission rate
-        const rateLimitResult = rateLimiters.submission(user.id)
+        const rateLimitResult = await rateLimiters.submission(user.id)
         if (!rateLimitResult.success) {
             console.warn(`Rate limit exceeded for user ${user.id}, IP: ${clientIP}`)
             return rateLimitResponse(rateLimitResult)

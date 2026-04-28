@@ -1,6 +1,9 @@
+import { Redis } from '@upstash/redis'
+
 /**
- * In-memory Rate Limiter
- * For production with multiple instances, use Redis-based solution
+ * Hybrid Rate Limiter
+ * Uses Redis in production for distributed locking across Vercel serverless functions.
+ * Falls back to in-memory Map for local development if Redis is not configured.
  */
 
 interface RateLimitEntry {
@@ -8,17 +11,33 @@ interface RateLimitEntry {
     resetTime: number
 }
 
-const rateLimitStore = new Map<string, RateLimitEntry>()
+// In-memory fallback store
+const memoryStore = new Map<string, RateLimitEntry>()
 
-// Clean up expired entries periodically
-setInterval(() => {
-    const now = Date.now()
-    for (const [key, entry] of rateLimitStore.entries()) {
-        if (entry.resetTime < now) {
-            rateLimitStore.delete(key)
+// Clean up memory store periodically
+if (typeof setInterval !== 'undefined') {
+    setInterval(() => {
+        const now = Date.now()
+        for (const [key, entry] of memoryStore.entries()) {
+            if (entry.resetTime < now) {
+                memoryStore.delete(key)
+            }
         }
+    }, 60000)
+}
+
+// Initialize Redis if config is available
+let redis: Redis | null = null
+try {
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+        redis = new Redis({
+            url: process.env.UPSTASH_REDIS_REST_URL,
+            token: process.env.UPSTASH_REDIS_REST_TOKEN,
+        })
     }
-}, 60000) // Clean every minute
+} catch (error) {
+    console.warn("Failed to initialize Upstash Redis, falling back to memory rate limiting", error)
+}
 
 export interface RateLimitConfig {
     /** Maximum number of requests allowed in the window */
@@ -39,14 +58,41 @@ export interface RateLimitResult {
  * @param identifier Unique identifier (e.g., user ID, IP address)
  * @param config Rate limit configuration
  */
-export function checkRateLimit(
+export async function checkRateLimit(
     identifier: string,
     config: RateLimitConfig
-): RateLimitResult {
+): Promise<RateLimitResult> {
     const now = Date.now()
-    const key = identifier
+    const key = `ratelimit:${identifier}`
 
-    let entry = rateLimitStore.get(key)
+    // 1. Redis Mode (Production)
+    if (redis) {
+        try {
+            // Use Upstash Redis atomic increment and expire
+            const multi = redis.multi()
+            multi.incr(key)
+            // Only set expiry if it's a new key (TTL == -1)
+            // Upstash doesn't support complex Lua scripts directly easily, so we use a simpler approach:
+            // Always set expiration on every request if we want sliding window, but for fixed window we can just use EXPIRE NX 
+            // Workaround: just set it to expire in windowMs / 1000 seconds
+            multi.expire(key, Math.ceil(config.windowMs / 1000))
+            
+            const results = await multi.exec()
+            const count = results[0] as number
+
+            const remaining = Math.max(0, config.limit - count)
+            const success = count <= config.limit
+            const resetTime = now + config.windowMs
+
+            return { success, limit: config.limit, remaining, resetTime }
+        } catch (error) {
+            console.error("Redis rate limit error, falling back to memory", error)
+            // Fall through to memory if Redis fails
+        }
+    }
+
+    // 2. Memory Mode (Fallback/Local Dev)
+    let entry = memoryStore.get(key)
 
     // If no entry or expired, create new one
     if (!entry || entry.resetTime < now) {
@@ -58,7 +104,7 @@ export function checkRateLimit(
 
     // Increment count
     entry.count++
-    rateLimitStore.set(key, entry)
+    memoryStore.set(key, entry)
 
     const remaining = Math.max(0, config.limit - entry.count)
     const success = entry.count <= config.limit
@@ -82,6 +128,9 @@ export function createRateLimiter(config: RateLimitConfig) {
 export const rateLimiters = {
     // Exam submission: 10 per minute per user
     submission: createRateLimiter({ limit: 10, windowMs: 60 * 1000 }),
+
+    // Exam auto-save draft (sync-draft): 30 per minute (1 every 2 seconds)
+    syncDraft: createRateLimiter({ limit: 30, windowMs: 60 * 1000 }),
 
     // API requests: 100 per minute per IP
     api: createRateLimiter({ limit: 100, windowMs: 60 * 1000 }),

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         // 🔒 RATE LIMITING
-        const rateLimitResult = rateLimiters.examFetch(user.id)
+        const rateLimitResult = await rateLimiters.examFetch(user.id)
         if (!rateLimitResult.success) {
             return rateLimitResponse(rateLimitResult)
         }
