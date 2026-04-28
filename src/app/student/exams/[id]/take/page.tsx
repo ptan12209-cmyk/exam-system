@@ -149,8 +149,24 @@ export default function TakeExamPage() {
     const handleViolation = useCallback((type: string, count: number) => {
         setTabSwitchCount(count)
         if (count >= 5 && isRanked) { setIsRanked(false); if (sessionId) supabase.from("exam_sessions").update({ is_ranked: false, tab_switch_count: count }).eq("id", sessionId) }
-    }, [isRanked, sessionId, supabase])
+        // Log violation to audit log (fire-and-forget, non-blocking)
+        fetch("/api/exams/violation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ exam_id: examId, session_id: sessionId, action: type === "tab_switch" ? "tab_switch" : type, details: { count, timestamp: new Date().toISOString() } })
+        }).catch(() => { /* silently ignore — violations are best-effort */ })
+    }, [isRanked, sessionId, supabase, examId])
     const handleMaxViolations = () => { handleSubmit(true) }
+
+    // Also log webcam/audio violations
+    const handleProctoringViolation = useCallback((action: string, details?: Record<string, unknown>) => {
+        handleViolation("tab_switch", tabSwitchCount + 1)
+        fetch("/api/exams/violation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ exam_id: examId, session_id: sessionId, action, details: { ...details, timestamp: new Date().toISOString() } })
+        }).catch(() => {})
+    }, [examId, sessionId, tabSwitchCount, handleViolation])
 
     const handleContinueSession = async () => {
         if (!existingSession) return; setSessionId(existingSession.id); setIsRanked(existingSession.is_ranked); setSessionNumber(existingSession.session_number)
@@ -202,7 +218,7 @@ export default function TakeExamPage() {
                     enableFaceDetection={(exam.security_level ?? 1) >= 4}
                     onViolation={(type, msg) => {
                         console.warn(`Webcam violation: ${type}`, msg)
-                        handleViolation("tab_switch", tabSwitchCount + 1)
+                        handleProctoringViolation("webcam_violation", { type, message: msg })
                     }}
                 />
             )}
@@ -211,10 +227,11 @@ export default function TakeExamPage() {
                     enabled={true}
                     onViolation={(msg) => {
                         console.warn(`Audio violation:`, msg)
-                        handleViolation("tab_switch", tabSwitchCount + 1)
+                        handleProctoringViolation("audio_violation", { message: msg })
                     }}
                 />
             )}
+
 
             <div className="min-h-screen bg-background flex flex-col select-none">
                 <header className="glass-nav sticky top-0 z-50 border-b border-border/50 h-16">

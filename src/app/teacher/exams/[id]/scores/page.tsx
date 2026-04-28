@@ -5,13 +5,15 @@ import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Trophy, Clock, Download, Loader2, CheckCircle2, Medal, Eye, Edit3, AlertCircle } from "lucide-react"
+import { ArrowLeft, Users, Trophy, Clock, Download, Loader2, CheckCircle2, Medal, Eye, Edit3, AlertCircle, ShieldAlert } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { LiveParticipants } from "@/components/realtime/LiveParticipants"
 import { SubmissionFeed } from "@/components/realtime/SubmissionFeed"
 
 interface Exam { id: string; title: string; total_questions: number; duration: number }
 interface Submission { id: string; student_id: string; score: number; correct_count: number; time_spent: number; submitted_at: string; profile: { full_name: string | null } }
+interface AuditEntry { student_id: string; action: string; details: Record<string, unknown>; created_at: string }
+interface ViolationSummary { total: number; tab_switch: number; webcam: number; audio: number; other: number }
 
 export default function ExamScoresPage() {
     const router = useRouter(); const params = useParams(); const examId = params.id as string; const supabase = createClient()
@@ -19,6 +21,7 @@ export default function ExamScoresPage() {
     const [submissions, setSubmissions] = useState<Submission[]>([])
     const [loading, setLoading] = useState(true)
     const [authError, setAuthError] = useState<string | null>(null)
+    const [violations, setViolations] = useState<Record<string, ViolationSummary>>({})
 
     useEffect(() => {
         const fetchData = async () => {
@@ -41,6 +44,24 @@ export default function ExamScoresPage() {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const merged = submissionsData.map((sub: any) => ({ ...sub, profile: profilesData?.find((p: any) => p.id === sub.student_id) || { full_name: null } }))
                 setSubmissions(merged as Submission[])
+            }
+
+            // Fetch audit logs for this exam
+            const { data: auditData } = await supabase.from("submission_audit_log").select("student_id, action, details, created_at").eq("exam_id", examId)
+            if (auditData && auditData.length > 0) {
+                const vMap: Record<string, ViolationSummary> = {}
+                for (const entry of auditData as AuditEntry[]) {
+                    if (!vMap[entry.student_id]) {
+                        vMap[entry.student_id] = { total: 0, tab_switch: 0, webcam: 0, audio: 0, other: 0 }
+                    }
+                    const v = vMap[entry.student_id]
+                    v.total++
+                    if (entry.action === "tab_switch" || entry.action === "fullscreen_exit") v.tab_switch++
+                    else if (entry.action === "webcam_violation" || entry.action === "multi_face" || entry.action === "phone_detected") v.webcam++
+                    else if (entry.action === "audio_violation") v.audio++
+                    else v.other++
+                }
+                setViolations(vMap)
             }
             setLoading(false)
         }
@@ -130,7 +151,7 @@ export default function ExamScoresPage() {
                                                         : index === 2 ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700"
                                                             : "bg-card text-muted-foreground border border-border"
                                             )}>{index + 1}</span></td>
-                                            <td className="p-4"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">{sub.profile?.full_name?.charAt(0) || sub.student_id.charAt(0)}</div><div><p className="font-medium text-foreground">{sub.profile?.full_name || `Học sinh ${sub.student_id.slice(0, 8)}`}</p><p className="text-xs text-muted-foreground font-mono">#{sub.student_id.slice(0, 8)}</p></div></div></td>
+                                            <td className="p-4"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">{sub.profile?.full_name?.charAt(0) || sub.student_id.charAt(0)}</div><div><p className="font-medium text-foreground flex items-center gap-1.5">{sub.profile?.full_name || `Học sinh ${sub.student_id.slice(0, 8)}`}{violations[sub.student_id] && <span title={`Vi phạm: ${violations[sub.student_id].tab_switch} lần chuyển tab, ${violations[sub.student_id].webcam} lần webcam, ${violations[sub.student_id].audio} lần audio`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 cursor-help"><ShieldAlert className="w-3 h-3" />{violations[sub.student_id].total}</span>}</p><p className="text-xs text-muted-foreground font-mono">#{sub.student_id.slice(0, 8)}</p></div></div></td>
                                             <td className="p-4 text-center"><span className={cn("px-3 py-1 rounded-full text-sm font-bold border inline-block min-w-[3rem]", getScoreColor(sub.score))}>{sub.score.toFixed(1)}</span></td>
                                             <td className="p-4 text-center"><div className="inline-flex items-center gap-1 font-medium text-sm"><span className="text-emerald-600 dark:text-emerald-400">{sub.correct_count}</span><span className="text-muted-foreground/30">/</span><span className="text-muted-foreground">{exam.total_questions}</span></div></td>
                                             <td className="p-4 text-center"><div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-muted/30 text-muted-foreground text-xs font-medium border border-border/50"><Clock className="w-3.5 h-3.5" />{formatTime(sub.time_spent)}</div></td>
