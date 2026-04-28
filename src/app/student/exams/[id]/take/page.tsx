@@ -8,7 +8,7 @@ import { Clock, Send, AlertTriangle, Loader2, FileText, ChevronLeft, ChevronRigh
 import { cn } from "@/lib/utils"
 import { AntiCheatProvider } from "@/components/exam/AntiCheatProvider"
 import { AntiCheatWarning, FullscreenPrompt, ViolationIndicator } from "@/components/exam/AntiCheatUI"
-import { WebcamProctor } from "@/components/exam/WebcamProctor"
+import { GazeTracker } from "@/components/proctoring/GazeTracker"
 import { AudioProctor } from "@/components/exam/AudioProctor"
 import { InlinePdfViewer } from "@/components/exam/InlinePdfViewer"
 import { createShuffleSeed, shuffleWithMapping } from "@/lib/shuffle"
@@ -213,12 +213,11 @@ export default function TakeExamPage() {
 
             {/* Proctoring components based on security level */}
             {examStarted && exam && (exam.security_level ?? 1) >= 2 && (
-                <WebcamProctor
+                <GazeTracker
                     enabled={true}
-                    enableFaceDetection={(exam.security_level ?? 1) >= 4}
-                    onViolation={(type, msg) => {
-                        console.warn(`Webcam violation: ${type}`, msg)
-                        handleProctoringViolation("webcam_violation", { type, message: msg })
+                    onViolation={(type, details) => {
+                        console.warn(`Gaze/Webcam violation: ${type}`, details)
+                        handleProctoringViolation(type === "phone_detected" ? "phone_detected" : "webcam_violation", { type, ...details })
                     }}
                 />
             )}
