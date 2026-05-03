@@ -90,7 +90,10 @@ export const rateLimiters = {
     auth: createRateLimiter({ limit: 5, windowMs: 60 * 1000 }),
 
     // Exam questions fetch: 30 per minute per user
-    examFetch: createRateLimiter({ limit: 30, windowMs: 60 * 1000 })
+    examFetch: createRateLimiter({ limit: 30, windowMs: 60 * 1000 }),
+
+    // Sync draft: 60 per minute per user (once per second)
+    syncDraft: createRateLimiter({ limit: 60, windowMs: 60 * 1000 })
 }
 
 /**
