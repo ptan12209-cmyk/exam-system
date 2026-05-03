@@ -324,11 +324,6 @@ class GeminiClient:
         
         return result
 
-# ============================================================================
-# GLOBAL INSTANCE
-# ============================================================================
-
-
     async def extract_bank_questions(self, pdf_text: str) -> dict:
         prompt = QUESTION_EXTRACTION_PROMPT.format(text=pdf_text[:15000])
         import json, re
@@ -385,6 +380,10 @@ class GeminiClient:
         except Exception:
             pass
         return {"questions": []}
+
+# ============================================================================
+# GLOBAL INSTANCE
+# ============================================================================
 
 
 gemini_client = GeminiClient()

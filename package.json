@@ -41,6 +41,12 @@
     "vnpay": "^2.4.4",
     "xlsx": "^0.18.5"
   },
+  "overrides": {
+    "react-latex-next": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
