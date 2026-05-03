@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { AvatarUpload } from "@/components/AvatarUpload"
-import { ArrowLeft, Save } from "lucide-react"
+import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { TeacherBottomNav } from "@/components/BottomNav"
 import { Loading } from "@/components/shared/Loading"
@@ -126,6 +126,7 @@ export default function TeacherProfileEditPage() {
             </Button>
           </div>
         </form>
+      </main>
       <TeacherBottomNav />
     </TeacherShell>
   )
