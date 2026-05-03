@@ -295,30 +295,59 @@ export async function POST(request: NextRequest) {
         }
 
         // Process all chunks and merge results
-        let allQuestions: ExtractedQuestion[] = [];
-
-        for (let i = 0; i < chunks.length; i++) {
-            console.log(`Processing chunk ${i + 1}/${chunks.length} (${chunks[i].length} chars)...`);
-
+        // Helper to process a single chunk with retry logic
+        const processChunk = async (chunk: string, i: number): Promise<ExtractedQuestion[]> => {
+            console.log(`Processing chunk ${i + 1}/${chunks.length} (${chunk.length} chars)...`);
             try {
-                const chunkQuestions = await extractWithV98(chunks[i], MODELS[0]);
+                const chunkQuestions = await extractWithV98(chunk, MODELS[0]);
                 console.log(`Chunk ${i + 1}: extracted ${chunkQuestions.length} questions`);
-                allQuestions = [...allQuestions, ...chunkQuestions];
+                return chunkQuestions;
             } catch (flashError) {
                 console.log(`${MODELS[0]} failed on chunk ${i + 1}, trying ${MODELS[1]}...`);
                 try {
-                    const chunkQuestions = await extractWithV98(chunks[i], MODELS[1]);
+                    const chunkQuestions = await extractWithV98(chunk, MODELS[1]);
                     console.log(`Chunk ${i + 1} (fallback): extracted ${chunkQuestions.length} questions`);
-                    allQuestions = [...allQuestions, ...chunkQuestions];
+                    return chunkQuestions;
                 } catch (proError) {
                     console.error(`Both models failed on chunk ${i + 1}:`, proError);
-                    // Continue with other chunks even if one fails
+                    // Return empty array on failure so other chunks continue
+                    return [];
                 }
             }
+        };
 
-            // Small delay between chunks to avoid rate limiting
-            if (i < chunks.length - 1) {
-                await new Promise(r => setTimeout(r, 500));
+        // Helper for concurrent processing with limit
+        const processInParallel = async <T, R>(
+            items: T[],
+            concurrency: number,
+            task: (item: T, index: number) => Promise<R>
+        ): Promise<R[]> => {
+            const results: R[] = new Array(items.length);
+            let index = 0;
+
+            const worker = async () => {
+                while (index < items.length) {
+                    const i = index++;
+                    try {
+                        results[i] = await task(items[i], i);
+                    } catch (error) {
+                        console.error(`Task ${i} failed uncaught`, error);
+                    }
+                }
+            };
+
+            const workers = Array.from({ length: Math.min(items.length, concurrency) }, () => worker());
+            await Promise.all(workers);
+            return results;
+        };
+
+        const CONCURRENCY = 3; // Limit concurrent requests to avoid rate limits
+        const results = await processInParallel(chunks, CONCURRENCY, processChunk);
+
+        let allQuestions: ExtractedQuestion[] = [];
+        for (const res of results) {
+            if (res) {
+                allQuestions = [...allQuestions, ...res];
             }
         }
 
