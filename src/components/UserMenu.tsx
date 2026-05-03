@@ -60,11 +60,11 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                 onClick={() => setIsOpen(!isOpen)}
                 className={cn(
                     "flex items-center gap-2.5 px-2 py-1.5 rounded-xl transition-all duration-200",
-                    "hover:bg-slate-100 dark:hover:bg-slate-800/60 active:scale-95",
-                    isOpen && "bg-slate-100 dark:bg-slate-800/60"
+                    "hover:bg-[hsl(var(--muted))]/40 active:scale-95",
+                    isOpen && "bg-[hsl(var(--muted))]/40"
                 )}
             >
-                <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold shadow-md shadow-indigo-500/20">
+                <div className="w-8 h-8 rounded-full bg-[hsl(var(--foreground))] flex items-center justify-center text-[hsl(var(--background))] text-xs font-bold shadow-lg shadow-black/5">
                     {initials}
                 </div>
                 <div className="hidden sm:block text-left">
@@ -79,11 +79,11 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-60 glass-card rounded-2xl shadow-xl overflow-hidden z-50 animate-scale-in">
+                <div className="absolute right-0 top-full mt-4 w-64 bg-[hsl(var(--card))]/95 backdrop-blur-2xl border border-[hsl(var(--border))]/40 rounded-[2rem] shadow-2xl z-[150] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 ease-out">
                     {/* User Info Header */}
-                    <div className="px-4 py-3.5 border-b border-slate-200/60 dark:border-slate-700/40">
+                    <div className="px-4 py-4 border-b border-[hsl(var(--border))]/40">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-bold shadow-md shadow-indigo-500/20">
+                            <div className="w-10 h-10 rounded-full bg-[hsl(var(--foreground))] flex items-center justify-center text-[hsl(var(--background))] text-sm font-bold">
                                 {initials}
                             </div>
                             <div>
@@ -100,16 +100,16 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                                 key={item.href}
                                 href={item.href}
                                 onClick={() => setIsOpen(false)}
-                                className="flex items-center gap-3 px-3 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-foreground rounded-xl transition-all duration-150 group"
+                                className="flex items-center gap-3 px-3 py-2.5 text-sm text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]/40 hover:text-[hsl(var(--foreground))] rounded-xl transition-all duration-150 group"
                             >
-                                <item.icon className="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors" />
+                                <item.icon className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
                                 {item.label}
                             </Link>
                         ))}
                     </div>
 
                     {/* Logout */}
-                    <div className="border-t border-slate-200/60 dark:border-slate-700/40 py-1.5 px-1.5">
+                    <div className="border-t border-[hsl(var(--border))]/40 py-1.5 px-1.5">
                         <button
                             onClick={() => {
                                 setIsOpen(false)

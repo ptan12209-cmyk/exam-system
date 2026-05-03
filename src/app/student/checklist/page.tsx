@@ -1,279 +1,102 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-    ArrowLeft, Plus, Check, Trash2, Loader2, ListTodo, Calendar,
-    Flame, Star, Filter, ChevronDown, Clock, Target, TrendingUp
-} from "lucide-react"
+import { StudentShell } from "@/components/student/StudentShell"
+import { StudentHeader } from "@/components/student/StudentHeader"
+import { Plus, Check, Trash2, ListTodo, Calendar, Flame, Target, TrendingUp } from "lucide-react"
+import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
 
-interface StudyTask {
-    id: string
-    title: string
-    description: string | null
-    subject: string | null
-    due_date: string | null
-    is_completed: boolean
-    completed_at: string | null
-    priority: "low" | "medium" | "high"
-    created_at: string
-}
-
-const PRIORITY_CONFIG = {
-    high: { label: "Cao", color: "red", icon: "🔴" },
-    medium: { label: "TB", color: "amber", icon: "🟡" },
-    low: { label: "Thấp", color: "emerald", icon: "🟢" },
-}
+interface StudyTask { id: string; title: string; description: string | null; subject: string | null; due_date: string | null; is_completed: boolean; completed_at: string | null; priority: "low" | "medium" | "high"; created_at: string }
 
 export default function StudyChecklistPage() {
-    const router = useRouter()
-    const supabase = useMemo(() => createClient(), [])
+  const router = useRouter()
+  const supabase = useMemo(() => createClient(), [])
+  const [tasks, setTasks] = useState<StudyTask[]>([])
+  const [loading, setLoading] = useState(true)
+  const [newTitle, setNewTitle] = useState("")
+  const [newPriority, setNewPriority] = useState<"low" | "medium" | "high">("medium")
+  const [newSubject, setNewSubject] = useState("")
+  const [newDueDate, setNewDueDate] = useState("")
+  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "done">("all")
+  const [showAddForm, setShowAddForm] = useState(false)
 
-    const [tasks, setTasks] = useState<StudyTask[]>([])
-    const [loading, setLoading] = useState(true)
-    const [newTitle, setNewTitle] = useState("")
-    const [newPriority, setNewPriority] = useState<"low" | "medium" | "high">("medium")
-    const [newSubject, setNewSubject] = useState("")
-    const [newDueDate, setNewDueDate] = useState("")
-    const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "done">("all")
-    const [showAddForm, setShowAddForm] = useState(false)
+  useEffect(() => {
+    let mounted = true
 
-    const fetchTasks = useCallback(async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { router.push("/login"); return }
-        const { data } = await supabase
-            .from("study_tasks")
-            .select("*")
-            .eq("student_id", user.id)
-            .order("is_completed", { ascending: true })
-            .order("priority", { ascending: true })
-            .order("created_at", { ascending: false })
-        if (data) setTasks(data)
-        setLoading(false)
-    }, [supabase, router])
-
-    useEffect(() => { fetchTasks() }, [fetchTasks])
-
-    const handleAddTask = async () => {
-        if (!newTitle.trim()) return
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        await supabase.from("study_tasks").insert({
-            student_id: user.id,
-            title: newTitle.trim(),
-            subject: newSubject.trim() || null,
-            due_date: newDueDate || null,
-            priority: newPriority,
-        })
-        setNewTitle(""); setNewSubject(""); setNewDueDate(""); setShowAddForm(false)
-        fetchTasks()
+    const fetchTasks = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push("/login"); return }
+      const { data } = await supabase.from("study_tasks").select("*").eq("student_id", user.id).order("is_completed", { ascending: true }).order("priority", { ascending: true }).order("created_at", { ascending: false })
+      if (mounted && data) setTasks(data)
+      if (mounted) setLoading(false)
     }
 
-    const handleToggle = async (task: StudyTask) => {
-        await supabase.from("study_tasks").update({
-            is_completed: !task.is_completed,
-            completed_at: !task.is_completed ? new Date().toISOString() : null
-        }).eq("id", task.id)
-        fetchTasks()
+    fetchTasks()
+
+    return () => {
+      mounted = false
     }
+  }, [router, supabase])
+  const refreshTasks = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase.from("study_tasks").select("*").eq("student_id", user.id).order("is_completed", { ascending: true }).order("priority", { ascending: true }).order("created_at", { ascending: false })
+    if (data) setTasks(data)
+  }
 
-    const handleDelete = async (id: string) => {
-        await supabase.from("study_tasks").delete().eq("id", id)
-        fetchTasks()
-    }
+  const handleAddTask = async () => { if (!newTitle.trim()) return; const { data: { user } } = await supabase.auth.getUser(); if (!user) return; await supabase.from("study_tasks").insert({ student_id: user.id, title: newTitle.trim(), subject: newSubject.trim() || null, due_date: newDueDate || null, priority: newPriority }); setNewTitle(""); setNewSubject(""); setNewDueDate(""); setShowAddForm(false); await refreshTasks() }
+  const handleToggle = async (task: StudyTask) => { await supabase.from("study_tasks").update({ is_completed: !task.is_completed, completed_at: !task.is_completed ? new Date().toISOString() : null }).eq("id", task.id); await refreshTasks() }
+  const handleDelete = async (id: string) => { await supabase.from("study_tasks").delete().eq("id", id); await refreshTasks() }
 
-    // Stats
-    const totalTasks = tasks.length
-    const completedTasks = tasks.filter(t => t.is_completed).length
-    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+  const totalTasks = tasks.length
+  const completedTasks = tasks.filter((task) => task.is_completed).length
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+  const streak = useMemo(() => { const completedDates = tasks.filter((task) => task.completed_at).map((task) => new Date(task.completed_at!).toDateString()); const uniqueDates = [...new Set(completedDates)].sort((a, b) => new Date(b).getTime() - new Date(a).getTime()); let count = 0; const today = new Date(); for (let i = 0; i < 30; i++) { const checkDate = new Date(today); checkDate.setDate(checkDate.getDate() - i); if (uniqueDates.includes(checkDate.toDateString())) count++; else if (i > 0) break } return count }, [tasks])
+  const weeklyData = useMemo(() => { const data = []; for (let i = 6; i >= 0; i--) { const date = new Date(); date.setDate(date.getDate() - i); const dateStr = date.toDateString(); const completed = tasks.filter((task) => task.completed_at && new Date(task.completed_at).toDateString() === dateStr).length; data.push({ day: date.toLocaleDateString("vi-VN", { weekday: "short" }), count: completed }) } return data }, [tasks])
+  const maxWeekly = Math.max(...weeklyData.map((item) => item.count), 1)
+  const filteredTasks = tasks.filter((task) => filterStatus === "pending" ? !task.is_completed : filterStatus === "done" ? task.is_completed : true)
 
-    // Streak calculation
-    const streak = useMemo(() => {
-        const completedDates = tasks
-            .filter(t => t.completed_at)
-            .map(t => new Date(t.completed_at!).toDateString())
-        const uniqueDates = [...new Set(completedDates)].sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
-        let count = 0
-        const today = new Date()
-        for (let i = 0; i < 30; i++) {
-            const checkDate = new Date(today)
-            checkDate.setDate(checkDate.getDate() - i)
-            if (uniqueDates.includes(checkDate.toDateString())) count++
-            else if (i > 0) break
-        }
-        return count
-    }, [tasks])
+  if (loading) return <Loading fullPage label="Đang kiểm tra danh sách..." />
 
-    // Last 7 days chart data
-    const weeklyData = useMemo(() => {
-        const data = []
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date()
-            date.setDate(date.getDate() - i)
-            const dateStr = date.toDateString()
-            const completed = tasks.filter(t =>
-                t.completed_at && new Date(t.completed_at).toDateString() === dateStr
-            ).length
-            data.push({
-                day: date.toLocaleDateString("vi-VN", { weekday: "short" }),
-                count: completed,
-                date: date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }),
-            })
-        }
-        return data
-    }, [tasks])
+  return (
+    <StudentShell>
+      <StudentHeader name="Checklist" onLogout={async () => { await supabase.auth.signOut(); router.push("/login") }} />
+      <main className="mx-auto max-w-6xl px-4 pt-6 pb-24 sm:px-6 lg:px-8 lg:py-10">
+        <section className="mb-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
+          <div>
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/70 px-4 py-2 text-sm font-medium text-[hsl(var(--muted-foreground))] backdrop-blur-md"><ListTodo className="h-4 w-4" /> Checklist</div>
+            <h1 className="max-w-3xl text-5xl font-medium tracking-[-2px] md:text-7xl lg:text-8xl">Checklist học tập</h1>
+            <p className="mt-6 max-w-2xl text-lg leading-[1.7] text-[hsl(var(--muted-foreground))]">Quản lý mục tiêu học tập, theo dõi tiến độ và giữ nhịp học đều mỗi ngày.</p>
+          </div>
+          <Button onClick={() => setShowAddForm(!showAddForm)} className="rounded-full"><Plus className="h-4 w-4" /> Thêm nhiệm vụ</Button>
+        </section>
 
-    const maxWeekly = Math.max(...weeklyData.map(d => d.count), 1)
+        <section className="mb-6 grid gap-3 sm:grid-cols-3">
+          {[{ icon: Target, value: completionRate, label: "Hoàn thành", suffix: "%" }, { icon: Check, value: `${completedTasks}/${totalTasks}`, label: "Nhiệm vụ" }, { icon: Flame, value: streak, label: "Ngày liên tiếp" }].map((item) => (
+            <div key={item.label} className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 text-center">
+              <item.icon className="mx-auto mb-2 h-5 w-5" />
+              <p className="text-2xl font-semibold">{item.value}{"suffix" in item && item.suffix}</p>
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">{item.label}</p>
+            </div>
+          ))}
+        </section>
 
-    const filteredTasks = tasks.filter(t => {
-        if (filterStatus === "pending") return !t.is_completed
-        if (filterStatus === "done") return t.is_completed
-        return true
-    })
+        <section className="mb-6 rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5">
+          <div className="mb-4 flex items-center justify-between"><h3 className="flex items-center gap-2 text-sm font-semibold"><TrendingUp className="h-4 w-4" /> Tiến độ 7 ngày</h3></div>
+          <div className="flex h-32 items-end gap-2">{weeklyData.map((item, index) => <div key={index} className="flex flex-1 flex-col items-center gap-1"><span className="text-[10px] text-[hsl(var(--muted-foreground))]">{item.count}</span><div className="relative h-full w-full rounded-t-lg bg-[hsl(var(--muted))]/20"><div className={cn("absolute bottom-0 w-full rounded-t-lg", item.count > 0 ? "bg-[hsl(var(--foreground))]" : "bg-[hsl(var(--muted))]/30")} style={{ height: `${(item.count / maxWeekly) * 100}%`, minHeight: item.count > 0 ? "8px" : "2px" }} /></div><span className="text-[10px] text-[hsl(var(--muted-foreground))]">{item.day}</span></div>)}</div>
+        </section>
 
-    if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>
+        {showAddForm && <section className="mb-6 space-y-3 rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5"><Input placeholder="Tên nhiệm vụ..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="rounded-xl" autoFocus /><div className="grid gap-3 md:grid-cols-3"><Input placeholder="Môn học" value={newSubject} onChange={(e) => setNewSubject(e.target.value)} className="rounded-xl text-sm" /><Input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} className="rounded-xl text-sm" /><select value={newPriority} onChange={(e) => setNewPriority(e.target.value as "low" | "medium" | "high")} className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 text-sm"><option value="high">Cao</option><option value="medium">Trung bình</option><option value="low">Thấp</option></select></div><div className="flex gap-2"><Button onClick={handleAddTask} disabled={!newTitle.trim()} className="flex-1 rounded-full">Thêm</Button><Button variant="outline" onClick={() => setShowAddForm(false)} className="rounded-full border-[hsl(var(--border))]/70 bg-transparent">Hủy</Button></div></section>}
 
-    return (
-        <div className="min-h-screen bg-background">
-            <header className="glass-nav sticky top-0 z-30 border-b border-border/50 px-4 py-3">
-                <div className="max-w-3xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Link href="/student/dashboard"><Button variant="ghost" size="icon" className="text-muted-foreground"><ArrowLeft className="w-5 h-5" /></Button></Link>
-                        <div><h1 className="font-bold text-foreground text-lg">Checklist học tập</h1><p className="text-xs text-muted-foreground">Quản lý nhiệm vụ cá nhân</p></div>
-                    </div>
-                    <Button onClick={() => setShowAddForm(!showAddForm)} className="gradient-primary text-white border-0 shadow-md"><Plus className="w-4 h-4 mr-1" />Thêm</Button>
-                </div>
-            </header>
+        <section className="mb-6 flex gap-2 overflow-x-auto">{[{ key: "all" as const, label: "Tất cả", count: totalTasks }, { key: "pending" as const, label: "Chưa xong", count: totalTasks - completedTasks }, { key: "done" as const, label: "Hoàn thành", count: completedTasks }].map((item) => <button key={item.key} onClick={() => setFilterStatus(item.key)} className={cn("rounded-full border px-4 py-2 text-sm whitespace-nowrap transition-[background-color,color,border-color] duration-200", filterStatus === item.key ? "border-[hsl(var(--foreground))] bg-[hsl(var(--foreground))] text-[hsl(var(--background))]" : "border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]")}>{item.label} ({item.count})</button>)}</section>
 
-            <main className="max-w-3xl mx-auto p-4 space-y-6">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-3 gap-3">
-                    <div className="glass-card rounded-2xl p-4 text-center">
-                        <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <Target className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                        </div>
-                        <p className="text-2xl font-bold text-foreground">{completionRate}%</p>
-                        <p className="text-xs text-muted-foreground">Hoàn thành</p>
-                    </div>
-                    <div className="glass-card rounded-2xl p-4 text-center">
-                        <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                        </div>
-                        <p className="text-2xl font-bold text-foreground">{completedTasks}/{totalTasks}</p>
-                        <p className="text-xs text-muted-foreground">Nhiệm vụ</p>
-                    </div>
-                    <div className="glass-card rounded-2xl p-4 text-center">
-                        <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <Flame className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <p className="text-2xl font-bold text-foreground">{streak}</p>
-                        <p className="text-xs text-muted-foreground">Ngày liên tiếp</p>
-                    </div>
-                </div>
-
-                {/* Weekly Progress Chart */}
-                <div className="glass-card rounded-2xl p-5">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-bold text-foreground flex items-center gap-2"><TrendingUp className="w-4 h-4 text-indigo-500" />Tiến độ 7 ngày</h3>
-                    </div>
-                    <div className="flex items-end gap-2 h-32">
-                        {weeklyData.map((d, i) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                                <span className="text-[10px] text-muted-foreground font-medium">{d.count}</span>
-                                <div className="w-full bg-muted/20 rounded-t-lg relative" style={{ height: "100%" }}>
-                                    <div
-                                        className={cn("absolute bottom-0 w-full rounded-t-lg transition-all duration-500",
-                                            d.count > 0 ? "bg-indigo-500" : "bg-muted/30"
-                                        )}
-                                        style={{ height: `${(d.count / maxWeekly) * 100}%`, minHeight: d.count > 0 ? "8px" : "2px" }}
-                                    />
-                                </div>
-                                <span className="text-[10px] text-muted-foreground">{d.day}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Add Task Form */}
-                {showAddForm && (
-                    <div className="glass-card rounded-2xl p-5 space-y-3 border-2 border-indigo-200 dark:border-indigo-900">
-                        <Input placeholder="Tên nhiệm vụ..." value={newTitle} onChange={e => setNewTitle(e.target.value)} className="bg-card border-border rounded-xl" autoFocus />
-                        <div className="grid grid-cols-3 gap-3">
-                            <Input placeholder="Môn học" value={newSubject} onChange={e => setNewSubject(e.target.value)} className="bg-card border-border rounded-xl text-sm" />
-                            <Input type="date" value={newDueDate} onChange={e => setNewDueDate(e.target.value)} className="bg-card border-border rounded-xl text-sm" />
-                            <select value={newPriority} onChange={e => setNewPriority(e.target.value as "low" | "medium" | "high")} className="bg-card border border-border rounded-xl text-sm px-3 text-foreground">
-                                <option value="high">🔴 Cao</option>
-                                <option value="medium">🟡 TB</option>
-                                <option value="low">🟢 Thấp</option>
-                            </select>
-                        </div>
-                        <div className="flex gap-2">
-                            <Button onClick={handleAddTask} disabled={!newTitle.trim()} className="flex-1 gradient-primary text-white border-0">Thêm nhiệm vụ</Button>
-                            <Button variant="outline" onClick={() => setShowAddForm(false)} className="border-border text-muted-foreground">Hủy</Button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Filter */}
-                <div className="flex gap-2">
-                    {[
-                        { key: "all" as const, label: "Tất cả", count: totalTasks },
-                        { key: "pending" as const, label: "Chưa xong", count: totalTasks - completedTasks },
-                        { key: "done" as const, label: "Hoàn thành", count: completedTasks },
-                    ].map(f => (
-                        <button key={f.key} onClick={() => setFilterStatus(f.key)} className={cn(
-                            "px-4 py-2 rounded-xl text-sm font-medium transition-colors border",
-                            filterStatus === f.key ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900" : "bg-card text-muted-foreground border-transparent hover:bg-muted/30"
-                        )}>
-                            {f.label} ({f.count})
-                        </button>
-                    ))}
-                </div>
-
-                {/* Task List */}
-                <div className="space-y-2">
-                    {filteredTasks.length === 0 && (
-                        <div className="text-center py-12 text-muted-foreground">
-                            <ListTodo className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                            <p className="font-medium">Chưa có nhiệm vụ nào</p>
-                            <p className="text-sm">Bấm &quot;Thêm&quot; để tạo nhiệm vụ đầu tiên</p>
-                        </div>
-                    )}
-                    {filteredTasks.map(task => (
-                        <div key={task.id} className={cn(
-                            "glass-card rounded-xl p-4 flex items-center gap-3 transition-all group",
-                            task.is_completed && "opacity-60"
-                        )}>
-                            <button onClick={() => handleToggle(task)} className={cn(
-                                "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors",
-                                task.is_completed ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-300 dark:border-slate-600 hover:border-indigo-500"
-                            )}>
-                                {task.is_completed && <Check className="w-3.5 h-3.5" />}
-                            </button>
-                            <div className="flex-1 min-w-0">
-                                <p className={cn("font-medium text-sm text-foreground", task.is_completed && "line-through")}>{task.title}</p>
-                                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                    {task.subject && <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium">{task.subject}</span>}
-                                    {task.due_date && (
-                                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                                            <Calendar className="w-3 h-3" />{new Date(task.due_date).toLocaleDateString("vi-VN")}
-                                        </span>
-                                    )}
-                                    <span className="text-[10px]">{PRIORITY_CONFIG[task.priority].icon}</span>
-                                </div>
-                            </div>
-                            <button onClick={() => handleDelete(task.id)} className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all text-red-500">
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            </main>
-        </div>
-    )
+        <section className="space-y-2">{filteredTasks.length === 0 ? <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] py-16 text-center"><ListTodo className="mx-auto mb-3 h-12 w-12 text-[hsl(var(--muted-foreground))]/30" /><p className="font-medium">Chưa có nhiệm vụ</p><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Thêm mục tiêu đầu tiên của bạn.</p></div> : filteredTasks.map((task) => <div key={task.id} className={cn("flex items-center gap-3 rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4", task.is_completed && "opacity-60")}><button onClick={() => handleToggle(task)} className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-[background-color,color,border-color] duration-200", task.is_completed ? "border-[hsl(var(--foreground))] bg-[hsl(var(--foreground))] text-[hsl(var(--background))]" : "border-[hsl(var(--border))]/60")}>{task.is_completed && <Check className="h-3.5 w-3.5" />}</button><div className="min-w-0 flex-1"><p className={cn("text-sm font-medium", task.is_completed && "line-through")}>{task.title}</p><div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-[hsl(var(--muted-foreground))]">{task.subject && <span className="rounded-full border border-[hsl(var(--border))]/60 px-2 py-0.5">{task.subject}</span>}{task.due_date && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(task.due_date).toLocaleDateString("vi-VN")}</span>}</div></div><button onClick={() => handleDelete(task.id)} className="rounded-full p-2 text-red-500 transition-colors hover:bg-red-50"><Trash2 className="h-4 w-4" /></button></div>)}</section>
+      </main>
+    </StudentShell>
+  )
 }

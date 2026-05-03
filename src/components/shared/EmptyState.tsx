@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -22,26 +21,26 @@ export function EmptyState({
     actionLabel,
     onAction,
     actionHref,
-    iconColor = "text-gray-300 dark:text-gray-500",
-    iconBgColor = "bg-gray-50 dark:bg-slate-800",
+    iconColor = "text-[hsl(var(--muted-foreground))]/40",
+    iconBgColor = "bg-[hsl(var(--muted))]/10",
     className
 }: EmptyStateProps) {
     return (
-        <Card className={cn("border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900", className)}>
-            <CardContent className="p-12 text-center">
+        <div className={cn("liquid-glass rounded-[2rem] shadow-sm", className)}>
+            <div className="p-12 text-center">
                 <div className={cn("w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4", iconBgColor)}>
-                    <Icon className={cn("w-8 h-8", iconColor)} />
+                    <Icon className={cn("w-8 h-8", iconColor)} strokeWidth={1.2} />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-lg font-bold text-[hsl(var(--foreground))] mb-2">
                     {title}
                 </h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-6">
+                <p className="text-[hsl(var(--muted-foreground))] mb-6">
                     {description}
                 </p>
                 {actionLabel && (onAction || actionHref) && (
                     <Button
                         onClick={onAction}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="bg-[hsl(var(--foreground))] hover:bg-[hsl(var(--foreground))]/90 text-[hsl(var(--background))] rounded-full"
                         asChild={!!actionHref}
                     >
                         {actionHref ? (
@@ -51,7 +50,7 @@ export function EmptyState({
                         )}
                     </Button>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     )
 }

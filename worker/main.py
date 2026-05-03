@@ -274,6 +274,67 @@ async def test_ai():
             "traceback": traceback.format_exc()
         }
 
+@app.post("/extract-bank-questions")
+async def extract_bank_questions(file: UploadFile):
+    """
+    Extract full questions for Question Bank from PDF.
+    """
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are accepted")
+    
+    try:
+        content = await file.read()
+        
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail=f"File too large ({len(content) // 1024 // 1024}MB)")
+        
+        full_text = ""
+        with pdfplumber.open(io.BytesIO(content)) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text()
+                if text:
+                    full_text += text + "\n"
+        
+        if not full_text.strip():
+            logger.info("No text extracted from PDF, trying Vision extraction for bank questions...")
+            try:
+                from pdf2image import convert_from_bytes
+                import base64
+                from io import BytesIO
+                
+                # Convert up to first 5 pages to images to prevent timeout
+                images = convert_from_bytes(content, first_page=1, last_page=5)
+                if images:
+                    base64_images = []
+                    for img in images:
+                        img_buffer = BytesIO()
+                        img.save(img_buffer, format='PNG')
+                        base64_images.append(base64.b64encode(img_buffer.getvalue()).decode('utf-8'))
+                    
+                    from gemini_service import gemini_client
+                    result = await gemini_client.extract_bank_questions_vision(base64_images)
+                    
+                    if result and result.get("questions"):
+                        return result
+            except Exception as e:
+                logger.error(f"Vision extraction failed for bank questions: {e}")
+                
+            raise HTTPException(
+                status_code=400, 
+                detail="Could not extract text from PDF. The PDF might be scanned/image-based, and vision fallback failed."
+            )
+        
+        from gemini_service import gemini_client
+        result = await gemini_client.extract_bank_questions(full_text)
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error parsing PDF for bank questions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error parsing PDF: {str(e)}")
+
 
 if __name__ == "__main__":
     import uvicorn

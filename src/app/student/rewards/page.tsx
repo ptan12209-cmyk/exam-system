@@ -1,170 +1,90 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { RewardsShop } from "@/components/gamification/RewardsShop"
 import { XpBar } from "@/components/gamification/XpBar"
 import { getUserStats } from "@/lib/gamification"
-import { NotificationBell } from "@/components/NotificationBell"
-import { UserMenu } from "@/components/UserMenu"
+import { StudentShell } from "@/components/student/StudentShell"
+import { StudentHeader } from "@/components/student/StudentHeader"
 import { BottomNav } from "@/components/BottomNav"
-import { cn } from "@/lib/utils"
-import {
-    GraduationCap,
-    FileText,
-    LogOut,
-    Loader2,
-    BookOpen,
-    Swords,
-    BarChart3,
-    Award,
-    User,
-    Gift,
-    ChevronRight
-} from "lucide-react"
+import { Gift, FileText, Loader2, BarChart3, Award, User } from "lucide-react"
 
 export default function RewardsPage() {
-    const router = useRouter()
-    const supabase = createClient()
-    const [fullName, setFullName] = useState("")
-    const [userClass, setUserClass] = useState("")
-    const [userXp, setUserXp] = useState(0)
-    const [loading, setLoading] = useState(true)
+  const router = useRouter()
+  const supabase = useMemo(() => createClient(), [])
+  const [fullName, setFullName] = useState("")
+  const [userClass, setUserClass] = useState("")
+  const [userXp, setUserXp] = useState(0)
+  const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        async function fetchData() {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) { router.push("/login"); return }
-            const { data: profile } = await supabase.from("profiles").select("full_name, class").eq("id", user.id).single()
-            if (profile) { setFullName(profile.full_name || ""); setUserClass(profile.class || "") }
-            const { stats } = await getUserStats(user.id)
-            setUserXp(stats.xp)
-            setLoading(false)
-        }
-        fetchData()
-    }, [router, supabase])
+  useEffect(() => {
+    ;(async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push("/login"); return }
+      const { data: profile } = await supabase.from("profiles").select("full_name, class").eq("id", user.id).single()
+      setFullName(profile?.full_name || "")
+      setUserClass(profile?.class || "")
+      const { stats } = await getUserStats(user.id)
+      setUserXp(stats.xp)
+      setLoading(false)
+    })()
+  }, [router, supabase])
 
-    const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login") }
+  const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login") }
+  
+  const quickLinks = [
+    { href: "/student/dashboard", label: "Tổng quan", icon: BarChart3 },
+    { href: "/student/exams", label: "Đề thi", icon: FileText },
+    { href: "/student/achievements", label: "Thành tích", icon: Award },
+    { href: "/student/profile", label: "Hồ sơ", icon: User }
+  ]
 
-    const NAV_ITEMS = [
-        { href: "/student/dashboard", label: "Tổng quan", icon: BarChart3 },
-        { href: "/student/exams", label: "Làm đề thi", icon: FileText },
-    ]
-    const EXPLORE_ITEMS = [
-        { href: "/resources", label: "Thư viện tài liệu", icon: BookOpen },
-        { href: "/arena", label: "Đấu trường", icon: Swords },
-        { href: "/student/achievements", label: "Thành tích", icon: Award },
-        { href: "/student/rewards", label: "Đổi thưởng", icon: Gift, active: true },
-        { href: "/student/profile", label: "Hồ sơ cá nhân", icon: User },
-    ]
+  if (loading) return <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-[hsl(var(--foreground))]/70" /></div>
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                    <p className="text-sm text-muted-foreground">Đang tải...</p>
-                </div>
-            </div>
-        )
-    }
+  return (
+    <StudentShell>
+      <StudentHeader name={fullName} studentClass={userClass || undefined} onLogout={handleLogout} />
+      <main className="mx-auto max-w-5xl px-4 pt-6 pb-24 sm:px-6 lg:px-8 lg:py-10">
+        <section className="mb-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
+          <div>
+            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/70 px-4 py-2 text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))] backdrop-blur-md">
+              <Gift className="h-3.5 w-3.5" /> Rewards
+            </p>
+            <h1 className="max-w-3xl text-5xl font-medium tracking-[-2px] md:text-7xl lg:text-8xl">Đổi thưởng</h1>
+            <p className="mt-6 max-w-2xl text-lg leading-[1.7] text-[hsl(var(--muted-foreground))]">
+              Dùng XP để mở khóa phần thưởng và duy trì nhịp học đều hơn mỗi ngày.
+            </p>
+          </div>
+          <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-sm">
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">XP hiện tại</p>
+            <div className="mt-2 text-3xl font-semibold">{userXp.toLocaleString()} XP</div>
+            <div className="mt-4"><XpBar xp={userXp} size="sm" /></div>
+          </div>
+        </section>
 
-    return (
-        <div className="min-h-screen bg-background flex">
-            {/* Sidebar */}
-            <aside className="fixed left-0 top-0 h-full w-64 glass-sidebar p-5 hidden lg:flex lg:flex-col z-50">
-                <div className="flex items-center gap-3 mb-8 px-2">
-                    <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                        <GraduationCap className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="text-xl font-bold text-foreground">ExamHub</span>
-                </div>
-                <nav className="space-y-1 flex-1">
-                    {NAV_ITEMS.map((item) => (
-                        <Link key={item.href} href={item.href} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all duration-200 group">
-                            <item.icon className="w-5 h-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300" /><span className="text-sm">{item.label}</span>
-                        </Link>
-                    ))}
-                    <div className="pt-5 pb-2"><p className="px-3 text-[11px] font-semibold text-slate-400 dark:text-slate-600 uppercase tracking-widest">Khám phá</p></div>
-                    {EXPLORE_ITEMS.map((item) => (
-                        <Link key={item.href} href={item.href}
-                            className={cn("flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group",
-                                item.active ? "gradient-primary-soft text-indigo-700 dark:text-indigo-400 font-semibold nav-active-indicator" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60"
-                            )}>
-                            <item.icon className={cn("w-5 h-5", item.active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500")} />
-                            <span className="text-sm">{item.label}</span>
-                            {item.active && <ChevronRight className="w-4 h-4 ml-auto text-indigo-400" />}
-                        </Link>
-                    ))}
-                    <div className="pt-6 pb-2">
-                        <p className="px-3 text-[11px] font-semibold text-slate-400 dark:text-slate-600 uppercase tracking-widest">Tiến độ</p>
-                        <div className="mt-3 px-3"><XpBar xp={userXp} size="sm" /></div>
-                    </div>
-                </nav>
-                <div className="pt-4 border-t border-slate-200/60 dark:border-slate-700/40">
-                    <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all w-full font-medium text-sm group">
-                        <LogOut className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />Đăng xuất
-                    </button>
-                </div>
-            </aside>
+        <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {quickLinks.map((item) => (
+            <Link key={item.href} href={item.href} className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/70 p-4 transition-all hover:-translate-y-0.5 hover:bg-[hsl(var(--card))]">
+              <item.icon className="mb-3 h-5 w-5" />
+              <p className="text-sm font-medium">{item.label}</p>
+            </Link>
+          ))}
+        </section>
 
-            {/* Mobile Header */}
-            <header className="lg:hidden fixed top-0 w-full z-50 glass-nav px-4 h-16 flex items-center justify-between safe-top">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 gradient-primary rounded-lg flex items-center justify-center"><GraduationCap className="w-4 h-4 text-white" /></div>
-                    <span className="text-lg font-bold text-foreground">ExamHub</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <NotificationBell />
-                    <UserMenu userName={fullName} userClass={userClass || undefined} onLogout={handleLogout} role="student" />
-                </div>
-            </header>
-
-            <main className="flex-1 lg:ml-64 p-4 lg:p-8 pt-20 lg:pt-8 pb-24 lg:pb-8">
-                <div className="hidden lg:flex items-center justify-between mb-8">
-                    <div>
-                        <h1 className="text-2xl font-bold text-foreground">Cửa hàng phần thưởng</h1>
-                        <p className="text-muted-foreground">Đổi XP lấy các phần thưởng hấp dẫn</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <NotificationBell />
-                        <UserMenu userName={fullName} userClass={userClass || undefined} onLogout={handleLogout} role="student" />
-                    </div>
-                </div>
-
-                <div className="lg:hidden mb-6">
-                    <h1 className="text-xl font-bold text-foreground">Đổi thưởng</h1>
-                    <p className="text-muted-foreground text-sm">Sử dụng XP để đổi phần thưởng</p>
-                </div>
-
-                {/* XP Balance Card */}
-                <div className="gradient-primary rounded-2xl text-white mb-6 p-6 relative overflow-hidden shadow-xl shadow-indigo-500/20">
-                    <div className="absolute inset-0 opacity-10"><div className="absolute -top-10 -right-10 w-40 h-40 rounded-full border-[20px] border-white/20" /><div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full border-[16px] border-white/20" /></div>
-                    <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                            <Gift className="w-7 h-7" />
-                        </div>
-                        <div>
-                            <p className="text-indigo-100 text-sm">XP hiện tại</p>
-                            <p className="text-3xl font-bold">{userXp.toLocaleString()} XP</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Rewards Shop */}
-                <div className="glass-card rounded-2xl overflow-hidden">
-                    <div className="p-5 border-b border-border/50">
-                        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                            <Gift className="w-5 h-5 text-amber-500" />Phần thưởng có sẵn
-                        </h3>
-                    </div>
-                    <div className="p-5"><RewardsShop /></div>
-                </div>
-            </main>
-
-            <BottomNav />
-        </div>
-    )
+        <section className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
+          <div className="border-b border-[hsl(var(--border))]/50 p-6">
+            <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight"><Gift className="h-5 w-5" /> Phần thưởng có sẵn</h2>
+            <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Chọn phần thưởng phù hợp với số XP hiện có.</p>
+          </div>
+          <div className="p-6">
+            <RewardsShop />
+          </div>
+        </section>
+      </main>
+      <BottomNav />
+    </StudentShell>
+  )
 }

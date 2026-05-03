@@ -5,6 +5,7 @@ import Link from "next/link"
 import { CheckCircle, XCircle, ArrowLeft, Home, GraduationCap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Suspense } from "react"
+import { cn } from "@/lib/utils"
 
 function PaymentResultContent() {
     const searchParams = useSearchParams()
@@ -12,43 +13,80 @@ function PaymentResultContent() {
     const message = searchParams.get("message") || (success ? "Thanh toán thành công!" : "Thanh toán thất bại")
 
     return (
-        <div className="min-h-screen bg-background flex flex-col">
-            <nav className="glass-nav border-b border-border/50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-center h-16 items-center">
-                        <Link href="/"><div className="flex items-center gap-3">
-                            <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20"><GraduationCap className="w-5 h-5 text-white" /></div>
-                            <span className="text-xl font-bold text-foreground">ExamHub</span>
-                        </div></Link>
-                    </div>
+        <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] selection:bg-[hsl(var(--foreground))] selection:text-[hsl(var(--background))]">
+            <nav className="fixed inset-x-0 top-0 z-50 border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/70 backdrop-blur-md">
+                <div className="mx-auto flex h-16 max-w-7xl items-center justify-center px-4">
+                    <Link href="/" className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[hsl(var(--border))]/60">
+                            <GraduationCap className="h-4 w-4" />
+                        </div>
+                        <span className="text-lg font-semibold tracking-tight">ExamHub</span>
+                    </Link>
                 </div>
             </nav>
 
-            <div className="flex-1 flex items-center justify-center p-4">
-                <div className="glass-card rounded-2xl max-w-md w-full shadow-xl">
-                    <div className="p-8 text-center">
-                        <div className={`w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center ${success ? "bg-emerald-100 dark:bg-emerald-900/30 ring-4 ring-emerald-50 dark:ring-emerald-900/20" : "bg-red-100 dark:bg-red-900/30 ring-4 ring-red-50 dark:ring-red-900/20"}`}>
-                            {success ? <CheckCircle className="w-10 h-10 text-emerald-600 dark:text-emerald-400" /> : <XCircle className="w-10 h-10 text-red-600 dark:text-red-400" />}
+            <div className="flex min-h-screen items-center justify-center p-4 pt-24">
+                <div className="liquid-glass w-full max-w-md rounded-[2rem] p-8 shadow-sm">
+                    <div className="text-center">
+                        <div className={cn(
+                            "mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full ring-4",
+                            success 
+                                ? "bg-emerald-500/10 ring-emerald-500/5 text-emerald-500" 
+                                : "bg-red-500/10 ring-red-500/5 text-red-500"
+                        )}>
+                            {success ? <CheckCircle className="h-10 w-10" /> : <XCircle className="h-10 w-10" />}
                         </div>
-                        <h1 className={`text-2xl font-bold mb-2 ${success ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>{success ? "Thanh toán thành công!" : "Thanh toán thất bại"}</h1>
-                        <p className="text-muted-foreground mb-8">{message}</p>
+                        
+                        <h1 className={cn(
+                            "mb-2 text-2xl font-bold tracking-tight",
+                            success ? "text-emerald-500" : "text-red-500"
+                        )}>
+                            {success ? "Thanh toán thành công!" : "Thanh toán thất bại"}
+                        </h1>
+                        
+                        <p className="mb-8 text-[hsl(var(--muted-foreground))]">
+                            {message}
+                        </p>
+
                         {success && (
-                            <div className="bg-muted/30 border border-border/50 rounded-xl p-5 mb-8">
-                                <p className="text-foreground font-medium mb-1">Cảm ơn bạn đã sử dụng ExamHub!</p>
-                                <p className="text-sm text-muted-foreground">Gói dịch vụ của bạn đã được kích hoạt. Bạn có thể bắt đầu sử dụng ngay bây giờ.</p>
+                            <div className="mb-8 rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/10 p-5 text-left">
+                                <p className="mb-1 font-medium">Cảm ơn bạn đã sử dụng ExamHub!</p>
+                                <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                                    Gói dịch vụ của bạn đã được kích hoạt. Bạn có thể bắt đầu sử dụng ngay bây giờ.
+                                </p>
                             </div>
                         )}
-                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                            {!success && <Button variant="outline" className="border-border text-muted-foreground" onClick={() => window.history.back()}><ArrowLeft className="w-4 h-4 mr-2" />Thử lại</Button>}
-                            <Link href="/student/dashboard"><Button className="gradient-primary text-white border-0 shadow-lg shadow-indigo-500/20 w-full"><Home className="w-4 h-4 mr-2" />Về Dashboard</Button></Link>
+
+                        <div className="flex flex-col gap-3 sm:flex-row justify-center">
+                            {!success && (
+                                <Button 
+                                    variant="outline" 
+                                    className="rounded-full border-[hsl(var(--border))]/70 bg-transparent flex-1" 
+                                    onClick={() => window.history.back()}
+                                >
+                                    <ArrowLeft className="mr-2 h-4 w-4" />Thử lại
+                                </Button>
+                            )}
+                            <Link href="/student/dashboard" className="flex-1">
+                                <Button className="w-full rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90">
+                                    <Home className="mr-2 h-4 w-4" />Dashboard
+                                </Button>
+                            </Link>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-8">Cần hỗ trợ? <a href="mailto:support@examhub.id.vn" className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">Liên hệ chúng tôi</a></p>
+                        
+                        <p className="mt-8 text-sm text-[hsl(var(--muted-foreground))]">
+                            Cần hỗ trợ? <a href="mailto:support@examhub.id.vn" className="font-medium text-[hsl(var(--foreground))] underline-offset-4 hover:underline">Liên hệ chúng tôi</a>
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <footer className="border-t border-border/50 py-6 px-4 bg-card/50">
-                <div className="max-w-7xl mx-auto flex justify-center"><p className="text-muted-foreground text-sm">© 2026 ExamHub. All rights reserved.</p></div>
+            <footer className="border-t border-[hsl(var(--border))]/25 py-8">
+                <div className="mx-auto flex max-w-7xl justify-center">
+                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        © 2026 ExamHub. All rights reserved.
+                    </p>
+                </div>
             </footer>
         </div>
     )
@@ -56,7 +94,11 @@ function PaymentResultContent() {
 
 export default function PaymentResultPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Đang tải...</div></div>}>
+        <Suspense fallback={
+            <div className="flex min-h-screen items-center justify-center bg-[hsl(var(--background))]">
+                <div className="animate-pulse text-[hsl(var(--muted-foreground))]">Đang tải...</div>
+            </div>
+        }>
             <PaymentResultContent />
         </Suspense>
     )

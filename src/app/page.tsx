@@ -1,290 +1,285 @@
+"use client"
+
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { GraduationCap, BookOpen, Users, CheckCircle, ArrowRight, Sparkles, Shield, Zap, Trophy, Star, ChevronRight } from "lucide-react"
-import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { useEffect, useRef } from "react"
+import { motion, useScroll } from "framer-motion"
+import {
+  ArrowRight,
+  Asterisk,
+  Bot,
+  ChevronRight,
+  GraduationCap,
+  Instagram,
+  Linkedin,
+  Sparkles,
+  Star,
+  Twitter,
+  Users,
+  Zap,
+  Shield,
+  Trophy,
+  BookOpen,
+} from "lucide-react"
+import Hls from "hls.js"
+
+const fadeUp = (delay: number) => ({
+  initial: { opacity: 0, y: 20 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-100px" },
+  transition: { duration: 0.6, delay, ease: "easeOut" },
+})
+
+const HlsVideoBackground = ({ src }: { src: string }) => {
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    let hls: Hls | null = null
+
+    if (Hls.isSupported()) {
+      hls = new Hls({ enableWorker: false })
+      hls.loadSource(src)
+      hls.attachMedia(video)
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = src
+    }
+
+    return () => {
+      if (hls) hls.destroy()
+    }
+  }, [src])
+
+  return <video ref={videoRef} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover z-0" />
+}
 
 export default function HomePage() {
+  const missionRef = useRef<HTMLElement>(null)
+  const { scrollYProgress } = useScroll({
+    target: missionRef,
+    offset: ["start 80%", "end 60%"],
+  })
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="glass-nav sticky top-0 z-50 safe-top">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-3 group">
-              <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/30 transition-shadow">
-                <GraduationCap className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-foreground">
-                Exam<span className="text-gradient">Hub</span>
-              </span>
-            </div>
-            <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-              <Link href="/pricing" className="hover:text-foreground transition-colors">Bảng giá</Link>
-              <Link href="/resources" className="hover:text-foreground transition-colors">Tài liệu</Link>
-              <Link href="/live" className="hover:text-foreground transition-colors">Lớp học trực tiếp</Link>
-            </div>
-            <div className="flex items-center gap-3">
-              <ThemeToggle />
-              <Link href="/login">
-                <Button variant="ghost" className="text-muted-foreground hover:text-foreground font-medium hidden sm:inline-flex">
-                  Đăng nhập
-                </Button>
-              </Link>
-              <Link href="/register">
-                <Button className="gradient-primary hover:opacity-90 text-white border-0 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/35 transition-all duration-300 font-semibold">
-                  Bắt đầu miễn phí
-                </Button>
-              </Link>
-            </div>
+    <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] selection:bg-[hsl(var(--foreground))] selection:text-[hsl(var(--background))]">
+
+
+      <nav className="fixed inset-x-0 top-0 z-50 px-6 md:px-10 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-7 w-7 items-center justify-center rounded-full border-2 border-[hsla(var(--foreground),0.6)]">
+            <div className="h-3 w-3 rounded-full border border-[hsla(var(--foreground),0.6)]" />
           </div>
+          <span className="text-lg font-bold tracking-tight">ExamHub</span>
+        </div>
+
+        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+          <Link href="#features" className="hover:text-[hsl(var(--foreground))] transition-colors">Tính năng</Link>
+          <span className="opacity-40">•</span>
+          <Link href="#audience" className="hover:text-[hsl(var(--foreground))] transition-colors">Đối tượng</Link>
+          <span className="opacity-40">•</span>
+          <Link href="#solution" className="hover:text-[hsl(var(--foreground))] transition-colors">Giải pháp</Link>
+          <span className="opacity-40">•</span>
+          <Link href="#cta" className="hover:text-[hsl(var(--foreground))] transition-colors">Bắt đầu</Link>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {[Instagram, Linkedin, Twitter].map((Icon, idx) => (
+            <button key={idx} className="liquid-glass flex h-10 w-10 items-center justify-center rounded-full text-[hsl(var(--foreground))] transition-transform hover:scale-105">
+              <Icon size={18} />
+            </button>
+          ))}
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-32 px-4 overflow-hidden">
-        {/* Background decorations */}
-        <div className="absolute inset-0 gradient-mesh pointer-events-none" />
-        <div className="absolute top-20 left-1/4 w-72 h-72 bg-indigo-400/10 dark:bg-indigo-400/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-40 right-1/4 w-96 h-96 bg-violet-400/10 dark:bg-violet-400/5 rounded-full blur-3xl pointer-events-none" />
+      <section className="relative flex h-screen w-full items-center justify-center overflow-hidden px-6 text-center">
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <video
+            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_120549_0cd82c36-56b3-4dd9-b190-069cfc3a623f.mp4"
+            className="h-full w-full object-cover opacity-70"
+            muted
+            autoPlay
+            loop
+            playsInline
+          />
+        </div>
+        <div className="absolute inset-x-0 bottom-0 z-0 h-64 bg-gradient-to-t from-[hsl(var(--background))] to-transparent" />
 
-        <div className="max-w-7xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-indigo-700 dark:text-indigo-300 text-sm font-semibold mb-8 animate-fade-in-down">
-            <Sparkles className="w-4 h-4" />
-            Nền tảng luyện đề thi hàng đầu Việt Nam
-            <ChevronRight className="w-4 h-4" />
-          </div>
+        <div className="relative z-10 flex flex-col items-center pt-28 md:pt-32">
+          <motion.div {...fadeUp(0.1)} className="mb-8 flex items-center gap-4">
+            <div className="flex -space-x-2">
+              {[1, 2, 3].map((i) => (
+                <img key={i} src={`https://i.pravatar.cc/100?img=${i + 10}`} alt={`Avatar ${i}`} className="h-8 w-8 rounded-full border-2 border-[hsl(var(--background))]" />
+              ))}
+            </div>
+            <span className="text-sm text-[hsl(var(--muted-foreground))]">7,000+ người dùng đã tham gia</span>
+          </motion.div>
 
-          <h1 className="text-5xl md:text-7xl font-extrabold text-foreground mb-6 leading-tight tracking-tight animate-fade-in-up">
-            Luyện đề thi{" "}
-            <span className="text-gradient-animated">thông minh</span>
+          <motion.h1 {...fadeUp(0.2)} className="mb-6 text-5xl font-medium tracking-[-2px] md:text-7xl lg:text-8xl">
+            Luyện thi <span className="font-serif-italic">nhẹ hơn</span>
             <br />
-            Kết quả{" "}
-            <span className="text-gradient">vượt trội</span>
-          </h1>
+            Kết quả <span className="font-serif-italic">rõ hơn</span>
+          </motion.h1>
 
-          <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up stagger-2">
-            Hệ thống hỗ trợ học sinh và giáo viên trong việc tổ chức, luyện tập và đánh giá bài thi hiệu quả.
-          </p>
+          <motion.p {...fadeUp(0.3)} className="mb-12 max-w-3xl text-lg leading-[1.7] text-[hsl(var(--hero-subtitle))]">
+            Một nền tảng thi trắc nghiệm hiện đại giúp học sinh luyện tập, giáo viên tổ chức bài thi và cả hai bên theo dõi
+            tiến độ rõ ràng hơn.
+          </motion.p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up stagger-3">
-            <Link href="/register">
-              <Button size="lg" className="gradient-primary hover:opacity-90 text-white border-0 text-lg px-8 shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 font-semibold">
-                Tạo tài khoản miễn phí
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
+          <motion.div {...fadeUp(0.4)} className="flex flex-col gap-4 sm:flex-row">
+            <Link href="/register" className="rounded-full bg-[hsl(var(--foreground))] px-8 py-3.5 text-sm font-semibold text-[hsl(var(--background))] transition-transform hover:scale-[1.03] inline-flex items-center justify-center gap-2">
+              Bắt đầu miễn phí <ArrowRight size={16} />
             </Link>
-            <Link href="/login">
-              <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted text-lg px-8 font-medium">
-                Đăng nhập
-              </Button>
+            <Link href="/login" className="liquid-glass rounded-full px-8 py-3.5 text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:bg-[hsl(var(--foreground))]/5 inline-flex items-center justify-center">
+              Đăng nhập
             </Link>
-          </div>
+          </motion.div>
 
-          {/* Stats */}
-          <div className="mt-20 grid grid-cols-3 gap-8 max-w-xl mx-auto animate-fade-in-up stagger-4">
+          <motion.div {...fadeUp(0.5)} className="mt-20 grid max-w-xl grid-cols-3 gap-8">
             {[
               { value: "10K+", label: "Học sinh" },
               { value: "500+", label: "Giáo viên" },
-              { value: "50K+", label: "Bài thi" }
+              { value: "50K+", label: "Bài thi" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-3xl md:text-4xl font-extrabold text-gradient">{stat.value}</div>
-                <div className="text-sm text-muted-foreground mt-1 font-medium">{stat.label}</div>
+                <div className="text-3xl font-extrabold tracking-tight md:text-4xl">{stat.value}</div>
+                <div className="mt-1 text-sm font-medium text-[hsl(var(--muted-foreground))]">{stat.label}</div>
               </div>
             ))}
+          </motion.div>
+        </div>
+      </section>
+
+      <section id="features" className="px-6 py-28 md:px-10">
+        <div className="mb-24 text-center">
+          <motion.h2 {...fadeUp(0.1)} className="mb-8 text-5xl font-medium tracking-tight md:text-7xl lg:text-8xl">
+            Một hệ thống <span className="font-serif-italic">gọn</span> nhưng đủ mạnh
+          </motion.h2>
+          <motion.p {...fadeUp(0.2)} className="mx-auto max-w-2xl text-lg text-[hsl(var(--muted-foreground))]">
+            Tập trung vào những tính năng cốt lõi để việc luyện thi, tổ chức đề và theo dõi tiến độ trở nên rõ ràng hơn.
+          </motion.p>
+        </div>
+
+        <div className="mx-auto mb-20 grid max-w-6xl gap-12 md:grid-cols-3">
+          {[
+            { icon: Bot, title: "AI hỗ trợ", desc: "Tối ưu tạo đề, phân tích và hỗ trợ nội dung theo ngữ cảnh thi cử." },
+            { icon: Asterisk, title: "Tìm kiếm thông minh", desc: "Tiếp cận đề, tài liệu và câu hỏi theo cách nhanh, trực tiếp và ít nhiễu." },
+            { icon: Sparkles, title: "Trải nghiệm rõ ràng", desc: "Giao diện tối giản, nhấn vào nội dung thay vì hiệu ứng thừa." },
+          ].map((item, i) => (
+            <motion.div key={item.title} {...fadeUp(0.3 + i * 0.1)} className="flex flex-col items-center text-center">
+              <div className="mb-8 flex h-[200px] w-[200px] items-center justify-center rounded-3xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]">
+                <item.icon size={64} strokeWidth={1} className="text-[hsl(var(--foreground))]/60" />
+              </div>
+              <h3 className="mb-2 text-base font-semibold">{item.title}</h3>
+              <p className="max-w-[250px] text-sm text-[hsl(var(--muted-foreground))]">{item.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.p {...fadeUp(0.6)} className="text-center text-sm text-[hsl(var(--muted-foreground))]">
+          Tập trung vào trải nghiệm học tập trước, trang trí sau.
+        </motion.p>
+      </section>
+
+      <section ref={missionRef} className="relative px-6 pb-32 pt-0 md:px-10 md:pb-44">
+        <div className="mb-20 flex justify-center">
+          <div className="relative aspect-square w-full max-w-[800px] overflow-hidden rounded-full border border-[hsl(var(--border))]/30">
+            <video
+              src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_132944_a0d124bb-eaa1-4082-aa30-2310efb42b4b.mp4"
+              className="h-full w-full object-cover opacity-60 mix-blend-screen"
+              muted
+              autoPlay
+              loop
+              playsInline
+            />
+          </div>
+        </div>
+
+        <div className="mx-auto flex max-w-5xl flex-col text-center md:text-left">
+          <div className="mb-10 max-w-5xl text-2xl font-medium leading-tight tracking-[-1px] md:text-4xl lg:text-5xl">
+            Chúng tôi xây dựng một không gian nơi học sinh dễ tập trung hơn, giáo viên dễ vận hành hơn, và mỗi lần ôn tập
+            đều đi thẳng vào giá trị cốt lõi.
+          </div>
+          <div className="max-w-5xl text-xl font-medium leading-tight md:text-2xl lg:text-3xl">
+            Một nền tảng nơi nội dung, cộng đồng và dữ liệu học tập cùng vận hành mượt mà — ít nhiễu hơn, ít ma sát hơn,
+            và rõ ràng hơn cho mọi người dùng.
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-24 px-4 relative">
-        <div className="absolute inset-0 bg-muted/40 dark:bg-muted/20" />
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Tính năng nổi bật
+      <section id="solution" className="border-t border-[hsl(var(--border))]/30 px-6 py-32 md:px-10 md:py-44">
+        <div className="mx-auto max-w-7xl">
+          <motion.div {...fadeUp(0.1)} className="mb-16 text-center md:text-left">
+            <span className="mb-4 block text-xs uppercase tracking-[3px] text-[hsl(var(--muted-foreground))]">Solution</span>
+            <h2 className="text-4xl font-medium tracking-tight md:text-6xl">
+              Thiết kế cho <span className="font-serif-italic">kết quả học tập</span>
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Mọi thứ bạn cần để chuẩn bị cho kỳ thi sắp tới
-            </p>
-          </div>
+          </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <motion.div {...fadeUp(0.2)} className="mb-20 aspect-[3/1] w-full overflow-hidden rounded-2xl border border-[hsl(var(--border))]/30">
+            <video
+              src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_125119_8e5ae31c-0021-4396-bc08-f7aebeb877a2.mp4"
+              className="h-full w-full object-cover opacity-80"
+              muted
+              autoPlay
+              loop
+              playsInline
+            />
+          </motion.div>
+
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
             {[
-              {
-                icon: BookOpen,
-                title: "Kho đề thi phong phú",
-                description: "Hàng ngàn đề thi từ các môn học, cập nhật liên tục theo chương trình mới",
-                gradient: "from-blue-500 to-indigo-600",
-                shadow: "shadow-blue-500/20"
-              },
-              {
-                icon: Zap,
-                title: "Chấm điểm tự động",
-                description: "Kết quả ngay lập tức sau khi nộp bài, phân tích chi tiết từng câu hỏi",
-                gradient: "from-emerald-500 to-teal-600",
-                shadow: "shadow-emerald-500/20"
-              },
-              {
-                icon: Trophy,
-                title: "Bảng xếp hạng",
-                description: "So sánh điểm với bạn bè, nhận thành tựu và phần thưởng hấp dẫn",
-                gradient: "from-amber-500 to-orange-600",
-                shadow: "shadow-amber-500/20"
-              },
-              {
-                icon: Shield,
-                title: "Chống gian lận",
-                description: "Hệ thống AI giám sát thông minh, đảm bảo công bằng cho tất cả",
-                gradient: "from-violet-500 to-purple-600",
-                shadow: "shadow-violet-500/20"
-              }
-            ].map((feature, index) => (
-              <div key={index} className="card-interactive p-6 bg-card group">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-lg ${feature.shadow}`}>
-                  <feature.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
-              </div>
+              { title: "Kho đề thi", desc: "Tổ chức nội dung theo chủ đề, cấp độ và mục tiêu ôn luyện." },
+              { title: "Công cụ tạo đề", desc: "Giảm thao tác thừa, tăng tốc quy trình chuẩn bị bài thi." },
+              { title: "Theo dõi học tập", desc: "Giúp giáo viên nhìn nhanh vào tiến độ và kết quả." },
+              { title: "Phân phối nội dung", desc: "Đưa đúng tài liệu tới đúng người dùng, đúng thời điểm." },
+            ].map((feature, i) => (
+              <motion.div key={feature.title} {...fadeUp(0.3 + i * 0.1)} className="flex flex-col border-l border-[hsl(var(--border))]/50 pl-6">
+                <h3 className="mb-2 text-base font-semibold">{feature.title}</h3>
+                <p className="text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">{feature.desc}</p>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* For Teachers & Students */}
-      <section className="py-24 px-4">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-8">
-          {/* Student Card */}
-          <div className="relative p-8 rounded-2xl overflow-hidden group card-hover-lift">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/30" />
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-indigo-100/50 to-blue-100/50 dark:from-indigo-900/20 dark:to-blue-900/20" />
-            <div className="relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/25">
-                <GraduationCap className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-foreground mb-4">Dành cho Học sinh</h3>
-              <ul className="space-y-3 text-foreground/80 mb-8">
-                {[
-                  "Luyện đề theo môn, theo cấp độ",
-                  "Xem kết quả và giải thích chi tiết",
-                  "Nhận XP, mở khóa thành tựu",
-                  "Tham gia đấu trường Arena"
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-indigo-500 flex-shrink-0" />
-                    <span className="text-sm">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link href="/register?role=student">
-                <Button className="gradient-primary hover:opacity-90 text-white border-0 shadow-lg shadow-indigo-500/25 font-semibold">
-                  Đăng ký học sinh
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
+      <section id="cta" className="relative flex items-center justify-center overflow-hidden border-t border-[hsl(var(--border))]/30 py-32 text-center md:py-44">
+        <HlsVideoBackground src="https://stream.mux.com/8wrHPCX2dC3msyYU9ObwqNdm00u3ViXvOSHUMRYSEe5Q.m3u8" />
+        <div className="absolute inset-0 z-[1] bg-[hsl(var(--background))]/45" />
 
-          {/* Teacher Card */}
-          <div className="relative p-8 rounded-2xl overflow-hidden group card-hover-lift">
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/40 dark:to-purple-950/30" />
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-violet-100/50 to-purple-100/50 dark:from-violet-900/20 dark:to-purple-900/20" />
-            <div className="relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-6 shadow-lg shadow-violet-500/25">
-                <Users className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-foreground mb-4">Dành cho Giáo viên</h3>
-              <ul className="space-y-3 text-foreground/80 mb-8">
-                {[
-                  "Tạo đề thi trong vài phút",
-                  "Upload PDF, AI trích xuất đáp án",
-                  "Theo dõi kết quả học sinh real-time",
-                  "Xuất báo cáo Excel/PDF"
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-violet-500 flex-shrink-0" />
-                    <span className="text-sm">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link href="/register?role=teacher">
-                <Button className="bg-gradient-to-r from-violet-500 to-purple-600 hover:opacity-90 text-white border-0 shadow-lg shadow-violet-500/25 font-semibold">
-                  Đăng ký giáo viên
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Link>
+        <div className="relative z-10 flex flex-col items-center px-6">
+          <motion.div {...fadeUp(0.1)} className="mb-8">
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-[hsl(var(--foreground))]">
+              <div className="h-5 w-5 rounded-full border border-[hsl(var(--foreground))]" />
             </div>
-          </div>
+          </motion.div>
+
+          <motion.h2 {...fadeUp(0.2)} className="mb-6 font-serif-italic text-5xl md:text-7xl">
+            Sẵn sàng bắt đầu?
+          </motion.h2>
+
+          <motion.p {...fadeUp(0.3)} className="mb-10 max-w-md text-lg text-[hsl(var(--muted-foreground))]">
+            Nền tảng thi trắc nghiệm hiện đại dành cho học sinh và giáo viên, được thiết kế để việc luyện tập và tổ chức
+            đề thi trở nên rõ ràng hơn.
+          </motion.p>
+
+          <motion.div {...fadeUp(0.4)} className="flex flex-col gap-4 sm:flex-row">
+            <Link href="/register" className="rounded-lg bg-[hsl(var(--foreground))] px-8 py-3.5 text-sm font-semibold text-[hsl(var(--background))] transition-transform hover:scale-105 inline-flex items-center justify-center">
+              Bắt đầu ngay
+            </Link>
+            <Link href="/login" className="liquid-glass rounded-lg px-8 py-3.5 text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:bg-[hsl(var(--foreground))]/5 inline-flex items-center justify-center">
+              Đăng nhập
+            </Link>
+          </motion.div>
         </div>
       </section>
 
-      {/* Testimonial / Social Proof */}
-      <section className="py-20 px-4 relative">
-        <div className="absolute inset-0 bg-muted/40 dark:bg-muted/20" />
-        <div className="max-w-5xl mx-auto relative z-10 text-center">
-          <div className="flex justify-center gap-1 mb-4">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
-            ))}
-          </div>
-          <blockquote className="text-xl md:text-2xl font-medium text-foreground mb-6 leading-relaxed max-w-3xl mx-auto">
-            &ldquo;ExamHub giúp tôi tiết kiệm hàng giờ tạo đề và chấm bài. Học sinh cũng hào hứng hơn khi được thi online và nhận kết quả ngay lập tức.&rdquo;
-          </blockquote>
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-bold">
-              GV
-            </div>
-            <div className="text-left">
-              <p className="font-semibold text-foreground text-sm">Giáo viên Toán</p>
-              <p className="text-muted-foreground text-xs">Trường THPT Nguyễn Du</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 gradient-primary" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.15),transparent_70%)]" />
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-            Sẵn sàng chinh phục kỳ thi?
-          </h2>
-          <p className="text-white/70 mb-10 max-w-xl mx-auto text-lg">
-            Tham gia cùng hàng ngàn học sinh và giáo viên trên khắp cả nước
-          </p>
-          <Link href="/register">
-            <Button size="lg" className="bg-white text-indigo-700 hover:bg-white/90 text-lg px-10 shadow-xl font-semibold">
-              Bắt đầu ngay hôm nay
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border py-12 px-4 bg-muted/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center">
-                <GraduationCap className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-bold text-foreground">
-                Exam<span className="text-gradient">Hub</span>
-              </span>
-            </div>
-            <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-              <Link href="/pricing" className="hover:text-foreground transition-colors">Bảng giá</Link>
-              <Link href="/resources" className="hover:text-foreground transition-colors">Tài liệu</Link>
-              <Link href="/live" className="hover:text-foreground transition-colors">Lớp học trực tiếp</Link>
-              <a href="mailto:support@examhub.vn" className="hover:text-foreground transition-colors">Liên hệ</a>
-            </div>
-            <p className="text-muted-foreground text-sm">
-              © 2026 ExamHub. All rights reserved.
-            </p>
-          </div>
+      <footer className="flex flex-col items-center justify-between gap-6 border-t border-[hsl(var(--border))]/20 px-6 py-12 md:flex-row md:px-10">
+        <p className="text-sm text-[hsl(var(--muted-foreground))]">© 2026 ExamHub. All rights reserved.</p>
+        <div className="flex items-center gap-8 text-sm text-[hsl(var(--muted-foreground))]">
+          <Link href="/pricing" className="hover:text-[hsl(var(--foreground))] transition-colors">Bảng giá</Link>
+          <Link href="/resources" className="hover:text-[hsl(var(--foreground))] transition-colors">Tài liệu</Link>
+          <Link href="/live" className="hover:text-[hsl(var(--foreground))] transition-colors">Lớp học trực tiếp</Link>
         </div>
       </footer>
     </div>

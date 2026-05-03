@@ -1,14 +1,14 @@
 "use client"
 
+import { LucideIcon, Home, FileText, Trophy, User, Swords } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, FileText, Trophy, User, Swords } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface NavItem {
     href: string
     label: string
-    icon: React.ReactNode
+    icon: LucideIcon
     activePattern?: RegExp
 }
 
@@ -16,31 +16,31 @@ const studentNavItems: NavItem[] = [
     {
         href: "/student/dashboard",
         label: "Trang chủ",
-        icon: <Home className="w-5 h-5" />,
+        icon: Home,
         activePattern: /^\/student\/dashboard/
     },
     {
         href: "/student/exams",
         label: "Đề thi",
-        icon: <FileText className="w-5 h-5" />,
+        icon: FileText,
         activePattern: /^\/student\/exams/
     },
     {
         href: "/arena",
         label: "Đấu trường",
-        icon: <Swords className="w-5 h-5" />,
+        icon: Swords,
         activePattern: /^\/arena/
     },
     {
         href: "/student/profile",
         label: "Thành tích",
-        icon: <Trophy className="w-5 h-5" />,
+        icon: Trophy,
         activePattern: /^\/student\/profile/
     },
     {
         href: "/student/profile",
         label: "Hồ sơ",
-        icon: <User className="w-5 h-5" />,
+        icon: User,
         activePattern: /^\/student\/profile$/
     },
 ]
@@ -61,7 +61,7 @@ export function MobileNav({ role = "student" }: MobileNavProps) {
     const items = role === "student" ? studentNavItems : studentNavItems
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-slate-900/95 backdrop-blur-lg border-t border-slate-700/50 safe-area-bottom">
+        <nav className="glass-nav fixed bottom-0 left-0 right-0 z-50 md:hidden safe-area-bottom">
             <div className="flex items-center justify-around h-16 px-2">
                 {items.slice(0, 5).map((item) => {
                     const isActive = item.activePattern?.test(pathname || "") || pathname === item.href
@@ -71,13 +71,13 @@ export function MobileNav({ role = "student" }: MobileNavProps) {
                             key={item.href + item.label}
                             href={item.href}
                             className={cn(
-                                "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all min-w-[60px]",
+                                "flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-2 py-2 text-[10px] font-medium transition-all duration-200",
                                 isActive
-                                    ? "text-blue-400 bg-blue-500/10"
-                                    : "text-slate-400 hover:text-white"
+                                    ? "bg-[hsl(var(--foreground))] text-[hsl(var(--background))] shadow-lg"
+                                    : "bg-transparent text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]/40 hover:text-[hsl(var(--foreground))]"
                             )}
                         >
-                            {item.icon}
+                            <item.icon className="h-5 w-5" strokeWidth={1.2} />
                             <span className="text-[10px] font-medium">
                                 {item.label}
                             </span>
@@ -88,6 +88,3 @@ export function MobileNav({ role = "student" }: MobileNavProps) {
         </nav>
     )
 }
-
-// CSS for safe area (add to globals.css if needed)
-// .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }

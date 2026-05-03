@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 🔒 RATE LIMITING - Check submission rate
-        const rateLimitResult = await rateLimiters.submission(user.id)
+        const rateLimitResult = rateLimiters.submission(user.id)
         if (!rateLimitResult.success) {
             console.warn(`Rate limit exceeded for user ${user.id}, IP: ${clientIP}`)
             return rateLimitResponse(rateLimitResult)
@@ -159,23 +159,13 @@ export async function POST(request: NextRequest) {
             sa_answers.forEach(studentSa => {
                 const correctSa = exam.sa_answers?.find((s: SAAnswer) => s.question === studentSa.question)
                 if (correctSa) {
-                    const correctStr = correctSa.answer.toString().trim().toLowerCase()
-                    const studentStr = studentSa.answer.toString().trim().toLowerCase()
+                    const correctVal = parseFloat(correctSa.answer.toString().replace(',', '.'))
+                    const studentVal = parseFloat(studentSa.answer.replace(',', '.'))
 
-                    const correctVal = parseFloat(correctStr.replace(',', '.'))
-                    const studentVal = parseFloat(studentStr.replace(',', '.'))
-
-                    // If both are valid numbers, use 5% tolerance
-                    if (!isNaN(correctVal) && !isNaN(studentVal)) {
-                        const tolerance = Math.abs(correctVal) * 0.05
-                        if (Math.abs(correctVal - studentVal) <= tolerance) {
-                            saCorrect++
-                        }
-                    } else {
-                        // Fallback to strict string comparison for text answers
-                        if (correctStr === studentStr) {
-                            saCorrect++
-                        }
+                    // 5% tolerance for numerical answers
+                    const tolerance = Math.abs(correctVal) * 0.05
+                    if (!isNaN(studentVal) && Math.abs(correctVal - studentVal) <= tolerance) {
+                        saCorrect++
                     }
                 }
             })

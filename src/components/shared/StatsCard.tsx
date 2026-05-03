@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card"
 import { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -19,38 +18,38 @@ export function StatsCard({
     label,
     value,
     icon: Icon,
-    iconColor = "text-blue-600 dark:text-blue-400",
-    iconBgColor = "bg-blue-50 dark:bg-blue-900/20",
+    iconColor = "text-[hsl(var(--foreground))]/70",
+    iconBgColor = "bg-[hsl(var(--foreground))]/5",
     trend,
     className
 }: StatsCardProps) {
     return (
-        <Card className={cn("border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900", className)}>
-            <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-2">
-                            {label}
+        <div className={cn("liquid-glass rounded-[2rem] p-6 shadow-sm", className)}>
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="mb-2 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                        {label}
+                    </p>
+                    <div className="flex items-baseline gap-2">
+                        <p className="text-3xl font-semibold text-[hsl(var(--foreground))]">
+                            {value}
                         </p>
-                        <div className="flex items-baseline gap-2">
-                            <p className="text-3xl font-bold text-gray-800 dark:text-white">
-                                {value}
-                            </p>
-                            {trend && (
-                                <span className={cn(
-                                    "text-xs font-medium",
-                                    trend.isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                                )}>
-                                    {trend.isPositive ? "+" : ""}{trend.value}%
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBgColor)}>
-                        <Icon className={cn("w-6 h-6", iconColor)} />
+                        {trend && (
+                            <span className={cn(
+                                "text-xs font-medium",
+                                trend.isPositive
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-red-500 dark:text-red-400"
+                            )}>
+                                {trend.isPositive ? "+" : ""}{trend.value}%
+                            </span>
+                        )}
                     </div>
                 </div>
-            </CardContent>
-        </Card>
+                <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", iconBgColor)}>
+                    <Icon className={cn("h-6 w-6", iconColor)} strokeWidth={1.5} />
+                </div>
+            </div>
+        </div>
     )
 }

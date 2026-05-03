@@ -1,0 +1,30 @@
+
+.dmx-diagonal-alt-sweep {
+  animation: dmx-diagonal-sweep var(--dmx-speed, 1s) infinite linear;
+}
+
+@keyframes dmx-diagonal-sweep {
+  0% {
+    opacity: var(--dmx-opacity-base, 0.1);
+  }
+  50% {
+    opacity: var(--dmx-opacity-peak, 1);
+  }
+  100% {
+    opacity: var(--dmx-opacity-base, 0.1);
+  }
+}
+
+/* Delay based on diagonal parity or path */
+.dmx-diagonal-alt-sweep {
+  animation-delay: calc(var(--dmx-diagonal-parity, 0) * var(--dmx-speed, 1s) * 0.5);
+}
+
+.dmx-bloom .dmx-dot {
+  filter: drop-shadow(0 0 2px currentColor);
+}
+
+.dmx-inactive {
+  opacity: 0 !important;
+  pointer-events: none;
+}

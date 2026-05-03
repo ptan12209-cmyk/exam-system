@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         // Rate limiting
-        const rateLimitResult = await rateLimiters.api(`leaderboard:${clientIP}`)
+        const rateLimitResult = rateLimiters.api(`leaderboard:${clientIP}`)
         if (!rateLimitResult.success) {
             return rateLimitResponse(rateLimitResult)
         }

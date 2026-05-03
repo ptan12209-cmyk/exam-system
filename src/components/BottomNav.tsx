@@ -17,8 +17,8 @@ export function BottomNav() {
     const pathname = usePathname()
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 glass-nav lg:hidden safe-area-bottom">
-            <div className="flex justify-around items-center h-16 px-1">
+        <nav className="glass-nav fixed bottom-0 left-0 right-0 z-50 lg:hidden safe-area-bottom">
+            <div className="flex h-16 items-center justify-around px-2">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                     return (
@@ -26,23 +26,15 @@ export function BottomNav() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-all duration-200 touch-target relative",
+                                "relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-2 py-2 text-[10px] font-medium transition-[transform,color,background-color,box-shadow] duration-200",
                                 isActive
-                                    ? "text-indigo-600 dark:text-indigo-400"
-                                    : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 active:scale-95"
+                                    ? "bg-[hsl(var(--foreground))] text-[hsl(var(--background))] shadow-lg shadow-black/10"
+                                    : "bg-transparent text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]/40 hover:text-[hsl(var(--foreground))]"
                             )}
                         >
-                            {isActive && (
-                                <span className="absolute -top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full gradient-primary" />
-                            )}
-                            <item.icon className={cn(
-                                "w-5 h-5 transition-transform duration-200",
-                                isActive && "scale-110"
-                            )} />
-                            <span className={cn(
-                                "text-[10px] font-medium transition-all",
-                                isActive && "font-semibold"
-                            )}>{item.label}</span>
+
+                            <item.icon className={cn("h-5 w-5 transition-transform duration-200", isActive && "scale-110")} strokeWidth={1.2} />
+                            <span className={cn("transition-[font-weight,opacity] duration-200", isActive && "font-semibold")}>{item.label}</span>
                         </Link>
                     )
                 })}
@@ -64,8 +56,8 @@ export function TeacherBottomNav() {
     const pathname = usePathname()
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 glass-nav lg:hidden safe-area-bottom">
-            <div className="flex justify-around items-center h-16 px-1">
+        <nav className="glass-nav fixed bottom-0 left-0 right-0 z-50 lg:hidden safe-area-bottom">
+            <div className="flex h-16 items-center justify-around px-2">
                 {teacherNavItems.map((item) => {
                     const isActive = pathname === item.href || pathname.startsWith(item.href.replace("/create", ""))
                     return (
@@ -73,23 +65,15 @@ export function TeacherBottomNav() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-all duration-200 touch-target relative",
+                                "relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-2 py-2 text-[10px] font-medium transition-[transform,color,background-color,box-shadow] duration-200",
                                 isActive
-                                    ? "text-indigo-600 dark:text-indigo-400"
-                                    : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 active:scale-95"
+                                    ? "bg-[hsl(var(--foreground))] text-[hsl(var(--background))] shadow-lg shadow-black/10"
+                                    : "bg-transparent text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]/40 hover:text-[hsl(var(--foreground))]"
                             )}
                         >
-                            {isActive && (
-                                <span className="absolute -top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full gradient-primary" />
-                            )}
-                            <item.icon className={cn(
-                                "w-5 h-5 transition-transform duration-200",
-                                isActive && "scale-110"
-                            )} />
-                            <span className={cn(
-                                "text-[10px] font-medium transition-all",
-                                isActive && "font-semibold"
-                            )}>{item.label}</span>
+
+                            <item.icon className={cn("h-5 w-5 transition-transform duration-200", isActive && "scale-110")} strokeWidth={1.2} />
+                            <span className={cn("transition-[font-weight,opacity] duration-200", isActive && "font-semibold")}>{item.label}</span>
                         </Link>
                     )
                 })}
