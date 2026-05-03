@@ -10,7 +10,7 @@ drop policy if exists "Users can insert own profile" on public.profiles;
 -- Allow authenticated users to insert their own profile
 create policy "Users can insert own profile"
   on public.profiles for insert
-  with check (true);
+  with check (auth.uid() = id);
 
 -- Alternative: Disable RLS temporarily for testing (NOT for production!)
 -- alter table public.profiles disable row level security;

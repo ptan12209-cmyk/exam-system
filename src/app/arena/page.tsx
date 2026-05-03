@@ -18,12 +18,16 @@ interface ArenaResult { arena_id: string; score: number; rank: number | null; st
 export default function ArenaPage() {
   const router = useRouter(); const supabase = createClient()
   const [sessions, setSessions] = useState<ArenaSession[]>([]); const [myResults, setMyResults] = useState<ArenaResult[]>([]); const [topPlayers, setTopPlayers] = useState<ArenaResult[]>([])
-  const [loading, setLoading] = useState(true); const [user, setUser] = useState<{ id: string; full_name?: string } | null>(null); const [selectedTab, setSelectedTab] = useState("all"); const [searchQuery, setSearchQuery] = useState("")
+  const [loading, setLoading] = useState(true); const [user, setUser] = useState<{ id: string; full_name?: string } | null>(null); const [selectedTab, setSelectedTab] = useState("all");  const [searchQuery, setSearchQuery] = useState("")
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => { (async () => { const { data: { user: authUser } } = await supabase.auth.getUser(); if (!authUser) { router.push("/login"); return } const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", authUser.id).single(); setUser({ id: authUser.id, full_name: profile?.full_name }); const { data: sessionsData } = await supabase.from("arena_sessions").select("*").order("start_time", { ascending: false }); if (sessionsData) setSessions(sessionsData); const { data: resultsData } = await supabase.from("arena_results").select("arena_id, score, rank").eq("student_id", authUser.id); if (resultsData) setMyResults(resultsData); const { data: topData } = await supabase.from("arena_results").select("*, profiles!student_id(full_name)").order("score", { ascending: false }).limit(10); if (topData) setTopPlayers(topData); setLoading(false) })() }, [router, supabase])
 
   const getMyResult = (arenaId: string) => myResults.find((r) => r.arena_id === arenaId)
   const getStatusInfo = (session: ArenaSession) => { 
+    if (!mounted) return { status: "loading", label: "Đang tải...", color: "bg-slate-400" };
     const now = new Date(); 
     const start = new Date(session.start_time); 
     const end = new Date(session.end_time); 

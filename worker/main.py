@@ -302,8 +302,8 @@ async def extract_bank_questions(file: UploadFile):
                 import base64
                 from io import BytesIO
                 
-                # Convert up to first 5 pages to images to prevent timeout
-                images = convert_from_bytes(content, first_page=1, last_page=5)
+                # Convert up to first 8 pages to images to prevent timeout
+                images = convert_from_bytes(content, first_page=1, last_page=8)
                 if images:
                     base64_images = []
                     for img in images:

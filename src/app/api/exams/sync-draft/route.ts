@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 🔒 RATE LIMITING - Check sync rate
-        const rateLimitResult = await rateLimiters.syncDraft(user.id)
+        const rateLimitResult = rateLimiters.syncDraft(user.id)
         if (!rateLimitResult.success) {
             return rateLimitResponse(rateLimitResult)
         }
@@ -69,15 +69,21 @@ export async function POST(request: NextRequest) {
             sa: sa_answers
         }
 
+        // 🛡️ ANTI-CHEAT: Only update tab_switch_count if provided in this request
+        const updateData: any = {
+            answers_snapshot,
+            time_spent: time_spent || 0,
+            updated_at: new Date().toISOString()
+        }
+
+        if (cheat_flags?.tab_switches !== undefined) {
+            updateData.tab_switch_count = cheat_flags.tab_switches
+        }
+
         // Update the session with the latest snapshot
         const { error: updateError } = await supabase
             .from('exam_sessions')
-            .update({
-                answers_snapshot,
-                time_spent: time_spent || 0,
-                tab_switch_count: cheat_flags?.tab_switches || 0,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', session_id)
 
         if (updateError) {

@@ -3,11 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { rateLimiters, getClientIP, rateLimitResponse } from '@/lib/rate-limit'
 import { invalidateCache } from '@/lib/cache'
 
-// Type definitions
-type TFStudentAnswer = { question: number; a: boolean | null; b: boolean | null; c: boolean | null; d: boolean | null }
-type SAStudentAnswer = { question: number; answer: string }
-type TFAnswer = { question: number; a: boolean; b: boolean; c: boolean; d: boolean }
-type SAAnswer = { question: number; answer: number | string }
+import { calculateScore, TFStudentAnswer, SAStudentAnswer } from '@/services/scoring'
 
 interface SubmitRequest {
     exam_id: string
@@ -119,64 +115,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Maximum attempts reached' }, { status: 403 })
         }
 
-        // 4. Calculate MC score (SERVER-SIDE)
-        let mcCorrect = 0
-        const mcTotal = exam.mc_answers?.length || exam.correct_answers?.length || 0
+        // 4. Calculate Score (Centralized Service)
+        const scoring = calculateScore(mc_answers, tf_answers, sa_answers, exam)
 
-        if (mc_answers && Array.isArray(mc_answers)) {
-            mc_answers.forEach((answer, i) => {
-                if (exam.mc_answers && exam.mc_answers[i]) {
-                    if (answer === exam.mc_answers[i].answer) mcCorrect++
-                } else if (exam.correct_answers && answer === exam.correct_answers[i]) {
-                    mcCorrect++
-                }
-            })
-        }
-
-        // 5. Calculate TF score (SERVER-SIDE)
-        let tfCorrect = 0
-        const tfTotal = exam.tf_answers?.length || 0
-
-        if (exam.tf_answers && tf_answers && Array.isArray(tf_answers)) {
-            tf_answers.forEach(studentTf => {
-                const correctTf = exam.tf_answers?.find((t: TFAnswer) => t.question === studentTf.question)
-                if (correctTf) {
-                    let subCorrect = 0
-                    if (studentTf.a === correctTf.a) subCorrect++
-                    if (studentTf.b === correctTf.b) subCorrect++
-                    if (studentTf.c === correctTf.c) subCorrect++
-                    if (studentTf.d === correctTf.d) subCorrect++
-                    tfCorrect += subCorrect / 4
-                }
-            })
-        }
-
-        // 6. Calculate SA score (SERVER-SIDE)
-        let saCorrect = 0
-        const saTotal = exam.sa_answers?.length || 0
-
-        if (exam.sa_answers && sa_answers && Array.isArray(sa_answers)) {
-            sa_answers.forEach(studentSa => {
-                const correctSa = exam.sa_answers?.find((s: SAAnswer) => s.question === studentSa.question)
-                if (correctSa) {
-                    const correctVal = parseFloat(correctSa.answer.toString().replace(',', '.'))
-                    const studentVal = parseFloat(studentSa.answer.replace(',', '.'))
-
-                    // 5% tolerance for numerical answers
-                    const tolerance = Math.abs(correctVal) * 0.05
-                    if (!isNaN(studentVal) && Math.abs(correctVal - studentVal) <= tolerance) {
-                        saCorrect++
-                    }
-                }
-            })
-        }
-
-        // 7. Calculate final score
-        const totalQuestions = mcTotal + tfTotal + saTotal
-        const totalCorrect = mcCorrect + tfCorrect + saCorrect
-        const score = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 10 : 0
-
-        // 8. Check session ranking status
+        // 5. Check session ranking status
         let isRanked = true
         if (session_id) {
             const { data: session } = await supabase
@@ -190,7 +132,7 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // 9. Insert submission (with SERVER-CALCULATED score)
+        // 6. Insert submission (with SERVER-CALCULATED score)
         const { data: submission, error: insertError } = await supabase
             .from('submissions')
             .insert({
@@ -200,11 +142,11 @@ export async function POST(request: NextRequest) {
                 mc_student_answers: mc_answers?.map((a, i) => ({ question: i + 1, answer: a })),
                 tf_student_answers: tf_answers,
                 sa_student_answers: sa_answers,
-                score: Math.round(score * 100) / 100, // Round to 2 decimal places
-                correct_count: Math.round(totalCorrect),
-                mc_correct: mcCorrect,
-                tf_correct: Math.round(tfCorrect),
-                sa_correct: saCorrect,
+                score: scoring.score,
+                correct_count: Math.round(scoring.totalCorrect),
+                mc_correct: scoring.details.mc.correct,
+                tf_correct: Math.round(scoring.details.tf.correct),
+                sa_correct: scoring.details.sa.correct,
                 submitted_at: new Date().toISOString(),
                 time_spent: time_spent || 0,
                 attempt_number: (attemptCount ?? 0) + 1,
@@ -220,7 +162,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Failed to save submission' }, { status: 500 })
         }
 
-        // 10. Update session status
+        // 7. Update session status
         if (session_id) {
             await supabase
                 .from('exam_sessions')
@@ -232,14 +174,14 @@ export async function POST(request: NextRequest) {
                 .eq('id', session_id)
         }
 
-        // 11. Update participant status
+        // 8. Update participant status
         await supabase
             .from('exam_participants')
             .update({ status: 'submitted', last_active: new Date().toISOString() })
             .eq('exam_id', exam_id)
             .eq('user_id', user.id)
 
-        // 🔒 12. Log to audit (IP & fingerprint tracking)
+        // 🔒 9. Log to audit (IP & fingerprint tracking)
         try {
             await supabase.from('submission_audit_log').insert({
                 submission_id: submission.id,
@@ -247,7 +189,7 @@ export async function POST(request: NextRequest) {
                 student_id: user.id,
                 action: 'SUBMISSION_SUCCESS',
                 details: {
-                    score: Math.round(score * 100) / 100,
+                    score: scoring.score,
                     time_spent,
                     cheat_flags,
                     fingerprint: fingerprint || 'not_provided'
@@ -260,20 +202,16 @@ export async function POST(request: NextRequest) {
         }
 
         // 🚀 Invalidate leaderboard cache for this exam
-        invalidateCache.submission(exam_id)
+        await invalidateCache.submission(exam_id)
 
         // Return result (score is now trustworthy)
         return NextResponse.json({
             success: true,
             submission_id: submission.id,
-            score: Math.round(score * 100) / 100,
-            correct_count: Math.round(totalCorrect),
-            total_questions: totalQuestions,
-            details: {
-                mc: { correct: mcCorrect, total: mcTotal },
-                tf: { correct: Math.round(tfCorrect * 100) / 100, total: tfTotal },
-                sa: { correct: saCorrect, total: saTotal }
-            }
+            score: scoring.score,
+            correct_count: Math.round(scoring.totalCorrect),
+            total_questions: scoring.totalQuestions,
+            details: scoring.details
         })
 
     } catch (error) {

@@ -12,7 +12,48 @@ import asyncio
 import json
 import re
 import time
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
+from pydantic import BaseModel, Field, ValidationError
+
+# ============================================================================
+# PYDANTIC MODELS FOR VALIDATION
+# ============================================================================
+
+class TFAnswerModel(BaseModel):
+    a: bool = False
+    b: bool = False
+    c: bool = False
+    d: bool = False
+
+class QuestionModel(BaseModel):
+    content: str
+    question_type: str = Field(pattern="^(mc|tf|sa)$")
+    options: List[str] = []
+    correct_answer: Union[str, TFAnswerModel]
+    explanation: str = ""
+
+class ExamBankModel(BaseModel):
+    questions: List[QuestionModel]
+
+class MCAnswerItem(BaseModel):
+    cau: int
+    dap_an: str
+
+class TFAnswerItem(BaseModel):
+    cau: int
+    y_a: str
+    y_b: str
+    y_c: str
+    y_d: str
+
+class SAAnswerItem(BaseModel):
+    cau: int
+    dap_an: Union[str, float, int]
+
+class RawExtractionModel(BaseModel):
+    phan_trac_nghiem: List[MCAnswerItem] = []
+    phan_dung_sai: List[TFAnswerItem] = []
+    phan_tra_loi_ngan: List[SAAnswerItem] = []
 
 # ============================================================================
 # LOGGING
@@ -326,7 +367,6 @@ class GeminiClient:
 
     async def extract_bank_questions(self, pdf_text: str) -> dict:
         prompt = QUESTION_EXTRACTION_PROMPT.format(text=pdf_text[:15000])
-        import json, re
         for model in MODELS:
             try:
                 url = f"{self.base_url}/v1/chat/completions"
@@ -337,19 +377,19 @@ class GeminiClient:
                 if response.status_code == 200:
                     text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                     if text:
-                        text = text.strip()
-                        if text.startswith("```json"): text = text[7:]
-                        elif text.startswith("```"): text = text[3:]
-                        if text.endswith("```"): text = text[:-3]
-                        text = text.strip()
-                        json_match = re.search(r'\{[\s\S]*\}', text)
-                        if json_match: text = json_match.group(0)
-                        try:
-                            return json.loads(text)
-                        except json.JSONDecodeError:
-                            pass
-            except Exception:
-                pass
+                        result = self._parse_json_response(text)
+                        if result:
+                            try:
+                                # Validate with Pydantic
+                                validated = ExamBankModel.model_validate(result)
+                                return validated.model_dump()
+                            except ValidationError as ve:
+                                logger.warning(f"Pydantic validation failed for {model}: {ve}")
+                                continue # Try next model if validation fails
+                else:
+                    logger.warning(f"Bank extraction failed for {model}: {response.status_code}")
+            except Exception as e:
+                logger.error(f"Bank extraction exception for {model}: {e}")
         return {"questions": []}
 
     async def extract_bank_questions_vision(self, base64_images: list) -> dict:
@@ -365,20 +405,15 @@ class GeminiClient:
             if response.status_code == 200:
                 text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                 if text:
-                    text = text.strip()
-                    if text.startswith("```json"): text = text[7:]
-                    elif text.startswith("```"): text = text[3:]
-                    if text.endswith("```"): text = text[:-3]
-                    text = text.strip()
-                    import re, json
-                    json_match = re.search(r'\{[\s\S]*\}', text)
-                    if json_match: text = json_match.group(0)
-                    try:
-                        return json.loads(text)
-                    except json.JSONDecodeError:
-                        pass
-        except Exception:
-            pass
+                    result = self._parse_json_response(text)
+                    if result:
+                        try:
+                            validated = ExamBankModel.model_validate(result)
+                            return validated.model_dump()
+                        except ValidationError as ve:
+                            logger.error(f"Vision Pydantic validation failed: {ve}")
+        except Exception as e:
+            logger.error(f"Vision bank extraction failed: {e}")
         return {"questions": []}
 
 # ============================================================================

@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { FilterBar, EmptyState } from "@/components/shared"
 import { TeacherSidebar } from "@/components/TeacherSidebar"
 import { TeacherShell } from "@/components/teacher/TeacherShell"
+import { TeacherBottomNav } from "@/components/BottomNav"
+import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import {
   AlertTriangle,

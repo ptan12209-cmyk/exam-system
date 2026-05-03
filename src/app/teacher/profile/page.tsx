@@ -45,16 +45,28 @@ export default function TeacherProfilePage() {
       if (!user) { router.push("/login"); return }
       const { data: profileData } = await supabase.from("profiles").select("full_name, avatar_url, nickname, bio").eq("id", user.id).single()
       setProfile({ full_name: profileData?.full_name || null, email: user.email || null, avatar_url: profileData?.avatar_url || null, nickname: profileData?.nickname || null, bio: profileData?.bio || null })
-      const { data: exams } = await supabase.from("exams").select("id, title, status, created_at").eq("teacher_id", user.id).order("created_at", { ascending: false })
+      const { data: exams } = await supabase
+        .from("exams")
+        .select("id, title, status, created_at, submissions(count)")
+        .eq("teacher_id", user.id)
+        .order("created_at", { ascending: false })
+
       if (exams) {
-        const published = exams.filter((e: { status: string }) => e.status === "published").length
-        let totalSubs = 0
-        for (const exam of exams) {
-          const { count } = await supabase.from("submissions").select("*", { count: "exact", head: true }).eq("exam_id", exam.id)
-          totalSubs += count || 0
-        }
-        setStats({ totalExams: exams.length, publishedExams: published, draftExams: exams.length - published, totalSubmissions: totalSubs })
-        setRecentExams(exams.slice(0, 5))
+        const published = exams.filter((e: any) => e.status === "published").length
+        const totalSubs = exams.reduce((sum: number, e: any) => {
+          const count = Array.isArray(e.submissions) && e.submissions.length 
+            ? (e.submissions[0] as unknown as { count: number }).count 
+            : 0
+          return sum + count
+        }, 0)
+
+        setStats({ 
+          totalExams: exams.length, 
+          publishedExams: published, 
+          draftExams: exams.length - published, 
+          totalSubmissions: totalSubs 
+        })
+        setRecentExams(exams.slice(0, 5).map((e: any) => ({ id: e.id, title: e.title, status: e.status, created_at: e.created_at })))
       }
       setLoading(false)
     }

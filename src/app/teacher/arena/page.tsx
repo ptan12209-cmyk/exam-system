@@ -14,7 +14,7 @@ import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { TeacherBottomNav } from "@/components/BottomNav"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
-import { Plus, Swords, Calendar, Clock, Users, Edit, Trash2, Play, CheckCircle, FileText, X, GraduationCap } from "lucide-react"
+import { Plus, Swords, Calendar, Clock, Users, Edit, Trash2, Play, CheckCircle, FileText, X, GraduationCap, Loader2 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 
 interface ArenaSession {

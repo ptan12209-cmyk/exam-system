@@ -1,63 +1,55 @@
+import { Redis } from '@upstash/redis'
+
+/**
+ * Cache Interface
+ */
+interface ICache {
+    get<T>(key: string): Promise<T | null>
+    set<T>(key: string, value: T, ttlMs: number): Promise<void>
+    delete(key: string): Promise<void>
+    deletePattern(pattern: string): Promise<void>
+}
+
 /**
  * Simple In-Memory Cache with TTL
- * For production with multiple instances, use Redis
  */
-
 interface CacheEntry<T> {
     value: T
     expiresAt: number
 }
 
-class MemoryCache {
+class MemoryCache implements ICache {
     private cache = new Map<string, CacheEntry<unknown>>()
     private cleanupInterval: NodeJS.Timeout | null = null
 
     constructor() {
-        // Clean up expired entries every minute
         if (typeof setInterval !== 'undefined') {
             this.cleanupInterval = setInterval(() => this.cleanup(), 60000)
         }
     }
 
-    /**
-     * Get a value from cache
-     */
-    get<T>(key: string): T | null {
+    async get<T>(key: string): Promise<T | null> {
         const entry = this.cache.get(key) as CacheEntry<T> | undefined
         if (!entry) return null
-
         if (Date.now() > entry.expiresAt) {
             this.cache.delete(key)
             return null
         }
-
         return entry.value
     }
 
-    /**
-     * Set a value in cache with TTL
-     * @param key Cache key
-     * @param value Value to cache
-     * @param ttlMs Time to live in milliseconds
-     */
-    set<T>(key: string, value: T, ttlMs: number): void {
+    async set<T>(key: string, value: T, ttlMs: number): Promise<void> {
         this.cache.set(key, {
             value,
             expiresAt: Date.now() + ttlMs
         })
     }
 
-    /**
-     * Delete a specific key
-     */
-    delete(key: string): void {
+    async delete(key: string): Promise<void> {
         this.cache.delete(key)
     }
 
-    /**
-     * Delete all keys matching a pattern
-     */
-    deletePattern(pattern: string): void {
+    async deletePattern(pattern: string): Promise<void> {
         const regex = new RegExp(pattern.replace('*', '.*'))
         for (const key of this.cache.keys()) {
             if (regex.test(key)) {
@@ -66,16 +58,6 @@ class MemoryCache {
         }
     }
 
-    /**
-     * Clear all cache
-     */
-    clear(): void {
-        this.cache.clear()
-    }
-
-    /**
-     * Cleanup expired entries
-     */
     private cleanup(): void {
         const now = Date.now()
         for (const [key, entry] of this.cache.entries()) {
@@ -84,28 +66,66 @@ class MemoryCache {
             }
         }
     }
+}
 
-    /**
-     * Get or set pattern - fetch from cache or compute and cache
-     */
-    async getOrSet<T>(
-        key: string,
-        fetcher: () => Promise<T>,
-        ttlMs: number
-    ): Promise<T> {
-        const cached = this.get<T>(key)
-        if (cached !== null) {
-            return cached
+/**
+ * Upstash Redis Cache
+ */
+class RedisCache implements ICache {
+    private redis: Redis
+
+    constructor(url: string, token: string) {
+        this.redis = new Redis({ url, token })
+    }
+
+    async get<T>(key: string): Promise<T | null> {
+        try {
+            return await this.redis.get<T>(key)
+        } catch (e) {
+            console.error('Redis get error:', e)
+            return null
         }
+    }
 
-        const value = await fetcher()
-        this.set(key, value, ttlMs)
-        return value
+    async set<T>(key: string, value: T, ttlMs: number): Promise<void> {
+        try {
+            await this.redis.set(key, value, { px: ttlMs })
+        } catch (e) {
+            console.error('Redis set error:', e)
+        }
+    }
+
+    async delete(key: string): Promise<void> {
+        try {
+            await this.redis.del(key)
+        } catch (e) {
+            console.error('Redis del error:', e)
+        }
+    }
+
+    async deletePattern(pattern: string): Promise<void> {
+        try {
+            const keys = await this.redis.keys(pattern)
+            if (keys.length > 0) {
+                await this.redis.del(...keys)
+            }
+        } catch (e) {
+            console.error('Redis deletePattern error:', e)
+        }
     }
 }
 
-// Singleton instance
-export const cache = new MemoryCache()
+// Initialize cache based on environment
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN
+
+export const cache: ICache = (redisUrl && redisToken) 
+    ? new RedisCache(redisUrl, redisToken) 
+    : new MemoryCache()
+
+if (!(redisUrl && redisToken)) {
+    console.warn('⚠️ UPSTASH_REDIS_REST_URL or TOKEN missing. Falling back to MemoryCache (Inconsistent on Vercel).')
+}
 
 // Cache TTL constants (in milliseconds)
 export const CACHE_TTL = {
@@ -126,16 +146,15 @@ export const cacheKeys = {
 
 // Cache invalidation helpers
 export const invalidateCache = {
-    exam: (examId: string) => {
-        cache.deletePattern(`exam:${examId}:*`)
+    exam: async (examId: string) => {
+        await cache.deletePattern(`exam:${examId}:*`)
     },
-    user: (userId: string) => {
-        cache.deletePattern(`user:${userId}:*`)
-        cache.deletePattern(`student:${userId}:*`)
-        cache.deletePattern(`teacher:${userId}:*`)
+    user: async (userId: string) => {
+        await cache.deletePattern(`user:${userId}:*`)
+        await cache.deletePattern(`student:${userId}:*`)
+        await cache.deletePattern(`teacher:${userId}:*`)
     },
-    submission: (examId: string) => {
-        // Invalidate leaderboard when new submission
-        cache.delete(cacheKeys.leaderboard(examId))
+    submission: async (examId: string) => {
+        await cache.delete(cacheKeys.leaderboard(examId))
     }
 }
