@@ -2,16 +2,16 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendNewExamNotification } from '@/lib/email';
 
-// Create admin Supabase client for server-side operations
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export async function POST(request: Request) {
     try {
         const body = await request.json();
         const { examId, examTitle, teacherName, deadline } = body;
+
+        // Create admin Supabase client for server-side operations safely inside handler
+        const supabaseAdmin = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+            process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
+        );
 
         if (!examId || !examTitle) {
             return NextResponse.json(

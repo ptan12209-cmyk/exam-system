@@ -1,7 +1,13 @@
 import { Resend } from 'resend';
 
-// Initialize Resend with API key from environment
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy initializer for Resend to prevent compile-time or static build errors
+let resendInstance: Resend | null = null;
+function getResend(): Resend {
+    if (!resendInstance) {
+        resendInstance = new Resend(process.env.RESEND_API_KEY || 're_placeholder_key_to_prevent_build_errors');
+    }
+    return resendInstance;
+}
 
 // Default sender email (must be verified in Resend)
 const FROM_EMAIL = 'Exam System <onboarding@resend.dev>'; // Change after verifying domain
@@ -37,7 +43,7 @@ export async function sendNewExamNotification({
 
     try {
         // Send to each student individually (Resend free tier allows batching)
-        const { data, error } = await resend.emails.send({
+        const { data, error } = await getResend().emails.send({
             from: FROM_EMAIL,
             to: studentEmails,
             subject: `📝 Đề thi mới: ${examTitle}`,
@@ -113,7 +119,7 @@ export async function sendDeadlineReminder({
     const examLink = `${baseUrl}/student/exams/${examId}`;
 
     try {
-        const { error } = await resend.emails.send({
+        const { error } = await getResend().emails.send({
             from: FROM_EMAIL,
             to: studentEmail,
             subject: `⏰ Nhắc nhở: ${examTitle} sắp hết hạn!`,

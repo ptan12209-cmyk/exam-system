@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 🔒 RATE LIMITING - Check sync rate
-        const rateLimitResult = rateLimiters.syncDraft(user.id)
+        const rateLimitResult = await rateLimiters.syncDraft(user.id)
         if (!rateLimitResult.success) {
             return rateLimitResponse(rateLimitResult)
         }

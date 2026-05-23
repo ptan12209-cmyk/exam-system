@@ -1,25 +1,22 @@
 /**
- * Scoring Service
- * Centralized logic for calculating exam scores
+ * Dịch vụ tính điểm — Logic tập trung để tính điểm bài thi.
  */
 
-export type TFStudentAnswer = { question: number; a: boolean | null; b: boolean | null; c: boolean | null; d: boolean | null }
-export type SAStudentAnswer = { question: number; answer: string }
-export type TFAnswer = { question: number; a: boolean; b: boolean; c: boolean; d: boolean }
-export type SAAnswer = { question: number; answer: number | string }
-export type MCAnswer = { question: number; answer: string }
+import type { TFStudentAnswer, SAStudentAnswer, MCAnswer, TFAnswer, SAAnswer, ScoringResult } from '@/types/exam'
 
-export interface ScoringResult {
-    score: number
-    totalCorrect: number
-    totalQuestions: number
-    details: {
-        mc: { correct: number; total: number }
-        tf: { correct: number; total: number }
-        sa: { correct: number; total: number }
-    }
-}
+export type { ScoringResult, TFStudentAnswer, SAStudentAnswer }
 
+/**
+ * Tính điểm cho bài thi dựa trên câu trả lời của học sinh.
+ * Xử lý ba loại câu hỏi: trắc nghiệm (MC), đúng/sai (TF), và trả lời ngắn (SA).
+ * Điểm được chuẩn hóa về thang 10.
+ *
+ * @param mc_answers - Mảng câu trả lời trắc nghiệm của học sinh (mỗi phần tử là đáp án hoặc null).
+ * @param tf_student_answers - Mảng câu trả lời đúng/sai của học sinh.
+ * @param sa_student_answers - Mảng câu trả lời ngắn của học sinh.
+ * @param exam - Đối tượng bài thi chứa đáp án đúng (mc_answers, tf_answers, sa_answers).
+ * @returns Đối tượng ScoringResult gồm score, totalCorrect, totalQuestions, và chi tiết từng phần.
+ */
 export function calculateScore(
     mc_answers: (string | null)[],
     tf_student_answers: TFStudentAnswer[],

@@ -45,7 +45,7 @@ export default function ProfilePage() {
       }
       const { stats: userStats, badges: userBadges } = await getUserStats(user.id)
       setStats(userStats)
-      setBadges(userBadges as typeof badges)
+      setBadges(userBadges as unknown as typeof badges)
       setLoading(false)
     }
     fetchData()
