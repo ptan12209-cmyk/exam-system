@@ -25,7 +25,7 @@ WHERE event_object_schema = 'public';
 SELECT * FROM pg_publication;
 
 -- 5. Remove submissions from realtime (if exists)
--- ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.submissions;
+-- ALTER PUBLICATION supabase_realtime DROP TABLE public.submissions;
 
 -- 6. Check if there are any functions being called
 SELECT proname, prosrc 
