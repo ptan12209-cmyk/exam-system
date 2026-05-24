@@ -102,6 +102,10 @@ export default function CoStudyRoomsPage() {
   // Today's session focused seconds accumulated locally
   const [localTodaySeconds, setLocalTodaySeconds] = useState(0)
 
+  // User profile
+  const [userId, setUserId] = useState<string | null>(null)
+  const [profile, setProfile] = useState<any>(null)
+
   // Audio state
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -119,29 +123,28 @@ export default function CoStudyRoomsPage() {
     return [...ambients, ...customs]
   }, [customTracks])
 
-  // Load custom tracks from localStorage on mount
+  // Load custom tracks from Supabase custom_music on mount/userId change
   useEffect(() => {
-    const saved = localStorage.getItem("co_study_custom_tracks")
-    if (saved) {
+    if (!userId) return
+
+    const fetchCustomMusic = async () => {
       try {
-        const parsed = JSON.parse(saved)
-        // Stale local Object URLs are expired on page reload, so filter out 'local' files
-        const filtered = parsed.filter((t: any) => t.type !== "local")
-        setCustomTracks(filtered)
+        const { data, error } = await supabase
+          .from("custom_music")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: true })
+
+        if (data) {
+          setCustomTracks(data as CustomTrack[])
+        }
       } catch (err) {
-        console.error("Failed to parse saved tracks:", err)
+        console.error("Failed to fetch custom music from database:", err)
       }
     }
-  }, [])
 
-  // Save custom tracks to localStorage when changed
-  useEffect(() => {
-    if (customTracks.length > 0) {
-      localStorage.setItem("co_study_custom_tracks", JSON.stringify(customTracks))
-    } else {
-      localStorage.removeItem("co_study_custom_tracks")
-    }
-  }, [customTracks])
+    fetchCustomMusic()
+  }, [userId, supabase])
 
   // Load SoundCloud Widget API script
   useEffect(() => {
@@ -197,10 +200,6 @@ export default function CoStudyRoomsPage() {
       audio.removeEventListener("ended", handleEnded)
     }
   }, [playingAudioId, allTracks])
-
-  // User profile
-  const [userId, setUserId] = useState<string | null>(null)
-  const [profile, setProfile] = useState<any>(null)
 
   // Fetch student profile & active rooms
   useEffect(() => {
@@ -273,11 +272,7 @@ export default function CoStudyRoomsPage() {
       if (mounted && sess) {
         setSessions(sess as any)
         
-        // Find local user's accumulated focus time
-        const mySess = sess.find((s: any) => s.student_id === userId)
-        if (mySess) {
-          setLocalTodaySeconds(mySess.total_focus_seconds_today)
-        }
+        // Synced successfully in background
       }
     }
 
@@ -354,7 +349,7 @@ export default function CoStudyRoomsPage() {
         status: "focusing",
         total_focus_seconds_today: localTodaySecondsRef.current,
         last_status_change: new Date().toISOString()
-      })
+      }, { onConflict: "student_id" })
     }, 10000) // sync database every 10 seconds
 
     return () => clearInterval(syncTimer)
@@ -446,7 +441,7 @@ export default function CoStudyRoomsPage() {
         status: "resting", // start as resting/idle
         total_focus_seconds_today: focusToday,
         last_status_change: new Date().toISOString()
-      })
+      }, { onConflict: "student_id" })
 
       setActiveRoom(room)
       setTimeRemaining(focusDuration * 60)
@@ -489,7 +484,7 @@ export default function CoStudyRoomsPage() {
         status: "offline",
         total_focus_seconds_today: localTodaySeconds,
         last_status_change: new Date().toISOString()
-      })
+      }, { onConflict: "student_id" })
 
       setActiveRoom(null)
       setMembers([])
@@ -508,7 +503,7 @@ export default function CoStudyRoomsPage() {
       status: nextStatus,
       total_focus_seconds_today: localTodaySeconds,
       last_status_change: new Date().toISOString()
-    })
+    }, { onConflict: "student_id" })
   }
 
   // Timer controls
@@ -564,7 +559,7 @@ export default function CoStudyRoomsPage() {
 
   // SoundCloud and local track uploads handler
   const handleAddSoundCloud = async () => {
-    if (!soundcloudUrl.trim()) return
+    if (!soundcloudUrl.trim() || !userId) return
     const tempId = `sc-${Date.now()}`
     const cleanUrl = soundcloudUrl.trim()
     
@@ -573,15 +568,17 @@ export default function CoStudyRoomsPage() {
     const slug = urlWithoutQuery.split("/").pop() || "SoundCloud Track"
     const fallbackTitle = slug.replace(/-/g, " ").replace(/_/g, " ")
     
-    const newTrack: CustomTrack = {
+    const tempTrack: CustomTrack = {
       id: tempId,
       label: `SoundCloud: ${fallbackTitle} (Đang tải...) 🎵`,
       url: cleanUrl,
       type: "soundcloud"
     }
     
-    setCustomTracks(prev => [...prev, newTrack])
+    setCustomTracks(prev => [...prev, tempTrack])
     setSoundcloudUrl("")
+    
+    let resolvedTitle = `SoundCloud: ${fallbackTitle} 🎵`
     
     // Fetch track oEmbed data in background to resolve track title
     try {
@@ -589,34 +586,39 @@ export default function CoStudyRoomsPage() {
       if (res.ok) {
         const data = await res.json()
         if (data.title) {
-          setCustomTracks(prev => prev.map(t => {
-            if (t.id === tempId) {
-              return {
-                ...t,
-                label: `SoundCloud: ${data.title} 🎵`
-              }
-            }
-            return t
-          }))
+          resolvedTitle = `SoundCloud: ${data.title} 🎵`
         }
       }
     } catch (err) {
       console.error("Failed to fetch SoundCloud title via oEmbed:", err)
-      // Remove loading status on error
-      setCustomTracks(prev => prev.map(t => {
-        if (t.id === tempId) {
-          return {
-            ...t,
-            label: `SoundCloud: ${fallbackTitle} 🎵`
-          }
-        }
-        return t
-      }))
+    }
+
+    // Save to Supabase custom_music table
+    try {
+      const { data: inserted, error } = await supabase
+        .from("custom_music")
+        .insert({
+          user_id: userId,
+          label: resolvedTitle,
+          url: cleanUrl,
+          type: "soundcloud"
+        })
+        .select()
+        .single()
+      
+      if (inserted) {
+        setCustomTracks(prev => prev.map(t => t.id === tempId ? (inserted as CustomTrack) : t))
+      } else {
+        throw error || new Error("DB insert failed")
+      }
+    } catch (dbErr) {
+      console.error("Failed to save custom music to database:", dbErr)
+      setCustomTracks(prev => prev.filter(t => t.id !== tempId))
     }
   }
 
-  const handleAddDirectUrl = () => {
-    if (!directAudioUrl.trim()) return
+  const handleAddDirectUrl = async () => {
+    if (!directAudioUrl.trim() || !userId) return
     const cleanUrl = directAudioUrl.trim()
     const urlWithoutQuery = cleanUrl.split("?")[0]
     const filename = urlWithoutQuery.split("/").pop() || "Audio Track"
@@ -625,14 +627,55 @@ export default function CoStudyRoomsPage() {
       .replace(/-/g, " ")
       .replace(/_/g, " ")
     
-    const newTrack: CustomTrack = {
-      id: `url-${Date.now()}`,
-      label: `Direct: ${cleanTitle} 🎵`,
-      url: cleanUrl,
-      type: "url"
+    const label = `Direct: ${cleanTitle} 🎵`
+    
+    try {
+      const { data: inserted, error } = await supabase
+        .from("custom_music")
+        .insert({
+          user_id: userId,
+          label,
+          url: cleanUrl,
+          type: "url"
+        })
+        .select()
+        .single()
+      
+      if (inserted) {
+        setCustomTracks(prev => [...prev, inserted as CustomTrack])
+        setDirectAudioUrl("")
+      }
+    } catch (dbErr) {
+      console.error("Failed to save direct audio to database:", dbErr)
     }
-    setCustomTracks(prev => [...prev, newTrack])
-    setDirectAudioUrl("")
+  }
+
+  const handleDeleteTrack = async (trackId: string) => {
+    if (!userId) return
+    
+    try {
+      if (!trackId.startsWith("sc-") && !trackId.startsWith("url-") && !trackId.startsWith("local-")) {
+        const { error } = await supabase
+          .from("custom_music")
+          .delete()
+          .eq("id", trackId)
+          .eq("user_id", userId)
+        
+        if (error) throw error
+      }
+      
+      setCustomTracks(prev => prev.filter(t => t.id !== trackId))
+      
+      if (playingAudioId === trackId) {
+        if (audioRef.current) {
+          audioRef.current.pause()
+        }
+        setPlayingAudioId(null)
+        setActiveSoundCloudUrl(null)
+      }
+    } catch (err) {
+      console.error("Failed to delete custom track:", err)
+    }
   }
 
   const handleLocalFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -666,7 +709,8 @@ export default function CoStudyRoomsPage() {
 
   // Dynamic sessions to override current user's seconds with locally ticking seconds
   const dynamicSessions = useMemo(() => {
-    return sessions.map(sess => {
+    const hasMe = sessions.some(s => s.student_id === userId)
+    let mapped = sessions.map(sess => {
       if (sess.student_id === userId) {
         return {
           ...sess,
@@ -675,7 +719,23 @@ export default function CoStudyRoomsPage() {
       }
       return sess
     })
-  }, [sessions, userId, localTodaySeconds])
+    
+    if (!hasMe && userId) {
+      // Append local user's session if it hasn't loaded from DB yet
+      mapped.push({
+        student_id: userId,
+        status: isTimerRunning ? (timerMode === "focus" ? "focusing" : "resting") : "resting",
+        last_status_change: new Date().toISOString(),
+        total_focus_seconds_today: localTodaySeconds,
+        profiles: {
+          full_name: profile?.full_name || "Tôi",
+          avatar_url: profile?.avatar_url || null,
+          equipped_title: profile?.equipped_title || undefined
+        }
+      })
+    }
+    return mapped
+  }, [sessions, userId, localTodaySeconds, profile, isTimerRunning, timerMode])
 
   // Dynamic ranking for Weekly Leaderboard
   const leaderboardMembers = useMemo(() => {
@@ -1093,7 +1153,7 @@ export default function CoStudyRoomsPage() {
                             <span className="text-xs truncate">{track.label}</span>
                           </button>
                           <button 
-                            onClick={() => setCustomTracks(prev => prev.filter(t => t.id !== track.id))}
+                            onClick={() => handleDeleteTrack(track.id)}
                             className="text-[10px] font-bold text-red-500 dark:text-red-400 hover:underline px-2"
                           >
                             Xóa
