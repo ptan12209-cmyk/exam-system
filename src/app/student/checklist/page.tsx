@@ -404,19 +404,27 @@ export default function StudyChecklistPage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs uppercase font-bold text-[hsl(var(--muted-foreground))]">Độ ưu tiên</Label>
-                <select value={newPriority} onChange={(e) => setNewPriority(e.target.value as "low" | "medium" | "high")} className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] px-3 py-2 text-sm">
-                  <option value="low">Thấp</option>
-                  <option value="medium">Trung bình</option>
-                  <option value="high">Cao</option>
+                <select 
+                  value={newPriority} 
+                  onChange={(e) => setNewPriority(e.target.value as "low" | "medium" | "high")} 
+                  className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] text-[hsl(var(--foreground))] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--foreground))]/10 transition-all cursor-pointer font-medium appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_12px_center] bg-[length:14px] pr-8 bg-no-repeat"
+                >
+                  <option value="low" className="bg-[hsl(var(--card))]">Thấp</option>
+                  <option value="medium" className="bg-[hsl(var(--card))]">Trung bình</option>
+                  <option value="high" className="bg-[hsl(var(--card))]">Cao</option>
                 </select>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs uppercase font-bold text-[hsl(var(--muted-foreground))]">Trạng thái</Label>
-                <select value={newStatus} onChange={(e) => setNewStatus(e.target.value as any)} className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] px-3 py-2 text-sm">
-                  <option value="todo">Cần làm</option>
-                  <option value="in_progress">Đang làm</option>
-                  <option value="review">Kiểm tra</option>
-                  <option value="done">Hoàn thành</option>
+                <select 
+                  value={newStatus} 
+                  onChange={(e) => setNewStatus(e.target.value as any)} 
+                  className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] text-[hsl(var(--foreground))] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--foreground))]/10 transition-all cursor-pointer font-medium appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_12px_center] bg-[length:14px] pr-8 bg-no-repeat"
+                >
+                  <option value="todo" className="bg-[hsl(var(--card))]">Cần làm</option>
+                  <option value="in_progress" className="bg-[hsl(var(--card))]">Đang làm</option>
+                  <option value="review" className="bg-[hsl(var(--card))]">Kiểm tra</option>
+                  <option value="done" className="bg-[hsl(var(--card))]">Hoàn thành</option>
                 </select>
               </div>
             </div>
@@ -603,12 +611,12 @@ export default function StudyChecklistPage() {
                               <select 
                                 value={task.status} 
                                 onChange={(e) => handleMoveStatus(task, e.target.value as any)}
-                                className="rounded-lg border border-[hsl(var(--border))]/60 bg-transparent px-2 py-1 text-xs"
+                                className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] text-[hsl(var(--foreground))] px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]/10 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_8px_center] bg-[length:10px] pr-6 bg-no-repeat"
                               >
-                                <option value="todo">Chuẩn bị</option>
-                                <option value="in_progress">Đang làm</option>
-                                <option value="review">Kiểm tra</option>
-                                <option value="done">Hoàn thành</option>
+                                <option value="todo" className="bg-[hsl(var(--card))]">Chuẩn bị</option>
+                                <option value="in_progress" className="bg-[hsl(var(--card))]">Đang làm</option>
+                                <option value="review" className="bg-[hsl(var(--card))]">Kiểm tra</option>
+                                <option value="done" className="bg-[hsl(var(--card))]">Hoàn thành</option>
                               </select>
                             </td>
                             <td className="p-4">
@@ -763,12 +771,12 @@ export default function StudyChecklistPage() {
                       const next = e.target.value as any
                       await handleMoveStatus(selectedTask, next)
                     }}
-                    className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] px-2 py-0.5 text-xs text-[hsl(var(--foreground))] font-semibold"
+                    className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] text-[hsl(var(--foreground))] px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]/10 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_8px_center] bg-[length:10px] pr-6 bg-no-repeat"
                   >
-                    <option value="todo">Cần làm</option>
-                    <option value="in_progress">Đang làm</option>
-                    <option value="review">Kiểm tra</option>
-                    <option value="done">Hoàn thành</option>
+                    <option value="todo" className="bg-[hsl(var(--card))]">Cần làm</option>
+                    <option value="in_progress" className="bg-[hsl(var(--card))]">Đang làm</option>
+                    <option value="review" className="bg-[hsl(var(--card))]">Kiểm tra</option>
+                    <option value="done" className="bg-[hsl(var(--card))]">Hoàn thành</option>
                   </select>
                 </div>
                 <div className="flex items-center justify-between">
@@ -781,11 +789,11 @@ export default function StudyChecklistPage() {
                       setTasks(tasks.map(t => t.id === selectedTask.id ? { ...t, priority: next } : t))
                       await supabase.from("study_tasks").update({ priority: next }).eq("id", selectedTask.id)
                     }}
-                    className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] px-2 py-0.5 text-xs text-[hsl(var(--foreground))] font-semibold"
+                    className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] text-[hsl(var(--foreground))] px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]/10 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_8px_center] bg-[length:10px] pr-6 bg-no-repeat"
                   >
-                    <option value="low">Thấp</option>
-                    <option value="medium">Trung bình</option>
-                    <option value="high">Cao</option>
+                    <option value="low" className="bg-[hsl(var(--card))]">Thấp</option>
+                    <option value="medium" className="bg-[hsl(var(--card))]">Trung bình</option>
+                    <option value="high" className="bg-[hsl(var(--card))]">Cao</option>
                   </select>
                 </div>
                 <div className="flex items-center justify-between">

@@ -714,12 +714,12 @@ export default function CoStudyRoomsPage() {
                         setFocusDuration(val)
                         if (!isTimerRunning && timerMode === "focus") setTimeRemaining(val * 60)
                       }}
-                      className="rounded-lg border border-[hsl(var(--border))]/60 bg-transparent px-2 py-0.5 text-xs text-[hsl(var(--foreground))]"
+                      className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] text-[hsl(var(--foreground))] px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]/10 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_8px_center] bg-[length:10px] pr-6 bg-no-repeat"
                     >
-                      <option value={15}>15 phút</option>
-                      <option value={25}>25 phút</option>
-                      <option value={45}>45 phút</option>
-                      <option value={60}>60 phút</option>
+                      <option value={15} className="bg-[hsl(var(--card))]">15 phút</option>
+                      <option value={25} className="bg-[hsl(var(--card))]">25 phút</option>
+                      <option value={45} className="bg-[hsl(var(--card))]">45 phút</option>
+                      <option value={60} className="bg-[hsl(var(--card))]">60 phút</option>
                     </select>
                   </label>
                   <label className="flex items-center gap-1.5">
@@ -731,11 +731,11 @@ export default function CoStudyRoomsPage() {
                         setBreakDuration(val)
                         if (!isTimerRunning && timerMode === "break") setTimeRemaining(val * 60)
                       }}
-                      className="rounded-lg border border-[hsl(var(--border))]/60 bg-transparent px-2 py-0.5 text-xs text-[hsl(var(--foreground))]"
+                      className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] text-[hsl(var(--foreground))] px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]/10 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_8px_center] bg-[length:10px] pr-6 bg-no-repeat"
                     >
-                      <option value={5}>5 phút</option>
-                      <option value={10}>10 phút</option>
-                      <option value={15}>15 phút</option>
+                      <option value={5} className="bg-[hsl(var(--card))]">5 phút</option>
+                      <option value={10} className="bg-[hsl(var(--card))]">10 phút</option>
+                      <option value={15} className="bg-[hsl(var(--card))]">15 phút</option>
                     </select>
                   </label>
                 </div>
