@@ -113,7 +113,7 @@ export default function LiveRoomPage() {
   const jitsiApiRef = useRef<any>(null)
 
   useEffect(() => {
-    if (liveMode !== "jitsi" || !jitsiContainerRef.current || !liveConfig) return
+    if (liveMode !== "jitsi" || !liveConfig?.is_live || !jitsiContainerRef.current || !liveConfig) return
 
     let jitsiApi: any = null
 
@@ -166,7 +166,7 @@ export default function LiveRoomPage() {
         } catch (e) {}
       }
     }
-  }, [liveMode, liveConfig?.jitsi_room_name, user])
+  }, [liveMode, liveConfig?.is_live, liveConfig?.jitsi_room_name, user])
 
   const extractYoutubeId = (value: string) => {
     if (!value) return null
@@ -237,7 +237,7 @@ export default function LiveRoomPage() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[hsl(var(--border))]/60">
-              <Youtube className="h-4 w-4" />
+              {liveConfig?.live_mode === "jitsi" ? <Video className="h-4 w-4 text-indigo-500" /> : <Youtube className="h-4 w-4 text-red-500" />}
             </div>
             <span className="text-lg font-semibold tracking-tight">Live Class</span>
           </Link>
@@ -283,7 +283,7 @@ export default function LiveRoomPage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
-            {liveConfig?.live_mode === "jitsi" ? (
+            {liveConfig?.live_mode === "jitsi" && liveConfig?.is_live ? (
               <>
                 <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-3 mb-2 flex-wrap gap-3">
                   <div>
@@ -336,11 +336,24 @@ export default function LiveRoomPage() {
               </>
             ) : (
               <div className="liquid-glass flex flex-col items-center justify-center rounded-[2rem] py-20 text-center">
-                <Video className="mb-6 h-16 w-16 text-[hsl(var(--muted-foreground))]/30" />
-                <h2 className="mb-3 text-2xl font-bold tracking-tight">Chưa có buổi Live</h2>
-                <p className="mx-auto mb-8 max-w-md text-[hsl(var(--muted-foreground))]">
-                  Hiện tại chưa có buổi học trực tuyến nào. Hãy xem lịch học bên cạnh để biết thời gian sắp tới.
+                <div className="relative mb-6">
+                  <Video className="h-16 w-16 text-[hsl(var(--muted-foreground))]/30" />
+                  <div className="absolute -right-1 -top-1 h-4 w-4 rounded-full border-2 border-[hsl(var(--card))] bg-[hsl(var(--muted-foreground))]/30" />
+                </div>
+                <h2 className="mb-3 text-2xl font-bold tracking-tight">
+                  {liveConfig?.live_mode === "jitsi" ? "Phòng học chưa mở" : "Chưa có buổi Live"}
+                </h2>
+                <p className="mx-auto mb-4 max-w-md text-[hsl(var(--muted-foreground))]">
+                  {liveConfig?.live_mode === "jitsi" 
+                    ? "Giáo viên chưa bắt đầu buổi học tương tác. Phòng sẽ tự động mở khi giáo viên bắt đầu." 
+                    : "Hiện tại chưa có buổi học trực tuyến nào. Hãy xem lịch học bên cạnh để biết thời gian sắp tới."
+                  }
                 </p>
+                {liveConfig?.title && (
+                  <p className="mb-6 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                    Buổi tiếp theo: <span className="text-[hsl(var(--foreground))]">{liveConfig.title}</span>
+                  </p>
+                )}
                 {canEdit && (
                   <Button 
                     onClick={() => setShowLiveSettings(true)} 

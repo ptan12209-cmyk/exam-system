@@ -18,6 +18,7 @@ import {
   Award,
   ListTodo,
   Timer,
+  Video,
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
@@ -206,6 +207,7 @@ export default function StudentDashboard() {
             { href: "/student/achievements", label: "Thành tích", icon: Award },
             { href: "/student/checklist", label: "Checklist / Planner", icon: ListTodo },
             { href: "/student/co-study", label: "Phòng Pomodoro YPT", icon: Timer },
+            { href: "/live", label: "Lớp học trực tuyến", icon: Video },
           ].map((item) => (
             <Link key={item.href} href={item.href} className="liquid-glass rounded-[2rem] p-5 transition-transform hover:-translate-y-0.5 shadow-sm">
               <item.icon className="mb-4 h-5 w-5 text-[hsl(var(--muted-foreground))]" strokeWidth={1.2} />

@@ -5,6 +5,7 @@ import { GraduationCap } from "lucide-react"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { LiveBanner } from "@/components/LiveBanner"
 
 interface StudentHeaderProps {
   readonly name?: string | null
@@ -14,6 +15,8 @@ interface StudentHeaderProps {
 
 export function StudentHeader({ name, studentClass, onLogout }: Readonly<StudentHeaderProps>) {
   return (
+    <>
+    <LiveBanner />
     <header className="sticky top-0 z-50 border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/90 px-4 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/student/dashboard" className="group flex items-center gap-3 transition-transform active:scale-95">
@@ -39,5 +42,6 @@ export function StudentHeader({ name, studentClass, onLogout }: Readonly<Student
         </div>
       </div>
     </header>
+    </>
   )
 }
