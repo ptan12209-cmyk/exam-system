@@ -105,11 +105,98 @@ export default function CoStudyRoomsPage() {
   // Audio state
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const [activeSoundCloudUrl, setActiveSoundCloudUrl] = useState<string | null>(null)
   const [customTracks, setCustomTracks] = useState<CustomTrack[]>([])
   const [soundcloudUrl, setSoundcloudUrl] = useState("")
   const [directAudioUrl, setDirectAudioUrl] = useState("")
   const [importType, setImportType] = useState<"soundcloud" | "direct" | "local">("soundcloud")
+
+  // Combined unified queue of all tracks (ambient + custom)
+  const allTracks = useMemo(() => {
+    const ambients = AMBIENT_TRACKS.map(t => ({ ...t, type: "ambient" as const }))
+    const customs = customTracks.map(t => ({ ...t, type: t.type as "local" | "url" | "soundcloud" }))
+    return [...ambients, ...customs]
+  }, [customTracks])
+
+  // Load custom tracks from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("co_study_custom_tracks")
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        // Stale local Object URLs are expired on page reload, so filter out 'local' files
+        const filtered = parsed.filter((t: any) => t.type !== "local")
+        setCustomTracks(filtered)
+      } catch (err) {
+        console.error("Failed to parse saved tracks:", err)
+      }
+    }
+  }, [])
+
+  // Save custom tracks to localStorage when changed
+  useEffect(() => {
+    if (customTracks.length > 0) {
+      localStorage.setItem("co_study_custom_tracks", JSON.stringify(customTracks))
+    } else {
+      localStorage.removeItem("co_study_custom_tracks")
+    }
+  }, [customTracks])
+
+  // Load SoundCloud Widget API script
+  useEffect(() => {
+    const script = document.createElement("script")
+    script.src = "https://w.soundcloud.com/player/api.js"
+    script.async = true
+    document.body.appendChild(script)
+    return () => {
+      document.body.removeChild(script)
+    }
+  }, [])
+
+  // SoundCloud auto-play ended handler
+  useEffect(() => {
+    if (!activeSoundCloudUrl || !iframeRef.current) return
+    
+    const SC = (window as any).SC
+    if (!SC) return
+    
+    const widget = SC.Widget(iframeRef.current)
+    const handleFinish = () => {
+      const currentIndex = allTracks.findIndex(t => t.id === playingAudioId)
+      if (currentIndex !== -1) {
+        const nextIndex = (currentIndex + 1) % allTracks.length
+        const nextTrack = allTracks[nextIndex]
+        playTrack(nextTrack)
+      }
+    }
+    
+    widget.bind(SC.Widget.Events.FINISH, handleFinish)
+    
+    return () => {
+      widget.unbind(SC.Widget.Events.FINISH)
+    }
+  }, [activeSoundCloudUrl, playingAudioId, allTracks])
+
+  // HTML5 Audio ended handler
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    
+    const handleEnded = () => {
+      const currentIndex = allTracks.findIndex(t => t.id === playingAudioId)
+      if (currentIndex !== -1) {
+        const nextIndex = (currentIndex + 1) % allTracks.length
+        const nextTrack = allTracks[nextIndex]
+        playTrack(nextTrack)
+      }
+    }
+    
+    audio.addEventListener("ended", handleEnded)
+    return () => {
+      audio.removeEventListener("ended", handleEnded)
+    }
+  }, [playingAudioId, allTracks])
 
   // User profile
   const [userId, setUserId] = useState<string | null>(null)
@@ -463,8 +550,12 @@ export default function CoStudyRoomsPage() {
         setActiveSoundCloudUrl(track.url)
       } else {
         setActiveSoundCloudUrl(null)
-        audioRef.current = new Audio(track.url)
-        audioRef.current.loop = true
+        if (!audioRef.current) {
+          audioRef.current = new Audio()
+        }
+        audioRef.current.src = track.url
+        audioRef.current.loop = false // Play sequence, no loop
+        audioRef.current.load()
         audioRef.current.play().catch(err => console.error("Audio playback error:", err))
         setPlayingAudioId(track.id)
       }
@@ -894,6 +985,7 @@ export default function CoStudyRoomsPage() {
                 {activeSoundCloudUrl && (
                   <div className="mb-4 rounded-2xl overflow-hidden border border-indigo-500/30 shadow-md">
                     <iframe
+                      ref={iframeRef}
                       width="100%"
                       height="166"
                       scrolling="no"
