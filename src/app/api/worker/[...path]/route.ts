@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-async function handleProxy(request: NextRequest, { params }: { params: { path: string[] } }) {
+async function handleProxy(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   try {
     // Resolve params (works for both Next.js 13/14 and Next.js 15)
     const resolvedParams = await params;
@@ -56,10 +56,10 @@ async function handleProxy(request: NextRequest, { params }: { params: { path: s
   }
 }
 
-export async function GET(request: NextRequest, { params }: { params: { path: string[] } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return handleProxy(request, { params });
 }
 
-export async function POST(request: NextRequest, { params }: { params: { path: string[] } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return handleProxy(request, { params });
 }
