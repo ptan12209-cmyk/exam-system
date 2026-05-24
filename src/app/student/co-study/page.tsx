@@ -140,7 +140,7 @@ export default function CoStudyRoomsPage() {
       if (mbrs) setMembers(mbrs as any)
 
       // Get sessions of these members
-      const studentIds = mbrs?.map(m => m.student_id) || []
+      const studentIds = mbrs?.map((m: any) => m.student_id) || []
       if (studentIds.length === 0) return
 
       const { data: sess } = await supabase
@@ -158,7 +158,7 @@ export default function CoStudyRoomsPage() {
         setSessions(sess as any)
         
         // Find local user's accumulated focus time
-        const mySess = sess.find(s => s.student_id === userId)
+        const mySess = sess.find((s: any) => s.student_id === userId)
         if (mySess) {
           setLocalTodaySeconds(mySess.total_focus_seconds_today)
         }

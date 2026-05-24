@@ -101,7 +101,7 @@ export default function StudyChecklistPage() {
       
       // Update selected task reference if open
       if (selectedTask) {
-        const updated = mapped.find(t => t.id === selectedTask.id)
+        const updated = mapped.find((t: any) => t.id === selectedTask.id)
         if (updated) setSelectedTask(updated)
       }
     }
