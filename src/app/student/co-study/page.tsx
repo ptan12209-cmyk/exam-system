@@ -472,24 +472,72 @@ export default function CoStudyRoomsPage() {
   }
 
   // SoundCloud and local track uploads handler
-  const handleAddSoundCloud = () => {
+  const handleAddSoundCloud = async () => {
     if (!soundcloudUrl.trim()) return
+    const tempId = `sc-${Date.now()}`
+    const cleanUrl = soundcloudUrl.trim()
+    
+    // Extract slug from URL as elegant fallback
+    const urlWithoutQuery = cleanUrl.split("?")[0]
+    const slug = urlWithoutQuery.split("/").pop() || "SoundCloud Track"
+    const fallbackTitle = slug.replace(/-/g, " ").replace(/_/g, " ")
+    
     const newTrack: CustomTrack = {
-      id: `sc-${Date.now()}`,
-      label: `SoundCloud: ${soundcloudUrl.split("/").pop() || "Track"} 🎵`,
-      url: soundcloudUrl.trim(),
+      id: tempId,
+      label: `SoundCloud: ${fallbackTitle} (Đang tải...) 🎵`,
+      url: cleanUrl,
       type: "soundcloud"
     }
+    
     setCustomTracks(prev => [...prev, newTrack])
     setSoundcloudUrl("")
+    
+    // Fetch track oEmbed data in background to resolve track title
+    try {
+      const res = await fetch(`https://soundcloud.com/oembed?format=json&url=${encodeURIComponent(cleanUrl)}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.title) {
+          setCustomTracks(prev => prev.map(t => {
+            if (t.id === tempId) {
+              return {
+                ...t,
+                label: `SoundCloud: ${data.title} 🎵`
+              }
+            }
+            return t
+          }))
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch SoundCloud title via oEmbed:", err)
+      // Remove loading status on error
+      setCustomTracks(prev => prev.map(t => {
+        if (t.id === tempId) {
+          return {
+            ...t,
+            label: `SoundCloud: ${fallbackTitle} 🎵`
+          }
+        }
+        return t
+      }))
+    }
   }
 
   const handleAddDirectUrl = () => {
     if (!directAudioUrl.trim()) return
+    const cleanUrl = directAudioUrl.trim()
+    const urlWithoutQuery = cleanUrl.split("?")[0]
+    const filename = urlWithoutQuery.split("/").pop() || "Audio Track"
+    const cleanTitle = decodeURIComponent(filename)
+      .replace(/\.[^/.]+$/, "") // Remove file extension
+      .replace(/-/g, " ")
+      .replace(/_/g, " ")
+    
     const newTrack: CustomTrack = {
       id: `url-${Date.now()}`,
-      label: `Direct: ${directAudioUrl.split("/").pop() || "Audio"} 🎵`,
-      url: directAudioUrl.trim(),
+      label: `Direct: ${cleanTitle} 🎵`,
+      url: cleanUrl,
       type: "url"
     }
     setCustomTracks(prev => [...prev, newTrack])
