@@ -75,7 +75,12 @@ export default function StudentDashboard() {
       }
 
       const { data: profileData } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-      if (profileData?.role !== "student") {
+      if (!profileData) {
+        await supabase.auth.signOut()
+        router.push("/login?error=profile_not_found")
+        return
+      }
+      if (profileData.role !== "student") {
         router.push("/teacher/dashboard")
         return
       }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -16,6 +16,15 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { verified: captchaVerified, onVerify, onExpire } = useCaptcha()
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get("error") === "profile_not_found") {
+        setError("Tài khoản này chưa có thông tin hồ sơ trong hệ thống (có thể do cơ sở dữ liệu đã được làm mới). Vui lòng Đăng ký lại tài khoản này.")
+      }
+    }
+  }, [])
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault()

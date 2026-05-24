@@ -98,9 +98,9 @@ GRANT EXECUTE ON FUNCTION get_exam_for_student(UUID) TO authenticated;
 
 CREATE TABLE IF NOT EXISTS submission_audit_log (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    submission_id UUID REFERENCES submissions(id),
-    exam_id UUID REFERENCES exams(id),
-    student_id UUID REFERENCES profiles(id),
+    submission_id UUID REFERENCES submissions(id) ON DELETE CASCADE,
+    exam_id UUID REFERENCES exams(id) ON DELETE CASCADE,
+    student_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
     action TEXT NOT NULL,
     details JSONB,
     ip_address TEXT,

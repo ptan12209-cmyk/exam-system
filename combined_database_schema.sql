@@ -30,14 +30,17 @@ create table public.profiles (
 alter table public.profiles enable row level security;
 
 -- Policies
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 create policy "Users can view own profile"
   on profiles for select
   using (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 create policy "Users can update own profile"
   on profiles for update
   using (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 create policy "Users can insert own profile"
   on profiles for insert
   with check (auth.uid() = id);
@@ -64,6 +67,7 @@ create table public.exams (
 alter table public.exams enable row level security;
 
 -- Policies
+DROP POLICY IF EXISTS "Teachers can create exams" ON exams;
 create policy "Teachers can create exams"
   on exams for insert
   with check (
@@ -73,14 +77,17 @@ create policy "Teachers can create exams"
     )
   );
 
+DROP POLICY IF EXISTS "Teachers can update own exams" ON exams;
 create policy "Teachers can update own exams"
   on exams for update
   using (teacher_id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers can delete own exams" ON exams;
 create policy "Teachers can delete own exams"
   on exams for delete
   using (teacher_id = auth.uid());
 
+DROP POLICY IF EXISTS "Published exams are viewable by all authenticated users" ON exams;
 create policy "Published exams are viewable by all authenticated users"
   on exams for select
   using (
@@ -110,6 +117,7 @@ create table public.submissions (
 alter table public.submissions enable row level security;
 
 -- Policies
+DROP POLICY IF EXISTS "Students can submit" ON submissions;
 create policy "Students can submit"
   on submissions for insert
   with check (
@@ -119,10 +127,12 @@ create policy "Students can submit"
     )
   );
 
+DROP POLICY IF EXISTS "Users can view own submissions" ON submissions;
 create policy "Users can view own submissions"
   on submissions for select
   using (student_id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers can view submissions for their exams" ON submissions;
 create policy "Teachers can view submissions for their exams"
   on submissions for select
   using (
@@ -134,6 +144,7 @@ create policy "Teachers can view submissions for their exams"
   );
 
 -- Leaderboard: all authenticated users can view submissions for published exams
+DROP POLICY IF EXISTS "View leaderboard for published exams" ON submissions;
 create policy "View leaderboard for published exams"
   on submissions for select
   using (
@@ -157,6 +168,7 @@ values ('exam-pdfs', 'exam-pdfs', true)
 on conflict (id) do nothing;
 
 -- Storage policies
+DROP POLICY IF EXISTS "Teachers can upload PDFs" ON storage.objects;
 create policy "Teachers can upload PDFs"
   on storage.objects for insert
   with check (
@@ -167,10 +179,12 @@ create policy "Teachers can upload PDFs"
     )
   );
 
+DROP POLICY IF EXISTS "Anyone can view exam PDFs" ON storage.objects;
 create policy "Anyone can view exam PDFs"
   on storage.objects for select
   using (bucket_id = 'exam-pdfs');
 
+DROP POLICY IF EXISTS "Teachers can delete own PDFs" ON storage.objects;
 create policy "Teachers can delete own PDFs"
   on storage.objects for delete
   using (
@@ -191,6 +205,7 @@ begin
 end;
 $$ language plpgsql;
 
+DROP TRIGGER IF EXISTS exams_updated_at ON exams;
 create trigger exams_updated_at
   before update on exams
   for each row
@@ -210,12 +225,11 @@ begin
 end;
 $$ language plpgsql security definer;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row
   execute function handle_new_user();
-
-
 
 
 -- ========================================================
@@ -225,67 +239,6 @@ create trigger on_auth_user_created
 -- ============================================================================
 -- Phase 6 Priority 2: Question Bank & Arena System
 -- ============================================================================
-
--- 1. QUESTIONS TABLE - Ngân hàng câu hỏi
--- ============================================================================
-
-DROP TABLE IF EXISTS questions CASCADE;
-CREATE TABLE questions (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    teacher_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-    
-    -- Classification
-    subject text NOT NULL CHECK (subject IN ('math', 'physics', 'chemistry')),
-    difficulty integer NOT NULL CHECK (difficulty BETWEEN 1 AND 4),
-    -- 1: Dễ, 2: Trung bình, 3: Khó, 4: Rất khó
-    
-    -- Content (supports KaTeX/LaTeX)
-    content text NOT NULL,              -- Nội dung câu hỏi
-    options jsonb NOT NULL,             -- ["A. ...", "B. ...", "C. ...", "D. ..."]
-    correct_answer text NOT NULL,       -- "A", "B", "C", or "D"
-    explanation text,                   -- Giải thích đáp án
-    
-    -- Metadata
-    tags text[] DEFAULT '{}',           -- ["động học", "lực", "nhiệt động"]
-    source text,                        -- Nguồn: sách, đề thi, ...
-    is_verified boolean DEFAULT false,  -- Đã được kiểm duyệt
-    use_count integer DEFAULT 0,        -- Số lần sử dụng
-    
-    -- Timestamps
-    created_at timestamptz DEFAULT now(),
-    updated_at timestamptz DEFAULT now()
-);
-
--- Indexes for fast querying
-CREATE INDEX IF NOT EXISTS idx_questions_subject ON questions(subject);
-CREATE INDEX IF NOT EXISTS idx_questions_difficulty ON questions(difficulty);
-CREATE INDEX IF NOT EXISTS idx_questions_subject_difficulty ON questions(subject, difficulty);
-CREATE INDEX IF NOT EXISTS idx_questions_teacher ON questions(teacher_id);
-
--- Enable RLS
-ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
-
--- Policies
-CREATE POLICY "Anyone can view questions"
-    ON questions FOR SELECT
-    TO authenticated
-    USING (true);
-
-CREATE POLICY "Teachers can insert questions"
-    ON questions FOR INSERT
-    TO authenticated
-    WITH CHECK (auth.uid() = teacher_id);
-
-CREATE POLICY "Teachers can update own questions"
-    ON questions FOR UPDATE
-    TO authenticated
-    USING (auth.uid() = teacher_id);
-
-CREATE POLICY "Teachers can delete own questions"
-    ON questions FOR DELETE
-    TO authenticated
-    USING (auth.uid() = teacher_id);
-
 -- ============================================================================
 -- 2. ARENA SESSIONS TABLE - Các đợt thi đấu trường
 -- ============================================================================
@@ -325,16 +278,19 @@ CREATE INDEX IF NOT EXISTS idx_arena_sessions_time ON arena_sessions(start_time,
 ALTER TABLE arena_sessions ENABLE ROW LEVEL SECURITY;
 
 -- Policies
+DROP POLICY IF EXISTS "Anyone can view arena sessions" ON arena_sessions;
 CREATE POLICY "Anyone can view arena sessions"
     ON arena_sessions FOR SELECT
     TO authenticated
     USING (true);
 
+DROP POLICY IF EXISTS "Teachers can create arena sessions" ON arena_sessions;
 CREATE POLICY "Teachers can create arena sessions"
     ON arena_sessions FOR INSERT
     TO authenticated
     WITH CHECK (auth.uid() = created_by);
 
+DROP POLICY IF EXISTS "Creators can update arena sessions" ON arena_sessions;
 CREATE POLICY "Creators can update arena sessions"
     ON arena_sessions FOR UPDATE
     TO authenticated
@@ -378,16 +334,19 @@ CREATE INDEX IF NOT EXISTS idx_arena_results_score ON arena_results(arena_id, sc
 ALTER TABLE arena_results ENABLE ROW LEVEL SECURITY;
 
 -- Policies
+DROP POLICY IF EXISTS "Students can view own results" ON arena_results;
 CREATE POLICY "Students can view own results"
     ON arena_results FOR SELECT
     TO authenticated
     USING (student_id = auth.uid());
 
+DROP POLICY IF EXISTS "Anyone can view leaderboard" ON arena_results;
 CREATE POLICY "Anyone can view leaderboard"
     ON arena_results FOR SELECT
     TO authenticated
     USING (true);
 
+DROP POLICY IF EXISTS "Students can submit results" ON arena_results;
 CREATE POLICY "Students can submit results"
     ON arena_results FOR INSERT
     TO authenticated
@@ -399,14 +358,14 @@ CREATE POLICY "Students can submit results"
 
 -- Function: Get random questions for arena by difficulty
 CREATE OR REPLACE FUNCTION get_arena_questions(
-    p_subject text,
+    p_bank_id uuid,
     p_count_per_level integer DEFAULT 10
 )
 RETURNS TABLE (
     id uuid,
     content text,
     options jsonb,
-    correct_answer text,
+    correct_answer jsonb,
     difficulty integer
 ) AS $$
 BEGIN
@@ -420,8 +379,7 @@ BEGIN
             q.difficulty,
             ROW_NUMBER() OVER (PARTITION BY q.difficulty ORDER BY random()) as rn
         FROM questions q
-        WHERE q.subject = p_subject
-        AND q.is_verified = true
+        WHERE q.bank_id = p_bank_id
     )
     SELECT 
         ranked.id,
@@ -486,8 +444,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 4 = Rất khó (Vận dụng cao)
 
 
-
-
 -- >>> Migration: migration-sprint3.2-question-bank.sql <<<
 -- ============================================================================
 -- SPRINT 3.2: QUESTION BANK & DIGITAL EXAMS MIGRATION
@@ -519,18 +475,22 @@ DROP POLICY IF EXISTS "Teachers can insert own banks" ON question_banks;
 DROP POLICY IF EXISTS "Teachers can update own banks" ON question_banks;
 DROP POLICY IF EXISTS "Teachers can delete own banks" ON question_banks;
 
+DROP POLICY IF EXISTS "Teachers can view own banks" ON question_banks;
 CREATE POLICY "Teachers can view own banks"
     ON question_banks FOR SELECT TO authenticated
     USING (auth.uid() = teacher_id);
 
+DROP POLICY IF EXISTS "Teachers can insert own banks" ON question_banks;
 CREATE POLICY "Teachers can insert own banks"
     ON question_banks FOR INSERT TO authenticated
     WITH CHECK (auth.uid() = teacher_id);
 
+DROP POLICY IF EXISTS "Teachers can update own banks" ON question_banks;
 CREATE POLICY "Teachers can update own banks"
     ON question_banks FOR UPDATE TO authenticated
     USING (auth.uid() = teacher_id);
 
+DROP POLICY IF EXISTS "Teachers can delete own banks" ON question_banks;
 CREATE POLICY "Teachers can delete own banks"
     ON question_banks FOR DELETE TO authenticated
     USING (auth.uid() = teacher_id);
@@ -538,8 +498,6 @@ CREATE POLICY "Teachers can delete own banks"
 -- 3. QUESTIONS TABLE - Ngân hàng câu hỏi chi tiết
 -- ============================================================================
 -- Xoá bảng cũ (nếu có từ Phase 6) để tạo lại với cấu trúc đúng chuẩn hỗ trợ TF, SA
-DROP TABLE IF EXISTS questions CASCADE;
-
 DROP TABLE IF EXISTS questions CASCADE;
 CREATE TABLE questions (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -563,18 +521,22 @@ CREATE INDEX IF NOT EXISTS idx_questions_bank ON questions(bank_id);
 CREATE INDEX IF NOT EXISTS idx_questions_teacher ON questions(teacher_id);
 ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Teachers can view own questions" ON questions;
 CREATE POLICY "Teachers can view own questions"
     ON questions FOR SELECT TO authenticated
     USING (auth.uid() = teacher_id);
 
+DROP POLICY IF EXISTS "Teachers can insert own questions" ON questions;
 CREATE POLICY "Teachers can insert own questions"
     ON questions FOR INSERT TO authenticated
     WITH CHECK (auth.uid() = teacher_id);
 
+DROP POLICY IF EXISTS "Teachers can update own questions" ON questions;
 CREATE POLICY "Teachers can update own questions"
     ON questions FOR UPDATE TO authenticated
     USING (auth.uid() = teacher_id);
 
+DROP POLICY IF EXISTS "Teachers can delete own questions" ON questions;
 CREATE POLICY "Teachers can delete own questions"
     ON questions FOR DELETE TO authenticated
     USING (auth.uid() = teacher_id);
@@ -596,6 +558,7 @@ DROP POLICY IF EXISTS "Students can view exam questions" ON exam_questions;
 DROP POLICY IF EXISTS "Teachers can manage exam questions" ON exam_questions;
 
 -- Cho phép học sinh xem câu hỏi nếu họ được phép xem đề thi
+DROP POLICY IF EXISTS "Students can view exam questions" ON exam_questions;
 CREATE POLICY "Students can view exam questions"
     ON exam_questions FOR SELECT TO authenticated
     USING (
@@ -606,6 +569,7 @@ CREATE POLICY "Students can view exam questions"
         )
     );
 
+DROP POLICY IF EXISTS "Teachers can manage exam questions" ON exam_questions;
 CREATE POLICY "Teachers can manage exam questions"
     ON exam_questions FOR ALL TO authenticated
     USING (
@@ -632,8 +596,6 @@ CREATE POLICY "Students can view questions linked to published exams"
     );
 
 
-
-
 -- >>> Migration: 20260510_spaced_repetition.sql <<<
 -- Spaced Repetition System
 DROP TABLE IF EXISTS spaced_repetition_cards CASCADE;
@@ -653,7 +615,40 @@ CREATE TABLE spaced_repetition_cards (
 CREATE INDEX idx_sr_cards_user_next ON spaced_repetition_cards(user_id, next_review_date);
 
 
+-- ============================================================================
+-- NOTIFICATIONS TABLE (used by parent dashboard trigger)
+-- ============================================================================
+DROP TABLE IF EXISTS public.notifications CASCADE;
+CREATE TABLE public.notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    message TEXT,
+    type TEXT DEFAULT 'general',
+    link TEXT,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
 
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON public.notifications(user_id, is_read);
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
+CREATE POLICY "Users can view own notifications"
+    ON public.notifications FOR SELECT
+    TO authenticated
+    USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
+CREATE POLICY "Users can update own notifications"
+    ON public.notifications FOR UPDATE
+    TO authenticated
+    USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "System can insert notifications" ON public.notifications;
+CREATE POLICY "System can insert notifications"
+    ON public.notifications FOR INSERT
+    WITH CHECK (true);
 
 -- >>> Migration: 20260512010000_parent_dashboard.sql <<<
 -- ============================================================================
@@ -769,8 +764,6 @@ CREATE TRIGGER tr_notify_parent_on_exam_completion
     EXECUTE FUNCTION public.notify_parent_on_exam_completion();
 
 
-
-
 -- >>> Migration: add-profile-fields.sql <<<
 -- Migration: Add profile customization fields
 -- Add columns for avatar, nickname, bio, and phone to profiles table
@@ -785,10 +778,12 @@ ADD COLUMN IF NOT EXISTS phone TEXT;
 CREATE INDEX IF NOT EXISTS idx_profiles_nickname ON profiles(nickname) WHERE nickname IS NOT NULL;
 
 -- Add check constraint for bio length
+ALTER TABLE profiles DROP CONSTRAINT IF EXISTS check_bio_length;
 ALTER TABLE profiles 
 ADD CONSTRAINT check_bio_length CHECK (char_length(bio) <= 200);
 
 -- Add check constraint for nickname length and format
+ALTER TABLE profiles DROP CONSTRAINT IF EXISTS check_nickname_format;
 ALTER TABLE profiles 
 ADD CONSTRAINT check_nickname_format CHECK (
     nickname IS NULL OR (
@@ -797,8 +792,6 @@ ADD CONSTRAINT check_nickname_format CHECK (
         nickname ~ '^[a-zA-Z0-9_]+$'
     )
 );
-
-
 
 
 -- >>> Migration: migration-answer-key.sql <<<
@@ -846,8 +839,6 @@ ALTER TABLE exams ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 -- =====================================================
 
 
-
-
 -- >>> Migration: migration-anticheat.sql <<<
 -- Migration: Add anti-cheat tracking columns
 -- Run this in Supabase SQL Editor
@@ -863,8 +854,6 @@ ADD COLUMN IF NOT EXISTS violations jsonb DEFAULT '[]';
 COMMENT ON COLUMN public.submissions.tab_switches IS 'Number of times student switched tabs during exam';
 COMMENT ON COLUMN public.submissions.fullscreen_exits IS 'Number of times student exited fullscreen during exam';
 COMMENT ON COLUMN public.submissions.violations IS 'Detailed log of all violations with timestamps';
-
-
 
 
 -- >>> Migration: migration-arena-exam-link.sql <<<
@@ -893,8 +882,6 @@ ADD COLUMN IF NOT EXISTS exam_id uuid REFERENCES exams(id) ON DELETE SET NULL;
 COMMENT ON COLUMN arena_sessions.exam_id IS 'Reference to the exam used in this arena session';
 
 
-
-
 -- >>> Migration: migration-arena-sessions.sql <<<
 -- =====================================================
 -- MIGRATION: Fix arena_sessions table schema
@@ -911,7 +898,8 @@ ALTER TABLE arena_sessions ALTER COLUMN subject DROP NOT NULL;
 ALTER TABLE arena_sessions ALTER COLUMN subject SET DEFAULT 'other';
 
 -- 4. Add missing columns if needed
-ALTER TABLE arena_sessions ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES profiles(id);
+-- Note: created_by already exists from CREATE TABLE (references auth.users)
+-- ALTER TABLE arena_sessions ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES profiles(id);
 ALTER TABLE arena_sessions ADD COLUMN IF NOT EXISTS name TEXT;
 ALTER TABLE arena_sessions ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE arena_sessions ADD COLUMN IF NOT EXISTS exam_id UUID REFERENCES exams(id);
@@ -924,8 +912,6 @@ ALTER TABLE arena_sessions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAU
 -- =====================================================
 -- DONE! Now you can create arena sessions
 -- =====================================================
-
-
 
 
 -- >>> Migration: migration-checklist-timetable.sql <<<
@@ -949,6 +935,7 @@ CREATE TABLE study_tasks (
 
 ALTER TABLE study_tasks ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Students manage own tasks" ON study_tasks;
 CREATE POLICY "Students manage own tasks" ON study_tasks
     FOR ALL USING (auth.uid() = student_id);
 
@@ -972,54 +959,18 @@ CREATE TABLE timetable_entries (
 
 ALTER TABLE timetable_entries ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Teachers manage own timetable" ON timetable_entries;
 CREATE POLICY "Teachers manage own timetable" ON timetable_entries
     FOR ALL USING (auth.uid() = teacher_id);
 
+DROP POLICY IF EXISTS "Anyone can view timetables" ON timetable_entries;
 CREATE POLICY "Anyone can view timetables" ON timetable_entries
     FOR SELECT USING (true);
 
 CREATE INDEX IF NOT EXISTS idx_timetable_teacher ON timetable_entries(teacher_id, day_of_week);
 
 
-
-
--- >>> Migration: migration-diagnose-triggers.sql <<<
--- CHECK AND FIX DATABASE TRIGGERS AND REALTIME
--- Run each section separately in Supabase SQL Editor
-
--- 1. List all triggers on submissions table
-SELECT 
-    trigger_name, 
-    event_manipulation, 
-    action_statement
-FROM information_schema.triggers 
-WHERE event_object_table = 'submissions';
-
--- 2. List all triggers on all tables
-SELECT 
-    event_object_table as table_name,
-    trigger_name, 
-    event_manipulation
-FROM information_schema.triggers 
-WHERE event_object_schema = 'public';
-
--- 3. Drop ALL triggers on submissions (dangerous but necessary)
--- Copy the trigger names from step 1 and drop them:
--- DROP TRIGGER trigger_name ON public.submissions;
-
--- 4. Check realtime publications
-SELECT * FROM pg_publication;
-
--- 5. Remove submissions from realtime (if exists)
--- ALTER PUBLICATION supabase_realtime DROP TABLE public.submissions;
-
--- 6. Check if there are any functions being called
-SELECT proname, prosrc 
-FROM pg_proc 
-WHERE proname LIKE '%submission%';
-
-
-
+-- REMOVED: migration-diagnose-triggers.sql (diagnostic queries, not migration DDL)
 
 -- >>> Migration: migration-exam-subjects.sql <<<
 -- =============================================
@@ -1040,8 +991,6 @@ CREATE INDEX IF NOT EXISTS idx_exams_subject ON public.exams(subject);
 -- =============================================
 -- DONE! Run this in Supabase SQL Editor
 -- =============================================
-
-
 
 
 -- >>> Migration: migration-fix-rpc-functions.sql <<<
@@ -1272,8 +1221,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-
-
 -- >>> Migration: migration-gamification-v2.sql <<<
 -- =============================================
 -- ADVANCED GAMIFICATION: Daily Streak & Achievements
@@ -1338,7 +1285,8 @@ CREATE TABLE public.titles (
     color text DEFAULT '#ffffff',
     unlock_achievement_id uuid REFERENCES public.achievements,
     unlock_xp integer, -- Alternative: unlock by XP
-    sort_order integer DEFAULT 0
+    sort_order integer DEFAULT 0,
+    UNIQUE(name)
 );
 
 -- Add equipped_title to profiles
@@ -1363,176 +1311,41 @@ DROP POLICY IF EXISTS "System can insert achievements" ON public.user_achievemen
 DROP POLICY IF EXISTS "Anyone can view titles" ON public.titles;
 
 -- Daily logins
+DROP POLICY IF EXISTS "Users can view own logins" ON public.daily_logins;
 CREATE POLICY "Users can view own logins" ON public.daily_logins
     FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own logins" ON public.daily_logins;
 CREATE POLICY "Users can insert own logins" ON public.daily_logins
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Achievements - public read
+DROP POLICY IF EXISTS "Anyone can view achievements" ON public.achievements;
 CREATE POLICY "Anyone can view achievements" ON public.achievements
     FOR SELECT TO authenticated USING (true);
 
 -- User achievements
+DROP POLICY IF EXISTS "Users can view own achievements" ON public.user_achievements;
 CREATE POLICY "Users can view own achievements" ON public.user_achievements
     FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view others achievements" ON public.user_achievements;
 CREATE POLICY "Users can view others achievements" ON public.user_achievements
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "System can insert achievements" ON public.user_achievements;
 CREATE POLICY "System can insert achievements" ON public.user_achievements
     FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 
 -- Titles
+DROP POLICY IF EXISTS "Anyone can view titles" ON public.titles;
 CREATE POLICY "Anyone can view titles" ON public.titles
     FOR SELECT TO authenticated USING (true);
 
--- =============================================
--- 6. DAILY CHECK-IN FUNCTION
--- =============================================
-CREATE OR REPLACE FUNCTION public.daily_checkin(p_user_id uuid)
-RETURNS jsonb AS $$
-DECLARE
-    v_today date := CURRENT_DATE;
-    v_yesterday date := CURRENT_DATE - 1;
-    v_last_login record;
-    v_current_streak integer := 1;
-    v_xp_bonus integer := 10;
-    v_already_checked boolean := false;
-    v_result jsonb;
-BEGIN
-    -- Check if already logged in today
-    SELECT * INTO v_last_login FROM public.daily_logins
-    WHERE user_id = p_user_id AND login_date = v_today;
-    
-    IF FOUND THEN
-        v_already_checked := true;
-        v_result := jsonb_build_object(
-            'success', true,
-            'already_checked', true,
-            'streak', v_last_login.streak_day,
-            'xp_earned', 0
-        );
-        RETURN v_result;
-    END IF;
-    
-    -- Get yesterday's login to calculate streak
-    SELECT * INTO v_last_login FROM public.daily_logins
-    WHERE user_id = p_user_id AND login_date = v_yesterday;
-    
-    IF FOUND THEN
-        -- Continue streak
-        v_current_streak := v_last_login.streak_day + 1;
-        -- Bonus XP for streak (max 50)
-        v_xp_bonus := LEAST(10 + (v_current_streak * 2), 50);
-    ELSE
-        -- Check if there was any login in last 2 days (streak broken)
-        v_current_streak := 1;
-        v_xp_bonus := 10;
-    END IF;
-    
-    -- Insert today's login
-    INSERT INTO public.daily_logins (user_id, login_date, xp_earned, streak_day)
-    VALUES (p_user_id, v_today, v_xp_bonus, v_current_streak);
-    
-    -- Add XP to student_stats
-    UPDATE public.student_stats
-    SET xp = xp + v_xp_bonus,
-        streak_days = v_current_streak,
-        last_exam_date = v_today
-    WHERE user_id = p_user_id;
-    
-    -- If no stats record, create one
-    IF NOT FOUND THEN
-        INSERT INTO public.student_stats (user_id, xp, streak_days, last_exam_date)
-        VALUES (p_user_id, v_xp_bonus, v_current_streak, v_today);
-    END IF;
-    
-    v_result := jsonb_build_object(
-        'success', true,
-        'already_checked', false,
-        'streak', v_current_streak,
-        'xp_earned', v_xp_bonus,
-        'milestone', CASE 
-            WHEN v_current_streak IN (7, 14, 30, 50, 100) THEN v_current_streak 
-            ELSE null 
-        END
-    );
-    
-    RETURN v_result;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- 6. DAILY CHECK-IN FUNCTION — REMOVED (using secure version from migration-fix-rpc-functions.sql)
 
--- =============================================
--- 7. CHECK ACHIEVEMENTS FUNCTION
--- =============================================
-CREATE OR REPLACE FUNCTION public.check_and_unlock_achievements(p_user_id uuid)
-RETURNS jsonb AS $$
-DECLARE
-    v_stats record;
-    v_achievement record;
-    v_unlocked text[] := '{}';
-    v_total_xp integer := 0;
-BEGIN
-    -- Get user stats
-    SELECT * INTO v_stats FROM public.student_stats WHERE user_id = p_user_id;
-    
-    IF NOT FOUND THEN
-        RETURN jsonb_build_object('unlocked', '{}', 'xp_earned', 0);
-    END IF;
-    
-    -- Check each achievement
-    FOR v_achievement IN 
-        SELECT a.* FROM public.achievements a
-        WHERE NOT EXISTS (
-            SELECT 1 FROM public.user_achievements ua 
-            WHERE ua.user_id = p_user_id AND ua.achievement_id = a.id
-        )
-    LOOP
-        DECLARE
-            v_should_unlock boolean := false;
-        BEGIN
-            CASE v_achievement.condition_type
-                WHEN 'exams_completed' THEN
-                    v_should_unlock := v_stats.exams_completed >= v_achievement.condition_value;
-                WHEN 'streak_days' THEN
-                    v_should_unlock := v_stats.streak_days >= v_achievement.condition_value;
-                WHEN 'perfect_scores' THEN
-                    v_should_unlock := v_stats.perfect_scores >= v_achievement.condition_value;
-                WHEN 'total_xp' THEN
-                    v_should_unlock := v_stats.xp >= v_achievement.condition_value;
-                WHEN 'level' THEN
-                    v_should_unlock := v_stats.level >= v_achievement.condition_value;
-                ELSE
-                    v_should_unlock := false;
-            END CASE;
-            
-            IF v_should_unlock THEN
-                -- Unlock achievement
-                INSERT INTO public.user_achievements (user_id, achievement_id)
-                VALUES (p_user_id, v_achievement.id)
-                ON CONFLICT DO NOTHING;
-                
-                -- Add XP reward
-                IF v_achievement.xp_reward > 0 THEN
-                    UPDATE public.student_stats
-                    SET xp = xp + v_achievement.xp_reward
-                    WHERE user_id = p_user_id;
-                    
-                    v_total_xp := v_total_xp + v_achievement.xp_reward;
-                END IF;
-                
-                v_unlocked := array_append(v_unlocked, v_achievement.name);
-            END IF;
-        END;
-    END LOOP;
-    
-    RETURN jsonb_build_object(
-        'unlocked', v_unlocked,
-        'xp_earned', v_total_xp
-    );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- 7. CHECK ACHIEVEMENTS FUNCTION — REMOVED (using secure version from migration-fix-rpc-functions.sql)
+
 
 -- =============================================
 -- 8. INDEXES
@@ -1635,14 +1448,11 @@ INSERT INTO public.titles (name, display_text, color, unlock_xp, sort_order) VAL
     ('Chiến binh tri thức', '🛡️ Chiến binh tri thức', '#2563eb', 18000, 22),
     ('Siêu học sinh', '🦸 Siêu học sinh', '#7c3aed', 35000, 23),
     ('Thánh học', '😇 Thánh học', '#fbbf24', 60000, 24)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (name) DO NOTHING;
 
 -- =============================================
 -- DONE! Run this in Supabase SQL Editor
 -- =============================================
-
-
-
 
 
 -- >>> Migration: migration-gamification.sql <<<
@@ -1673,7 +1483,8 @@ CREATE TABLE public.badges (
     xp_reward integer DEFAULT 0,
     condition_type text, -- 'exams_completed', 'perfect_score', 'streak', 'first_exam'
     condition_value integer DEFAULT 1,
-    created_at timestamptz DEFAULT now()
+    created_at timestamptz DEFAULT now(),
+    UNIQUE(name)
 );
 
 -- Student earned badges
@@ -1692,27 +1503,34 @@ ALTER TABLE public.badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.student_badges ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for student_stats
+DROP POLICY IF EXISTS "Users can view their own stats" ON public.student_stats;
 CREATE POLICY "Users can view their own stats" ON public.student_stats
     FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own stats" ON public.student_stats;
 CREATE POLICY "Users can update their own stats" ON public.student_stats
     FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own stats" ON public.student_stats;
 CREATE POLICY "Users can insert their own stats" ON public.student_stats
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- RLS Policies for badges (public read)
+DROP POLICY IF EXISTS "Anyone can view badges" ON public.badges;
 CREATE POLICY "Anyone can view badges" ON public.badges
     FOR SELECT TO authenticated USING (true);
 
 -- RLS Policies for student_badges
+DROP POLICY IF EXISTS "Users can view their own badges" ON public.student_badges;
 CREATE POLICY "Users can view their own badges" ON public.student_badges
     FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own badges" ON public.student_badges;
 CREATE POLICY "Users can insert their own badges" ON public.student_badges
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Leaderboard view policy (allow viewing others for leaderboard)
+DROP POLICY IF EXISTS "Users can view all stats for leaderboard" ON public.student_stats;
 CREATE POLICY "Users can view all stats for leaderboard" ON public.student_stats
     FOR SELECT TO authenticated USING (true);
 
@@ -1724,14 +1542,12 @@ INSERT INTO public.badges (name, description, icon, xp_reward, condition_type, c
     ('Perfect', 'Đạt điểm 10 tuyệt đối', '⭐', 150, 'perfect_score', 1),
     ('Chăm Chỉ', 'Hoàn thành 10 bài thi', '📚', 200, 'exams_completed', 10),
     ('Master', 'Hoàn thành 50 bài thi', '🏆', 500, 'exams_completed', 50)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (name) DO NOTHING;
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_student_stats_user_id ON public.student_stats(user_id);
 CREATE INDEX IF NOT EXISTS idx_student_stats_xp ON public.student_stats(xp DESC);
 CREATE INDEX IF NOT EXISTS idx_student_badges_user_id ON public.student_badges(user_id);
-
-
 
 
 -- >>> Migration: migration-monetization.sql <<<
@@ -1758,7 +1574,8 @@ CREATE TABLE public.subscription_plans (
     priority_support boolean DEFAULT false,
     is_active boolean DEFAULT true,
     sort_order integer DEFAULT 0,
-    created_at timestamptz DEFAULT now()
+    created_at timestamptz DEFAULT now(),
+    UNIQUE(name)
 );
 
 -- =============================================
@@ -1848,6 +1665,7 @@ ALTER TABLE public.package_reviews ENABLE ROW LEVEL SECURITY;
 -- =============================================
 -- 7. RLS POLICIES - SUBSCRIPTION PLANS
 -- =============================================
+DROP POLICY IF EXISTS "Anyone can view active plans" ON public.subscription_plans;
 CREATE POLICY "Anyone can view active plans" ON public.subscription_plans
     FOR SELECT TO authenticated
     USING (is_active = true);
@@ -1855,38 +1673,47 @@ CREATE POLICY "Anyone can view active plans" ON public.subscription_plans
 -- =============================================
 -- 8. RLS POLICIES - USER SUBSCRIPTIONS
 -- =============================================
+DROP POLICY IF EXISTS "Users can view own subscriptions" ON public.user_subscriptions;
 CREATE POLICY "Users can view own subscriptions" ON public.user_subscriptions
     FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own subscriptions" ON public.user_subscriptions;
 CREATE POLICY "Users can insert own subscriptions" ON public.user_subscriptions
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own subscriptions" ON public.user_subscriptions;
 CREATE POLICY "Users can update own subscriptions" ON public.user_subscriptions
     FOR UPDATE USING (auth.uid() = user_id);
 
 -- =============================================
 -- 9. RLS POLICIES - EXAM PACKAGES
 -- =============================================
+DROP POLICY IF EXISTS "Anyone can view published packages" ON public.exam_packages;
 CREATE POLICY "Anyone can view published packages" ON public.exam_packages
     FOR SELECT TO authenticated
     USING (is_published = true);
 
+DROP POLICY IF EXISTS "Creators can view own packages" ON public.exam_packages;
 CREATE POLICY "Creators can view own packages" ON public.exam_packages
     FOR SELECT USING (auth.uid() = creator_id);
 
+DROP POLICY IF EXISTS "Creators can manage own packages" ON public.exam_packages;
 CREATE POLICY "Creators can manage own packages" ON public.exam_packages
     FOR ALL USING (auth.uid() = creator_id);
 
 -- =============================================
 -- 10. RLS POLICIES - PURCHASES
 -- =============================================
+DROP POLICY IF EXISTS "Users can view own purchases" ON public.purchases;
 CREATE POLICY "Users can view own purchases" ON public.purchases
     FOR SELECT USING (auth.uid() = buyer_id);
 
+DROP POLICY IF EXISTS "Users can insert own purchases" ON public.purchases;
 CREATE POLICY "Users can insert own purchases" ON public.purchases
     FOR INSERT WITH CHECK (auth.uid() = buyer_id);
 
 -- Creators can view purchases of their packages
+DROP POLICY IF EXISTS "Creators can view package sales" ON public.purchases;
 CREATE POLICY "Creators can view package sales" ON public.purchases
     FOR SELECT USING (
         EXISTS (
@@ -1899,9 +1726,11 @@ CREATE POLICY "Creators can view package sales" ON public.purchases
 -- =============================================
 -- 11. RLS POLICIES - PACKAGE REVIEWS
 -- =============================================
+DROP POLICY IF EXISTS "Anyone can view reviews" ON public.package_reviews;
 CREATE POLICY "Anyone can view reviews" ON public.package_reviews
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Buyers can add reviews" ON public.package_reviews;
 CREATE POLICY "Buyers can add reviews" ON public.package_reviews
     FOR INSERT WITH CHECK (
         auth.uid() = user_id AND
@@ -1956,10 +1785,30 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_review_update_rating ON public.package_reviews;
 CREATE TRIGGER on_review_update_rating
-    AFTER INSERT OR UPDATE OR DELETE ON public.package_reviews
+    AFTER INSERT OR UPDATE ON public.package_reviews
     FOR EACH ROW
     EXECUTE FUNCTION public.update_package_rating();
+
+-- Separate trigger function for DELETE (uses OLD instead of NEW)
+CREATE OR REPLACE FUNCTION public.update_package_rating_on_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE public.exam_packages
+    SET 
+        rating_avg = COALESCE((SELECT AVG(rating)::numeric(2,1) FROM public.package_reviews WHERE package_id = OLD.package_id), 0),
+        rating_count = (SELECT COUNT(*) FROM public.package_reviews WHERE package_id = OLD.package_id)
+    WHERE id = OLD.package_id;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_review_delete_rating ON public.package_reviews;
+CREATE TRIGGER on_review_delete_rating
+    AFTER DELETE ON public.package_reviews
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_package_rating_on_delete();
 
 -- Increment sales count after purchase
 CREATE OR REPLACE FUNCTION public.increment_sales_count()
@@ -1974,6 +1823,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_purchase_increment_sales ON public.purchases;
 CREATE TRIGGER on_purchase_increment_sales
     AFTER INSERT OR UPDATE ON public.purchases
     FOR EACH ROW
@@ -2002,13 +1852,11 @@ INSERT INTO public.subscription_plans (name, description, price_monthly, price_y
     ('Enterprise', 'Dành cho trường học và tổ chức', 299000, 2990000,
      '["Tất cả tính năng Pro", "Không giới hạn học sinh", "API truy cập", "Quản lý nhiều giáo viên", "Training & onboarding", "SLA 99.9%"]'::jsonb,
      -1, 500, -1, true, true, 3)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (name) DO NOTHING;
 
 -- =============================================
 -- DONE! Run this migration in Supabase SQL Editor
 -- =============================================
-
-
 
 
 -- >>> Migration: migration-phase6-scheduled-exams.sql <<<
@@ -2091,22 +1939,26 @@ COMMENT ON COLUMN submissions.cheat_flags IS 'Các cờ gian lận: tab_switches
 ALTER TABLE exam_sessions ENABLE ROW LEVEL SECURITY;
 
 -- Students can view/manage their own sessions
+DROP POLICY IF EXISTS "Students can view own sessions" ON exam_sessions;
 CREATE POLICY "Students can view own sessions"
     ON exam_sessions FOR SELECT
     TO authenticated
     USING (student_id = auth.uid());
 
+DROP POLICY IF EXISTS "Students can insert own sessions" ON exam_sessions;
 CREATE POLICY "Students can insert own sessions"
     ON exam_sessions FOR INSERT
     TO authenticated
     WITH CHECK (student_id = auth.uid());
 
+DROP POLICY IF EXISTS "Students can update own sessions" ON exam_sessions;
 CREATE POLICY "Students can update own sessions"
     ON exam_sessions FOR UPDATE
     TO authenticated
     USING (student_id = auth.uid());
 
 -- Teachers can view sessions for their exams
+DROP POLICY IF EXISTS "Teachers can view exam sessions" ON exam_sessions;
 CREATE POLICY "Teachers can view exam sessions"
     ON exam_sessions FOR SELECT
     TO authenticated
@@ -2250,8 +2102,6 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
-
-
 -- >>> Migration: migration-question-types-v2.sql <<<
 -- ============================================================================
 -- Add question_type to questions table (True/False, Short Answer support)
@@ -2270,8 +2120,6 @@ COMMENT ON COLUMN questions.question_type IS 'Type of question: multiple_choice,
 
 -- Update existing questions to have explicit type
 UPDATE questions SET question_type = 'multiple_choice' WHERE question_type IS NULL;
-
-
 
 
 -- >>> Migration: migration-question-types.sql <<<
@@ -2306,8 +2154,6 @@ CREATE INDEX IF NOT EXISTS idx_exams_status ON public.exams(status);
 COMMENT ON COLUMN public.exams.mc_answers IS 'Multiple choice answers (A/B/C/D)';
 COMMENT ON COLUMN public.exams.tf_answers IS 'True/False (Đúng/Sai) answers with 4 sub-questions each';
 COMMENT ON COLUMN public.exams.sa_answers IS 'Short answer (numeric) with tolerance range';
-
-
 
 
 -- >>> Migration: migration-resources.sql <<<
@@ -2345,17 +2191,20 @@ ALTER TABLE resources ENABLE ROW LEVEL SECURITY;
 
 -- 4. RLS Policies
 -- Everyone can read resources (public library)
+DROP POLICY IF EXISTS "Anyone can view resources" ON resources;
 CREATE POLICY "Anyone can view resources"
     ON resources FOR SELECT
     USING (true);
 
 -- Only authenticated users can insert
+DROP POLICY IF EXISTS "Authenticated users can upload resources" ON resources;
 CREATE POLICY "Authenticated users can upload resources"
     ON resources FOR INSERT
     TO authenticated
     WITH CHECK (auth.uid() = uploader_id);
 
 -- Uploaders can update their own resources
+DROP POLICY IF EXISTS "Uploaders can update own resources" ON resources;
 CREATE POLICY "Uploaders can update own resources"
     ON resources FOR UPDATE
     TO authenticated
@@ -2363,6 +2212,7 @@ CREATE POLICY "Uploaders can update own resources"
     WITH CHECK (auth.uid() = uploader_id);
 
 -- Uploaders can delete their own resources
+DROP POLICY IF EXISTS "Uploaders can delete own resources" ON resources;
 CREATE POLICY "Uploaders can delete own resources"
     ON resources FOR DELETE
     TO authenticated
@@ -2421,33 +2271,38 @@ CREATE TABLE live_schedule (
 ALTER TABLE live_schedule ENABLE ROW LEVEL SECURITY;
 
 -- Everyone can view schedule
+DROP POLICY IF EXISTS "Anyone can view schedule" ON live_schedule;
 CREATE POLICY "Anyone can view schedule"
     ON live_schedule FOR SELECT
     USING (true);
 
 -- Only authenticated users can manage
+DROP POLICY IF EXISTS "Authenticated users can insert schedule" ON live_schedule;
 CREATE POLICY "Authenticated users can insert schedule"
     ON live_schedule FOR INSERT
     TO authenticated
     WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can update schedule" ON live_schedule;
 CREATE POLICY "Authenticated users can update schedule"
     ON live_schedule FOR UPDATE
     TO authenticated
     USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can delete schedule" ON live_schedule;
 CREATE POLICY "Authenticated users can delete schedule"
     ON live_schedule FOR DELETE
     TO authenticated
     USING (true);
 
 -- Insert default schedule
-INSERT INTO live_schedule (day, time, topic, host, sort_order) VALUES
+-- Only insert default schedule if table is empty
+INSERT INTO live_schedule (day, time, topic, host, sort_order)
+SELECT * FROM (VALUES
     ('Thứ 7', '20:00 - 22:00', 'Chữa đề Toán THPT 2026', 'Thầy Ái', 1),
     ('Chủ nhật', '19:00 - 21:00', 'Giải đề Vật Lý', 'Thầy Minh', 2)
-ON CONFLICT DO NOTHING;
-
-
+) AS v(day, time, topic, host, sort_order)
+WHERE NOT EXISTS (SELECT 1 FROM live_schedule LIMIT 1);
 
 
 -- >>> Migration: migration-retake-whitelist.sql <<<
@@ -2481,10 +2336,12 @@ ALTER TABLE public.teacher_whitelist ENABLE ROW LEVEL SECURITY;
 
 -- 5. RLS Policies for teacher_whitelist
 -- Only authenticated users can read (to check if they're a teacher)
+DROP POLICY IF EXISTS "Authenticated users can view whitelist" ON public.teacher_whitelist;
 CREATE POLICY "Authenticated users can view whitelist" ON public.teacher_whitelist
     FOR SELECT TO authenticated USING (true);
 
 -- Only existing teachers (those in whitelist) can add new teachers
+DROP POLICY IF EXISTS "Teachers can add to whitelist" ON public.teacher_whitelist;
 CREATE POLICY "Teachers can add to whitelist" ON public.teacher_whitelist
     FOR INSERT TO authenticated 
     WITH CHECK (
@@ -2515,8 +2372,6 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
-
-
 -- >>> Migration: migration-rewards-shop.sql <<<
 -- =============================================
 -- GAMIFICATION EXPANSION: Rewards Shop & Challenges
@@ -2537,7 +2392,8 @@ CREATE TABLE public.rewards (
     category text CHECK (category IN ('avatar', 'badge', 'bonus', 'physical')),
     metadata jsonb DEFAULT '{}', -- For avatar URLs, badge data, etc.
     is_active boolean DEFAULT true,
-    created_at timestamptz DEFAULT now()
+    created_at timestamptz DEFAULT now(),
+    UNIQUE(name)
 );
 
 -- =============================================
@@ -2569,7 +2425,8 @@ CREATE TABLE public.weekly_challenges (
     end_date date NOT NULL,
     is_active boolean DEFAULT true,
     created_at timestamptz DEFAULT now(),
-    CHECK (end_date >= start_date)
+    CHECK (end_date >= start_date),
+    UNIQUE(title, start_date)
 );
 
 -- =============================================
@@ -2599,11 +2456,13 @@ ALTER TABLE public.student_challenges ENABLE ROW LEVEL SECURITY;
 -- 6. RLS POLICIES - REWARDS
 -- =============================================
 -- Anyone authenticated can view active rewards
+DROP POLICY IF EXISTS "View active rewards" ON public.rewards;
 CREATE POLICY "View active rewards" ON public.rewards
     FOR SELECT TO authenticated
     USING (is_active = true);
 
 -- Teachers can manage rewards
+DROP POLICY IF EXISTS "Teachers manage rewards" ON public.rewards;
 CREATE POLICY "Teachers manage rewards" ON public.rewards
     FOR ALL
     USING (
@@ -2617,10 +2476,12 @@ CREATE POLICY "Teachers manage rewards" ON public.rewards
 -- 7. RLS POLICIES - STUDENT REWARDS
 -- =============================================
 -- Users can view their own redeemed rewards
+DROP POLICY IF EXISTS "View own rewards" ON public.student_rewards;
 CREATE POLICY "View own rewards" ON public.student_rewards
     FOR SELECT USING (auth.uid() = user_id);
 
 -- Users can redeem rewards (insert)
+DROP POLICY IF EXISTS "Redeem rewards" ON public.student_rewards;
 CREATE POLICY "Redeem rewards" ON public.student_rewards
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
@@ -2628,11 +2489,13 @@ CREATE POLICY "Redeem rewards" ON public.student_rewards
 -- 8. RLS POLICIES - WEEKLY CHALLENGES
 -- =============================================
 -- Anyone authenticated can view active challenges
+DROP POLICY IF EXISTS "View active challenges" ON public.weekly_challenges;
 CREATE POLICY "View active challenges" ON public.weekly_challenges
     FOR SELECT TO authenticated
     USING (is_active = true AND end_date >= CURRENT_DATE);
 
 -- Teachers can manage challenges
+DROP POLICY IF EXISTS "Teachers manage challenges" ON public.weekly_challenges;
 CREATE POLICY "Teachers manage challenges" ON public.weekly_challenges
     FOR ALL
     USING (
@@ -2646,13 +2509,16 @@ CREATE POLICY "Teachers manage challenges" ON public.weekly_challenges
 -- 9. RLS POLICIES - STUDENT CHALLENGES
 -- =============================================
 -- Users can view their own challenge progress
+DROP POLICY IF EXISTS "View own challenge progress" ON public.student_challenges;
 CREATE POLICY "View own challenge progress" ON public.student_challenges
     FOR SELECT USING (auth.uid() = user_id);
 
 -- Users can insert/update their own progress
+DROP POLICY IF EXISTS "Update own challenge progress" ON public.student_challenges;
 CREATE POLICY "Update own challenge progress" ON public.student_challenges
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Modify own challenge progress" ON public.student_challenges;
 CREATE POLICY "Modify own challenge progress" ON public.student_challenges
     FOR UPDATE USING (auth.uid() = user_id);
 
@@ -2660,57 +2526,7 @@ CREATE POLICY "Modify own challenge progress" ON public.student_challenges
 -- 10. HELPER FUNCTIONS
 -- =============================================
 
--- Function to redeem a reward (atomic XP deduction)
-CREATE OR REPLACE FUNCTION public.redeem_reward(
-    p_user_id uuid,
-    p_reward_id uuid
-) RETURNS jsonb AS $$
-DECLARE
-    v_reward public.rewards%ROWTYPE;
-    v_user_xp integer;
-    v_result jsonb;
-BEGIN
-    -- Get reward details
-    SELECT * INTO v_reward FROM public.rewards WHERE id = p_reward_id AND is_active = true;
-    
-    IF NOT FOUND THEN
-        RETURN jsonb_build_object('success', false, 'error', 'Reward not found or inactive');
-    END IF;
-    
-    -- Check stock
-    IF v_reward.stock = 0 THEN
-        RETURN jsonb_build_object('success', false, 'error', 'Reward out of stock');
-    END IF;
-    
-    -- Get user XP
-    SELECT xp INTO v_user_xp FROM public.student_stats WHERE user_id = p_user_id;
-    
-    IF v_user_xp IS NULL OR v_user_xp < v_reward.xp_cost THEN
-        RETURN jsonb_build_object('success', false, 'error', 'Insufficient XP', 'required', v_reward.xp_cost, 'current', COALESCE(v_user_xp, 0));
-    END IF;
-    
-    -- Deduct XP
-    UPDATE public.student_stats 
-    SET xp = xp - v_reward.xp_cost 
-    WHERE user_id = p_user_id;
-    
-    -- Reduce stock if not unlimited
-    IF v_reward.stock > 0 THEN
-        UPDATE public.rewards SET stock = stock - 1 WHERE id = p_reward_id;
-    END IF;
-    
-    -- Record redemption
-    INSERT INTO public.student_rewards (user_id, reward_id, status)
-    VALUES (p_user_id, p_reward_id, 'delivered');
-    
-    RETURN jsonb_build_object(
-        'success', true, 
-        'reward_name', v_reward.name,
-        'xp_spent', v_reward.xp_cost,
-        'remaining_xp', v_user_xp - v_reward.xp_cost
-    );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- redeem_reward function REMOVED (using secure version from migration-fix-rpc-functions.sql)
 
 -- Function to update challenge progress after exam completion
 CREATE OR REPLACE FUNCTION public.update_challenge_progress()
@@ -2802,7 +2618,7 @@ INSERT INTO public.rewards (name, description, icon, xp_cost, category, stock) V
     ('Badge VIP', 'Huy hiệu VIP hiển thị bên tên', '⭐', 1000, 'badge', 100),
     ('+50 XP Bonus', 'Cộng thêm 50 XP ngay lập tức', '💎', 100, 'bonus', -1),
     ('Skip 1 câu hỏi', 'Bỏ qua 1 câu trong bài thi tiếp theo', '⏭️', 300, 'bonus', -1)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (name) DO NOTHING;
 
 -- Sample weekly challenges (for current week)
 INSERT INTO public.weekly_challenges (title, description, icon, xp_reward, target_type, target_value, start_date, end_date) VALUES
@@ -2815,13 +2631,11 @@ INSERT INTO public.weekly_challenges (title, description, icon, xp_reward, targe
     ('Tích Lũy', 'Đạt tổng cộng 30 điểm trong tuần', '📈', 100, 'total_score', 30,
      date_trunc('week', CURRENT_DATE)::date, 
      (date_trunc('week', CURRENT_DATE) + interval '6 days')::date)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (title, start_date) DO NOTHING;
 
 -- =============================================
 -- DONE! Run this migration in Supabase SQL Editor
 -- =============================================
-
-
 
 
 -- >>> Migration: migration-score-visibility.sql <<<
@@ -2862,86 +2676,15 @@ WHERE score_visibility_mode = 'threshold'
 -- LIMIT 5;
 
 
-
-
 -- >>> Migration: migration-sync-questions.sql <<<
--- =====================================================
--- MIGRATION: Ensure questions table has all columns + verify data
--- Run this in Supabase SQL Editor
--- =====================================================
+-- NOTE: Diagnostic queries removed. Only schema changes retained.
 
--- 1. Add missing columns to questions table
-ALTER TABLE questions ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS exam_id UUID REFERENCES exams(id) ON DELETE CASCADE;
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS question_text TEXT;
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS options JSONB DEFAULT '["A","B","C","D"]';
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS correct_answer INTEGER DEFAULT 0;
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
-
--- 2. Check what data exists
-SELECT 
-    e.id as exam_id,
-    e.title,
-    jsonb_array_length(e.questions) as questions_count,
-    (SELECT COUNT(*) FROM questions q WHERE q.exam_id = e.id) as synced_count
-FROM exams e
-WHERE e.questions IS NOT NULL
-ORDER BY e.created_at DESC
-LIMIT 5;
-
--- 3. If synced_count is 0, manually insert one exam's questions as test
--- Replace 'YOUR_EXAM_ID' with an actual exam ID from the query above
-DO $$
-DECLARE
-    test_exam_id UUID;
-    question_data JSONB;
-    i INTEGER := 1;
-BEGIN
-    -- Get first exam with questions
-    SELECT id INTO test_exam_id
-    FROM exams 
-    WHERE questions IS NOT NULL 
-    AND jsonb_array_length(questions) > 0
-    LIMIT 1;
-    
-    IF test_exam_id IS NOT NULL THEN
-        -- Delete existing questions
-        DELETE FROM questions WHERE exam_id = test_exam_id;
-        
-        -- Insert from JSONB
-        FOR question_data IN 
-            SELECT * FROM jsonb_array_elements((SELECT questions FROM exams WHERE id = test_exam_id))
-        LOOP
-            INSERT INTO questions (exam_id, question_text, options, correct_answer, order_index)
-            VALUES (
-                test_exam_id,
-                COALESCE(question_data->>'question', 'Câu ' || i::TEXT),
-                COALESCE(question_data->'options', '["A","B","C","D"]'::JSONB),
-                CASE 
-                    WHEN question_data->>'answer' = 'A' THEN 0
-                    WHEN question_data->>'answer' = 'B' THEN 1
-                    WHEN question_data->>'answer' = 'C' THEN 2
-                    WHEN question_data->>'answer' = 'D' THEN 3
-                    ELSE 0
-                END,
-                i
-            );
-            i := i + 1;
-        END LOOP;
-        
-        RAISE NOTICE 'Successfully synced % questions for exam %', i-1, test_exam_id;
-    END IF;
-END $$;
-
--- 4. Verify the result
-SELECT COUNT(*) as total_questions FROM questions;
-
--- =====================================================
--- DONE! Check the output to see if questions were synced
--- =====================================================
-
-
 
 
 -- >>> Migration: migration-youtube-live.sql <<<
@@ -2964,12 +2707,14 @@ CREATE TABLE live_config (
 ALTER TABLE live_config ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Anyone can read
+DROP POLICY IF EXISTS "Anyone can read live config" ON live_config;
 CREATE POLICY "Anyone can read live config"
 ON live_config FOR SELECT
 TO authenticated, anon
 USING (true);
 
 -- Policy: Only teachers can update
+DROP POLICY IF EXISTS "Teachers can update live config" ON live_config;
 CREATE POLICY "Teachers can update live config"
 ON live_config FOR UPDATE
 TO authenticated
@@ -2982,6 +2727,7 @@ USING (
 );
 
 -- Policy: Only teachers can insert
+DROP POLICY IF EXISTS "Teachers can insert live config" ON live_config;
 CREATE POLICY "Teachers can insert live config"
 ON live_config FOR INSERT
 TO authenticated
@@ -3014,8 +2760,6 @@ FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 
 
-
-
 -- >>> Migration: storage-policies-avatars.sql <<<
 -- FIXED Storage Policies for avatars bucket
 -- DELETE old policies first, then run this
@@ -3027,6 +2771,7 @@ DROP POLICY IF EXISTS "Users can delete their own avatar" ON storage.objects;
 DROP POLICY IF EXISTS "Anyone can view avatars" ON storage.objects;
 
 -- 2. Simple policy: Allow authenticated users to upload to avatars bucket
+DROP POLICY IF EXISTS "Authenticated users can upload avatars" ON storage.objects;
 CREATE POLICY "Authenticated users can upload avatars"
 ON storage.objects
 FOR INSERT
@@ -3034,6 +2779,7 @@ TO authenticated
 WITH CHECK (bucket_id = 'avatars');
 
 -- 3. Allow users to update files that start with their user ID
+DROP POLICY IF EXISTS "Users can update their own avatar files" ON storage.objects;
 CREATE POLICY "Users can update their own avatar files"
 ON storage.objects
 FOR UPDATE
@@ -3044,6 +2790,7 @@ USING (
 );
 
 -- 4. Allow users to delete files that start with their user ID
+DROP POLICY IF EXISTS "Users can delete their own avatar files" ON storage.objects;
 CREATE POLICY "Users can delete their own avatar files"
 ON storage.objects
 FOR DELETE
@@ -3054,6 +2801,7 @@ USING (
 );
 
 -- 5. Allow public to view avatars (read-only)
+DROP POLICY IF EXISTS "Public can view avatars" ON storage.objects;
 CREATE POLICY "Public can view avatars"
 ON storage.objects
 FOR SELECT
@@ -3061,7 +2809,30 @@ TO public
 USING (bucket_id = 'avatars');
 
 
+-- ============================================================================
+-- EXAM PARTICIPANTS TABLE (used by performance indexes)
+-- ============================================================================
+DROP TABLE IF EXISTS public.exam_participants CASCADE;
+CREATE TABLE public.exam_participants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    role TEXT DEFAULT 'student' CHECK (role IN ('student', 'moderator')),
+    joined_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(exam_id, user_id)
+);
 
+ALTER TABLE public.exam_participants ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own participation" ON public.exam_participants;
+CREATE POLICY "Users can view own participation" ON public.exam_participants
+    FOR SELECT TO authenticated
+    USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can join exams" ON public.exam_participants;
+CREATE POLICY "Users can join exams" ON public.exam_participants
+    FOR INSERT TO authenticated
+    WITH CHECK (auth.uid() = user_id);
 
 -- ========================================================
 -- SECTION 3: PERFORMANCE INDEXES & OPTIMIZATIONS
@@ -3087,8 +2858,6 @@ CREATE INDEX IF NOT EXISTS idx_exam_participants_exam_user
 -- Update query planner statistics after adding indexes
 ANALYZE submissions;
 ANALYZE exam_participants;
-
-
 
 
 -- >>> Optimization: migration-performance.sql <<<
@@ -3138,12 +2907,7 @@ CREATE INDEX IF NOT EXISTS idx_sessions_student_active
 CREATE INDEX IF NOT EXISTS idx_profiles_role 
     ON profiles(role);
 
--- Audit log indexes (for admin queries)
-CREATE INDEX IF NOT EXISTS idx_audit_exam 
-    ON submission_audit_log(exam_id, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_audit_student 
-    ON submission_audit_log(student_id, created_at DESC);
+-- Audit log indexes moved to after table creation (Section 4)
 
 -- =============================================
 -- ANALYZE TABLES (Update statistics for query planner)
@@ -3181,8 +2945,6 @@ ANALYZE profiles;
 -- To refresh: REFRESH MATERIALIZED VIEW CONCURRENTLY mv_exam_leaderboards;
 
 
-
-
 -- ========================================================
 -- SECTION 4: SECURITY POLICIES, RLS & INTEGRITY FIXES
 -- ========================================================
@@ -3197,6 +2959,7 @@ drop policy if exists "Users can insert own profile" on public.profiles;
 
 -- Create more permissive insert policy
 -- Allow authenticated users to insert their own profile
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 create policy "Users can insert own profile"
   on public.profiles for insert
   with check (auth.uid() = id);
@@ -3205,35 +2968,9 @@ create policy "Users can insert own profile"
 -- alter table public.profiles disable row level security;
 
 
-
-
--- >>> Security & RLS Patch: migration-complete-rls-fix.sql <<<
--- COMPLETE FIX: Disable RLS on ALL tables that might cause FOR UPDATE error
--- Run ALL of these in Supabase SQL Editor
-
--- 1. Disable RLS on submissions table
-ALTER TABLE public.submissions DISABLE ROW LEVEL SECURITY;
-
--- 2. Disable RLS on exam_sessions table (used in submit code)
-ALTER TABLE public.exam_sessions DISABLE ROW LEVEL SECURITY;
-
--- 3. Disable RLS on exams table (might have policies causing issues)
-ALTER TABLE public.exams DISABLE ROW LEVEL SECURITY;
-
--- 4. Drop any problematic triggers (if they exist)
-DROP TRIGGER IF EXISTS on_submission_insert ON public.submissions;
-DROP TRIGGER IF EXISTS on_submission_update ON public.submissions;
-
--- 5. Check current RLS status
-SELECT tablename, rowsecurity 
-FROM pg_tables 
-WHERE schemaname = 'public' 
-AND tablename IN ('submissions', 'exam_sessions', 'exams');
-
--- After running this, test submission again
--- If it works, we can gradually re-enable RLS with proper policies
-
-
+-- REMOVED: Complete RLS disable script (migration-complete-rls-fix.sql)
+-- This disabled RLS on submissions, exam_sessions, exams which is a security risk.
+-- RLS should remain enabled with proper policies.
 
 
 -- >>> Security & RLS Patch: migration-fix-delete-exam.sql <<<
@@ -3241,12 +2978,18 @@ AND tablename IN ('submissions', 'exam_sessions', 'exams');
 -- Run this in Supabase SQL Editor
 
 -- 1. Fix submission_audit_log FK (the main blocker)
-ALTER TABLE submission_audit_log 
-    DROP CONSTRAINT IF EXISTS submission_audit_log_exam_id_fkey;
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'submission_audit_log' AND table_schema = 'public') THEN
+        -- Delete orphaned audit log entries referencing exams that no longer exist
+        DELETE FROM public.submission_audit_log WHERE exam_id IS NOT NULL AND exam_id NOT IN (SELECT id FROM public.exams);
 
-ALTER TABLE submission_audit_log 
-    ADD CONSTRAINT submission_audit_log_exam_id_fkey 
-    FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE;
+        ALTER TABLE submission_audit_log 
+            DROP CONSTRAINT IF EXISTS submission_audit_log_exam_id_fkey;
+        ALTER TABLE submission_audit_log 
+            ADD CONSTRAINT submission_audit_log_exam_id_fkey 
+            FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- 2. Fix exam_participants FK (if exists without cascade)
 DO $$ BEGIN
@@ -3267,19 +3010,13 @@ ALTER TABLE exam_sessions
     ADD CONSTRAINT exam_sessions_exam_id_fkey 
     FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE;
 
--- 4. Verify all FK constraints on exams are CASCADE
-SELECT
-    tc.constraint_name,
-    tc.table_name,
-    kcu.column_name,
-    rc.delete_rule
-FROM information_schema.table_constraints tc
-JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
-JOIN information_schema.referential_constraints rc ON tc.constraint_name = rc.constraint_name
-WHERE kcu.column_name = 'exam_id'
-ORDER BY tc.table_name;
-
-
+-- 4. Verify all FK constraints on exams are CASCADE (diagnostic query - run separately)
+-- SELECT tc.constraint_name, tc.table_name, kcu.column_name, rc.delete_rule
+-- FROM information_schema.table_constraints tc
+-- JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+-- JOIN information_schema.referential_constraints rc ON tc.constraint_name = rc.constraint_name
+-- WHERE kcu.column_name = 'exam_id'
+-- ORDER BY tc.table_name;
 
 
 -- >>> Security & RLS Patch: migration-fix-rls-submissions.sql <<<
@@ -3301,18 +3038,22 @@ DROP POLICY IF EXISTS "Students can update own submissions" ON public.submission
 DROP POLICY IF EXISTS "Teachers can view submissions for their exams" ON public.submissions;
 
 -- Recreate policies without FOR UPDATE issues
+DROP POLICY IF EXISTS "Students can view own submissions" ON public.submissions;
 CREATE POLICY "Students can view own submissions" 
 ON public.submissions FOR SELECT 
 USING (auth.uid() = student_id);
 
+DROP POLICY IF EXISTS "Students can insert own submissions" ON public.submissions;
 CREATE POLICY "Students can insert own submissions" 
 ON public.submissions FOR INSERT 
 WITH CHECK (auth.uid() = student_id);
 
+DROP POLICY IF EXISTS "Students can update own submissions" ON public.submissions;
 CREATE POLICY "Students can update own submissions" 
 ON public.submissions FOR UPDATE 
 USING (auth.uid() = student_id);
 
+DROP POLICY IF EXISTS "Teachers can view submissions for their exams" ON public.submissions;
 CREATE POLICY "Teachers can view submissions for their exams" 
 ON public.submissions FOR SELECT 
 USING (
@@ -3325,8 +3066,6 @@ USING (
 
 -- Make sure RLS is enabled
 ALTER TABLE public.submissions ENABLE ROW LEVEL SECURITY;
-
-
 
 
 -- >>> Security & RLS Patch: migration-fix-submissions.sql <<<
@@ -3359,34 +3098,8 @@ COMMENT ON COLUMN public.submissions.is_ranked IS 'Whether this submission count
 COMMENT ON COLUMN public.submissions.cheat_flags IS 'Cheat detection data {tab_switches, multi_browser, etc}';
 
 
-
-
--- >>> Security & RLS Patch: migration-nuclear-rls-fix.sql <<<
--- NUCLEAR OPTION: Disable RLS on ALL tables in the schema
--- Run this in Supabase SQL Editor
-
--- Disable RLS on ALL public tables
-DO $$ 
-DECLARE 
-    tbl RECORD;
-BEGIN
-    FOR tbl IN 
-        SELECT tablename 
-        FROM pg_tables 
-        WHERE schemaname = 'public'
-    LOOP
-        EXECUTE format('ALTER TABLE public.%I DISABLE ROW LEVEL SECURITY', tbl.tablename);
-        RAISE NOTICE 'Disabled RLS on: %', tbl.tablename;
-    END LOOP;
-END $$;
-
--- Verify ALL tables have RLS disabled
-SELECT tablename, rowsecurity 
-FROM pg_tables 
-WHERE schemaname = 'public'
-ORDER BY tablename;
-
-
+-- REMOVED: Nuclear RLS disable script (migration-nuclear-rls-fix.sql)
+-- This was disabling RLS on ALL tables which is a security risk.
 
 
 -- >>> Security & RLS Patch: migration-security-fix.sql <<<
@@ -3491,9 +3204,9 @@ GRANT EXECUTE ON FUNCTION get_exam_for_student(UUID) TO authenticated;
 DROP TABLE IF EXISTS submission_audit_log CASCADE;
 CREATE TABLE submission_audit_log (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    submission_id UUID REFERENCES submissions(id),
-    exam_id UUID REFERENCES exams(id),
-    student_id UUID REFERENCES profiles(id),
+    submission_id UUID REFERENCES submissions(id) ON DELETE CASCADE,
+    exam_id UUID REFERENCES exams(id) ON DELETE CASCADE,
+    student_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
     action TEXT NOT NULL,
     details JSONB,
     ip_address TEXT,
@@ -3505,6 +3218,7 @@ CREATE TABLE submission_audit_log (
 ALTER TABLE submission_audit_log ENABLE ROW LEVEL SECURITY;
 
 -- Only teachers can view audit logs for their exams
+DROP POLICY IF EXISTS "Teachers can view audit logs" ON submission_audit_log;
 CREATE POLICY "Teachers can view audit logs"
     ON submission_audit_log FOR SELECT
     USING (
@@ -3516,11 +3230,16 @@ CREATE POLICY "Teachers can view audit logs"
     );
 
 -- System can insert audit logs
+DROP POLICY IF EXISTS "System can insert audit logs" ON submission_audit_log;
 CREATE POLICY "System can insert audit logs"
     ON submission_audit_log FOR INSERT
     WITH CHECK (true);
 
-
+-- Audit log indexes
+CREATE INDEX IF NOT EXISTS idx_audit_exam 
+    ON submission_audit_log(exam_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_student 
+    ON submission_audit_log(student_id, created_at DESC);
 
 
 -- >>> Security & RLS Patch: migration-security-level.sql <<<
@@ -3532,8 +3251,6 @@ ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS security_level integer DEFAULT
 
 -- Add comment for documentation
 COMMENT ON COLUMN public.exams.security_level IS 'Anti-cheat level: 0=off, 1=basic(tab+fullscreen), 2=+webcam, 3=+audio, 4=+face_detection';
-
-
 
 
 -- >>> Security & RLS Patch: migration-security-patch.sql <<<
@@ -3553,6 +3270,7 @@ DROP POLICY IF EXISTS "Published exams are viewable by all authenticated users" 
 -- Wait, if we drop it, the Leaderboard query (which joins exams) might fail if it relies on client-side join.
 -- Actually, the get_leaderboard RPC uses SECURITY DEFINER, so it bypasses RLS!
 -- But let's create a restricted policy just in case the client needs to fetch basic exam info.
+DROP POLICY IF EXISTS "View published exam basic info" ON public.exams;
 CREATE POLICY "View published exam basic info"
   ON public.exams FOR SELECT
   USING (status = 'published');
@@ -3575,98 +3293,6 @@ CREATE INDEX IF NOT EXISTS idx_submissions_exam_score ON public.submissions (exa
 CREATE INDEX IF NOT EXISTS idx_audit_log_exam_student ON public.submission_audit_log (exam_id, student_id);
 
 
-
-
 -- ========================================================
--- SECTION 5: UTILITY & DIAGNOSTIC SCRIPTS
+-- END OF SCHEMA
 -- ========================================================
--- >>> Utility/Diagnostic: diagnostic-stats.sql <<<
--- =============================================
--- DIAGNOSTIC: Check why stats show 0
--- Run this in Supabase SQL Editor
--- =============================================
-
--- 1. Check submissions table
-SELECT 
-    'Total submissions' as check_name, 
-    COUNT(*) as result 
-FROM submissions;
-
--- 2. Check submissions by student
-SELECT 
-    s.student_id,
-    p.full_name,
-    COUNT(*) as submission_count,
-    AVG(s.score) as avg_score,
-    MAX(s.score) as best_score
-FROM submissions s
-LEFT JOIN profiles p ON p.id = s.student_id
-GROUP BY s.student_id, p.full_name
-ORDER BY submission_count DESC
-LIMIT 10;
-
--- 3. Check student_stats table
-SELECT 
-    'Total student_stats records' as check_name, 
-    COUNT(*) as result 
-FROM student_stats;
-
--- 4. Check student_stats details
-SELECT 
-    ss.user_id,
-    p.full_name,
-    ss.xp,
-    ss.level,
-    ss.streak_days,
-    ss.exams_completed,
-    ss.perfect_scores
-FROM student_stats ss
-LEFT JOIN profiles p ON p.id = ss.user_id
-LIMIT 10;
-
--- 5. Check if submissions exist but student_stats is empty
-SELECT 
-    'Students with submissions but no stats' as check_name,
-    COUNT(DISTINCT s.student_id) as result
-FROM submissions s
-WHERE NOT EXISTS (
-    SELECT 1 FROM student_stats ss WHERE ss.user_id = s.student_id
-);
-
--- 6. Check profiles table
-SELECT 
-    'Total profiles' as check_name,
-    COUNT(*) as result
-FROM profiles;
-
--- 7. Check exams table
-SELECT 
-    'Published exams' as check_name,
-    COUNT(*) as result
-FROM exams WHERE status = 'published';
-
--- =============================================
--- FIX: Sync student_stats from submissions 
--- (Uncomment and run if stats are missing)
--- =============================================
-
-/*
--- Create/update student_stats based on actual submissions
-INSERT INTO student_stats (user_id, xp, level, streak_days, exams_completed, perfect_scores)
-SELECT 
-    s.student_id,
-    COALESCE(SUM(CASE WHEN s.score >= 5 THEN 50 ELSE 20 END), 0) as xp,
-    1 as level,
-    0 as streak_days,
-    COUNT(*) as exams_completed,
-    COUNT(CASE WHEN s.score = 10 THEN 1 END) as perfect_scores
-FROM submissions s
-GROUP BY s.student_id
-ON CONFLICT (user_id) DO UPDATE SET
-    exams_completed = EXCLUDED.exams_completed,
-    perfect_scores = EXCLUDED.perfect_scores,
-    xp = EXCLUDED.xp;
-*/
-
-
-

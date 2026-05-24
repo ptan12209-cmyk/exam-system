@@ -2,12 +2,18 @@
 -- Run this in Supabase SQL Editor
 
 -- 1. Fix submission_audit_log FK (the main blocker)
-ALTER TABLE submission_audit_log 
-    DROP CONSTRAINT IF EXISTS submission_audit_log_exam_id_fkey;
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'submission_audit_log' AND table_schema = 'public') THEN
+        -- Delete orphaned audit log entries referencing exams that no longer exist
+        DELETE FROM public.submission_audit_log WHERE exam_id IS NOT NULL AND exam_id NOT IN (SELECT id FROM public.exams);
 
-ALTER TABLE submission_audit_log 
-    ADD CONSTRAINT submission_audit_log_exam_id_fkey 
-    FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE;
+        ALTER TABLE submission_audit_log 
+            DROP CONSTRAINT IF EXISTS submission_audit_log_exam_id_fkey;
+        ALTER TABLE submission_audit_log 
+            ADD CONSTRAINT submission_audit_log_exam_id_fkey 
+            FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- 2. Fix exam_participants FK (if exists without cascade)
 DO $$ BEGIN
