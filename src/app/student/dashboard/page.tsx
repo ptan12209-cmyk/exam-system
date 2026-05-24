@@ -17,6 +17,7 @@ import {
   CheckCircle,
   Award,
   ListTodo,
+  Timer,
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
@@ -191,12 +192,13 @@ export default function StudentDashboard() {
           <StudentStatCard label="XP" value={userXp} icon={Zap} />
         </section>
 
-        <section className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {[
             { href: "/resources", label: "Thư viện tài liệu", icon: BookOpen },
             { href: "/arena", label: "Đấu trường", icon: Swords },
             { href: "/student/achievements", label: "Thành tích", icon: Award },
-            { href: "/student/checklist", label: "Checklist", icon: ListTodo },
+            { href: "/student/checklist", label: "Checklist / Planner", icon: ListTodo },
+            { href: "/student/co-study", label: "Phòng Pomodoro YPT", icon: Timer },
           ].map((item) => (
             <Link key={item.href} href={item.href} className="liquid-glass rounded-[2rem] p-5 transition-transform hover:-translate-y-0.5 shadow-sm">
               <item.icon className="mb-4 h-5 w-5 text-[hsl(var(--muted-foreground))]" strokeWidth={1.2} />
