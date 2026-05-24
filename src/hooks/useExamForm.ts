@@ -28,8 +28,8 @@ export function useExamForm() {
   const [enableTF, setEnableTF] = useState(false);
   const [enableSA, setEnableSA] = useState(false);
   const [mcCount, setMcCount] = useState(12);
-  const [tfCount, setTfCount] = useState(4);
-  const [saCount, setSaCount] = useState(6);
+  const [tfCount, setTfCount] = useState(0);
+  const [saCount, setSaCount] = useState(0);
   const [sendNotification, setSendNotification] = useState(true);
   const [scoreVisibilityMode, setScoreVisibilityMode] = useState<"always" | "never" | "threshold">("always");
   const [scoreThreshold, setScoreThreshold] = useState(5.0);

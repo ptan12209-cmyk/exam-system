@@ -69,6 +69,35 @@ export default function CreateExamPage() {
     handlePdfUpload,
   } = usePdfUpload(supabase, setError)
 
+  const handleMcCountChange = (newCount: number) => {
+    setMcCount(newCount)
+    const nextMc = Array.from({ length: newCount }, (_, i) => mcAnswers[i] || correctAnswers[i] || null)
+    setMcAnswers(nextMc)
+    setCorrectAnswers(nextMc)
+  }
+
+  const handleTfCountChange = (newCount: number) => {
+    setTfCount(newCount)
+    setEnableTF(newCount > 0)
+    setTfAnswers(
+      Array.from({ length: newCount }, (_, i) => {
+        const baseQ = mcCount + 1 + i
+        return tfAnswers[i] || { question: baseQ, a: true, b: true, c: true, d: true }
+      })
+    )
+  }
+
+  const handleSaCountChange = (newCount: number) => {
+    setSaCount(newCount)
+    setEnableSA(newCount > 0)
+    setSaAnswers(
+      Array.from({ length: newCount }, (_, i) => {
+        const baseQ = mcCount + (newCount > 0 ? tfCount : 0) + 1 + i
+        return saAnswers[i] || { question: baseQ, answer: "" }
+      })
+    )
+  }
+
   const handleParsePdf = async (fileToUse?: File) => {
     const targetFile = fileToUse || answerPdfFile || pdfFile
     if (!targetFile) {
@@ -94,13 +123,16 @@ export default function CreateExamPage() {
       const tfData = data.true_false || []
       if (tfData.length > 0) {
         setTfAnswers(
-          tfData.map((tf, index) => ({
-            question: parsedMc.length + 1 + index,
-            a: tf.a ?? true,
-            b: tf.b ?? true,
-            c: tf.c ?? true,
-            d: tf.d ?? true,
-          }))
+          tfData.map((tf: any, index) => {
+            const answers = tf.answers || tf;
+            return {
+              question: parsedMc.length + 1 + index,
+              a: answers.a ?? true,
+              b: answers.b ?? true,
+              c: answers.c ?? true,
+              d: answers.d ?? true,
+            };
+          })
         )
         setTfCount(tfData.length)
         setEnableTF(true)
@@ -148,15 +180,28 @@ export default function CreateExamPage() {
         .filter((item) => item.answer !== null)
 
       const finalTfAnswers = enableTF
-        ? tfAnswers.length
-          ? tfAnswers
-          : Array.from({ length: tfCount }, (_, i) => ({ question: mcCount + 1 + i, a: true, b: true, c: true, d: true }))
+        ? Array.from({ length: tfCount }, (_, i) => {
+            const baseQ = mcCount + 1 + i;
+            const existing = tfAnswers.find((t) => t.question === baseQ) || tfAnswers[i] || {};
+            return {
+              question: baseQ,
+              a: existing.a ?? true,
+              b: existing.b ?? true,
+              c: existing.c ?? true,
+              d: existing.d ?? true,
+            };
+          })
         : []
 
       const finalSaAnswers = enableSA
-        ? saAnswers.length
-          ? saAnswers
-          : Array.from({ length: saCount }, (_, i) => ({ question: mcCount + effectiveTf + 1 + i, answer: "" }))
+        ? Array.from({ length: saCount }, (_, i) => {
+            const baseQ = mcCount + effectiveTf + 1 + i;
+            const existing = saAnswers.find((s) => s.question === baseQ) || saAnswers[i] || {};
+            return {
+              question: baseQ,
+              answer: String(existing.answer ?? "").trim(),
+            };
+          })
         : []
 
       const { data, error: insertError } = await supabase
@@ -266,8 +311,30 @@ export default function CreateExamPage() {
               maxAttempts={maxAttempts}
               onMaxAttemptsChange={setMaxAttempts}
             />
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
+            <div className="mt-6 grid gap-6 md:grid-cols-3">
               <PdfUploader uploadingPdf={uploadingPdf} pdfUrl={pdfUrl} onUpload={handlePdfUpload} />
+              
+              <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <Label className="block">Cấu trúc đề thi</Label>
+                  <span className="rounded-full bg-[hsl(var(--foreground))]/5 px-2 py-0.5 text-[10px] font-bold">TỔNG: {totalQuestions} CÂU</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1.5 text-center">
+                    <Label className="text-[10px] font-bold uppercase text-[hsl(var(--muted-foreground))]">Trắc nghiệm</Label>
+                    <Input type="number" value={mcCount} onChange={(e) => handleMcCountChange(Math.max(0, parseInt(e.target.value) || 0))} className="rounded-xl border-[hsl(var(--border))]/60 bg-transparent text-center text-sm" />
+                  </div>
+                  <div className="space-y-1.5 text-center">
+                    <Label className="text-[10px] font-bold uppercase text-[hsl(var(--muted-foreground))]">Đúng/Sai</Label>
+                    <Input type="number" value={tfCount} onChange={(e) => handleTfCountChange(Math.max(0, parseInt(e.target.value) || 0))} className="rounded-xl border-[hsl(var(--border))]/60 bg-transparent text-center text-sm" />
+                  </div>
+                  <div className="space-y-1.5 text-center">
+                    <Label className="text-[10px] font-bold uppercase text-[hsl(var(--muted-foreground))]">Điền đáp án</Label>
+                    <Input type="number" value={saCount} onChange={(e) => handleSaCountChange(Math.max(0, parseInt(e.target.value) || 0))} className="rounded-xl border-[hsl(var(--border))]/60 bg-transparent text-center text-sm" />
+                  </div>
+                </div>
+              </div>
+
               <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-4">
                 <Label className="mb-2 block">Thiết lập nâng cao</Label>
                 <div className="grid gap-3 text-sm">

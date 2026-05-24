@@ -176,7 +176,7 @@ export function AnswerEntry({
               <h3 className="font-semibold">Đúng / Sai</h3>
               <span className="text-sm text-[hsl(var(--muted-foreground))]">{tfCount} câu</span>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {Array.from({ length: tfCount }, (_, i) => {
                 const baseQ = mcCount + i + 1;
                 const item = tfAnswers[i] || {
@@ -189,28 +189,49 @@ export function AnswerEntry({
                 return (
                   <div
                     key={i}
-                    className="rounded-2xl border border-[hsl(var(--border))]/60 p-4"
+                    className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 p-5 hover:bg-[hsl(var(--muted))]/5 transition-colors"
                   >
-                    <div className="mb-3 flex items-center justify-between">
-                      <span className="font-medium">Câu {item.question}</span>
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                      {(["a", "b", "c", "d"] as const).map((key) => (
-                        <label
-                          key={key}
-                          className="flex items-center justify-between rounded-xl border border-[hsl(var(--border))]/60 px-3 py-2 text-sm"
-                        >
-                          <span>{key.toUpperCase()}</span>
-                          <input
-                            type="checkbox"
-                            checked={item[key]}
-                            onChange={(e) => {
-                              const next = [...tfAnswers];
-                              next[i] = { ...item, [key]: e.target.checked };
-                              onTfAnswersChange(next);
-                            }}
-                          />
-                        </label>
+                    <p className="mb-4 font-semibold text-sm tracking-tight border-b border-[hsl(var(--border))]/40 pb-2 flex items-center justify-between">
+                      CÂU HỎI {baseQ}
+                      <span className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] tracking-[0.2em] uppercase">Đúng / Sai</span>
+                    </p>
+                    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+                      {(["a", "b", "c", "d"] as const).map((sub) => (
+                        <div key={sub} className="space-y-2">
+                          <p className="text-[10px] font-bold uppercase text-[hsl(var(--muted-foreground))] text-center">Ý ({sub.toUpperCase()})</p>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = [...tfAnswers];
+                                if (!next[i]) next[i] = { question: baseQ, a: true, b: true, c: true, d: true };
+                                next[i] = { ...next[i], [sub]: true };
+                                onTfAnswersChange(next);
+                              }}
+                              className={cn(
+                                "rounded-xl border py-2 text-xs font-bold transition-all active:scale-95",
+                                item[sub] === true ? "bg-emerald-500 text-white border-transparent shadow-sm" : "border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))]"
+                              )}
+                            >
+                              ĐÚNG
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = [...tfAnswers];
+                                if (!next[i]) next[i] = { question: baseQ, a: true, b: true, c: true, d: true };
+                                next[i] = { ...next[i], [sub]: false };
+                                onTfAnswersChange(next);
+                              }}
+                              className={cn(
+                                "rounded-xl border py-2 text-xs font-bold transition-all active:scale-95",
+                                item[sub] === false ? "bg-rose-500 text-white border-transparent shadow-sm" : "border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))]"
+                              )}
+                            >
+                              SAI
+                            </button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>

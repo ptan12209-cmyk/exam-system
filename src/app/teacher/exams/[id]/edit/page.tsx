@@ -31,7 +31,65 @@ export default function EditExamPage() {
   const handleMcCountChange = (newCount: number) => { setMcCount(newCount); setMcAnswers(Array.from({ length: newCount }, (_, i) => mcAnswers[i] || null)) }
   const handleTfCountChange = (newCount: number) => { setTfCount(newCount); setTfAnswers(Array.from({ length: newCount }, (_, i) => tfAnswers[i] || { question: mcCount + 1 + i, a: true, b: true, c: true, d: true })) }
   const handleSaCountChange = (newCount: number) => { setSaCount(newCount); setSaAnswers(Array.from({ length: newCount }, (_, i) => saAnswers[i] || { question: mcCount + tfCount + 1 + i, answer: "" })) }
-  const handleSave = async () => { if (!title.trim()) { setError("Vui lòng nhập tên đề thi"); return } setSaving(true); setError(null); try { const mcAnswerObjects = mcAnswers.map((ans, i) => ({ question: i + 1, answer: ans })).filter((a) => a.answer !== null); const finalTfAnswers = tfAnswers.length > 0 ? tfAnswers.map((tf, i) => ({ ...tf, question: mcCount + 1 + i })) : Array.from({ length: tfCount }, (_, i) => ({ question: mcCount + 1 + i, a: true, b: true, c: true, d: true })); const finalSaAnswers = saAnswers.length > 0 ? saAnswers.map((sa, i) => ({ ...sa, question: mcCount + tfCount + 1 + i })) : Array.from({ length: saCount }, (_, i) => ({ question: mcCount + tfCount + 1 + i, answer: "" })); const { error: updateError } = await supabase.from("exams").update({ title: title.trim(), duration, total_questions: mcCount + tfCount + saCount, correct_answers: mcAnswers, mc_answers: mcAnswerObjects, tf_answers: tfCount > 0 ? finalTfAnswers : [], sa_answers: saCount > 0 ? finalSaAnswers : [], security_level: securityLevel }).eq("id", examId); if (updateError) throw updateError; router.push("/teacher/dashboard") } catch (err) { setError("Lỗi cập nhật: " + (err as Error).message) } finally { setSaving(false) } }
+  const handleSave = async () => {
+    if (!title.trim()) {
+      setError("Vui lòng nhập tên đề thi")
+      return
+    }
+    setSaving(true)
+    setError(null)
+    try {
+      const mcAnswerObjects = mcAnswers
+        .map((ans, i) => ({ question: i + 1, answer: ans }))
+        .filter((a) => a.answer !== null)
+
+      const finalTfAnswers = tfCount > 0
+        ? Array.from({ length: tfCount }, (_, i) => {
+            const qNum = mcCount + 1 + i
+            const existing = tfAnswers.find((t) => t.question === qNum) || tfAnswers[i] || {}
+            return {
+              question: qNum,
+              a: existing.a ?? true,
+              b: existing.b ?? true,
+              c: existing.c ?? true,
+              d: existing.d ?? true,
+            }
+          })
+        : []
+
+      const finalSaAnswers = saCount > 0
+        ? Array.from({ length: saCount }, (_, i) => {
+            const qNum = mcCount + tfCount + 1 + i
+            const existing = saAnswers.find((s) => s.question === qNum) || saAnswers[i] || {}
+            return {
+              question: qNum,
+              answer: String(existing.answer ?? "").trim(),
+            }
+          })
+        : []
+
+      const { error: updateError } = await supabase
+        .from("exams")
+        .update({
+          title: title.trim(),
+          duration,
+          total_questions: mcCount + tfCount + saCount,
+          correct_answers: mcAnswers,
+          mc_answers: mcAnswerObjects,
+          tf_answers: tfCount > 0 ? finalTfAnswers : [],
+          sa_answers: saCount > 0 ? finalSaAnswers : [],
+          security_level: securityLevel,
+        })
+        .eq("id", examId)
+
+      if (updateError) throw updateError
+      router.push("/teacher/dashboard")
+    } catch (err) {
+      setError("Lỗi cập nhật: " + (err as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
   const handleRegrade = async () => { if (!confirm("Chấm lại điểm tất cả bài nộp? Hành động này sẽ tính lại điểm dựa trên đáp án hiện tại.")) return; setRegrading(true); setError(null); setSuccess(null); try { const mcAnswerObjects = mcAnswers.map((ans, i) => ({ question: i + 1, answer: ans })).filter((a) => a.answer !== null); const finalTfAnswers = tfAnswers.map((tf, i) => ({ ...tf, question: mcCount + 1 + i })); const finalSaAnswers = saAnswers.map((sa, i) => ({ ...sa, question: mcCount + tfCount + 1 + i })); await supabase.from("exams").update({ correct_answers: mcAnswers, mc_answers: mcAnswerObjects, tf_answers: tfCount > 0 ? finalTfAnswers : [], sa_answers: saCount > 0 ? finalSaAnswers : [] }).eq("id", examId); const { data: submissions } = await supabase.from("submissions").select("id, answers, tf_answers, sa_answers").eq("exam_id", examId); if (!submissions?.length) { setSuccess("Không có bài nộp nào để chấm lại."); setRegrading(false); return } let updatedCount = 0; for (const sub of submissions) { let correctCount = 0; const totalQuestions = mcCount + tfCount + saCount; if (sub.answers && mcAnswers.length > 0) { const studentMc = sub.answers as string[]; for (let i = 0; i < mcAnswers.length; i++) if (mcAnswers[i] && studentMc[i]?.toUpperCase() === mcAnswers[i]) correctCount++ } if (sub.tf_answers && finalTfAnswers.length > 0) { const studentTf = sub.tf_answers as TFAnswer[]; for (const correct of finalTfAnswers) { const student = studentTf.find((t) => t.question === correct.question); if (student) { let tfScore = 0; if (student.a === correct.a) tfScore += 0.25; if (student.b === correct.b) tfScore += 0.25; if (student.c === correct.c) tfScore += 0.25; if (student.d === correct.d) tfScore += 0.25; correctCount += tfScore } } } if (sub.sa_answers && finalSaAnswers.length > 0) { const studentSa = sub.sa_answers as SAAnswer[]; for (const correct of finalSaAnswers) { const student = studentSa.find((s) => s.question === correct.question); if (student) { const correctVal = correct.answer?.toString().trim().toLowerCase(); const studentVal = student.answer?.toString().trim().toLowerCase(); if (correctVal && studentVal && correctVal === studentVal) correctCount++ } } } const score = totalQuestions > 0 ? (correctCount / totalQuestions) * 10 : 0; await supabase.from("submissions").update({ score, correct_count: Math.round(correctCount * 100) / 100 }).eq("id", sub.id); updatedCount++ } setSuccess(`✅ Đã chấm lại ${updatedCount} bài nộp thành công!`) } catch (err) { setError("Lỗi chấm lại: " + (err as Error).message) } finally { setRegrading(false) } }
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login") }
