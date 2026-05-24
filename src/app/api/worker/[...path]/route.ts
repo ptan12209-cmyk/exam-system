@@ -40,6 +40,14 @@ async function handleProxy(request: NextRequest, { params }: { params: Promise<{
     });
 
     const responseHeaders = new Headers(response.headers);
+    // Remove compression and length headers because Next.js decompresses the body on server-side.
+    // Leaving them would make the browser try to decompress an already decompressed body, throwing ERR_CONTENT_DECODING_FAILED.
+    responseHeaders.delete("content-encoding");
+    responseHeaders.delete("content-length");
+    responseHeaders.delete("transfer-encoding");
+    responseHeaders.delete("connection");
+    responseHeaders.delete("keep-alive");
+
     const responseBody = await response.blob();
 
     return new NextResponse(responseBody, {
