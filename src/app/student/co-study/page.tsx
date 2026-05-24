@@ -177,7 +177,11 @@ export default function CoStudyRoomsPage() {
     widget.bind(SC.Widget.Events.FINISH, handleFinish)
     
     return () => {
-      widget.unbind(SC.Widget.Events.FINISH)
+      try {
+        widget.unbind(SC.Widget.Events.FINISH)
+      } catch (err) {
+        // Suppress unbind errors when iframe unmounts
+      }
     }
   }, [activeSoundCloudUrl, playingAudioId, allTracks])
 
@@ -423,7 +427,7 @@ export default function CoStudyRoomsPage() {
       await supabase.from("co_study_room_members").upsert({
         room_id: room.id,
         student_id: userId
-      })
+      }, { onConflict: "room_id,student_id" })
 
       // 2. Initialize or join study session
       const { data: existingSession } = await supabase
@@ -1207,7 +1211,7 @@ export default function CoStudyRoomsPage() {
                     dynamicSessions.map((sess) => {
                       const isMe = sess.student_id === userId
                       const name = sess.profiles?.full_name || (isMe ? profile?.full_name : "Bạn học")
-                      const avatar = sess.profiles?.avatar_url || "/default-avatar.png"
+                      const avatar = sess.profiles?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`
 
                       return (
                         <div key={sess.student_id} className="flex items-center justify-between p-3 rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--card))]/75">
