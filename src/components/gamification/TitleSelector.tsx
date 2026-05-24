@@ -75,24 +75,24 @@ export function TitleSelector({ onEquip }: TitleSelectorProps) {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-yellow-500" />
+                <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
             </div>
         )
     }
 
     return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white flex items-center gap-2">
-                    <Crown className="w-5 h-5 text-yellow-500" />
-                    Danh hiệu
+        <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[hsl(var(--border))]/40">
+                <h3 className="font-extrabold text-[hsl(var(--foreground))] flex items-center gap-2 tracking-tight">
+                    <Crown className="w-5 h-5 text-amber-500 animate-pulse" />
+                    Danh hiệu đạt được
                 </h3>
-                <span className="text-sm text-slate-400">
-                    {userXp.toLocaleString()} XP
+                <span className="text-xs font-bold text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))]/75 px-3 py-1 rounded-full">
+                    {userXp.toLocaleString()} XP tích lũy
                 </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-1 gap-2.5">
                 {titles.map(title => {
                     const isEquipped = title.id === equippedId
                     const isLocked = !title.isUnlocked
@@ -103,45 +103,50 @@ export function TitleSelector({ onEquip }: TitleSelectorProps) {
                             onClick={() => handleEquip(title)}
                             disabled={isLocked || equipping === title.id}
                             className={cn(
-                                "flex items-center justify-between p-3 rounded-xl border transition-all text-left",
+                                "flex items-center justify-between p-4 rounded-2xl border transition-all duration-200 text-left",
                                 isEquipped
-                                    ? "bg-yellow-500/20 border-yellow-500/50"
+                                    ? "bg-amber-500/10 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.06)] animate-pulse"
                                     : isLocked
-                                        ? "bg-slate-800/30 border-slate-700 opacity-50 cursor-not-allowed"
-                                        : "bg-slate-800 border-slate-700 hover:border-yellow-500/30 cursor-pointer"
+                                        ? "bg-[hsl(var(--card))]/35 border-[hsl(var(--border))]/50 opacity-45 cursor-not-allowed"
+                                        : "bg-[hsl(var(--card))]/75 border-[hsl(var(--border))]/60 hover:border-amber-500/40 hover:bg-[hsl(var(--card))] cursor-pointer hover:shadow-xs"
                             )}
                         >
                             <div className="flex items-center gap-3">
-                                {/* Title preview */}
+                                {/* Title display with glow effect if equipped */}
                                 <span
-                                    className="text-lg font-medium"
-                                    style={{ color: isLocked ? "#64748b" : title.color }}
+                                    className={cn(
+                                        "text-base font-extrabold tracking-tight transition-colors duration-200",
+                                        isEquipped && "filter drop-shadow-[0_2px_4px_rgba(245,158,11,0.15)]"
+                                    )}
+                                    style={{ color: isLocked ? "hsl(var(--muted-foreground))" : title.color }}
                                 >
-                                    {title.display_text}
+                                    [{title.display_text}]
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                                {/* XP requirement */}
+                            <div className="flex items-center gap-3">
+                                {/* XP Requirement pill */}
                                 {title.unlock_xp !== null && title.unlock_xp > 0 && (
                                     <span className={cn(
-                                        "text-xs px-2 py-0.5 rounded-full",
+                                        "text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border",
                                         isLocked
-                                            ? "bg-slate-700 text-slate-400"
-                                            : "bg-yellow-500/20 text-yellow-400"
+                                            ? "bg-[hsl(var(--muted))]/80 text-[hsl(var(--muted-foreground))]/70 border-[hsl(var(--border))]/40"
+                                            : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                                     )}>
-                                        {title.unlock_xp.toLocaleString()} XP
+                                        Yêu cầu {title.unlock_xp.toLocaleString()} XP
                                     </span>
                                 )}
 
-                                {/* Status icon */}
-                                {equipping === title.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin text-yellow-500" />
-                                ) : isEquipped ? (
-                                    <Check className="w-4 h-4 text-yellow-500" />
-                                ) : isLocked ? (
-                                    <Lock className="w-4 h-4 text-slate-500" />
-                                ) : null}
+                                {/* Status icons */}
+                                <div className="flex items-center justify-center w-6 h-6">
+                                    {equipping === title.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                                    ) : isEquipped ? (
+                                        <Check className="w-4.5 h-4.5 text-amber-500 stroke-[3.5]" />
+                                    ) : isLocked ? (
+                                        <Lock className="w-4 h-4 text-[hsl(var(--muted-foreground))]/60" />
+                                    ) : null}
+                                </div>
                             </div>
                         </button>
                     )
@@ -151,19 +156,21 @@ export function TitleSelector({ onEquip }: TitleSelectorProps) {
     )
 }
 
-// Display equipped title badge
+// Display equipped title badge as a beautiful clean pill
 export function TitleBadge({ title }: { title?: { display_text: string; color: string } }) {
     if (!title) return null
 
     return (
         <span
-            className="px-2 py-0.5 rounded-full text-sm font-medium"
+            className="px-2.5 py-0.5 rounded-full text-xs font-bold border select-none tracking-tight"
             style={{
                 color: title.color,
-                backgroundColor: `${title.color}20`
+                backgroundColor: `${title.color}12`,
+                borderColor: `${title.color}25`
             }}
         >
             {title.display_text}
         </span>
     )
 }
+
