@@ -166,11 +166,26 @@ export default function CoStudyRoomsPage() {
     
     const widget = SC.Widget(iframeRef.current)
     const handleFinish = () => {
-      const currentIndex = allTracks.findIndex(t => t.id === playingAudioId)
-      if (currentIndex !== -1) {
-        const nextIndex = (currentIndex + 1) % allTracks.length
-        const nextTrack = allTracks[nextIndex]
-        playTrack(nextTrack)
+      // Check if finished track is custom
+      const isCustom = customTracks.some(t => t.id === playingAudioId)
+      if (isCustom) {
+        if (customTracks.length > 1) {
+          const currentIndex = customTracks.findIndex(t => t.id === playingAudioId)
+          const nextIndex = (currentIndex + 1) % customTracks.length
+          const nextTrack = customTracks[nextIndex]
+          playTrack({ ...nextTrack, type: nextTrack.type as any })
+        } else {
+          // If only 1 custom track, let SoundCloud automatically play related/recommended tracks
+          console.log("Single SoundCloud track. Autoplaying related tracks from SoundCloud.")
+        }
+      } else {
+        // Ambient track queue
+        const currentIndex = AMBIENT_TRACKS.findIndex(t => t.id === playingAudioId)
+        if (currentIndex !== -1) {
+          const nextIndex = (currentIndex + 1) % AMBIENT_TRACKS.length
+          const nextTrack = AMBIENT_TRACKS[nextIndex]
+          playTrack({ ...nextTrack, type: "ambient" })
+        }
       }
     }
     
@@ -183,7 +198,7 @@ export default function CoStudyRoomsPage() {
         // Suppress unbind errors when iframe unmounts
       }
     }
-  }, [activeSoundCloudUrl, playingAudioId, allTracks])
+  }, [activeSoundCloudUrl, playingAudioId, customTracks])
 
   // HTML5 Audio ended handler
   useEffect(() => {
@@ -191,11 +206,21 @@ export default function CoStudyRoomsPage() {
     if (!audio) return
     
     const handleEnded = () => {
-      const currentIndex = allTracks.findIndex(t => t.id === playingAudioId)
-      if (currentIndex !== -1) {
-        const nextIndex = (currentIndex + 1) % allTracks.length
-        const nextTrack = allTracks[nextIndex]
-        playTrack(nextTrack)
+      const isCustom = customTracks.some(t => t.id === playingAudioId)
+      if (isCustom) {
+        if (customTracks.length > 1) {
+          const currentIndex = customTracks.findIndex(t => t.id === playingAudioId)
+          const nextIndex = (currentIndex + 1) % customTracks.length
+          const nextTrack = customTracks[nextIndex]
+          playTrack({ ...nextTrack, type: nextTrack.type as any })
+        }
+      } else {
+        const currentIndex = AMBIENT_TRACKS.findIndex(t => t.id === playingAudioId)
+        if (currentIndex !== -1) {
+          const nextIndex = (currentIndex + 1) % AMBIENT_TRACKS.length
+          const nextTrack = AMBIENT_TRACKS[nextIndex]
+          playTrack({ ...nextTrack, type: "ambient" })
+        }
       }
     }
     
@@ -203,7 +228,7 @@ export default function CoStudyRoomsPage() {
     return () => {
       audio.removeEventListener("ended", handleEnded)
     }
-  }, [playingAudioId, allTracks])
+  }, [playingAudioId, customTracks])
 
   // Fetch student profile & active rooms
   useEffect(() => {
@@ -1055,7 +1080,7 @@ export default function CoStudyRoomsPage() {
                       scrolling="no"
                       frameBorder="no"
                       allow="autoplay"
-                      src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(activeSoundCloudUrl)}&color=%236366f1&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`}
+                      src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(activeSoundCloudUrl)}&color=%236366f1&auto_play=true&hide_related=false&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`}
                     />
                   </div>
                 )}
