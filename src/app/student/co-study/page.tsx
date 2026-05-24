@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
+import { TitleBadge } from "@/components/gamification/TitleSelector"
 
 interface CoStudyRoom {
   id: string
@@ -42,7 +43,18 @@ interface StudySession {
   profiles?: {
     full_name: string | null
     avatar_url: string | null
+    equipped_title?: {
+      display_text: string
+      color: string
+    }
   }
+}
+
+interface CustomTrack {
+  id: string
+  label: string
+  url: string
+  type: "local" | "url" | "soundcloud"
 }
 
 // Audio track configuration
@@ -93,6 +105,11 @@ export default function CoStudyRoomsPage() {
   // Audio state
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [activeSoundCloudUrl, setActiveSoundCloudUrl] = useState<string | null>(null)
+  const [customTracks, setCustomTracks] = useState<CustomTrack[]>([])
+  const [soundcloudUrl, setSoundcloudUrl] = useState("")
+  const [directAudioUrl, setDirectAudioUrl] = useState("")
+  const [importType, setImportType] = useState<"soundcloud" | "direct" | "local">("soundcloud")
 
   // User profile
   const [userId, setUserId] = useState<string | null>(null)
@@ -107,7 +124,11 @@ export default function CoStudyRoomsPage() {
       if (!user) { router.push("/login"); return }
       if (mounted) setUserId(user.id)
 
-      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("*, equipped_title:titles(display_text, color)")
+        .eq("id", user.id)
+        .single()
       if (mounted && prof) setProfile(prof)
 
       const { data: roomsList } = await supabase.from("co_study_rooms").select("*").order("created_at", { ascending: false })
@@ -132,7 +153,11 @@ export default function CoStudyRoomsPage() {
         .from("co_study_room_members")
         .select(`
           student_id,
-          profiles (full_name, avatar_url)
+          profiles (
+            full_name, 
+            avatar_url,
+            equipped_title:titles(display_text, color)
+          )
         `)
         .eq("room_id", activeRoom.id)
       
@@ -150,7 +175,11 @@ export default function CoStudyRoomsPage() {
           status,
           last_status_change,
           total_focus_seconds_today,
-          profiles (full_name, avatar_url)
+          profiles (
+            full_name, 
+            avatar_url,
+            equipped_title:titles(display_text, color)
+          )
         `)
         .in("student_id", studentIds)
 
@@ -222,6 +251,11 @@ export default function CoStudyRoomsPage() {
     return () => clearInterval(timer)
   }, [isTimerRunning, timerMode, focusDuration, breakDuration])
 
+  const localTodaySecondsRef = useRef(localTodaySeconds)
+  useEffect(() => {
+    localTodaySecondsRef.current = localTodaySeconds
+  }, [localTodaySeconds])
+
   // Periodically push focused time accumulation to Supabase
   useEffect(() => {
     if (!isTimerRunning || timerMode !== "focus" || !userId || !activeRoom) return
@@ -231,13 +265,13 @@ export default function CoStudyRoomsPage() {
         student_id: userId,
         room_id: activeRoom.id,
         status: "focusing",
-        total_focus_seconds_today: localTodaySeconds,
+        total_focus_seconds_today: localTodaySecondsRef.current,
         last_status_change: new Date().toISOString()
       })
     }, 10000) // sync database every 10 seconds
 
     return () => clearInterval(syncTimer)
-  }, [isTimerRunning, timerMode, localTodaySeconds, userId, activeRoom, supabase])
+  }, [isTimerRunning, timerMode, userId, activeRoom, supabase])
 
   // Create Room
   const handleCreateRoom = async () => {
@@ -350,6 +384,7 @@ export default function CoStudyRoomsPage() {
     if (audioRef.current) {
       audioRef.current.pause()
       setPlayingAudioId(null)
+      setActiveSoundCloudUrl(null)
     }
 
     try {
@@ -410,22 +445,69 @@ export default function CoStudyRoomsPage() {
     await handleStatusChange("resting")
   }
 
-  // Ambient audio control
-  const toggleAudio = (track: typeof AMBIENT_TRACKS[number]) => {
+  // Audio playback control
+  const playTrack = (track: { id: string; label: string; url: string; type: "ambient" | "local" | "url" | "soundcloud" }) => {
     if (playingAudioId === track.id) {
       if (audioRef.current) {
         audioRef.current.pause()
       }
       setPlayingAudioId(null)
+      setActiveSoundCloudUrl(null)
     } else {
       if (audioRef.current) {
         audioRef.current.pause()
       }
-      audioRef.current = new Audio(track.url)
-      audioRef.current.loop = true
-      audioRef.current.play().catch(err => console.error("Audio playback error:", err))
-      setPlayingAudioId(track.id)
+      
+      if (track.type === "soundcloud") {
+        setPlayingAudioId(track.id)
+        setActiveSoundCloudUrl(track.url)
+      } else {
+        setActiveSoundCloudUrl(null)
+        audioRef.current = new Audio(track.url)
+        audioRef.current.loop = true
+        audioRef.current.play().catch(err => console.error("Audio playback error:", err))
+        setPlayingAudioId(track.id)
+      }
     }
+  }
+
+  // SoundCloud and local track uploads handler
+  const handleAddSoundCloud = () => {
+    if (!soundcloudUrl.trim()) return
+    const newTrack: CustomTrack = {
+      id: `sc-${Date.now()}`,
+      label: `SoundCloud: ${soundcloudUrl.split("/").pop() || "Track"} 🎵`,
+      url: soundcloudUrl.trim(),
+      type: "soundcloud"
+    }
+    setCustomTracks(prev => [...prev, newTrack])
+    setSoundcloudUrl("")
+  }
+
+  const handleAddDirectUrl = () => {
+    if (!directAudioUrl.trim()) return
+    const newTrack: CustomTrack = {
+      id: `url-${Date.now()}`,
+      label: `Direct: ${directAudioUrl.split("/").pop() || "Audio"} 🎵`,
+      url: directAudioUrl.trim(),
+      type: "url"
+    }
+    setCustomTracks(prev => [...prev, newTrack])
+    setDirectAudioUrl("")
+  }
+
+  const handleLocalFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const file = files[0]
+    const fileUrl = URL.createObjectURL(file)
+    const newTrack: CustomTrack = {
+      id: `local-${Date.now()}`,
+      label: `${file.name.substring(0, 20)}... 💾`,
+      url: fileUrl,
+      type: "local"
+    }
+    setCustomTracks(prev => [...prev, newTrack])
   }
 
   // YPT Ticking format helper (Seconds to hh:mm:ss)
@@ -443,11 +525,24 @@ export default function CoStudyRoomsPage() {
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
   }
 
-  // Dynamic ranking for Weekly Leaderboard (mocking based on active room members focus time today)
+  // Dynamic sessions to override current user's seconds with locally ticking seconds
+  const dynamicSessions = useMemo(() => {
+    return sessions.map(sess => {
+      if (sess.student_id === userId) {
+        return {
+          ...sess,
+          total_focus_seconds_today: localTodaySeconds
+        }
+      }
+      return sess
+    })
+  }, [sessions, userId, localTodaySeconds])
+
+  // Dynamic ranking for Weekly Leaderboard
   const leaderboardMembers = useMemo(() => {
-    return [...sessions]
+    return [...dynamicSessions]
       .sort((a, b) => b.total_focus_seconds_today - a.total_focus_seconds_today)
-  }, [sessions])
+  }, [dynamicSessions])
 
   if (loading) return <Loading fullPage label="Đang kết nối phòng học..." />
 
@@ -746,11 +841,26 @@ export default function CoStudyRoomsPage() {
                 <h3 className="text-base font-semibold tracking-tight mb-4 flex items-center gap-2">
                   <Volume2 className="h-5 w-5 text-indigo-500" /> Nhạc & Âm Thanh Nền Tăng Tập Trung
                 </h3>
+                
+                {/* SoundCloud Active Player */}
+                {activeSoundCloudUrl && (
+                  <div className="mb-4 rounded-2xl overflow-hidden border border-indigo-500/30 shadow-md">
+                    <iframe
+                      width="100%"
+                      height="166"
+                      scrolling="no"
+                      frameBorder="no"
+                      allow="autoplay"
+                      src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(activeSoundCloudUrl)}&color=%236366f1&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`}
+                    />
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {AMBIENT_TRACKS.map((track) => (
                     <button
                       key={track.id}
-                      onClick={() => toggleAudio(track)}
+                      onClick={() => playTrack({ id: track.id, label: track.label, url: track.url, type: "ambient" })}
                       className={cn(
                         "flex flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-all active:scale-95",
                         playingAudioId === track.id
@@ -762,6 +872,96 @@ export default function CoStudyRoomsPage() {
                       <span className="text-[10px] tracking-wider uppercase font-semibold">{track.label}</span>
                     </button>
                   ))}
+                </div>
+
+                {/* Custom Music Imports section */}
+                <div className="mt-6 border-t border-[hsl(var(--border))]/25 pt-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <h4 className="text-sm font-semibold tracking-tight flex items-center gap-1.5">
+                      <Plus className="h-4 w-4 text-indigo-500" /> Nhạc Cá Nhân & SoundCloud
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(["soundcloud", "direct", "local"] as const).map(type => (
+                        <button
+                          key={type}
+                          onClick={() => setImportType(type)}
+                          className={cn(
+                            "text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border transition-all",
+                            importType === type
+                              ? "bg-indigo-500/10 text-indigo-500 border-indigo-500/35"
+                              : "bg-transparent text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))]/40 hover:border-indigo-500/30"
+                          )}
+                        >
+                          {type === "soundcloud" ? "SoundCloud" : type === "direct" ? "Direct URL" : "Tải tệp máy"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Inputs based on type */}
+                  <div className="mb-4 flex items-center gap-2">
+                    {importType === "soundcloud" && (
+                      <>
+                        <Input 
+                          placeholder="Dán link bài hát SoundCloud tại đây..." 
+                          value={soundcloudUrl}
+                          onChange={(e) => setSoundcloudUrl(e.target.value)}
+                          className="rounded-xl text-xs py-1.5 h-9 bg-transparent border-[hsl(var(--border))]/60"
+                        />
+                        <Button onClick={handleAddSoundCloud} size="sm" className="rounded-xl h-9 text-xs px-4">Thêm</Button>
+                      </>
+                    )}
+                    {importType === "direct" && (
+                      <>
+                        <Input 
+                          placeholder="Dán link âm thanh trực tiếp (MP3/WAV)..." 
+                          value={directAudioUrl}
+                          onChange={(e) => setDirectAudioUrl(e.target.value)}
+                          className="rounded-xl text-xs py-1.5 h-9 bg-transparent border-[hsl(var(--border))]/60"
+                        />
+                        <Button onClick={handleAddDirectUrl} size="sm" className="rounded-xl h-9 text-xs px-4">Thêm</Button>
+                      </>
+                    )}
+                    {importType === "local" && (
+                      <div className="w-full">
+                        <label className="flex items-center justify-center border border-dashed border-[hsl(var(--border))]/60 rounded-xl py-3 px-4 text-center cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all">
+                          <span className="text-xs text-[hsl(var(--muted-foreground))] font-semibold">Tải lên tệp âm thanh từ thiết bị của bạn 💾</span>
+                          <input type="file" accept="audio/*" onChange={handleLocalFileUpload} className="hidden" />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Custom Tracks List */}
+                  {customTracks.length > 0 && (
+                    <div className="grid grid-cols-1 gap-2 max-h-[25vh] overflow-y-auto pr-1">
+                      {customTracks.map((track) => (
+                        <div 
+                          key={track.id} 
+                          className={cn(
+                            "flex items-center justify-between p-2.5 rounded-xl border transition-all",
+                            playingAudioId === track.id 
+                              ? "border-indigo-500 bg-indigo-500/10 text-indigo-500 font-bold" 
+                              : "border-[hsl(var(--border))]/40 bg-transparent"
+                          )}
+                        >
+                          <button 
+                            onClick={() => playTrack({ id: track.id, label: track.label, url: track.url, type: track.type as any })}
+                            className="flex items-center gap-2 flex-1 text-left"
+                          >
+                            {playingAudioId === track.id ? <Volume2 className="h-4 w-4 animate-bounce text-indigo-500" /> : <VolumeX className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />}
+                            <span className="text-xs truncate">{track.label}</span>
+                          </button>
+                          <button 
+                            onClick={() => setCustomTracks(prev => prev.filter(t => t.id !== track.id))}
+                            className="text-[10px] font-bold text-red-500 dark:text-red-400 hover:underline px-2"
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -801,10 +1001,10 @@ export default function CoStudyRoomsPage() {
                 </div>
 
                 <div className="space-y-4 max-h-[35vh] overflow-y-auto pr-1">
-                  {sessions.length === 0 ? (
+                  {dynamicSessions.length === 0 ? (
                     <div className="py-12 text-center text-xs text-[hsl(var(--muted-foreground))]/40">Đang chờ bạn học tham gia...</div>
                   ) : (
-                    sessions.map((sess) => {
+                    dynamicSessions.map((sess) => {
                       const isMe = sess.student_id === userId
                       const name = sess.profiles?.full_name || (isMe ? profile?.full_name : "Bạn học")
                       const avatar = sess.profiles?.avatar_url || "/default-avatar.png"
@@ -819,9 +1019,12 @@ export default function CoStudyRoomsPage() {
                               alt="Avatar" 
                             />
                             <div>
-                              <p className="text-xs font-bold leading-tight">
-                                {name} {isMe && <span className="text-[9px] text-indigo-500 font-semibold">(Tôi)</span>}
-                              </p>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="text-xs font-bold leading-tight">
+                                  {name} {isMe && <span className="text-[9px] text-indigo-500 font-semibold">(Tôi)</span>}
+                                </p>
+                                <TitleBadge title={sess.profiles?.equipped_title || (isMe ? profile?.equipped_title : undefined)} />
+                              </div>
                               <div className="mt-1 flex items-center gap-1.5 text-[9px] text-[hsl(var(--muted-foreground))]">
                                 {sess.status === "focusing" ? (
                                   <span className="flex items-center gap-1 text-red-500 font-semibold">
@@ -872,7 +1075,10 @@ export default function CoStudyRoomsPage() {
                             )}>
                               #{rankIdx + 1}
                             </span>
-                            <span className="text-xs font-semibold">{name}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs font-semibold">{name}</span>
+                              <TitleBadge title={sess.profiles?.equipped_title || (isMe ? profile?.equipped_title : undefined)} />
+                            </div>
                           </div>
                           <span className="text-xs font-bold font-mono tracking-tight text-[hsl(var(--muted-foreground))]">
                             {formatTime(sess.total_focus_seconds_today)}

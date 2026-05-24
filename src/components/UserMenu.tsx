@@ -12,6 +12,8 @@ import {
     ChevronDown
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import { TitleBadge } from "@/components/gamification/TitleSelector"
 
 interface UserMenuProps {
     userName: string
@@ -23,6 +25,29 @@ interface UserMenuProps {
 export function UserMenu({ userName, userClass, onLogout, role = "student" }: UserMenuProps) {
     const [isOpen, setIsOpen] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
+    const [equippedTitle, setEquippedTitle] = useState<{ display_text: string; color: string } | null>(null)
+
+    useEffect(() => {
+        if (role !== "student") return
+        
+        const fetchEquippedTitle = async () => {
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+            
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("equipped_title:titles(display_text, color)")
+                .eq("id", user.id)
+                .single()
+            
+            if (profile?.equipped_title) {
+                setEquippedTitle(profile.equipped_title as any)
+            }
+        }
+        
+        fetchEquippedTitle()
+    }, [role])
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -68,7 +93,10 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                     {initials}
                 </div>
                 <div className="hidden sm:block text-left">
-                    <p className="text-sm font-semibold text-foreground leading-tight">{userName || "User"}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-semibold text-foreground leading-tight">{userName || "User"}</p>
+                        {equippedTitle && <TitleBadge title={equippedTitle} />}
+                    </div>
                     <p className="text-[10px] text-muted-foreground">{userClass || (role === "student" ? "Học sinh" : "Giáo viên")}</p>
                 </div>
                 <ChevronDown className={cn(
@@ -87,7 +115,10 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                                 {initials}
                             </div>
                             <div>
-                                <p className="font-semibold text-foreground text-sm">{userName}</p>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <p className="font-semibold text-foreground text-sm">{userName}</p>
+                                    {equippedTitle && <TitleBadge title={equippedTitle} />}
+                                </div>
                                 <p className="text-xs text-muted-foreground">{userClass || (role === "student" ? "Học sinh" : "Giáo viên")}</p>
                             </div>
                         </div>

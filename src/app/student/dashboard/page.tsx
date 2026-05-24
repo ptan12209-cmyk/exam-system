@@ -25,6 +25,7 @@ import { getUserStats } from "@/lib/gamification"
 import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
 import { DailyCheckIn } from "@/components/gamification/DailyCheckIn"
 import { XpBar } from "@/components/gamification/XpBar"
+import { ChallengesWidget } from "@/components/gamification/ChallengeCard"
 import { BottomNav } from "@/components/BottomNav"
 import { StudentHeader } from "@/components/student/StudentHeader"
 import { StudentShell } from "@/components/student/StudentShell"
@@ -137,7 +138,7 @@ export default function StudentDashboard() {
       <StudentHeader name={profile?.full_name} studentClass={profile?.class} onLogout={handleLogout} />
 
       <main className="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:py-10">
-        <section className="grid gap-8 lg:grid-cols-[1.4fr_0.9fr] lg:items-end">
+        <section className="grid gap-8 lg:grid-cols-[1.45fr_0.85fr] lg:items-start">
           <div>
             <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/70 px-4 py-2 text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))] backdrop-blur-md">
               <GraduationCap className="h-3.5 w-3.5" /> Student dashboard
@@ -165,22 +166,28 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          <div className="liquid-glass rounded-[2rem] p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[hsl(var(--muted-foreground))]">XP hiện tại</p>
-                <p className="text-3xl font-semibold tracking-tight">{userXp}</p>
+          <div className="space-y-6">
+            <div className="liquid-glass rounded-[2rem] p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">XP hiện tại</p>
+                  <p className="text-3xl font-semibold tracking-tight">{userXp}</p>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/20">
+                  <Zap className="h-5 w-5" />
+                </div>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/20">
-                <Zap className="h-5 w-5" />
+              <XpBar xp={userXp} size="sm" />
+              <div className="mt-6 rounded-2xl border border-[hsl(var(--border))]/50 bg-[hsl(var(--muted))]/10 p-4">
+                <p className="mb-2 flex items-center gap-2 text-sm font-medium">
+                  <CheckCircle className="h-4 w-4" /> Điểm danh hôm nay
+                </p>
+                <DailyCheckIn onComplete={({ xp }) => setUserXp((prev) => prev + xp)} />
               </div>
             </div>
-            <XpBar xp={userXp} size="sm" />
-            <div className="mt-6 rounded-2xl border border-[hsl(var(--border))]/50 bg-[hsl(var(--muted))]/10 p-4">
-              <p className="mb-2 flex items-center gap-2 text-sm font-medium">
-                <CheckCircle className="h-4 w-4" /> Điểm danh hôm nay
-              </p>
-              <DailyCheckIn onComplete={({ xp }) => setUserXp((prev) => prev + xp)} />
+
+            <div className="liquid-glass rounded-[2rem] p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
+              <ChallengesWidget limit={3} />
             </div>
           </div>
         </section>

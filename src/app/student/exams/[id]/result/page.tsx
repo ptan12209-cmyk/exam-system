@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { updateStudentStats } from "@/lib/gamification"
 import { XpGainAnimation, LevelUpAnimation } from "@/components/gamification/XpBar"
+import { NewBadgeAnimation } from "@/components/gamification/BadgeCard"
+import { useAchievementUnlock } from "@/components/gamification/AchievementUnlock"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { StudentShell } from "@/components/student/StudentShell"
@@ -63,6 +65,10 @@ export default function ExamResultPage() {
   const [maxAttempts, setMaxAttempts] = useState(1)
   const [canViewScore, setCanViewScore] = useState(true)
 
+  const { unlock, AchievementPopup } = useAchievementUnlock()
+  const [unlockedBadges, setUnlockedBadges] = useState<any[]>([])
+  const [currentBadgeIndex, setCurrentBadgeIndex] = useState(0)
+
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -114,6 +120,34 @@ export default function ExamResultPage() {
           setXpGained(result.xpGained)
           setNewLevel(result.newLevel)
           if (result.leveledUp) setShowLevelUp(true)
+          
+          // Check for newly unlocked badges
+          if (result.newBadges && result.newBadges.length > 0) {
+            const { data: badgeData } = await supabase
+              .from("badges")
+              .select("*")
+              .in("name", result.newBadges)
+            if (badgeData) {
+              setUnlockedBadges(badgeData)
+            }
+          }
+
+          // Check for newly unlocked achievements
+          const { data: achievementData } = await supabase.rpc("check_and_unlock_achievements", {
+            p_user_id: user.id
+          })
+          if (achievementData && achievementData.unlocked && achievementData.unlocked.length > 0) {
+            const { data: achData } = await supabase
+              .from("achievements")
+              .select("*")
+              .in("name", achievementData.unlocked)
+            if (achData) {
+              achData.forEach((ach: any) => {
+                unlock(ach)
+              })
+            }
+          }
+
           localStorage.setItem(xpAwardedKey, "true")
         } catch (error) {
           console.error("Failed to update stats:", error)
@@ -137,6 +171,13 @@ export default function ExamResultPage() {
     <StudentShell>
       {xpGained !== null && xpGained > 0 && <XpGainAnimation xpGained={xpGained} onComplete={() => setXpGained(null)} />}
       {showLevelUp && <LevelUpAnimation newLevel={newLevel} onComplete={() => setShowLevelUp(false)} />}
+      {unlockedBadges.length > 0 && currentBadgeIndex < unlockedBadges.length && (
+        <NewBadgeAnimation 
+          badge={unlockedBadges[currentBadgeIndex]} 
+          onComplete={() => setCurrentBadgeIndex(prev => prev + 1)} 
+        />
+      )}
+      {AchievementPopup}
 
       <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] selection:bg-[hsl(var(--foreground))] selection:text-[hsl(var(--background))]">
         <div className="sticky top-0 z-50 border-b border-[hsl(var(--border))]/30 bg-[hsl(var(--background))]/80 backdrop-blur-xl">
