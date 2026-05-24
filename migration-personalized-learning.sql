@@ -109,12 +109,25 @@ CREATE POLICY "Students manage own study notes" ON study_notes
 
 
 -- 5. Enable Realtime on study_sessions and co_study_room_members for live YPT dashboard
-BEGIN;
-    -- Drop tables from publication first to avoid duplicates
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS study_sessions;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS co_study_room_members;
-    
-    -- Add tables to publication
-    ALTER PUBLICATION supabase_realtime ADD TABLE study_sessions;
-    ALTER PUBLICATION supabase_realtime ADD TABLE co_study_room_members;
-COMMIT;
+DO $$
+BEGIN
+    -- Check and add study_sessions to supabase_realtime publication
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_rel pr 
+        JOIN pg_publication p ON p.oid = pr.prpubid 
+        JOIN pg_class c ON c.oid = pr.prrelid 
+        WHERE p.pubname = 'supabase_realtime' AND c.relname = 'study_sessions'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE study_sessions;
+    END IF;
+
+    -- Check and add co_study_room_members to supabase_realtime publication
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_rel pr 
+        JOIN pg_publication p ON p.oid = pr.prpubid 
+        JOIN pg_class c ON c.oid = pr.prrelid 
+        WHERE p.pubname = 'supabase_realtime' AND c.relname = 'co_study_room_members'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE co_study_room_members;
+    END IF;
+END $$;
