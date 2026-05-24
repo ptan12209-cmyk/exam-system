@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -12,12 +12,20 @@ import { cn } from "@/lib/utils"
 import { ArrowLeft, BookOpen, Calendar, Clock, Edit, GraduationCap, MessageCircle, Plus, Save, Settings, Trash2, User, Video, Youtube, X } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 
+declare global {
+  interface Window {
+    JitsiMeetExternalAPI: any
+  }
+}
+
 interface LiveConfig {
   id: string
   youtube_video_id: string | null
   youtube_chat_enabled: boolean
   is_live: boolean
   title: string | null
+  live_mode: "youtube" | "jitsi"
+  jitsi_room_name: string | null
 }
 
 interface ScheduleItem {
@@ -43,10 +51,14 @@ export default function LiveRoomPage() {
   const [formTime, setFormTime] = useState("")
   const [formTopic, setFormTopic] = useState("")
   const [formHost, setFormHost] = useState("")
+  
+  // Custom Live settings states
   const [youtubeUrl, setYoutubeUrl] = useState("")
   const [liveTitle, setLiveTitle] = useState("")
   const [chatEnabled, setChatEnabled] = useState(true)
   const [isLive, setIsLive] = useState(false)
+  const [liveMode, setLiveMode] = useState<"youtube" | "jitsi">("youtube")
+  const [jitsiRoomName, setJitsiRoomName] = useState("LuyenDe2026_LiveClass_Global")
 
   useEffect(() => {
     const init = async () => {
@@ -57,6 +69,19 @@ export default function LiveRoomPage() {
     }
     init()
   }, [supabase])
+
+  // Load Jitsi Meet external API script dynamically
+  useEffect(() => {
+    const script = document.createElement("script")
+    script.src = "https://meet.jit.si/external_api.js"
+    script.async = true
+    document.body.appendChild(script)
+    return () => {
+      try {
+        document.body.removeChild(script)
+      } catch (e) {}
+    }
+  }, [])
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -78,8 +103,70 @@ export default function LiveRoomPage() {
       setLiveTitle(data.title || "")
       setChatEnabled(data.youtube_chat_enabled)
       setIsLive(data.is_live)
+      setLiveMode(data.live_mode || "youtube")
+      setJitsiRoomName(data.jitsi_room_name || "LuyenDe2026_LiveClass_Global")
     }
   }
+
+  // Jitsi Meet Rendering Logic
+  const jitsiContainerRef = useRef<HTMLDivElement | null>(null)
+  const jitsiApiRef = useRef<any>(null)
+
+  useEffect(() => {
+    if (liveMode !== "jitsi" || !jitsiContainerRef.current || !liveConfig) return
+
+    let jitsiApi: any = null
+
+    const initJitsi = () => {
+      if (!(window as any).JitsiMeetExternalAPI) {
+        setTimeout(initJitsi, 300)
+        return
+      }
+
+      if (jitsiContainerRef.current) {
+        jitsiContainerRef.current.innerHTML = "" // Clear container
+      }
+
+      const domain = "meet.jit.si"
+      const options = {
+        roomName: liveConfig.jitsi_room_name || "LuyenDe2026_LiveClass_Global",
+        width: "100%",
+        height: "100%",
+        parentNode: jitsiContainerRef.current,
+        userInfo: {
+          displayName: user?.name || "Học sinh",
+          email: user?.email || ""
+        },
+        configOverwrite: {
+          startWithAudioMuted: true,
+          startWithVideoMuted: true,
+          prejoinPageEnabled: false,
+          disableDeepLinking: true
+        },
+        interfaceConfigOverwrite: {
+          SHOW_JITSI_WATERMARK: false,
+          SHOW_WATERMARK_FOR_GUEST: false
+        }
+      }
+
+      try {
+        jitsiApi = new (window as any).JitsiMeetExternalAPI(domain, options)
+        jitsiApiRef.current = jitsiApi
+      } catch (err) {
+        console.error("Failed to initialize Jitsi Meet iframe API:", err)
+      }
+    }
+
+    initJitsi()
+
+    return () => {
+      if (jitsiApi) {
+        try {
+          jitsiApi.dispose()
+        } catch (e) {}
+      }
+    }
+  }, [liveMode, liveConfig?.jitsi_room_name, user])
 
   const extractYoutubeId = (value: string) => {
     if (!value) return null
@@ -94,7 +181,14 @@ export default function LiveRoomPage() {
 
   const saveLiveSettings = async () => {
     const videoId = extractYoutubeId(youtubeUrl)
-    const payload = { youtube_video_id: videoId, youtube_chat_enabled: chatEnabled, is_live: isLive, title: liveTitle }
+    const payload = { 
+      youtube_video_id: videoId, 
+      youtube_chat_enabled: chatEnabled, 
+      is_live: isLive, 
+      title: liveTitle,
+      live_mode: liveMode,
+      jitsi_room_name: jitsiRoomName.trim() || "LuyenDe2026_LiveClass_Global"
+    }
     if (liveConfig) await supabase.from("live_config").update(payload).eq("id", liveConfig.id)
     else await supabase.from("live_config").insert(payload)
     await fetchLiveConfig()
@@ -189,7 +283,37 @@ export default function LiveRoomPage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
-            {liveConfig?.youtube_video_id ? (
+            {liveConfig?.live_mode === "jitsi" ? (
+              <>
+                <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-3 mb-2 flex-wrap gap-3">
+                  <div>
+                    <h1 className="text-2xl font-bold tracking-tight">{liveConfig.title || "Lớp Học Tương Tác Trực Tuyến"}</h1>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Phòng học bảo mật nhúng trực tiếp qua Jitsi Meet (Không cần tài khoản)</p>
+                  </div>
+                  <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1 text-xs font-bold text-emerald-600 flex items-center gap-1.5 uppercase tracking-wider animate-pulse">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Live Interactive
+                  </span>
+                </div>
+                
+                <div className="relative w-full aspect-video md:min-h-[500px] overflow-hidden rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-black shadow-lg">
+                  <div 
+                    ref={jitsiContainerRef} 
+                    className="absolute inset-0 h-full w-full"
+                  />
+                </div>
+                
+                <div className="flex flex-wrap gap-3 mt-2">
+                  <a 
+                    href={`https://meet.jit.si/${liveConfig.jitsi_room_name || "LuyenDe2026_LiveClass_Global"}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/70 bg-transparent px-5 py-2.5 text-sm font-semibold transition-all hover:scale-[1.02]"
+                  >
+                    <Video className="h-4 w-4 text-indigo-500 animate-pulse" />Mở Full Tab Jitsi Meet
+                  </a>
+                </div>
+              </>
+            ) : liveConfig?.youtube_video_id ? (
               <>
                 <h1 className="text-2xl font-bold tracking-tight">{liveConfig.title || "Buổi Live Chữa Đề"}</h1>
                 <div className="relative aspect-video overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-black">
@@ -222,7 +346,7 @@ export default function LiveRoomPage() {
                     onClick={() => setShowLiveSettings(true)} 
                     className="rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90"
                   >
-                    <Settings className="mr-2 h-4 w-4" />Thiết lập Live Stream
+                    <Settings className="mr-2 h-4 w-4" />Thiết lập Lớp Học Trực Tuyến
                   </Button>
                 )}
               </div>
@@ -230,7 +354,7 @@ export default function LiveRoomPage() {
           </div>
 
           <div className="space-y-6">
-            {liveConfig?.youtube_video_id && liveConfig.youtube_chat_enabled && (
+            {liveConfig?.live_mode === "youtube" && liveConfig?.youtube_video_id && liveConfig.youtube_chat_enabled && (
               <div className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
                 <div className="border-b border-[hsl(var(--border))]/50 p-4">
                   <h3 className="flex items-center gap-2 text-base font-semibold">
@@ -310,39 +434,90 @@ export default function LiveRoomPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
           <div className="liquid-glass w-full max-w-lg overflow-hidden rounded-[2.5rem] p-0 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-6">
-              <h2 className="flex items-center gap-2 text-lg font-semibold"><Youtube className="h-5 w-5 text-red-500" />Cài đặt YouTube Live</h2>
+              <h2 className="flex items-center gap-2 text-lg font-semibold"><Video className="h-5 w-5 text-indigo-500" />Cấu hình Lớp Học Trực Tuyến</h2>
               <Button variant="ghost" size="icon" onClick={() => setShowLiveSettings(false)} className="rounded-full"><X className="h-5 w-5" /></Button>
             </div>
             <div className="space-y-5 p-6">
-              <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/10 p-5 text-sm">
-                <p className="mb-2 font-semibold">📌 Hướng dẫn nhanh:</p>
-                <ol className="list-inside list-decimal space-y-1 text-[hsl(var(--muted-foreground))]">
-                  <li>Vào YouTube Studio → Tạo Live Stream</li>
-                  <li>Copy link video hoặc ID video (11 ký tự)</li>
-                  <li>Dán vào ô bên dưới</li>
-                  <li>Bật "Đang phát trực tiếp" khi bắt đầu</li>
-                </ol>
-              </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Tiêu đề buổi Live</Label>
+                <Label className="text-sm font-medium">Tiêu đề buổi học</Label>
                 <Input value={liveTitle} onChange={(e) => setLiveTitle(e.target.value)} placeholder="VD: Chữa đề Toán THPT 2026 - Buổi 5" className="rounded-xl border-[hsl(var(--border))]/60 bg-transparent focus:ring-0" />
               </div>
+              
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Link hoặc ID Video YouTube</Label>
-                <Input value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="VD: https://youtube.com/watch?v=dQw4w9WgXcQ" className="rounded-xl border-[hsl(var(--border))]/60 bg-transparent focus:ring-0" />
+                <Label className="text-sm font-medium">Chế độ lớp học</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setLiveMode("youtube")}
+                    className={cn(
+                      "rounded-xl border py-2.5 text-xs font-semibold uppercase tracking-wider transition-all",
+                      liveMode === "youtube"
+                        ? "border-indigo-500 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold"
+                        : "border-[hsl(var(--border))]/60 bg-transparent text-[hsl(var(--muted-foreground))]"
+                    )}
+                  >
+                    YouTube Live
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLiveMode("jitsi")}
+                    className={cn(
+                      "rounded-xl border py-2.5 text-xs font-semibold uppercase tracking-wider transition-all",
+                      liveMode === "jitsi"
+                        ? "border-indigo-500 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold"
+                        : "border-[hsl(var(--border))]/60 bg-transparent text-[hsl(var(--muted-foreground))]"
+                    )}
+                  >
+                    Jitsi Meet (Tương tác)
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center justify-between py-2">
-                <div><Label className="text-sm font-medium">Hiển thị Chat</Label><p className="text-xs text-[hsl(var(--muted-foreground))]">Cho phép học sinh thảo luận</p></div>
-                <button onClick={() => setChatEnabled(!chatEnabled)} className={cn("relative h-6 w-11 rounded-full transition-colors", chatEnabled ? "bg-emerald-500" : "bg-[hsl(var(--muted))]/30")}>
-                  <span className={cn("absolute top-1 h-4 w-4 rounded-full bg-white transition-all", chatEnabled ? "left-6" : "left-1")} />
-                </button>
-              </div>
+
+              {liveMode === "youtube" ? (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/10 p-5 text-sm">
+                    <p className="mb-2 font-semibold flex items-center gap-1.5"><Youtube className="h-4 w-4 text-red-500" /> Hướng dẫn nhanh:</p>
+                    <ol className="list-inside list-decimal space-y-1 text-[hsl(var(--muted-foreground))]">
+                      <li>Vào YouTube Studio → Tạo Live Stream</li>
+                      <li>Copy link video hoặc ID video (11 ký tự)</li>
+                      <li>Dán vào ô bên dưới</li>
+                    </ol>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Link hoặc ID Video YouTube</Label>
+                    <Input value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="VD: https://youtube.com/watch?v=dQw4w9WgXcQ" className="rounded-xl border-[hsl(var(--border))]/60 bg-transparent focus:ring-0" />
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <div><Label className="text-sm font-medium">Hiển thị Chat</Label><p className="text-xs text-[hsl(var(--muted-foreground))]">Cho phép học sinh thảo luận</p></div>
+                    <button onClick={() => setChatEnabled(!chatEnabled)} className={cn("relative h-6 w-11 rounded-full transition-colors", chatEnabled ? "bg-emerald-500" : "bg-[hsl(var(--muted))]/30")}>
+                      <span className={cn("absolute top-1 h-4 w-4 rounded-full bg-white transition-all", chatEnabled ? "left-6" : "left-1")} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/10 p-5 text-sm">
+                    <p className="mb-2 font-semibold flex items-center gap-1.5"><Video className="h-4 w-4 text-indigo-500" /> Phòng họp Jitsi Meet:</p>
+                    <ol className="list-inside list-decimal space-y-1 text-[hsl(var(--muted-foreground))]">
+                      <li>Học sinh sẽ tham gia trực tiếp trong website</li>
+                      <li>Hỗ trợ bật camera, chia sẻ màn hình, bảng trắng</li>
+                      <li>Không cần cài đặt, không cần đăng nhập</li>
+                    </ol>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Tên phòng Jitsi Meet (Mã bảo mật)</Label>
+                    <Input value={jitsiRoomName} onChange={(e) => setJitsiRoomName(e.target.value)} placeholder="VD: LuyenDe2026_LiveClass_Toan" className="rounded-xl border-[hsl(var(--border))]/60 bg-transparent focus:ring-0 font-mono text-xs" />
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between border-t border-[hsl(var(--border))]/40 pt-4">
-                <div><Label className="text-sm font-medium">Đang phát trực tiếp</Label><p className="text-xs text-[hsl(var(--muted-foreground))]">Bật khi bạn bắt đầu stream</p></div>
+                <div><Label className="text-sm font-medium">Đang trong giờ học</Label><p className="text-xs text-[hsl(var(--muted-foreground))]">Bật chấm đỏ phát sóng trực tuyến</p></div>
                 <button onClick={() => setIsLive(!isLive)} className={cn("relative h-6 w-11 rounded-full transition-colors", isLive ? "bg-red-500" : "bg-[hsl(var(--muted))]/30")}>
                   <span className={cn("absolute top-1 h-4 w-4 rounded-full bg-white transition-all", isLive ? "left-6" : "left-1")} />
                 </button>
               </div>
+
               <div className="flex gap-3 pt-2">
                 <Button variant="outline" onClick={() => setShowLiveSettings(false)} className="flex-1 rounded-full border-[hsl(var(--border))]/70">Hủy</Button>
                 <Button onClick={saveLiveSettings} className="flex-1 rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90"><Save className="mr-2 h-4 w-4" />Lưu cấu hình</Button>
