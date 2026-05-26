@@ -38,3 +38,28 @@ DROP POLICY IF EXISTS "Anyone can view profiles" ON public.profiles;
 CREATE POLICY "Anyone can view profiles" ON public.profiles
     FOR SELECT TO authenticated
     USING (true);
+
+-- 4. Tạo cột email, đồng bộ email cũ và cập nhật trigger đăng ký để tự động lưu email vào public.profiles
+-- Đảm bảo cột email tồn tại trong public.profiles
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email TEXT;
+
+-- Đồng bộ toàn bộ email cũ từ auth.users sang public.profiles
+UPDATE public.profiles
+SET email = (SELECT email FROM auth.users WHERE auth.users.id = public.profiles.id)
+WHERE email IS NULL OR email = '';
+
+-- Cập nhật trigger handle_new_user để tự động ghi email vào profiles khi học sinh đăng ký tài khoản mới
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, role, full_name, email)
+  VALUES (
+    new.id,
+    COALESCE(new.raw_user_meta_data->>'role', 'student'),
+    COALESCE(new.raw_user_meta_data->>'full_name', ''),
+    COALESCE(new.email, '')
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+

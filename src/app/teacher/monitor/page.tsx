@@ -230,7 +230,7 @@ export default function TeacherMonitorPage() {
       const { data: student, error: studentError } = await supabase
         .from("profiles")
         .select("id, full_name, email, class")
-        .eq("email", emailVal)
+        .ilike("email", emailVal)
         .eq("role", "student")
         .single()
 
