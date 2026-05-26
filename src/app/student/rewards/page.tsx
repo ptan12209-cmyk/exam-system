@@ -74,23 +74,11 @@ export default function RewardsPage() {
           ))}
         </section>
 
-        <section className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/70 backdrop-blur-md shadow-sm p-8 md:p-12 text-center relative">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-amber-500/5 rounded-full blur-[80px] pointer-events-none" />
-          <div className="relative z-10 max-w-xl mx-auto flex flex-col items-center">
-            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-6 shadow-sm animate-pulse">
-              <Gift className="h-8 w-8 text-amber-500" />
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight text-foreground mb-3">
-              Cửa Hàng Đang Nâng Cấp Hệ Thống
-            </h2>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed mb-6">
-              Để mang lại trải nghiệm đổi thưởng thú vị và bổ ích hơn, chúng tôi tạm thời đóng cửa hàng để nâng cấp sang hệ thống phần thưởng mới (xịn hơn, nhiều quà tặng đặc biệt hơn!). 
-            </p>
-            <div className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--muted))]/40 px-4 py-1.5 text-xs font-semibold text-[hsl(var(--muted-foreground))] border border-[hsl(var(--border))]/30">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
-              <span>Vui lòng tích lũy thêm XP và quay lại sau ít ngày nhé!</span>
-            </div>
-          </div>
+        <section className="rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/70 p-6 md:p-8 backdrop-blur-md shadow-sm">
+          <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+            <Gift className="h-5 w-5 text-amber-500" /> Cửa hàng phần thưởng
+          </h2>
+          <RewardsShop initialXp={userXp} />
         </section>
       </main>
       <BottomNav />
