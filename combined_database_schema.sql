@@ -930,6 +930,7 @@ CREATE TABLE study_tasks (
     is_completed BOOLEAN DEFAULT false,
     completed_at TIMESTAMPTZ,
     priority TEXT DEFAULT 'medium' CHECK (priority IN ('low','medium','high')),
+    status TEXT DEFAULT 'todo' CHECK (status IN ('todo','in_progress','review','done')),
     created_at TIMESTAMPTZ DEFAULT now()
 );
 

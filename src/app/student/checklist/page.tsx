@@ -63,9 +63,18 @@ export default function StudyChecklistPage() {
   const [savingNotes, setSavingNotes] = useState(false)
   const [aiGenerating, setAiGenerating] = useState(false)
   const [editorError, setEditorError] = useState<string | null>(null)
+  const [globalError, setGlobalError] = useState<string | null>(null)
   
   // Calendar states
   const [currentMonth, setCurrentMonth] = useState(new Date())
+
+  // Clear global error after 8s
+  useEffect(() => {
+    if (globalError) {
+      const timer = setTimeout(() => setGlobalError(null), 8000)
+      return () => clearTimeout(timer)
+    }
+  }, [globalError])
 
   // Fetch tasks
   useEffect(() => {
@@ -128,7 +137,13 @@ export default function StudyChecklistPage() {
       status: newStatus
     }
 
-    await supabase.from("study_tasks").insert(payload)
+    const { error } = await supabase.from("study_tasks").insert(payload)
+    if (error) {
+      console.error("Error creating study task:", error)
+      setGlobalError(`Lỗi khi tạo mục tiêu: ${error.message}. Vui lòng chạy script migration-add-status-to-study-tasks.sql trong Supabase SQL Editor.`)
+      return
+    }
+
     setNewTitle("")
     setNewSubject("")
     setNewDueDate("")
@@ -141,7 +156,7 @@ export default function StudyChecklistPage() {
   const handleQuickAdd = async (title: string) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    await supabase.from("study_tasks").insert({
+    const { error } = await supabase.from("study_tasks").insert({
       student_id: user.id,
       title,
       priority: "medium",
@@ -149,13 +164,23 @@ export default function StudyChecklistPage() {
       is_completed: false,
       due_date: new Date().toISOString().split("T")[0]
     })
+    if (error) {
+      console.error("Error in quick add study task:", error)
+      setGlobalError(`Lỗi khi thêm nhanh mục tiêu: ${error.message}. Vui lòng chạy script migration-add-status-to-study-tasks.sql trong Supabase SQL Editor.`)
+      return
+    }
     await refreshTasks()
   }
 
   // Delete Task
   const handleDelete = async (id: string) => {
     if (selectedTask?.id === id) setSelectedTask(null)
-    await supabase.from("study_tasks").delete().eq("id", id)
+    const { error } = await supabase.from("study_tasks").delete().eq("id", id)
+    if (error) {
+      console.error("Error deleting study task:", error)
+      setGlobalError(`Lỗi khi xóa mục tiêu: ${error.message}`)
+      return
+    }
     await refreshTasks()
   }
 
@@ -164,11 +189,17 @@ export default function StudyChecklistPage() {
     const isCompleted = nextStatus === "done"
     const completedAt = isCompleted ? new Date().toISOString() : null
 
-    await supabase.from("study_tasks").update({ 
+    const { error } = await supabase.from("study_tasks").update({ 
       status: nextStatus,
       is_completed: isCompleted,
       completed_at: completedAt
     }).eq("id", task.id)
+    
+    if (error) {
+      console.error("Error moving study task status:", error)
+      setGlobalError(`Lỗi khi chuyển trạng thái mục tiêu: ${error.message}. Vui lòng chạy script migration-add-status-to-study-tasks.sql trong Supabase SQL Editor.`)
+      return
+    }
     await refreshTasks()
   }
 
@@ -360,6 +391,23 @@ export default function StudyChecklistPage() {
     <StudentShell>
       <StudentHeader name="Checklist" onLogout={async () => { await supabase.auth.signOut(); router.push("/login") }} />
       <main className="mx-auto max-w-7xl px-4 pt-6 pb-24 sm:px-6 lg:px-8 lg:py-10">
+        
+        {/* Global Error Banner */}
+        {globalError && (
+          <div className="mb-6 rounded-[1.5rem] border border-red-500/20 bg-red-500/10 p-4 text-xs font-semibold text-red-600 backdrop-blur-md shadow-md animate-in fade-in slide-in-from-top-4 duration-300 flex items-start gap-2.5">
+            <AlertCircle className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-bold text-red-700 mb-1">Cảnh báo hệ thống</p>
+              <p className="leading-relaxed">{globalError}</p>
+            </div>
+            <button 
+              onClick={() => setGlobalError(null)} 
+              className="text-[10px] uppercase font-bold text-red-600/60 hover:text-red-600 px-2 py-1 rounded-full border border-red-500/10 bg-red-500/5 transition-all"
+            >
+              Đóng
+            </button>
+          </div>
+        )}
         
         {/* Banner Section */}
         <section className="mb-8 flex flex-col justify-between gap-6 md:flex-row md:items-end">
