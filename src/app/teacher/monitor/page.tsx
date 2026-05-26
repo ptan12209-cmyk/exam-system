@@ -97,6 +97,13 @@ export default function TeacherMonitorPage() {
   const [taskLoading, setTaskLoading] = useState(false)
   const [taskError, setTaskError] = useState<string | null>(null)
 
+  // AI Face Proctoring & Active Alert States
+  const [latestFaceLog, setLatestFaceLog] = useState<any>(null)
+  const [alertMsgInput, setAlertMsgInput] = useState("")
+  const [sendingAlert, setSendingAlert] = useState(false)
+  const [isStudentFaceRegistered, setIsStudentFaceRegistered] = useState(false)
+  const [registeringFace, setRegisteringFace] = useState(false)
+
   // Fetch initial profile and linked students list
   useEffect(() => {
     const init = async () => {
@@ -178,6 +185,27 @@ export default function TeacherMonitorPage() {
         .order("submitted_at", { ascending: false })
 
       setSubmissions((subsData || []) as any[])
+
+      // 4. Fetch latest face monitor log
+      const { data: faceLogData } = await supabase
+        .from("face_monitor_logs")
+        .select("*")
+        .eq("student_id", studentId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      
+      setLatestFaceLog(faceLogData)
+
+      // 5. Check if student has face registration
+      const { data: regFace } = await supabase
+        .from("student_face_registrations")
+        .select("id")
+        .eq("student_id", studentId)
+        .maybeSingle()
+      
+      setIsStudentFaceRegistered(!!regFace)
+
     } catch (err) {
       console.error("Error fetching student details:", err)
     } finally {
@@ -190,7 +218,7 @@ export default function TeacherMonitorPage() {
     if (selectedStudent) {
       fetchStudentData(selectedStudent.id)
 
-      // Realtime listener for focus session changes
+      // Realtime listener for focus session and face log changes
       const channel = supabase
         .channel(`teacher_monitor_${selectedStudent.id}`)
         .on(
@@ -204,6 +232,13 @@ export default function TeacherMonitorPage() {
             }
           }
         )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "face_monitor_logs", filter: `student_id=eq.${selectedStudent.id}` },
+          (payload: any) => {
+            setLatestFaceLog(payload.new)
+          }
+        )
         .subscribe()
 
       return () => {
@@ -213,8 +248,77 @@ export default function TeacherMonitorPage() {
       setSession(null)
       setTasks([])
       setSubmissions([])
+      setLatestFaceLog(null)
     }
   }, [selectedStudent, fetchStudentData, supabase])
+
+  // Send active alert to student via Broadcast
+  const handleSendActiveAlert = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedStudent) return
+    setSendingAlert(true)
+
+    try {
+      const alertMsg = alertMsgInput.trim() || "Tập trung học đi em trai ơi! Người anh đang quan sát đó!"
+      const channel = supabase.channel(`observatory:${selectedStudent.id}`)
+      
+      await channel.subscribe(async (status: string) => {
+        if (status === "SUBSCRIBED") {
+          await channel.send({
+            type: "broadcast",
+            event: "active_alert",
+            payload: { 
+              message: alertMsg,
+              timestamp: new Date().toISOString()
+            }
+          })
+          setAlertMsgInput("")
+          alert("Đã phát cảnh báo cưỡng chế tức thời tới em trai!")
+        }
+      })
+    } catch (err: any) {
+      console.error("Lỗi gửi cảnh báo:", err)
+      alert("Lỗi khi gửi cảnh báo: " + err.message)
+    } finally {
+      setSendingAlert(false)
+    }
+  }
+
+  // Upload student face registration from teacher dashboard (Lựa chọn B)
+  const handleUploadFaceRegistration = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !selectedStudent) return
+    
+    setRegisteringFace(true)
+    try {
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const base64 = reader.result as string
+        const res = await fetch("/api/monitor/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            image_base64: base64, 
+            type: "register",
+            student_id: selectedStudent.id
+          })
+        })
+        const data = await res.json()
+        if (res.ok) {
+          setIsStudentFaceRegistered(true)
+          alert("Đăng ký khuôn mặt gốc cho em trai thành công! AI sẵn sàng đối khớp.")
+        } else {
+          alert("Lỗi đăng ký: " + data.error)
+        }
+      }
+      reader.readAsDataURL(file)
+    } catch (err: any) {
+      console.error("Lỗi upload khuôn mặt gốc:", err)
+      alert("Lỗi: " + err.message)
+    } finally {
+      setRegisteringFace(false)
+    }
+  }
 
   // Link a student by email
   const handleLinkStudent = async (e: React.FormEvent) => {
@@ -546,6 +650,166 @@ export default function TeacherMonitorPage() {
                     </div>
                   </div>
 
+                </div>
+              </div>
+
+              {/* Card 1.5: AI Proctoring & Cảnh Báo Cưỡng Chế */}
+              <div className="rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md relative overflow-hidden">
+                <div className="absolute -left-16 -bottom-16 h-36 w-36 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
+                
+                <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
+                  <div>
+                    <h3 className="font-bold text-lg">AI Giám Sát Camera & Cảnh Báo</h3>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Phát hiện khuôn mặt, cảm xúc học tập và can thiệp từ xa</p>
+                  </div>
+                  <span className="rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-bold text-indigo-500">DeepFace AI</span>
+                </div>
+
+                <div className="grid gap-6 sm:grid-cols-2">
+                  {/* Cột trái: AI Proctoring View */}
+                  <div className="space-y-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-500">Trạng thái từ Camera của em</p>
+                    
+                    {latestFaceLog ? (
+                      <div className="space-y-3 rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/30 p-4">
+                        <div className="space-y-2 text-xs font-semibold">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[hsl(var(--muted-foreground))]">Hiện diện:</span>
+                            <span className={latestFaceLog.is_present ? "text-emerald-500 flex items-center gap-1" : "text-rose-500 flex items-center gap-1 animate-pulse"}>
+                              <span className={cn("h-2 w-2 rounded-full", latestFaceLog.is_present ? "bg-emerald-500" : "bg-red-500 animate-ping")} />
+                              {latestFaceLog.is_present ? "Đang ngồi học" : "Đã rời bàn học"}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between items-center">
+                            <span className="text-[hsl(var(--muted-foreground))]">Xác thực danh tính:</span>
+                            <span className={latestFaceLog.is_verified ? "text-emerald-500 flex items-center gap-1" : "text-rose-500 flex items-center gap-1 animate-pulse"}>
+                              <span className={cn("h-2 w-2 rounded-full", latestFaceLog.is_verified ? "bg-emerald-500" : "bg-red-500 animate-ping")} />
+                              {latestFaceLog.is_verified ? "Chính chủ em trai" : "Sai người/Không khớp"}
+                            </span>
+                          </div>
+
+                          {latestFaceLog.dominant_emotion && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[hsl(var(--muted-foreground))]">Cảm xúc học tập:</span>
+                              <span className="rounded-full bg-violet-500/10 px-2.5 py-0.5 text-violet-500 capitalize text-[10px] font-bold border border-violet-500/20">
+                                {latestFaceLog.dominant_emotion}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="text-[9px] text-[hsl(var(--muted-foreground))] border-t border-[hsl(var(--border))]/20 pt-2 flex justify-between">
+                            <span>Cập nhật mới nhất:</span>
+                            <span>{new Date(latestFaceLog.created_at).toLocaleTimeString("vi-VN")}</span>
+                          </div>
+                        </div>
+
+                        {/* Snapshot bằng chứng vi phạm nếu có */}
+                        {latestFaceLog.snapshot_path && (
+                          <div className="mt-3 space-y-1">
+                            <p className="text-[9px] uppercase font-bold text-rose-500">Ảnh bằng chứng vi phạm:</p>
+                            <div className="relative rounded-xl overflow-hidden aspect-video border border-rose-500/30 group cursor-pointer shadow-md">
+                              <img 
+                                src={latestFaceLog.snapshot_path} 
+                                alt="Bằng chứng học tập" 
+                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white font-semibold">
+                                Bấm để xem to
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="py-8 rounded-2xl border border-dashed border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/10 text-center text-xs text-[hsl(var(--muted-foreground))] flex flex-col justify-center items-center p-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[hsl(var(--muted-foreground))]/50 mb-2 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        Chưa nhận được tín hiệu camera.<br />Đang đợi em trai bật camera tự học.
+                      </div>
+                    )}
+                    {/* Widget Cấu hình khuôn mặt gốc (Lựa chọn B) */}
+                    <div className="rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/20 p-4 space-y-3 mt-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Khuôn mặt mẫu đối khớp</span>
+                        <span className={cn(
+                          "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase",
+                          isStudentFaceRegistered ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse"
+                        )}>
+                          {isStudentFaceRegistered ? "Đã Thiết Lập" : "Chưa Thiết Lập"}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
+                        {isStudentFaceRegistered ? (
+                          "Khuôn mặt của em trai đã được cấu hình và đồng bộ an toàn. Hệ thống AI sẵn sàng đối sánh mỗi khi em tự học."
+                        ) : (
+                          "Để bắt đầu tự động giám sát, bạn cần tải lên một bức ảnh chân dung rõ nét, chính diện của em trai."
+                        )}
+                      </div>
+
+                      <div className="relative">
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          id="face-upload-input"
+                          onChange={handleUploadFaceRegistration}
+                          disabled={registeringFace}
+                          className="hidden" 
+                        />
+                        <label 
+                          htmlFor="face-upload-input"
+                          className={cn(
+                            "w-full rounded-xl py-3 border border-dashed text-center text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[hsl(var(--muted))]/20 transition-all",
+                            registeringFace ? "opacity-50 pointer-events-none" : "border-indigo-500/40 text-indigo-500"
+                          )}
+                        >
+                          {registeringFace ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Đang xử lý trích xuất AI...
+                            </>
+                          ) : (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                              {isStudentFaceRegistered ? "Cập nhật ảnh chân dung khác" : "Tải lên ảnh chân dung em 📸"}
+                            </>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cột phải: Active Alerting Form */}
+                  <div className="space-y-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-rose-500">Đài phát cảnh báo cưỡng chế</p>
+                    
+                    <form onSubmit={handleSendActiveAlert} className="space-y-3 rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-[9px] uppercase font-bold text-rose-600">Lời nhắn nhắc nhở cưỡng chế</Label>
+                        <Input 
+                          placeholder="VD: Tập trung học đi em trai ơi!"
+                          value={alertMsgInput}
+                          onChange={(e) => setAlertMsgInput(e.target.value)}
+                          className="rounded-xl border-rose-500/30 bg-transparent text-xs"
+                        />
+                      </div>
+                      <Button 
+                        type="submit" 
+                        disabled={sendingAlert}
+                        className="w-full rounded-xl py-4.5 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold tracking-wide shadow-md flex items-center justify-center gap-1.5"
+                      >
+                        {sendingAlert ? <Loader2 className="h-3 w-3 animate-spin" /> : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            Phát cảnh báo đỏ ngay
+                          </>
+                        )}
+                      </Button>
+                      <p className="text-[8px] text-rose-500/80 leading-normal text-center">
+                        * Màn hình của em trai sẽ lập tức bị khóa overlay đỏ mờ, đồng thời phát âm thanh lớn cảnh báo và tự động đọc to lời nhắn của bạn!
+                      </p>
+                    </form>
+                  </div>
                 </div>
               </div>
 

@@ -71,6 +71,187 @@ export default function StudyChecklistPage() {
   // Calendar states
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
+  // AI Camera & Alerting States
+  const [isFaceRegistered, setIsFaceRegistered] = useState(false)
+  const [isCameraActive, setIsCameraActive] = useState(false)
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [faceLog, setFaceLog] = useState<any>(null)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  const [showAlertOverlay, setShowAlertOverlay] = useState(false)
+  const [alertMessage, setAlertMessage] = useState("")
+
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  // 1. Kiểm tra đăng ký khuôn mặt mẫu gốc và cấu hình lắng nghe active_alert
+  useEffect(() => {
+    let mounted = true
+    const checkReg = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from("student_face_registrations")
+        .select("id")
+        .eq("student_id", user.id)
+        .maybeSingle()
+      if (mounted) {
+        setIsFaceRegistered(!!data)
+      }
+    }
+    checkReg()
+
+    let channel: any
+    const setupBroadcast = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      channel = supabase
+        .channel(`observatory:${user.id}`)
+        .on("broadcast", { event: "active_alert" }, (payload: any) => {
+          if (mounted) {
+            setAlertMessage(payload.payload.message || "Tập trung học đi em trai ơi!")
+            setShowAlertOverlay(true)
+          }
+          
+          // Phát âm thanh bip bip
+          const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav")
+          audio.volume = 1.0
+          audio.play().catch(e => console.log("Audio block by browser"))
+
+          // Phát âm thanh TTS
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel() // Hủy bỏ câu đọc cũ
+            const utterance = new SpeechSynthesisUtterance(payload.payload.message || "Tập trung học đi em trai ơi!")
+            utterance.lang = "vi-VN"
+            utterance.rate = 0.95
+            window.speechSynthesis.speak(utterance)
+          }
+        })
+        .subscribe()
+    }
+    setupBroadcast()
+
+    return () => {
+      mounted = false
+      if (channel) channel.unsubscribe()
+    }
+  }, [supabase])
+
+  // 2. Mở / Đóng Camera
+  const startCamera = async () => {
+    setCameraError(null)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 320, height: 240, facingMode: "user" } 
+      })
+      setCameraStream(stream)
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+      }
+      setIsCameraActive(true)
+    } catch (err: any) {
+      console.error("Lỗi truy cập camera:", err)
+      setCameraError("Không thể truy cập camera. Vui lòng cấp quyền camera trong cài đặt trình duyệt.")
+    }
+  }
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop())
+      setCameraStream(null)
+    }
+    setIsCameraActive(false)
+  }
+
+  // 3. Đăng ký khuôn mặt mẫu
+  const handleRegisterFace = async () => {
+    if (!videoRef.current || !canvasRef.current) return
+    setIsRegistering(true)
+    setCameraError(null)
+    try {
+      const video = videoRef.current
+      const canvas = canvasRef.current
+      canvas.width = video.videoWidth || 320
+      canvas.height = video.videoHeight || 240
+      const ctx = canvas.getContext("2d")
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+        const base64 = canvas.toDataURL("image/jpeg", 0.8)
+        
+        const res = await fetch("/api/monitor/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image_base64: base64, type: "register" })
+        })
+        
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(data.error || "Lỗi đăng ký khuôn mặt từ AI Server.")
+        }
+        
+        setIsFaceRegistered(true)
+        alert("Đăng ký khuôn mặt gốc thành công! Chế độ giám sát tự động kích hoạt.")
+      }
+    } catch (err: any) {
+      console.error("Lỗi đăng ký khuôn mặt gốc:", err)
+      setCameraError(err.message || "Không thể nhận dạng khuôn mặt trong ảnh chân dung đăng ký.")
+    } finally {
+      setIsRegistering(false)
+    }
+  }
+
+  // 4. Capture & Phân tích snapshot định kỳ (30s)
+  const captureAndAnalyze = async () => {
+    if (!videoRef.current || !canvasRef.current || !isFaceRegistered) return
+    setIsAnalyzing(true)
+    try {
+      const video = videoRef.current
+      const canvas = canvasRef.current
+      canvas.width = video.videoWidth || 320
+      canvas.height = video.videoHeight || 240
+      const ctx = canvas.getContext("2d")
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+        const base64 = canvas.toDataURL("image/jpeg", 0.6)
+        
+        const res = await fetch("/api/monitor/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image_base64: base64, type: "analyze" })
+        })
+        const data = await res.json()
+        if (data.success) {
+          setFaceLog(data)
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi phân tích snapshot ngầm:", err)
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
+  // 5. Cấu hình đếm thời gian phân tích ngầm mỗi 30s
+  useEffect(() => {
+    let interval: any
+    if (isCameraActive && isFaceRegistered) {
+      // Chạy phân tích lần đầu tiên ngay khi bật sau 3s
+      const delayTimeout = setTimeout(() => {
+        captureAndAnalyze()
+      }, 3000)
+
+      interval = setInterval(() => {
+        captureAndAnalyze()
+      }, 30000) // Chụp mỗi 30s
+      
+      return () => {
+        clearTimeout(delayTimeout)
+        clearInterval(interval)
+      }
+    }
+  }, [isCameraActive, isFaceRegistered])
+
   // Clear global error after 8s
   useEffect(() => {
     if (globalError) {
@@ -1166,6 +1347,147 @@ export default function StudyChecklistPage() {
             )}
           </aside>
         </section>
+        {/* Lớp phủ cảnh báo cưỡng chế từ người anh */}
+        {showAlertOverlay && (
+          <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-red-950/80 backdrop-blur-xl border border-red-500/20 p-6 text-center animate-in fade-in duration-300">
+            {/* Pulsing red spotlight glow */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.15)_0%,transparent_70%)] animate-pulse" />
+            
+            <div className="max-w-md bg-[hsl(var(--card))]/85 border border-red-500/35 rounded-[2.5rem] p-8 shadow-2xl relative z-10 backdrop-blur-md">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/25 text-red-500">
+                <AlertCircle className="h-8 w-8 animate-bounce" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight text-red-500 mb-2">Cảnh Báo Từ Người Anh!</h2>
+              <p className="text-sm text-[hsl(var(--muted-foreground))] mb-6 leading-relaxed">
+                Hệ thống phát hiện bạn đang mất tập trung hoặc rời khỏi vị trí học tập. Lời nhắn:
+              </p>
+              <blockquote className="border-l-4 border-red-500 bg-red-500/5 px-4 py-3 rounded-r-xl text-left text-sm font-semibold italic text-red-400 mb-6">
+                "{alertMessage}"
+              </blockquote>
+              <Button 
+                onClick={() => setShowAlertOverlay(false)} 
+                className="w-full rounded-full py-5 bg-red-600 hover:bg-red-500 text-white font-bold tracking-wide"
+              >
+                Tôi đã quay lại bàn học!
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Floating AI Camera Widget */}
+        <div className="fixed bottom-6 right-6 z-50 no-print">
+          <div className={cn(
+            "rounded-3xl border p-4 shadow-xl backdrop-blur-md transition-all duration-300 flex flex-col items-center gap-3 bg-[hsl(var(--card))]/80",
+            isCameraActive ? "w-64 border-indigo-500/30" : "w-16 h-16 border-[hsl(var(--border))]/60 justify-center cursor-pointer hover:scale-105"
+          )}
+          onClick={() => {
+            if (!isCameraActive) startCamera()
+          }}
+          >
+            {!isCameraActive ? (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500/5 text-violet-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+            ) : (
+              <div className="w-full space-y-3 relative">
+                <div className="flex justify-between items-center border-b border-[hsl(var(--border))]/30 pb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-ping" />
+                    AI Cam Monitor
+                  </span>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); stopCamera() }}
+                    className="text-[9px] uppercase font-bold text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-0.5 rounded-md border border-[hsl(var(--border))]/50"
+                  >
+                    Đóng
+                  </button>
+                </div>
+                
+                {/* Video element for preview */}
+                <div className="relative rounded-2xl overflow-hidden aspect-video border border-[hsl(var(--border))]/40 bg-black/10 flex items-center justify-center">
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    muted 
+                    className="w-full h-full object-cover transform -scale-x-100" 
+                  />
+                  <canvas ref={canvasRef} className="hidden" />
+                  
+                  {isAnalyzing && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] text-white font-semibold">
+                      AI đang phân tích...
+                    </div>
+                  )}
+
+                  {cameraError && (
+                    <div className="absolute inset-0 bg-red-950/80 p-2 text-center text-[9px] font-semibold text-red-400 flex items-center justify-center">
+                      {cameraError}
+                    </div>
+                  )}
+                </div>
+
+                {/* Status Information */}
+                <div className="text-[10px] font-medium space-y-1.5 bg-[hsl(var(--background))]/50 p-2.5 rounded-xl border border-[hsl(var(--border))]/30">
+                  <div className="flex justify-between">
+                    <span className="text-[hsl(var(--muted-foreground))]">Khuôn mặt mẫu:</span>
+                    <span className={isFaceRegistered ? "text-emerald-500 font-bold" : "text-amber-500 font-bold"}>
+                      {isFaceRegistered ? "Đã Đăng Ký" : "Chưa Đăng Ký"}
+                    </span>
+                  </div>
+                  
+                  {isFaceRegistered && faceLog && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-[hsl(var(--muted-foreground))]">Hiện diện:</span>
+                        <span className={faceLog.is_present ? "text-emerald-500 font-bold" : "text-red-500 font-bold"}>
+                          {faceLog.is_present ? "🟢 Có mặt" : "🔴 Vắng mặt"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[hsl(var(--muted-foreground))]">Danh tính:</span>
+                        <span className={faceLog.is_verified ? "text-emerald-500 font-bold" : "text-red-500 font-bold"}>
+                          {faceLog.is_verified ? "🟢 Khớp" : "🔴 Không khớp"}
+                        </span>
+                      </div>
+                      {faceLog.dominant_emotion && (
+                        <div className="flex justify-between">
+                          <span className="text-[hsl(var(--muted-foreground))]">Cảm xúc:</span>
+                          <span className="text-violet-500 font-bold capitalize">
+                            {faceLog.dominant_emotion}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Controller buttons */}
+                <div className="flex gap-1.5 pt-0.5">
+                  {!isFaceRegistered ? (
+                    <Button 
+                      onClick={handleRegisterFace} 
+                      disabled={isRegistering}
+                      className="w-full rounded-xl text-[10px] py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold"
+                    >
+                      {isRegistering ? "Đang xử lý..." : "📸 Đăng ký mặt gốc"}
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={captureAndAnalyze} 
+                      disabled={isAnalyzing}
+                      variant="outline"
+                      className="w-full rounded-xl text-[10px] py-3.5 border-indigo-500/20 text-indigo-500 hover:bg-indigo-50"
+                    >
+                      🔍 Đồng bộ AI ngay
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Custom Print Styles for Professional PDF Reports */}
         <style dangerouslySetInnerHTML={{ __html: `
           @media print {
