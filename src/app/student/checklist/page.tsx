@@ -16,6 +16,10 @@ import {
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
+import { QuickAddBar } from "@/components/checklist/QuickAddBar"
+import { WidgetPomodoroMini } from "@/components/checklist/WidgetPomodoroMini"
+import { WidgetTimetableToday } from "@/components/checklist/WidgetTimetableToday"
+import { WidgetQuote } from "@/components/checklist/WidgetQuote"
 
 interface NoteBlock {
   id: string
@@ -130,6 +134,21 @@ export default function StudyChecklistPage() {
     setNewDueDate("")
     setNewStatus("todo")
     setShowAddForm(false)
+    await refreshTasks()
+  }
+
+  // Quick add task (minimal info)
+  const handleQuickAdd = async (title: string) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from("study_tasks").insert({
+      student_id: user.id,
+      title,
+      priority: "medium",
+      status: "todo",
+      is_completed: false,
+      due_date: new Date().toISOString().split("T")[0]
+    })
     await refreshTasks()
   }
 
@@ -439,6 +458,11 @@ export default function StudyChecklistPage() {
           </section>
         )}
 
+        {/* Quick Add Bar */}
+        <section className="mb-6">
+          <QuickAddBar onAdd={handleQuickAdd} />
+        </section>
+
         {/* View Selection Controls */}
         <section className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex gap-2 rounded-full border border-[hsl(var(--border))]/50 bg-[hsl(var(--card))]/80 p-1 shadow-sm backdrop-blur-md">
@@ -729,9 +753,10 @@ export default function StudyChecklistPage() {
             )}
           </div>
 
-          {/* Right sidebar - Notion document block workspace */}
-          {selectedTask && (
-            <aside className="w-full lg:w-[380px] shrink-0 rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/90 p-6 shadow-md shadow-[hsl(var(--foreground))]/5 animate-in slide-in-from-right-8 duration-200">
+          {/* Right sidebar - Widgets or Notion Editor */}
+          <aside className="w-full lg:w-[380px] shrink-0 space-y-4">
+            {selectedTask ? (
+            <div className="rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/90 p-6 shadow-md shadow-[hsl(var(--foreground))]/5 animate-in slide-in-from-right-8 duration-200">
               
               {/* Header and Close controls */}
               <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/40 pb-4 mb-4">
@@ -985,8 +1010,15 @@ export default function StudyChecklistPage() {
                   </Button>
                 </div>
               </div>
-            </aside>
-          )}
+            </div>
+            ) : (
+            <div className="space-y-4 animate-in fade-in duration-300">
+              <WidgetPomodoroMini />
+              <WidgetTimetableToday />
+              <WidgetQuote />
+            </div>
+            )}
+          </aside>
         </section>
       </main>
     </StudentShell>
