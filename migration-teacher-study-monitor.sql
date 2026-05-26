@@ -31,3 +31,10 @@ CREATE POLICY "Teachers can manage study tasks" ON public.study_tasks
             AND profiles.role IN ('teacher', 'parent', 'admin')
         )
     );
+
+-- 3. Cho phép tất cả người dùng đã xác thực xem (SELECT) thông tin hồ sơ (profiles) của nhau
+-- Điều này cực kỳ quan trọng để người anh có thể tìm kiếm em trai qua Email và hiển thị Bảng xếp hạng học tập
+DROP POLICY IF EXISTS "Anyone can view profiles" ON public.profiles;
+CREATE POLICY "Anyone can view profiles" ON public.profiles
+    FOR SELECT TO authenticated
+    USING (true);
