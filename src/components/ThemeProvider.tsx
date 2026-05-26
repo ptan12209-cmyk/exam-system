@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState, useRef } from "react"
 
 type Theme = "dark" | "light" | "system"
 
@@ -16,6 +16,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = useState<Theme>("system")
     const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("dark")
     const [mounted, setMounted] = useState(false)
+
+    const themeRef = useRef(theme)
+    useEffect(() => {
+        themeRef.current = theme
+    }, [theme])
 
     // Get system preference
     const getSystemTheme = (): "dark" | "light" => {
@@ -51,7 +56,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // Listen for system theme changes
         const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
         const handleChange = () => {
-            if (theme === "system") {
+            if (themeRef.current === "system") {
                 applyTheme("system")
             }
         }

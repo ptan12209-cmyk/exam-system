@@ -60,6 +60,9 @@ export default function StudyChecklistPage() {
   // Notion Editor active task state
   const [selectedTask, setSelectedTask] = useState<StudyTask | null>(null)
   const [editorBlocks, setEditorBlocks] = useState<NoteBlock[]>([])
+  const [draftTitle, setDraftTitle] = useState("")
+  const [draftSubject, setDraftSubject] = useState("")
+  const [draftDueDate, setDraftDueDate] = useState("")
   const [savingNotes, setSavingNotes] = useState(false)
   const [aiGenerating, setAiGenerating] = useState(false)
   const [editorError, setEditorError] = useState<string | null>(null)
@@ -206,6 +209,9 @@ export default function StudyChecklistPage() {
   // Notion Editor block management
   const openEditor = (task: StudyTask) => {
     setSelectedTask(task)
+    setDraftTitle(task.title)
+    setDraftSubject(task.subject || "")
+    setDraftDueDate(task.due_date || "")
     setEditorError(null)
     
     // Parse description if it's JSON block content, else create a single text block with old description
@@ -226,6 +232,51 @@ export default function StudyChecklistPage() {
         { id: "1", type: "header", content: `Ghi chú ôn tập: ${task.title}` },
         { id: "2", type: "text", content: "Viết ghi chú lý thuyết hoặc kế hoạch chi tiết của bạn tại đây..." }
       ])
+    }
+  }
+
+  const handleUpdateTitleBlur = async () => {
+    if (!selectedTask) return
+    const titleVal = draftTitle.trim()
+    if (!titleVal || titleVal === selectedTask.title) return
+    
+    setTasks(tasks.map(t => t.id === selectedTask.id ? { ...t, title: titleVal } : t))
+    setSelectedTask({ ...selectedTask, title: titleVal })
+    
+    const { error } = await supabase.from("study_tasks").update({ title: titleVal }).eq("id", selectedTask.id)
+    if (error) {
+      console.error("Error updating title:", error)
+      setGlobalError(`Lỗi khi lưu tiêu đề: ${error.message}`)
+    }
+  }
+
+  const handleUpdateSubjectBlur = async () => {
+    if (!selectedTask) return
+    const subjVal = draftSubject.trim() || null
+    if (subjVal === selectedTask.subject) return
+    
+    setTasks(tasks.map(t => t.id === selectedTask.id ? { ...t, subject: subjVal } : t))
+    setSelectedTask({ ...selectedTask, subject: subjVal })
+    
+    const { error } = await supabase.from("study_tasks").update({ subject: subjVal }).eq("id", selectedTask.id)
+    if (error) {
+      console.error("Error updating subject:", error)
+      setGlobalError(`Lỗi khi lưu môn học: ${error.message}`)
+    }
+  }
+
+  const handleUpdateDueDateBlur = async () => {
+    if (!selectedTask) return
+    const dateVal = draftDueDate || null
+    if (dateVal === selectedTask.due_date) return
+    
+    setTasks(tasks.map(t => t.id === selectedTask.id ? { ...t, due_date: dateVal } : t))
+    setSelectedTask({ ...selectedTask, due_date: dateVal })
+    
+    const { error } = await supabase.from("study_tasks").update({ due_date: dateVal }).eq("id", selectedTask.id)
+    if (error) {
+      console.error("Error updating due date:", error)
+      setGlobalError(`Lỗi khi lưu hạn chót: ${error.message}`)
     }
   }
 
@@ -256,6 +307,31 @@ export default function StudyChecklistPage() {
       return
     }
     setEditorBlocks(editorBlocks.filter(b => b.id !== id))
+  }
+
+  const handleExportCSV = () => {
+    if (tasks.length === 0) return
+    const headers = ["ID", "Tên nhiệm vụ", "Môn học", "Trạng thái", "Hạn chót", "Độ ưu tiên", "Hoàn thành", "Ngày hoàn thành"]
+    const rows = tasks.map(t => [
+      t.id,
+      `"${t.title.replace(/"/g, '""')}"`,
+      t.subject ? `"${t.subject.replace(/"/g, '""')}"` : "",
+      t.status || "",
+      t.due_date || "",
+      t.priority,
+      t.is_completed ? "Đã xong" : "Chưa xong",
+      t.completed_at || ""
+    ])
+    
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n")
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.setAttribute("download", `ke_hoach_hoc_tap_${new Date().toISOString().split("T")[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   const handleSaveNotes = async () => {
@@ -420,9 +496,15 @@ export default function StudyChecklistPage() {
               Không gian quản lý mục tiêu học tập đa góc nhìn (Kanban, Bảng biểu, Lịch biểu) kết hợp ghi chú thông minh và trợ lý soạn thảo AI lý thuyết.
             </p>
           </div>
-          <div className="flex gap-3">
-            <Button onClick={() => setShowAddForm(!showAddForm)} className="rounded-full shadow-lg">
-              <Plus className="mr-2 h-4 w-4" /> Thêm mục tiêu
+          <div className="flex flex-wrap gap-2.5 no-print">
+            <Button onClick={handleExportCSV} variant="outline" className="rounded-full border-[hsl(var(--border))]/70 bg-transparent py-5 px-5 shadow-sm text-xs font-semibold">
+              Xuất File CSV
+            </Button>
+            <Button onClick={() => window.print()} variant="outline" className="rounded-full border-[hsl(var(--border))]/70 bg-transparent py-5 px-5 shadow-sm text-xs font-semibold">
+              In báo cáo PDF
+            </Button>
+            <Button onClick={() => setShowAddForm(!showAddForm)} className="rounded-full shadow-lg py-5 px-6 text-xs font-semibold">
+              <Plus className="mr-1.5 h-4 w-4" /> Thêm mục tiêu
             </Button>
           </div>
         </section>
@@ -553,7 +635,18 @@ export default function StudyChecklistPage() {
                   { key: "review" as const, label: "Chờ duyệt", bg: "bg-amber-500/5", border: "border-amber-500/30", color: "text-amber-500", list: reviewTasks },
                   { key: "done" as const, label: "Đã xong", bg: "bg-emerald-500/5", border: "border-emerald-500/30", color: "text-emerald-500", list: doneTasks }
                 ].map((column) => (
-                  <div key={column.key} className={cn("rounded-[2.5rem] border p-4 flex flex-col min-h-[50vh]", column.bg, column.border)}>
+                  <div 
+                    key={column.key} 
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={async (e) => {
+                      const taskId = e.dataTransfer.getData("text/plain")
+                      const task = tasks.find(t => t.id === taskId)
+                      if (task && task.status !== column.key) {
+                        await handleMoveStatus(task, column.key)
+                      }
+                    }}
+                    className={cn("rounded-[2.5rem] border p-4 flex flex-col min-h-[50vh]", column.bg, column.border)}
+                  >
                     <div className="mb-4 flex items-center justify-between border-b border-[hsl(var(--border))]/25 pb-2">
                       <span className={cn("text-xs font-bold uppercase tracking-wider", column.color)}>{column.label}</span>
                       <span className="rounded-full bg-[hsl(var(--foreground))]/5 px-2 py-0.5 text-[10px] font-bold">{column.list.length}</span>
@@ -567,6 +660,10 @@ export default function StudyChecklistPage() {
                           <div 
                             key={task.id} 
                             onClick={() => openEditor(task)}
+                            draggable="true"
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData("text/plain", task.id)
+                            }}
                             className={cn(
                               "group relative rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer",
                               task.id === selectedTask?.id && "ring-2 ring-[hsl(var(--foreground))]"
@@ -822,13 +919,9 @@ export default function StudyChecklistPage() {
               {/* Task Title */}
               <div className="mb-4">
                 <Input 
-                  value={selectedTask.title} 
-                  onChange={async (e) => {
-                    const newTitleVal = e.target.value
-                    setSelectedTask({ ...selectedTask, title: newTitleVal })
-                    setTasks(tasks.map(t => t.id === selectedTask.id ? { ...t, title: newTitleVal } : t))
-                    await supabase.from("study_tasks").update({ title: newTitleVal }).eq("id", selectedTask.id)
-                  }}
+                  value={draftTitle} 
+                  onChange={(e) => setDraftTitle(e.target.value)}
+                  onBlur={handleUpdateTitleBlur}
                   className="text-lg font-bold px-0 border-0 bg-transparent focus:ring-0 select-none py-1 focus-visible:ring-0" 
                   placeholder="Tiêu đề nhiệm vụ..."
                 />
@@ -873,13 +966,9 @@ export default function StudyChecklistPage() {
                   <span>Hạn chót</span>
                   <input 
                     type="date" 
-                    value={selectedTask.due_date || ""} 
-                    onChange={async (e) => {
-                      const next = e.target.value || null
-                      setSelectedTask({ ...selectedTask, due_date: next })
-                      setTasks(tasks.map(t => t.id === selectedTask.id ? { ...t, due_date: next } : t))
-                      await supabase.from("study_tasks").update({ due_date: next }).eq("id", selectedTask.id)
-                    }}
+                    value={draftDueDate} 
+                    onChange={(e) => setDraftDueDate(e.target.value)}
+                    onBlur={handleUpdateDueDateBlur}
                     className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] px-2 py-0.5 text-xs text-[hsl(var(--foreground))] font-semibold"
                   />
                 </div>
@@ -887,13 +976,9 @@ export default function StudyChecklistPage() {
                   <span>Môn học</span>
                   <input 
                     placeholder="Không có" 
-                    value={selectedTask.subject || ""} 
-                    onChange={async (e) => {
-                      const next = e.target.value || null
-                      setSelectedTask({ ...selectedTask, subject: next })
-                      setTasks(tasks.map(t => t.id === selectedTask.id ? { ...t, subject: next } : t))
-                      await supabase.from("study_tasks").update({ subject: next }).eq("id", selectedTask.id)
-                    }}
+                    value={draftSubject} 
+                    onChange={(e) => setDraftSubject(e.target.value)}
+                    onBlur={handleUpdateSubjectBlur}
                     className="w-24 text-right rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] px-2 py-0.5 text-xs text-[hsl(var(--foreground))] font-semibold"
                   />
                 </div>
@@ -1068,6 +1153,27 @@ export default function StudyChecklistPage() {
             )}
           </aside>
         </section>
+        {/* Custom Print Styles for Professional PDF Reports */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media print {
+            aside, nav, header, button, .no-print, [role="navigation"], .no-print-important {
+              display: none !important;
+            }
+            main {
+              padding: 0 !important;
+              margin: 0 !important;
+              max-width: 100% !important;
+              width: 100% !important;
+            }
+            body {
+              background: white !important;
+              color: black !important;
+            }
+            .grid {
+              display: block !important;
+            }
+          }
+        `}} />
       </main>
     </StudentShell>
   )

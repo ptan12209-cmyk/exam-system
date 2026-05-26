@@ -98,6 +98,7 @@ export default function CoStudyRoomsPage() {
   const [timerMode, setTimerMode] = useState<"focus" | "break">("focus")
   const [focusDuration, setFocusDuration] = useState(25) // minutes
   const [breakDuration, setBreakDuration] = useState(5) // minutes
+  const [timerAlert, setTimerAlert] = useState<{ isOpen: boolean; message: string } | null>(null)
   
   // Today's session focused seconds accumulated locally
   const [localTodaySeconds, setLocalTodaySeconds] = useState(0)
@@ -330,25 +331,11 @@ export default function CoStudyRoomsPage() {
     if (!isTimerRunning) return
 
     const timer = setInterval(async () => {
+      let isEnded = false
       setTimeRemaining((prev) => {
         if (prev <= 1) {
-          clearInterval(timer)
-          // Switch modes
-          const nextMode = timerMode === "focus" ? "break" : "focus"
-          setTimerMode(nextMode)
-          setIsTimerRunning(false)
-          
-          // Trigger browser notification/alert
-          alert(nextMode === "break" ? "🎯 Hết giờ tập trung! Đã đến lúc nghỉ ngơi 5 phút." : "📝 Hết giờ nghỉ giải lao! Bắt đầu ca tập trung tiếp theo.")
-          
-          // Switch timer duration
-          if (nextMode === "focus") {
-            handleStatusChange("resting")
-            return focusDuration * 60
-          } else {
-            handleStatusChange("focusing")
-            return breakDuration * 60
-          }
+          isEnded = true
+          return 0
         }
         return prev - 1
       })
@@ -356,6 +343,25 @@ export default function CoStudyRoomsPage() {
       // If focusing, accumulate local focused seconds every second
       if (timerMode === "focus") {
         setLocalTodaySeconds(prev => prev + 1)
+      }
+
+      if (isEnded) {
+        clearInterval(timer)
+        setIsTimerRunning(false)
+        const nextMode = timerMode === "focus" ? "break" : "focus"
+        setTimerMode(nextMode)
+        setTimeRemaining(nextMode === "focus" ? focusDuration * 60 : breakDuration * 60)
+
+        // Show non-blocking custom alert modal
+        setTimerAlert({
+          isOpen: true,
+          message: nextMode === "break"
+            ? "🎯 Hết giờ tập trung! Đã đến lúc nghỉ ngơi thư giãn 5 phút rồi."
+            : "📝 Hết giờ nghỉ giải lao! Hãy sẵn sàng bước vào ca tập trung mới thôi nào."
+        })
+
+        // Update database with CORRECT mapping
+        await handleStatusChange(nextMode === "focus" ? "focusing" : "resting")
       }
     }, 1000)
 
@@ -494,9 +500,9 @@ export default function CoStudyRoomsPage() {
     // Stop audio
     if (audioRef.current) {
       audioRef.current.pause()
-      setPlayingAudioId(null)
-      setActiveSoundCloudUrl(null)
     }
+    setPlayingAudioId(null)
+    setActiveSoundCloudUrl(null)
 
     try {
       // 1. Remove from room members
@@ -1320,8 +1326,29 @@ export default function CoStudyRoomsPage() {
               </div>
 
             </div>
-
           </section>
+        )}
+
+        {/* Timer Alert Non-blocking Modal */}
+        {timerAlert && timerAlert.isOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="w-full max-w-sm rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/90 p-6 text-center shadow-2xl backdrop-blur-md animate-in zoom-in-95 duration-200">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500">
+                <Sparkles className="h-6 w-6 text-indigo-500 animate-pulse" />
+              </div>
+              <h3 className="text-lg font-bold tracking-tight">Hết ca làm việc!</h3>
+              <p className="mt-2 text-xs leading-relaxed text-[hsl(var(--muted-foreground))]">{timerAlert.message}</p>
+              
+              <div className="mt-6">
+                <Button 
+                  onClick={() => setTimerAlert(null)} 
+                  className="w-full rounded-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+                >
+                  Tuyệt vời, tiếp tục thôi!
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
 
       </main>
