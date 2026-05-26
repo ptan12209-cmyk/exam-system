@@ -1,4 +1,3 @@
--- Migration: Add status column to study_tasks table to support Kanban board view
 -- Run this in your Supabase SQL Editor on the dashboard
 
 -- 1. Add status column to study_tasks if it doesn't exist

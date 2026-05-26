@@ -13,7 +13,7 @@ import { NotificationBell } from "@/components/NotificationBell"
 import { FilterBar } from "@/components/shared"
 import { TeacherSidebar } from "@/components/TeacherSidebar"
 import { TeacherShell } from "@/components/teacher/TeacherShell"
-import { BarChart3, BookOpen, FileText, Users, Clock, Plus, Trash2 } from "lucide-react"
+import { BarChart3, BookOpen, FileText, Users, Clock, Plus, Trash2, Eye } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
 
@@ -127,7 +127,8 @@ export default function TeacherDashboard() {
           </div>
         </section>
 
-        <section className="mt-10 grid gap-4 md:grid-cols-3">
+        <section className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Link href="/teacher/monitor" className="liquid-glass rounded-[2rem] p-5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)] transition-transform hover:-translate-y-0.5 border border-violet-500/20"><Eye className="mb-4 h-5 w-5 text-violet-500 animate-pulse" strokeWidth={1.2} /><p className="font-medium">Giám sát học tập</p><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Quan sát realtime, giao checklist và xem điểm</p></Link>
           <Link href="/teacher/exams/create" className="liquid-glass rounded-[2rem] p-5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)] transition-transform hover:-translate-y-0.5"><Plus className="mb-4 h-5 w-5" strokeWidth={1.2} /><p className="font-medium">Tạo đề mới</p><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Tạo một đề thi mới</p></Link>
           <Link href="/teacher/exam-bank" className="liquid-glass rounded-[2rem] p-5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)] transition-transform hover:-translate-y-0.5"><BookOpen className="mb-4 h-5 w-5" strokeWidth={1.2} /><p className="font-medium">Ngân hàng đề</p><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Lưu trữ và tái sử dụng</p></Link>
           <Link href="/teacher/analytics" className="liquid-glass rounded-[2rem] p-5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)] transition-transform hover:-translate-y-0.5"><BarChart3 className="mb-4 h-5 w-5" strokeWidth={1.2} /><p className="font-medium">Thống kê</p><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Theo dõi kết quả lớp học</p></Link>
