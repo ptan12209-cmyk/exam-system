@@ -669,10 +669,10 @@ export default function StudyChecklistPage() {
         {/* Banner Section */}
         <section className="mb-8 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] backdrop-blur-md">
-              <Sparkles className="h-4 w-4 text-violet-500 animate-pulse" /> Notion Study Workspace
+            <div className="mb-4 sm:mb-6 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/70 px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] backdrop-blur-md">
+              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-violet-500 animate-pulse" /> Notion Study Workspace
             </div>
-            <h1 className="max-w-3xl text-5xl font-bold tracking-[-2px] md:text-7xl lg:text-8xl">Planner Học Tập</h1>
+            <h1 className="max-w-3xl text-3xl font-bold tracking-[-1px] sm:text-5xl sm:tracking-[-2px] md:text-7xl lg:text-8xl">Planner Học Tập</h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--muted-foreground))]">
               Không gian quản lý mục tiêu học tập đa góc nhìn (Kanban, Bảng biểu, Lịch biểu) kết hợp ghi chú thông minh và trợ lý soạn thảo AI lý thuyết.
             </p>
@@ -691,19 +691,19 @@ export default function StudyChecklistPage() {
         </section>
 
         {/* Analytic Cards */}
-        <section className="mb-8 grid gap-4 sm:grid-cols-3">
+        <section className="mb-8 grid gap-3 sm:gap-4 grid-cols-3">
           {[
-            { icon: Target, value: `${completionRate}%`, label: "Tỉ lệ hoàn thành", sub: "Tiến độ học tập" },
-            { icon: ListTodo, value: `${completedTasks}/${totalTasks}`, label: "Nhiệm vụ xong", sub: "Tổng chỉ số" },
-            { icon: Flame, value: `${streak} ngày`, label: "Chuỗi liên tục (Streak)", sub: "Đều đặn hàng ngày" }
+            { icon: Target, value: `${completionRate}%`, label: "Hoàn thành", sub: "Tiến độ học tập" },
+            { icon: ListTodo, value: `${completedTasks}/${totalTasks}`, label: "Nhiệm vụ", sub: "Tổng chỉ số" },
+            { icon: Flame, value: `${streak} ngày`, label: "Streak", sub: "Đều đặn hàng ngày" }
           ].map((item, idx) => (
-            <div key={idx} className="flex items-center gap-4 rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-sm">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--foreground))]/5">
-                <item.icon className="h-6 w-6 text-[hsl(var(--foreground))]" />
+            <div key={idx} className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 rounded-[1.5rem] sm:rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-3 sm:p-6 shadow-sm text-center sm:text-left">
+              <div className="flex h-8 w-8 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-[hsl(var(--foreground))]/5">
+                <item.icon className="h-4 w-4 sm:h-6 sm:w-6 text-[hsl(var(--foreground))]" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{item.value}</p>
-                <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">{item.label}</p>
+                <p className="text-lg sm:text-2xl font-bold">{item.value}</p>
+                <p className="text-[10px] sm:text-xs font-semibold text-[hsl(var(--muted-foreground))]">{item.label}</p>
               </div>
             </div>
           ))}
@@ -776,23 +776,23 @@ export default function StudyChecklistPage() {
 
         {/* View Selection Controls */}
         <section className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex gap-2 rounded-full border border-[hsl(var(--border))]/50 bg-[hsl(var(--card))]/80 p-1 shadow-sm backdrop-blur-md">
+          <div className="flex gap-1 sm:gap-2 rounded-full border border-[hsl(var(--border))]/50 bg-[hsl(var(--card))]/80 p-1 shadow-sm backdrop-blur-md overflow-x-auto max-w-full">
             {[
-              { key: "board" as const, label: "Bảng Kanban", icon: LayoutGrid },
-              { key: "table" as const, label: "Cơ sở dữ liệu", icon: TableProperties },
-              { key: "calendar" as const, label: "Lịch học tập", icon: CalendarDays }
+              { key: "board" as const, label: "Kanban", icon: LayoutGrid },
+              { key: "table" as const, label: "Bảng", icon: TableProperties },
+              { key: "calendar" as const, label: "Lịch", icon: CalendarDays }
             ].map((view) => (
               <button
                 key={view.key}
                 onClick={() => setActiveView(view.key)}
                 className={cn(
-                  "flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200",
+                  "flex items-center gap-1.5 sm:gap-2 rounded-full px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-semibold transition-all duration-200 whitespace-nowrap",
                   activeView === view.key
                     ? "bg-[hsl(var(--foreground))] text-[hsl(var(--background))]"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                 )}
               >
-                <view.icon className="h-4 w-4" /> {view.label}
+                <view.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {view.label}
               </button>
             ))}
           </div>
@@ -809,7 +809,10 @@ export default function StudyChecklistPage() {
             
             {/* 1. KANBAN BOARD VIEW */}
             {activeView === "board" && (
-              <div className="grid gap-6 md:grid-cols-4">
+              <>
+              {/* Mobile hint */}
+              <p className="text-[10px] text-center text-[hsl(var(--muted-foreground))]/60 mb-2 md:hidden">← Vuốt ngang để xem các cột →</p>
+              <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 -mx-2 px-2 md:grid md:grid-cols-4 md:overflow-x-visible md:snap-none md:pb-0 md:mx-0 md:px-0">
                 {[
                   { key: "todo" as const, label: "Chuẩn bị", bg: "bg-slate-500/5", border: "border-slate-500/30", color: "text-slate-500", list: todoTasks },
                   { key: "in_progress" as const, label: "Đang làm", bg: "bg-indigo-500/5", border: "border-indigo-500/30", color: "text-indigo-500", list: inProgressTasks },
@@ -826,7 +829,7 @@ export default function StudyChecklistPage() {
                         await handleMoveStatus(task, column.key)
                       }
                     }}
-                    className={cn("rounded-[2.5rem] border p-4 flex flex-col min-h-[50vh]", column.bg, column.border)}
+                    className={cn("min-w-[75vw] sm:min-w-[280px] md:min-w-0 snap-start rounded-[1.5rem] sm:rounded-[2.5rem] border p-3 sm:p-4 flex flex-col min-h-[50vh] shrink-0 md:shrink", column.bg, column.border)}
                   >
                     <div className="mb-4 flex items-center justify-between border-b border-[hsl(var(--border))]/25 pb-2">
                       <span className={cn("text-xs font-bold uppercase tracking-wider", column.color)}>{column.label}</span>
@@ -915,6 +918,7 @@ export default function StudyChecklistPage() {
                   </div>
                 ))}
               </div>
+              </>
             )}
 
             {/* 2. DATABASE TABLE VIEW */}
@@ -1021,7 +1025,7 @@ export default function StudyChecklistPage() {
 
             {/* 3. INTERACTIVE CALENDAR VIEW */}
             {activeView === "calendar" && (
-              <div className="rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-sm">
+              <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-3 sm:p-6 shadow-sm">
                 
                 {/* Calendar monthly controls */}
                 <div className="mb-6 flex items-center justify-between border-b border-[hsl(var(--border))]/40 pb-4">
@@ -1057,7 +1061,7 @@ export default function StudyChecklistPage() {
                       <div 
                         key={idx} 
                         className={cn(
-                          "min-h-[100px] border border-[hsl(var(--border))]/30 rounded-2xl p-2 flex flex-col justify-between transition-colors",
+                          "min-h-[56px] sm:min-h-[80px] md:min-h-[100px] border border-[hsl(var(--border))]/30 rounded-xl sm:rounded-2xl p-1 sm:p-2 flex flex-col justify-between transition-colors",
                           isCurrentMonth ? "bg-transparent" : "opacity-35 bg-[hsl(var(--muted))]/5",
                           isToday && "ring-2 ring-[hsl(var(--foreground))]"
                         )}
@@ -1075,7 +1079,7 @@ export default function StudyChecklistPage() {
                               key={task.id}
                               onClick={(e) => { e.stopPropagation(); openEditor(task) }}
                               className={cn(
-                                "px-2 py-0.5 rounded-lg text-[9px] font-semibold truncate cursor-pointer transition-transform hover:scale-95",
+                                "px-1 sm:px-2 py-0.5 rounded-md sm:rounded-lg text-[8px] sm:text-[9px] font-semibold truncate cursor-pointer transition-transform hover:scale-95",
                                 task.is_completed ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 line-through" : "bg-[hsl(var(--foreground))]/5 text-[hsl(var(--foreground))] border border-[hsl(var(--foreground))]/10"
                               )}
                               title={task.title}
@@ -1093,9 +1097,14 @@ export default function StudyChecklistPage() {
           </div>
 
           {/* Right sidebar - Widgets or Notion Editor */}
-          <aside className="w-full lg:w-[380px] shrink-0 space-y-4">
+          <aside className={cn(
+            "shrink-0 space-y-4",
+            selectedTask 
+              ? "fixed inset-0 z-40 bg-[hsl(var(--background))]/95 backdrop-blur-xl overflow-y-auto p-4 pt-6 pb-24 lg:relative lg:inset-auto lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:overflow-visible lg:p-0 lg:w-[380px]" 
+              : "w-full lg:w-[380px]"
+          )}>
             {selectedTask ? (
-            <div className="rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/90 p-6 shadow-md shadow-[hsl(var(--foreground))]/5 animate-in slide-in-from-right-8 duration-200">
+            <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/90 p-4 sm:p-6 shadow-md shadow-[hsl(var(--foreground))]/5 animate-in slide-in-from-bottom-8 lg:slide-in-from-right-8 duration-200 max-w-2xl mx-auto lg:max-w-none">
               
               {/* Header and Close controls */}
               <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/40 pb-4 mb-4">
@@ -1375,10 +1384,10 @@ export default function StudyChecklistPage() {
         )}
 
         {/* Floating AI Camera Widget */}
-        <div className="fixed bottom-6 right-6 z-50 no-print">
+        <div className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-50 no-print">
           <div className={cn(
-            "rounded-3xl border p-4 shadow-xl backdrop-blur-md transition-all duration-300 flex flex-col items-center gap-3 bg-[hsl(var(--card))]/80",
-            isCameraActive ? "w-64 border-indigo-500/30" : "w-16 h-16 border-[hsl(var(--border))]/60 justify-center cursor-pointer hover:scale-105"
+            "rounded-3xl border p-3 sm:p-4 shadow-xl backdrop-blur-md transition-all duration-300 flex flex-col items-center gap-3 bg-[hsl(var(--card))]/80",
+            isCameraActive ? "w-56 sm:w-64 border-indigo-500/30" : "w-14 h-14 sm:w-16 sm:h-16 border-[hsl(var(--border))]/60 justify-center cursor-pointer hover:scale-105"
           )}
           onClick={() => {
             if (!isCameraActive) startCamera()

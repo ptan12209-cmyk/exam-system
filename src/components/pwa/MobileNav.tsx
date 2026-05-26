@@ -1,6 +1,6 @@
 "use client"
 
-import { LucideIcon, Home, FileText, Trophy, User, Swords } from "lucide-react"
+import { LucideIcon, Home, FileText, ListTodo, User, Swords, Eye } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -32,10 +32,10 @@ const studentNavItems: NavItem[] = [
         activePattern: /^\/arena/
     },
     {
-        href: "/student/achievements",
-        label: "Thành tích",
-        icon: Trophy,
-        activePattern: /^\/student\/achievements/
+        href: "/student/checklist",
+        label: "Checklist",
+        icon: ListTodo,
+        activePattern: /^\/student\/checklist/
     },
     {
         href: "/student/profile",
@@ -65,10 +65,10 @@ const teacherNavItems: NavItem[] = [
         activePattern: /^\/teacher\/arena/
     },
     {
-        href: "/teacher/analytics",
-        label: "Thống kê",
-        icon: Trophy,
-        activePattern: /^\/teacher\/analytics/
+        href: "/teacher/monitor",
+        label: "Giám sát",
+        icon: Eye,
+        activePattern: /^\/teacher\/monitor/
     },
     {
         href: "/teacher/profile",

@@ -440,6 +440,19 @@ html {
     transition: transform 0.1s ease;
   }
 }
+/* ============================================
+   Mobile Kanban Horizontal Scroll
+   ============================================ */
+@media (max-width: 767px) {
+  .snap-x::-webkit-scrollbar {
+    display: none;
+  }
+  .snap-x {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
 
 /* ============================================
    Animation Keyframes

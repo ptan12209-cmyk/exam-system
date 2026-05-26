@@ -521,17 +521,17 @@ export default function TeacherMonitorPage() {
         {/* Banner Section */}
         <section className="mb-8 grid gap-6 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
           <div>
-            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 px-3 py-1 text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
+            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 px-3 py-1 text-[10px] sm:text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
               <Activity className="h-3.5 w-3.5 text-violet-500 animate-pulse" /> Parent/Elder Brother observatory desk
             </p>
-            <h1 className="text-4xl font-bold tracking-tight md:text-6xl">Đài Giám Sát Học Tập</h1>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-6xl">Đài Giám Sát Học Tập</h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--muted-foreground))] md:text-lg">
               Quan sát trạng thái học realtime của em trai, giao việc trực tiếp vào Checklist và theo dõi kết quả làm bài tập trực tuyến.
             </p>
           </div>
           
           {/* Linked student switcher or add links container */}
-          <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-sm">
+          <div className="rounded-[1.5rem] sm:rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-sm">
             <p className="text-xs uppercase font-bold tracking-wider text-[hsl(var(--muted-foreground))] mb-3">Em trai đang quan sát</p>
             {students.length === 0 ? (
               <p className="text-sm italic text-[hsl(var(--muted-foreground))]">Chưa liên kết tài khoản nào</p>
@@ -595,7 +595,7 @@ export default function TeacherMonitorPage() {
               
               {/* Card 1: Real-time Presence */}
               <div className={cn(
-                "rounded-[2.5rem] border border-[hsl(var(--border))]/60 p-6 shadow-md transition-all relative overflow-hidden bg-[hsl(var(--card))]",
+                "rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 p-4 sm:p-6 shadow-md transition-all relative overflow-hidden bg-[hsl(var(--card))]",
                 session?.status === "focusing" && "ring-1 ring-emerald-500/25"
               )}>
                 {/* Visual Glassmorphism highlight */}
@@ -615,7 +615,7 @@ export default function TeacherMonitorPage() {
                   </button>
                 </div>
 
-                <div className="grid gap-6 sm:grid-cols-2 items-center">
+                <div className="grid gap-4 sm:gap-6 md:grid-cols-2 items-center">
                   
                   {/* Status Indicator Panel */}
                   <div className="space-y-4">
@@ -654,7 +654,7 @@ export default function TeacherMonitorPage() {
               </div>
 
               {/* Card 1.5: AI Proctoring & Cảnh Báo Cưỡng Chế */}
-              <div className="rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md relative overflow-hidden">
+              <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md relative overflow-hidden">
                 <div className="absolute -left-16 -bottom-16 h-36 w-36 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
                 
                 <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
@@ -665,7 +665,7 @@ export default function TeacherMonitorPage() {
                   <span className="rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-bold text-indigo-500">DeepFace AI</span>
                 </div>
 
-                <div className="grid gap-6 sm:grid-cols-2">
+                <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
                   {/* Cột trái: AI Proctoring View */}
                   <div className="space-y-4">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-500">Trạng thái từ Camera của em</p>
@@ -805,7 +805,7 @@ export default function TeacherMonitorPage() {
                           </>
                         )}
                       </Button>
-                      <p className="text-[8px] text-rose-500/80 leading-normal text-center">
+                      <p className="text-[10px] text-rose-500/80 leading-normal text-center">
                         * Màn hình của em trai sẽ lập tức bị khóa overlay đỏ mờ, đồng thời phát âm thanh lớn cảnh báo và tự động đọc to lời nhắn của bạn!
                       </p>
                     </form>
@@ -814,7 +814,7 @@ export default function TeacherMonitorPage() {
               </div>
 
               {/* Card 2: Checklist Manager */}
-              <div className="rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
+              <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md">
                 <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
                   <div>
                     <h3 className="font-bold text-lg">Checklist & Planner của em</h3>
@@ -962,7 +962,7 @@ export default function TeacherMonitorPage() {
 
                           <button 
                             onClick={() => handleDeleteTask(task.id)}
-                            className="rounded-full p-2 text-rose-500 bg-rose-500/0 hover:bg-rose-500/10 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                            className="rounded-full p-2 text-rose-500 bg-rose-500/0 hover:bg-rose-500/10 transition-colors opacity-60 sm:opacity-0 sm:group-hover:opacity-100 shrink-0"
                             title="Xóa đầu việc"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -980,7 +980,7 @@ export default function TeacherMonitorPage() {
             <div className="space-y-6">
               
               {/* Card 3: Homework Assigned & Scores Tracker */}
-              <div className="rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md overflow-hidden">
+              <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md overflow-hidden">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
                   <div>
                     <h3 className="font-bold text-lg">Bài Tập Trực Tuyến</h3>
@@ -1040,7 +1040,7 @@ export default function TeacherMonitorPage() {
               </div>
 
               {/* Card 4: Timetable Widget Preview */}
-              <div className="rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
+              <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md">
                 <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
                   <div>
                     <h3 className="font-bold text-lg">Khung Giờ Học Tập</h3>
