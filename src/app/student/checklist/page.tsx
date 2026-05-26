@@ -685,6 +685,11 @@ export default function StudyChecklistPage() {
                               )}>
                                 {task.priority === "high" ? "Cao" : task.priority === "medium" ? "T.Bình" : "Thấp"}
                               </span>
+                              {(task as any).estimated_time > 0 && (
+                                <span className="rounded-full bg-indigo-500/5 border border-indigo-500/20 px-2 py-0.5 text-indigo-500 font-bold flex items-center gap-0.5">
+                                  ⏱️ {(task as any).estimated_time} phút
+                                </span>
+                              )}
                             </div>
 
                             {task.due_date && (
@@ -741,6 +746,7 @@ export default function StudyChecklistPage() {
                         <th className="p-4">Nhiệm vụ học tập</th>
                         <th className="p-4 w-28">Trạng thái</th>
                         <th className="p-4 w-28">Ưu tiên</th>
+                        <th className="p-4 w-28">Thời lượng</th>
                         <th className="p-4 w-32">Môn học</th>
                         <th className="p-4 w-36">Hạn chót</th>
                         <th className="p-4 w-16 text-center">Xóa</th>
@@ -797,6 +803,13 @@ export default function StudyChecklistPage() {
                               )}>
                                 {task.priority === "high" ? "Cao" : task.priority === "medium" ? "Trung bình" : "Thấp"}
                               </span>
+                            </td>
+                            <td className="p-4">
+                              {(task as any).estimated_time > 0 ? (
+                                <span className="text-xs font-semibold text-indigo-500">⏱️ {(task as any).estimated_time} phút</span>
+                              ) : (
+                                <span className="text-xs text-[hsl(var(--muted-foreground))]/40">—</span>
+                              )}
                             </td>
                             <td className="p-4">
                               {task.subject ? (

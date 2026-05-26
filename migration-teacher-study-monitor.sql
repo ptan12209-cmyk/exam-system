@@ -63,3 +63,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 5. Đảm bảo bảng study_tasks có cột estimated_time để lưu thời lượng học tập (phút/giờ)
+ALTER TABLE public.study_tasks ADD COLUMN IF NOT EXISTS estimated_time INTEGER DEFAULT 0;
+

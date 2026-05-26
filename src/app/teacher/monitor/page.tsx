@@ -40,6 +40,7 @@ interface StudyTask {
   due_date: string | null
   status: "todo" | "in_progress" | "review" | "done"
   is_completed: boolean
+  estimated_time?: number
 }
 
 interface Submission {
@@ -92,6 +93,7 @@ export default function TeacherMonitorPage() {
   const [taskSubject, setTaskSubject] = useState("")
   const [taskPriority, setTaskPriority] = useState<"low" | "medium" | "high">("medium")
   const [taskDueDate, setTaskDueDate] = useState("")
+  const [taskDuration, setTaskDuration] = useState("")
   const [taskLoading, setTaskLoading] = useState(false)
   const [taskError, setTaskError] = useState<string | null>(null)
 
@@ -289,6 +291,7 @@ export default function TeacherMonitorPage() {
         subject: taskSubject.trim() || null,
         due_date: taskDueDate ? new Date(taskDueDate).toISOString() : null,
         priority: taskPriority,
+        estimated_time: Number(taskDuration) || 0,
         status: "todo",
         is_completed: false
       }
@@ -305,6 +308,7 @@ export default function TeacherMonitorPage() {
       setTaskSubject("")
       setTaskPriority("medium")
       setTaskDueDate("")
+      setTaskDuration("")
       
       // Refresh checklist tasks list
       if (selectedStudent) {
@@ -582,7 +586,7 @@ export default function TeacherMonitorPage() {
                     </div>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-3">
                     <div className="space-y-1">
                       <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Độ ưu tiên</Label>
                       <select 
@@ -594,6 +598,18 @@ export default function TeacherMonitorPage() {
                         <option value="medium">Trung bình</option>
                         <option value="high">Cao</option>
                       </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Thời lượng (phút)</Label>
+                      <Input 
+                        type="number"
+                        min="0"
+                        placeholder="VD: 45"
+                        value={taskDuration}
+                        onChange={(e) => setTaskDuration(e.target.value)}
+                        className="rounded-xl border-[hsl(var(--border))]/50 bg-transparent text-sm"
+                      />
                     </div>
 
                     <div className="space-y-1">
@@ -664,6 +680,11 @@ export default function TeacherMonitorPage() {
                                 <span className={cn("rounded-full border px-2 py-0.5", statusBadge?.color)}>
                                   {statusBadge?.label}
                                 </span>
+                                {task.estimated_time !== undefined && task.estimated_time > 0 && (
+                                  <span className="rounded-full bg-indigo-500/5 border border-indigo-500/25 px-2 py-0.5 text-indigo-500 flex items-center gap-0.5">
+                                    ⏱️ {task.estimated_time} phút
+                                  </span>
+                                )}
                               </div>
 
                               {task.due_date && (
