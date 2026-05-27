@@ -12,7 +12,7 @@ import {
   Plus, Check, Trash2, ListTodo, Calendar, Flame, Target, 
   TrendingUp, Sparkles, LayoutGrid, TableProperties, CalendarDays, 
   ChevronLeft, ChevronRight, FileText, Type, Heading, List, Quote, 
-  AlertCircle, Save, Loader2, ArrowRightLeft, ArrowRight
+  AlertCircle, Save, Loader2, ArrowRightLeft, ArrowRight, Camera
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
@@ -85,7 +85,7 @@ export default function StudyChecklistPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // 1. Kiểm tra đăng ký khuôn mặt mẫu gốc và cấu hình lắng nghe active_alert
+  // 1. Kiểm tra đăng ký khuôn mặt mẫu gốc, cấu hình lắng nghe active_alert (cả Broadcast và Database)
   useEffect(() => {
     let mounted = true
     const checkReg = async () => {
@@ -102,39 +102,81 @@ export default function StudyChecklistPage() {
     }
     checkReg()
 
-    let channel: any
-    const setupBroadcast = async () => {
+    // Kiểm tra cảnh báo chủ động lưu trong Database (để hiển thị lại khi tải lại trang)
+    const checkInitialAlert = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      channel = supabase
+      const { data } = await supabase
+        .from("study_sessions")
+        .select("active_alert")
+        .eq("student_id", user.id)
+        .maybeSingle()
+      
+      if (mounted && data && data.active_alert) {
+        setAlertMessage(data.active_alert)
+        setShowAlertOverlay(true)
+      }
+    }
+    checkInitialAlert()
+
+    let broadcastChannel: any
+    let dbChannel: any
+
+    const setupListeners = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // A. Lắng nghe Broadcast realtime (phản hồi tức thời)
+      broadcastChannel = supabase
         .channel(`observatory:${user.id}`)
         .on("broadcast", { event: "active_alert" }, (payload: any) => {
-          if (mounted) {
-            setAlertMessage(payload.payload.message || "Tập trung học đi em trai ơi!")
-            setShowAlertOverlay(true)
-          }
-          
-          // Phát âm thanh bip bip
-          const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav")
-          audio.volume = 1.0
-          audio.play().catch(e => console.log("Audio block by browser"))
-
-          // Phát âm thanh TTS
-          if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel() // Hủy bỏ câu đọc cũ
-            const utterance = new SpeechSynthesisUtterance(payload.payload.message || "Tập trung học đi em trai ơi!")
-            utterance.lang = "vi-VN"
-            utterance.rate = 0.95
-            window.speechSynthesis.speak(utterance)
-          }
+          triggerAlert(payload.payload.message || "Tập trung học đi em trai ơi!")
         })
         .subscribe()
+
+      // B. Lắng nghe Database changes (phòng thủ bền vững)
+      dbChannel = supabase
+        .channel(`student_db_alert_${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "study_sessions", filter: `student_id=eq.${user.id}` },
+          (payload: any) => {
+            if (payload.new && payload.new.active_alert) {
+              triggerAlert(payload.new.active_alert)
+            } else if (payload.new && !payload.new.active_alert) {
+              if (mounted) setShowAlertOverlay(false)
+            }
+          }
+        )
+        .subscribe()
     }
-    setupBroadcast()
+
+    const triggerAlert = (message: string) => {
+      if (!mounted) return
+      setAlertMessage(message)
+      setShowAlertOverlay(true)
+      
+      // Phát âm thanh bip bip
+      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav")
+      audio.volume = 1.0
+      audio.play().catch(e => console.log("Audio block by browser"))
+
+      // Phát âm thanh TTS tiếng Việt
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel() // Hủy bỏ câu cũ
+        const utterance = new SpeechSynthesisUtterance(message)
+        utterance.lang = "vi-VN"
+        utterance.rate = 0.95
+        window.speechSynthesis.speak(utterance)
+      }
+    }
+
+    setupListeners()
 
     return () => {
       mounted = false
-      if (channel) channel.unsubscribe()
+      if (broadcastChannel) broadcastChannel.unsubscribe()
+      if (dbChannel) dbChannel.unsubscribe()
     }
   }, [supabase])
 
@@ -593,6 +635,18 @@ export default function StudyChecklistPage() {
       return
     }
     setEditorBlocks(editorBlocks.filter(b => b.id !== id))
+  }
+
+  // Dismiss persistent active alert and clear database active_alert value
+  const handleDismissAlert = async () => {
+    setShowAlertOverlay(false)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    
+    await supabase
+      .from("study_sessions")
+      .update({ active_alert: null })
+      .eq("student_id", user.id)
   }
 
   const handleExportCSV = () => {
@@ -1203,261 +1257,414 @@ export default function StudyChecklistPage() {
 
           {/* Right sidebar - Widgets or Notion Editor */}
           <aside className={cn(
-            "shrink-0 space-y-4",
+            "shrink-0 space-y-6 w-full lg:w-[380px]",
             selectedTask 
-              ? "fixed inset-0 z-40 bg-[hsl(var(--background))]/95 backdrop-blur-xl overflow-y-auto p-4 pt-6 pb-24 lg:relative lg:inset-auto lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:overflow-visible lg:p-0 lg:w-[380px]" 
-              : "w-full lg:w-[380px]"
+              ? "fixed inset-0 z-40 bg-[hsl(var(--background))]/95 backdrop-blur-xl overflow-y-auto p-4 pt-6 pb-24 lg:relative lg:inset-auto lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:overflow-visible lg:p-0" 
+              : ""
           )}>
-            {selectedTask ? (
-            <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/90 p-4 sm:p-6 shadow-md shadow-[hsl(var(--foreground))]/5 animate-in slide-in-from-bottom-8 lg:slide-in-from-right-8 duration-200 max-w-2xl mx-auto lg:max-w-none">
+            {/* Premium AI Camera Supervisor Card (Always visible at the top of the sidebar) */}
+            <div className="rounded-[2rem] border border-indigo-500/20 bg-[hsl(var(--card))]/90 p-5 shadow-lg relative overflow-hidden backdrop-blur-md">
+              {/* Laser scan line overlay */}
+              {isCameraActive && (
+                <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent animate-scan z-10 pointer-events-none" style={{
+                  animation: "scan 3s linear infinite",
+                  top: "0%"
+                }} />
+              )}
               
-              {/* Header and Close controls */}
-              <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/40 pb-4 mb-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Ghi chú bài học</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setSelectedTask(null)}
-                  className="rounded-full"
-                >
-                  Đóng lại
-                </Button>
+              <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/30 pb-3 mb-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                  <span className={cn("h-2 w-2 rounded-full", isCameraActive ? "bg-indigo-500 animate-pulse" : "bg-slate-400")} />
+                  AI Cam Supervisor
+                </span>
+                <span className={cn(
+                  "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase border",
+                  isFaceRegistered ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse"
+                )}>
+                  {isFaceRegistered ? "Đã Đăng Ký" : "Chưa Thiết Lập"}
+                </span>
               </div>
 
-              {/* Task Title */}
-              <div className="mb-4">
-                <Input 
-                  value={draftTitle} 
-                  onChange={(e) => setDraftTitle(e.target.value)}
-                  onBlur={handleUpdateTitleBlur}
-                  className="text-lg font-bold px-0 border-0 bg-transparent focus:ring-0 select-none py-1 focus-visible:ring-0" 
-                  placeholder="Tiêu đề nhiệm vụ..."
-                />
-              </div>
-
-              {/* Task Metadata panel */}
-              <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/80 p-4 mb-4 grid gap-2.5 text-xs text-[hsl(var(--muted-foreground))]">
-                <div className="flex items-center justify-between">
-                  <span>Trạng thái</span>
-                  <select 
-                    value={selectedTask.status} 
-                    onChange={async (e) => {
-                      const next = e.target.value as any
-                      await handleMoveStatus(selectedTask, next)
-                    }}
-                    className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] text-[hsl(var(--foreground))] px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]/10 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_8px_center] bg-[length:10px] pr-6 bg-no-repeat"
-                  >
-                    <option value="todo" className="bg-[hsl(var(--card))]">Cần làm</option>
-                    <option value="in_progress" className="bg-[hsl(var(--card))]">Đang làm</option>
-                    <option value="review" className="bg-[hsl(var(--card))]">Kiểm tra</option>
-                    <option value="done" className="bg-[hsl(var(--card))]">Hoàn thành</option>
-                  </select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Độ ưu tiên</span>
-                  <select 
-                    value={selectedTask.priority} 
-                    onChange={async (e) => {
-                      const next = e.target.value as any
-                      setSelectedTask({ ...selectedTask, priority: next })
-                      setTasks(tasks.map(t => t.id === selectedTask.id ? { ...t, priority: next } : t))
-                      await supabase.from("study_tasks").update({ priority: next }).eq("id", selectedTask.id)
-                    }}
-                    className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] text-[hsl(var(--foreground))] px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]/10 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_8px_center] bg-[length:10px] pr-6 bg-no-repeat"
-                  >
-                    <option value="low" className="bg-[hsl(var(--card))]">Thấp</option>
-                    <option value="medium" className="bg-[hsl(var(--card))]">Trung bình</option>
-                    <option value="high" className="bg-[hsl(var(--card))]">Cao</option>
-                  </select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Hạn chót</span>
-                  <input 
-                    type="date" 
-                    value={draftDueDate} 
-                    onChange={(e) => setDraftDueDate(e.target.value)}
-                    onBlur={handleUpdateDueDateBlur}
-                    className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] px-2 py-0.5 text-xs text-[hsl(var(--foreground))] font-semibold"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Môn học</span>
-                  <input 
-                    placeholder="Không có" 
-                    value={draftSubject} 
-                    onChange={(e) => setDraftSubject(e.target.value)}
-                    onBlur={handleUpdateSubjectBlur}
-                    className="w-24 text-right rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] px-2 py-0.5 text-xs text-[hsl(var(--foreground))] font-semibold"
-                  />
-                </div>
-              </div>
-
-              {/* Notion-like Editor Workspace */}
-              <div className="border-t border-[hsl(var(--border))]/30 pt-4 space-y-4">
-                
-                {/* AI Outline and save actions */}
-                <div className="flex gap-2">
+              {!isCameraActive ? (
+                <div className="py-6 text-center space-y-3">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/5 border border-indigo-500/20 text-indigo-400">
+                    <Camera className="h-6 w-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold">Giám sát tự động đang tắt</p>
+                    <p className="text-[10px] text-[hsl(var(--muted-foreground))] leading-normal max-w-[200px] mx-auto">
+                      {isFaceRegistered 
+                        ? "Bật camera để đồng bộ trạng thái học tập realtime với người anh." 
+                        : "Đăng ký khuôn mặt mẫu chân dung trước khi bắt đầu giám sát."}
+                    </p>
+                  </div>
                   <Button 
-                    size="sm" 
-                    onClick={handleAiSmartOutline} 
-                    disabled={aiGenerating} 
-                    className="flex-1 rounded-full bg-violet-600 hover:bg-violet-700 text-white font-bold"
+                    onClick={startCamera} 
+                    className="rounded-full py-4 text-xs font-semibold w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/10"
                   >
-                    {aiGenerating ? (
-                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="mr-1 h-3.5 w-3.5 text-yellow-300" />
+                    Bật Camera Giám Sát
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Live Preview Container */}
+                  <div className="relative rounded-2xl overflow-hidden aspect-video border border-[hsl(var(--border))]/40 bg-black/20 flex items-center justify-center group shadow-inner">
+                    <video 
+                      ref={videoRef} 
+                      autoPlay 
+                      playsInline 
+                      muted 
+                      className="w-full h-full object-cover transform -scale-x-100" 
+                    />
+                    <canvas ref={canvasRef} className="hidden" />
+                    
+                    {/* Bounding box glow overlays */}
+                    {faceLog && faceLog.is_present && faceLog.is_verified && (
+                      <div className="absolute inset-0 border-2 border-emerald-500/40 pointer-events-none rounded-2xl animate-pulse" />
                     )}
-                    AI Outline lý thuyết
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={handleSaveNotes} 
-                    disabled={savingNotes}
-                    className="rounded-full border-[hsl(var(--border))]/70 bg-transparent font-bold flex gap-1"
-                  >
-                    {savingNotes ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                    Lưu
-                  </Button>
-                </div>
+                    {faceLog && (!faceLog.is_present || !faceLog.is_verified) && (
+                      <div className="absolute inset-0 border-2 border-red-500/60 pointer-events-none rounded-2xl animate-pulse" />
+                    )}
 
-                {editorError && (
-                  <p className="text-[11px] text-red-500 bg-red-50 p-2.5 rounded-xl border border-red-200 flex items-center gap-1.5">
-                    <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {editorError}
-                  </p>
-                )}
-
-                {/* Editor Content Area */}
-                <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-1">
-                  {editorBlocks.map((block) => (
-                    <div key={block.id} className="group/block relative flex gap-2 items-start">
-                      
-                      {/* Block Type Control Handle */}
-                      <select 
-                        value={block.type}
-                        onChange={(e) => updateBlockType(block.id, e.target.value as any)}
-                        className="opacity-20 group-hover/block:opacity-100 transition-opacity bg-transparent text-[10px] w-6 py-1 select-none outline-none font-bold text-[hsl(var(--muted-foreground))]"
-                        title="Chọn loại khối văn bản"
-                      >
-                        <option value="text">¶</option>
-                        <option value="header">H</option>
-                        <option value="bullet">•</option>
-                        <option value="quote">“</option>
-                        <option value="highlight">!</option>
-                      </select>
-
-                      {/* Dynamic Block Input Rendering */}
-                      <div className="flex-1 min-w-0">
-                        {block.type === "header" && (
-                          <textarea 
-                            value={block.content} 
-                            onChange={(e) => updateBlockContent(block.id, e.target.value)}
-                            placeholder="Tiêu đề đề mục..."
-                            rows={1}
-                            className="w-full font-bold text-base bg-transparent border-0 border-b border-transparent focus:border-[hsl(var(--border))]/20 outline-none resize-none focus:ring-0 focus-visible:ring-0"
-                          />
-                        )}
-                        {block.type === "text" && (
-                          <textarea 
-                            value={block.content} 
-                            onChange={(e) => updateBlockContent(block.id, e.target.value)}
-                            placeholder="Viết nội dung ghi nhớ..."
-                            rows={2}
-                            className="w-full text-xs text-[hsl(var(--muted-foreground))] bg-transparent border-0 border-b border-transparent focus:border-[hsl(var(--border))]/20 outline-none resize-none focus:ring-0 focus-visible:ring-0"
-                          />
-                        )}
-                        {block.type === "bullet" && (
-                          <div className="flex gap-1.5 items-start">
-                            <span className="text-xs font-bold text-[hsl(var(--foreground))]/60 py-0.5">•</span>
-                            <textarea 
-                              value={block.content} 
-                              onChange={(e) => updateBlockContent(block.id, e.target.value)}
-                              placeholder="Thông tin lý thuyết cốt lõi..."
-                              rows={1}
-                              className="w-full text-xs text-[hsl(var(--muted-foreground))] bg-transparent border-0 border-b border-transparent focus:border-[hsl(var(--border))]/20 outline-none resize-none focus:ring-0 focus-visible:ring-0"
-                            />
-                          </div>
-                        )}
-                        {block.type === "quote" && (
-                          <div className="border-l-2 border-violet-500 pl-2 bg-violet-500/5 py-1 rounded-r-lg">
-                            <textarea 
-                              value={block.content} 
-                              onChange={(e) => updateBlockContent(block.id, e.target.value)}
-                              placeholder="Trích dẫn công thức: e.g. $E=mc^2$..."
-                              rows={1}
-                              className="w-full text-xs text-violet-700 italic bg-transparent border-0 border-b border-transparent focus:border-[hsl(var(--border))]/20 outline-none resize-none focus:ring-0 focus-visible:ring-0"
-                            />
-                          </div>
-                        )}
-                        {block.type === "highlight" && (
-                          <div className="bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-xl">
-                            <textarea 
-                              value={block.content} 
-                              onChange={(e) => updateBlockContent(block.id, e.target.value)}
-                              placeholder="Ghi chú quan trọng, mẹo giải bài..."
-                              rows={1}
-                              className="w-full text-xs text-amber-700 font-semibold bg-transparent border-0 border-b border-transparent focus:border-[hsl(var(--border))]/20 outline-none resize-none focus:ring-0 focus-visible:ring-0"
-                            />
-                          </div>
-                        )}
+                    {isAnalyzing && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] text-white font-semibold backdrop-blur-[1px]">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5 text-indigo-400" />
+                        AI đang quét...
                       </div>
+                    )}
 
-                      {/* Delete Block control */}
-                      <button 
-                        onClick={() => deleteBlock(block.id)}
-                        className="opacity-0 group-hover/block:opacity-100 transition-opacity rounded-full p-1 text-red-400 hover:bg-red-50"
-                        title="Xóa khối nội dung"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                    {cameraError && (
+                      <div className="absolute inset-0 bg-red-950/80 p-3 text-center text-[9px] font-semibold text-red-400 flex items-center justify-center">
+                        {cameraError}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AI Diagnostics details */}
+                  <div className="text-[10px] font-semibold space-y-2 bg-[hsl(var(--background))]/60 p-3 rounded-xl border border-[hsl(var(--border))]/30">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[hsl(var(--muted-foreground))]">Hiện diện:</span>
+                      {faceLog ? (
+                        <span className={cn(
+                          "rounded-full px-2 py-0.5 text-[9px] font-bold border",
+                          faceLog.is_present 
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                            : "bg-red-500/10 text-red-500 border-red-500/20 animate-pulse"
+                        )}>
+                          {faceLog.is_present ? "🟢 Có mặt" : "🔴 Rời vị trí"}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">Đang quét...</span>
+                      )}
                     </div>
-                  ))}
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-[hsl(var(--muted-foreground))]">Danh tính:</span>
+                      {faceLog ? (
+                        <span className={cn(
+                          "rounded-full px-2 py-0.5 text-[9px] font-bold border",
+                          faceLog.is_verified 
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                            : "bg-red-500/10 text-red-500 border-red-500/20"
+                        )}>
+                          {faceLog.is_verified ? "🟢 Khớp" : "🔴 Sai người"}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">Đang đối sánh...</span>
+                      )}
+                    </div>
+
+                    {faceLog && faceLog.dominant_emotion && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-[hsl(var(--muted-foreground))]">Cảm xúc học:</span>
+                        <span className="rounded-full bg-violet-500/10 text-violet-500 border border-violet-500/20 px-2 py-0.5 text-[9px] font-bold capitalize">
+                          {faceLog.dominant_emotion}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    {!isFaceRegistered ? (
+                      <Button 
+                        onClick={handleRegisterFace} 
+                        disabled={isRegistering}
+                        className="w-full rounded-xl text-xs py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold"
+                      >
+                        {isRegistering ? "Đang xử lý..." : "📸 Đăng ký mặt gốc"}
+                      </Button>
+                    ) : (
+                      <>
+                        <Button 
+                          onClick={captureAndAnalyze} 
+                          disabled={isAnalyzing}
+                          variant="outline"
+                          className="flex-1 rounded-xl text-[10px] py-4 border-indigo-500/20 text-indigo-500 hover:bg-indigo-50 font-bold"
+                        >
+                          Đồng bộ AI
+                        </Button>
+                        <Button 
+                          onClick={stopCamera}
+                          variant="outline" 
+                          className="rounded-xl text-[10px] py-4 px-3 border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] font-bold hover:bg-[hsl(var(--muted))]"
+                        >
+                          Tắt Cam
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Below Camera Card: Show Notion Editor or Widgets */}
+            {selectedTask ? (
+              <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/90 p-4 sm:p-6 shadow-md shadow-[hsl(var(--foreground))]/5 animate-in slide-in-from-bottom-8 lg:slide-in-from-right-8 duration-200 max-w-2xl mx-auto lg:max-w-none">
+                {/* Header and Close controls */}
+                <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/40 pb-4 mb-4">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Ghi chú bài học</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setSelectedTask(null)}
+                    className="rounded-full"
+                  >
+                    Đóng lại
+                  </Button>
                 </div>
 
-                {/* Add new blocks controller */}
-                <div className="flex justify-between items-center border-t border-[hsl(var(--border))]/30 pt-3">
-                  <span className="text-[10px] font-bold text-[hsl(var(--muted-foreground))]">Thêm Notion Block:</span>
-                  <div className="flex gap-1.5">
-                    {[
-                      { key: "header" as const, label: "H", icon: Heading },
-                      { key: "text" as const, label: "¶", icon: Type },
-                      { key: "bullet" as const, label: "•", icon: List },
-                      { key: "quote" as const, label: "“", icon: Quote },
-                      { key: "highlight" as const, label: "!", icon: AlertCircle }
-                    ].map((btn) => (
-                      <button 
-                        key={btn.key}
-                        type="button"
-                        onClick={() => addEditorBlock(btn.key)}
-                        className="flex h-6 w-6 items-center justify-center rounded border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/10 text-[10px] hover:bg-[hsl(var(--muted))]"
-                        title={btn.label}
-                      >
-                        <btn.icon className="h-3 w-3" />
-                      </button>
-                    ))}
+                {/* Task Title */}
+                <div className="mb-4">
+                  <Input 
+                    value={draftTitle} 
+                    onChange={(e) => setDraftTitle(e.target.value)}
+                    onBlur={handleUpdateTitleBlur}
+                    className="text-lg font-bold px-0 border-0 bg-transparent focus:ring-0 select-none py-1 focus-visible:ring-0" 
+                    placeholder="Tiêu đề nhiệm vụ..."
+                  />
+                </div>
+
+                {/* Task Metadata panel */}
+                <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/80 p-4 mb-4 grid gap-2.5 text-xs text-[hsl(var(--muted-foreground))]">
+                  <div className="flex items-center justify-between">
+                    <span>Trạng thái</span>
+                    <select 
+                      value={selectedTask.status} 
+                      onChange={async (e) => {
+                        const next = e.target.value as any
+                        await handleMoveStatus(selectedTask, next)
+                      }}
+                      className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] text-[hsl(var(--foreground))] px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]/10 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_8px_center] bg-[length:10px] pr-6 bg-no-repeat"
+                    >
+                      <option value="todo" className="bg-[hsl(var(--card))]">Cần làm</option>
+                      <option value="in_progress" className="bg-[hsl(var(--card))]">Đang làm</option>
+                      <option value="review" className="bg-[hsl(var(--card))]">Kiểm tra</option>
+                      <option value="done" className="bg-[hsl(var(--card))]">Hoàn thành</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Độ ưu tiên</span>
+                    <select 
+                      value={selectedTask.priority} 
+                      onChange={async (e) => {
+                        const next = e.target.value as any
+                        setSelectedTask({ ...selectedTask, priority: next })
+                        setTasks(tasks.map(t => t.id === selectedTask.id ? { ...t, priority: next } : t))
+                        await supabase.from("study_tasks").update({ priority: next }).eq("id", selectedTask.id)
+                      }}
+                      className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] text-[hsl(var(--foreground))] px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]/10 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_8px_center] bg-[length:10px] pr-6 bg-no-repeat"
+                    >
+                      <option value="low" className="bg-[hsl(var(--card))]">Thấp</option>
+                      <option value="medium" className="bg-[hsl(var(--card))]">Trung bình</option>
+                      <option value="high" className="bg-[hsl(var(--card))]">Cao</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Hạn chót</span>
+                    <input 
+                      type="date" 
+                      value={draftDueDate} 
+                      onChange={(e) => setDraftDueDate(e.target.value)}
+                      onBlur={handleUpdateDueDateBlur}
+                      className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] px-2 py-0.5 text-xs text-[hsl(var(--foreground))] font-semibold"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Môn học</span>
+                    <input 
+                      placeholder="Không có" 
+                      value={draftSubject} 
+                      onChange={(e) => setDraftSubject(e.target.value)}
+                      onBlur={handleUpdateSubjectBlur}
+                      className="w-24 text-right rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] px-2 py-0.5 text-xs text-[hsl(var(--foreground))] font-semibold"
+                    />
                   </div>
                 </div>
 
-                {/* Manual trigger for save */}
-                <div className="pt-2">
-                  <Button 
-                    onClick={handleSaveNotes} 
-                    disabled={savingNotes}
-                    className="w-full rounded-full py-4 bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90"
-                  >
-                    {savingNotes ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
-                    Cập nhật ghi chú Notion
-                  </Button>
+                {/* Notion-like Editor Workspace */}
+                <div className="border-t border-[hsl(var(--border))]/30 pt-4 space-y-4">
+                  {/* AI Outline and save actions */}
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      onClick={handleAiSmartOutline} 
+                      disabled={aiGenerating} 
+                      className="flex-1 rounded-full bg-violet-600 hover:bg-violet-700 text-white font-bold"
+                    >
+                      {aiGenerating ? (
+                        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="mr-1 h-3.5 w-3.5 text-yellow-300" />
+                      )}
+                      AI Outline lý thuyết
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={handleSaveNotes} 
+                      disabled={savingNotes}
+                      className="rounded-full border-[hsl(var(--border))]/70 bg-transparent font-bold flex gap-1"
+                    >
+                      {savingNotes ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                      Lưu
+                    </Button>
+                  </div>
+
+                  {editorError && (
+                    <p className="text-[11px] text-red-500 bg-red-50 p-2.5 rounded-xl border border-red-200 flex items-center gap-1.5">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {editorError}
+                    </p>
+                  )}
+
+                  {/* Editor Content Area */}
+                  <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-1">
+                    {editorBlocks.map((block) => (
+                      <div key={block.id} className="group/block relative flex gap-2 items-start">
+                        {/* Block Type Control Handle */}
+                        <select 
+                          value={block.type}
+                          onChange={(e) => updateBlockType(block.id, e.target.value as any)}
+                          className="opacity-20 group-hover/block:opacity-100 transition-opacity bg-transparent text-[10px] w-6 py-1 select-none outline-none font-bold text-[hsl(var(--muted-foreground))]"
+                          title="Chọn loại khối văn bản"
+                        >
+                          <option value="text">¶</option>
+                          <option value="header">H</option>
+                          <option value="bullet">•</option>
+                          <option value="quote">“</option>
+                          <option value="highlight">!</option>
+                        </select>
+
+                        {/* Dynamic Block Input Rendering */}
+                        <div className="flex-1 min-w-0">
+                          {block.type === "header" && (
+                            <textarea 
+                              value={block.content} 
+                              onChange={(e) => updateBlockContent(block.id, e.target.value)}
+                              placeholder="Tiêu đề đề mục..."
+                              rows={1}
+                              className="w-full font-bold text-base bg-transparent border-0 border-b border-transparent focus:border-[hsl(var(--border))]/20 outline-none resize-none focus:ring-0 focus-visible:ring-0"
+                            />
+                          )}
+                          {block.type === "text" && (
+                            <textarea 
+                              value={block.content} 
+                              onChange={(e) => updateBlockContent(block.id, e.target.value)}
+                              placeholder="Viết nội dung ghi nhớ..."
+                              rows={2}
+                              className="w-full text-xs text-[hsl(var(--muted-foreground))] bg-transparent border-0 border-b border-transparent focus:border-[hsl(var(--border))]/20 outline-none resize-none focus:ring-0 focus-visible:ring-0"
+                            />
+                          )}
+                          {block.type === "bullet" && (
+                            <div className="flex gap-1.5 items-start">
+                              <span className="text-xs font-bold text-[hsl(var(--foreground))]/60 py-0.5">•</span>
+                              <textarea 
+                                value={block.content} 
+                                onChange={(e) => updateBlockContent(block.id, e.target.value)}
+                                placeholder="Thông tin lý thuyết cốt lõi..."
+                                rows={1}
+                                className="w-full text-xs text-[hsl(var(--muted-foreground))] bg-transparent border-0 border-b border-transparent focus:border-[hsl(var(--border))]/20 outline-none resize-none focus:ring-0 focus-visible:ring-0"
+                              />
+                            </div>
+                          )}
+                          {block.type === "quote" && (
+                            <div className="border-l-2 border-violet-500 pl-2 bg-violet-500/5 py-1 rounded-r-lg">
+                              <textarea 
+                                value={block.content} 
+                                onChange={(e) => updateBlockContent(block.id, e.target.value)}
+                                placeholder="Trích dẫn công thức: e.g. $E=mc^2$..."
+                                rows={1}
+                                className="w-full text-xs text-violet-700 italic bg-transparent border-0 border-b border-transparent focus:border-[hsl(var(--border))]/20 outline-none resize-none focus:ring-0 focus-visible:ring-0"
+                              />
+                            </div>
+                          )}
+                          {block.type === "highlight" && (
+                            <div className="bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-xl">
+                              <textarea 
+                                value={block.content} 
+                                onChange={(e) => updateBlockContent(block.id, e.target.value)}
+                                placeholder="Ghi chú quan trọng, mẹo giải bài..."
+                                rows={1}
+                                className="w-full text-xs text-amber-700 font-semibold bg-transparent border-0 border-b border-transparent focus:border-[hsl(var(--border))]/20 outline-none resize-none focus:ring-0 focus-visible:ring-0"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Delete Block control */}
+                        <button 
+                          onClick={() => deleteBlock(block.id)}
+                          className="opacity-0 group-hover/block:opacity-100 transition-opacity rounded-full p-1 text-red-400 hover:bg-red-50"
+                          title="Xóa khối nội dung"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add new blocks controller */}
+                  <div className="flex justify-between items-center border-t border-[hsl(var(--border))]/30 pt-3">
+                    <span className="text-[10px] font-bold text-[hsl(var(--muted-foreground))]">Thêm Notion Block:</span>
+                    <div className="flex gap-1.5">
+                      {[
+                        { key: "header" as const, label: "H", icon: Heading },
+                        { key: "text" as const, label: "¶", icon: Type },
+                        { key: "bullet" as const, label: "•", icon: List },
+                        { key: "quote" as const, label: "“", icon: Quote },
+                        { key: "highlight" as const, label: "!", icon: AlertCircle }
+                      ].map((btn) => (
+                        <button 
+                          key={btn.key}
+                          type="button"
+                          onClick={() => addEditorBlock(btn.key)}
+                          className="flex h-6 w-6 items-center justify-center rounded border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/10 text-[10px] hover:bg-[hsl(var(--muted))]"
+                          title={btn.label}
+                        >
+                          <btn.icon className="h-3 w-3" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Manual trigger for save */}
+                  <div className="pt-2">
+                    <Button 
+                      onClick={handleSaveNotes} 
+                      disabled={savingNotes}
+                      className="w-full rounded-full py-4 bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90"
+                    >
+                      {savingNotes ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+                      Cập nhật ghi chú Notion
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
             ) : (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              <WidgetPomodoroMini />
-              <WidgetTimetableToday />
-              <WidgetQuote />
-            </div>
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <WidgetPomodoroMini />
+                <WidgetTimetableToday />
+                <WidgetQuote />
+              </div>
             )}
           </aside>
         </section>
@@ -1479,7 +1686,7 @@ export default function StudyChecklistPage() {
                 "{alertMessage}"
               </blockquote>
               <Button 
-                onClick={() => setShowAlertOverlay(false)} 
+                onClick={handleDismissAlert} 
                 className="w-full rounded-full py-5 bg-red-600 hover:bg-red-500 text-white font-bold tracking-wide"
               >
                 Tôi đã quay lại bàn học!
@@ -1487,120 +1694,6 @@ export default function StudyChecklistPage() {
             </div>
           </div>
         )}
-
-        {/* Floating AI Camera Widget */}
-        <div className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-50 no-print">
-          <div className={cn(
-            "rounded-3xl border p-3 sm:p-4 shadow-xl backdrop-blur-md transition-all duration-300 flex flex-col items-center gap-3 bg-[hsl(var(--card))]/80",
-            isCameraActive ? "w-56 sm:w-64 border-indigo-500/30" : "w-14 h-14 sm:w-16 sm:h-16 border-[hsl(var(--border))]/60 justify-center cursor-pointer hover:scale-105"
-          )}
-          onClick={() => {
-            if (!isCameraActive) startCamera()
-          }}
-          >
-            {!isCameraActive ? (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500/5 text-violet-500">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              </div>
-            ) : (
-              <div className="w-full space-y-3 relative">
-                <div className="flex justify-between items-center border-b border-[hsl(var(--border))]/30 pb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-ping" />
-                    AI Cam Monitor
-                  </span>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); stopCamera() }}
-                    className="text-[9px] uppercase font-bold text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-0.5 rounded-md border border-[hsl(var(--border))]/50"
-                  >
-                    Đóng
-                  </button>
-                </div>
-                
-                {/* Video element for preview */}
-                <div className="relative rounded-2xl overflow-hidden aspect-video border border-[hsl(var(--border))]/40 bg-black/10 flex items-center justify-center">
-                  <video 
-                    ref={videoRef} 
-                    autoPlay 
-                    playsInline 
-                    muted 
-                    className="w-full h-full object-cover transform -scale-x-100" 
-                  />
-                  <canvas ref={canvasRef} className="hidden" />
-                  
-                  {isAnalyzing && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] text-white font-semibold">
-                      AI đang phân tích...
-                    </div>
-                  )}
-
-                  {cameraError && (
-                    <div className="absolute inset-0 bg-red-950/80 p-2 text-center text-[9px] font-semibold text-red-400 flex items-center justify-center">
-                      {cameraError}
-                    </div>
-                  )}
-                </div>
-
-                {/* Status Information */}
-                <div className="text-[10px] font-medium space-y-1.5 bg-[hsl(var(--background))]/50 p-2.5 rounded-xl border border-[hsl(var(--border))]/30">
-                  <div className="flex justify-between">
-                    <span className="text-[hsl(var(--muted-foreground))]">Khuôn mặt mẫu:</span>
-                    <span className={isFaceRegistered ? "text-emerald-500 font-bold" : "text-amber-500 font-bold"}>
-                      {isFaceRegistered ? "Đã Đăng Ký" : "Chưa Đăng Ký"}
-                    </span>
-                  </div>
-                  
-                  {isFaceRegistered && faceLog && (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-[hsl(var(--muted-foreground))]">Hiện diện:</span>
-                        <span className={faceLog.is_present ? "text-emerald-500 font-bold" : "text-red-500 font-bold"}>
-                          {faceLog.is_present ? "🟢 Có mặt" : "🔴 Vắng mặt"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-[hsl(var(--muted-foreground))]">Danh tính:</span>
-                        <span className={faceLog.is_verified ? "text-emerald-500 font-bold" : "text-red-500 font-bold"}>
-                          {faceLog.is_verified ? "🟢 Khớp" : "🔴 Không khớp"}
-                        </span>
-                      </div>
-                      {faceLog.dominant_emotion && (
-                        <div className="flex justify-between">
-                          <span className="text-[hsl(var(--muted-foreground))]">Cảm xúc:</span>
-                          <span className="text-violet-500 font-bold capitalize">
-                            {faceLog.dominant_emotion}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* Controller buttons */}
-                <div className="flex gap-1.5 pt-0.5">
-                  {!isFaceRegistered ? (
-                    <Button 
-                      onClick={handleRegisterFace} 
-                      disabled={isRegistering}
-                      className="w-full rounded-xl text-[10px] py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold"
-                    >
-                      {isRegistering ? "Đang xử lý..." : "📸 Đăng ký mặt gốc"}
-                    </Button>
-                  ) : (
-                    <Button 
-                      onClick={captureAndAnalyze} 
-                      disabled={isAnalyzing}
-                      variant="outline"
-                      className="w-full rounded-xl text-[10px] py-3.5 border-indigo-500/20 text-indigo-500 hover:bg-indigo-50"
-                    >
-                      🔍 Đồng bộ AI ngay
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Custom Print Styles for Professional PDF Reports */}
         <style dangerouslySetInnerHTML={{ __html: `
@@ -1621,6 +1714,11 @@ export default function StudyChecklistPage() {
             .grid {
               display: block !important;
             }
+          }
+          @keyframes scan {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
           }
         `}} />
       </main>

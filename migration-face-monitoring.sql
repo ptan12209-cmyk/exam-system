@@ -65,6 +65,9 @@ CREATE POLICY "Teachers can view student face logs" ON public.face_monitor_logs
         )
     );
 
+-- 4.5. Thêm cột active_alert cho bảng study_sessions để phát cảnh báo cưỡng chế
+ALTER TABLE public.study_sessions ADD COLUMN IF NOT EXISTS active_alert TEXT;
+
 -- 5. Kích hoạt tính năng Realtime cho bảng face_monitor_logs và student_face_registrations
 DO $$
 BEGIN
@@ -84,6 +87,15 @@ BEGIN
         AND tablename = 'student_face_registrations'
     ) THEN
         ALTER PUBLICATION supabase_realtime ADD TABLE public.student_face_registrations;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' 
+        AND schemaname = 'public' 
+        AND tablename = 'study_sessions'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.study_sessions;
     END IF;
 END $$;
 

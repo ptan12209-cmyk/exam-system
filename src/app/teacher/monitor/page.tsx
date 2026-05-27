@@ -253,7 +253,7 @@ export default function TeacherMonitorPage() {
     }
   }, [selectedStudent, fetchStudentData, supabase])
 
-  // Send active alert to student via Broadcast
+  // Send active alert to student via Database (highly reliable and persistent) and Broadcast
   const handleSendActiveAlert = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedStudent) return
@@ -261,8 +261,20 @@ export default function TeacherMonitorPage() {
 
     try {
       const alertMsg = alertMsgInput.trim() || "Tập trung học đi em trai ơi! Người anh đang quan sát đó!"
-      const channel = supabase.channel(`observatory:${selectedStudent.id}`)
       
+      // 1. Update the database study_sessions row (persistent and 100% reliable)
+      const { error } = await supabase
+        .from("study_sessions")
+        .update({
+          active_alert: alertMsg,
+          last_status_change: new Date().toISOString()
+        })
+        .eq("student_id", selectedStudent.id)
+
+      if (error) throw error
+
+      // 2. Also send broadcast as a fallback/immediate alert channel
+      const channel = supabase.channel(`observatory:${selectedStudent.id}`)
       await channel.subscribe(async (status: string) => {
         if (status === "SUBSCRIBED") {
           await channel.send({
@@ -273,10 +285,11 @@ export default function TeacherMonitorPage() {
               timestamp: new Date().toISOString()
             }
           })
-          setAlertMsgInput("")
-          alert("Đã phát cảnh báo cưỡng chế tức thời tới em trai!")
         }
       })
+
+      setAlertMsgInput("")
+      alert("Đã phát cảnh báo cưỡng chế tức thời tới em trai!")
     } catch (err: any) {
       console.error("Lỗi gửi cảnh báo:", err)
       alert("Lỗi khi gửi cảnh báo: " + err.message)
