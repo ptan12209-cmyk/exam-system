@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createAdminClient } from "@/lib/supabase/server"
 
 const PYTHON_SERVER_URL = process.env.PYTHON_SERVER_URL || "http://127.0.0.1:8000"
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
+    const adminClient = createAdminClient()
     const cleanPythonServerUrl = PYTHON_SERVER_URL.endsWith("/") 
       ? PYTHON_SERVER_URL.slice(0, -1) 
       : PYTHON_SERVER_URL
@@ -63,8 +64,8 @@ export async function POST(request: NextRequest) {
         const data = await response.json()
         const embeddingJsonStr = JSON.stringify(data.embedding)
 
-        // Lưu hoặc cập nhật khuôn mặt gốc của học sinh vào database
-        const { error: dbError } = await supabase
+        // Lưu hoặc cập nhật khuôn mặt gốc của học sinh vào database (Dùng adminClient để vượt RLS)
+        const { error: dbError } = await adminClient
           .from("student_face_registrations")
           .upsert({
             student_id: targetStudentId,
@@ -96,8 +97,8 @@ export async function POST(request: NextRequest) {
     // TRƯỜNG HỢP B: ĐỐI SÁNH & PHÂN TÍCH REALTIME (ANALYZE)
     // ----------------------------------------------------
     if (type === "analyze") {
-      // 1. Lấy dữ liệu khuôn mặt mẫu gốc của em trai
-      const { data: registration, error: regError } = await supabase
+      // 1. Lấy dữ liệu khuôn mặt mẫu gốc của em trai (Dùng adminClient để vượt RLS)
+      const { data: registration, error: regError } = await adminClient
         .from("student_face_registrations")
         .select("face_encoding")
         .eq("student_id", user.id)
@@ -168,8 +169,8 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // 4. Ghi nhận log giám sát khuôn mặt vào Database
-        const { error: logError } = await supabase
+        // 4. Ghi nhận log giám sát khuôn mặt vào Database (Dùng adminClient để vượt RLS)
+        const { error: logError } = await adminClient
           .from("face_monitor_logs")
           .insert({
             student_id: user.id,
