@@ -13,10 +13,12 @@ def get_deepface():
     try:
         from deepface import DeepFace
         return DeepFace
-    except ImportError:
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=500, 
-            detail="Thư viện 'deepface' chưa được cài đặt. Vui lòng chạy: pip install deepface tensorflow opencv-python"
+            detail=f"Lỗi khởi chạy DeepFace: {str(e)}. Nếu là lỗi thiếu DLL (msvcp140_1.dll), vui lòng cài đặt 'Microsoft Visual C++ Redistributable' từ link: https://aka.ms/vs/17/release/vc_redist.x64.exe"
         )
 
 app = FastAPI(
