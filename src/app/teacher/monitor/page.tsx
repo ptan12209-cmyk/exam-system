@@ -291,32 +291,37 @@ export default function TeacherMonitorPage() {
     
     setRegisteringFace(true)
     try {
-      const reader = new FileReader()
-      reader.onloadend = async () => {
-        const base64 = reader.result as string
-        const res = await fetch("/api/monitor/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            image_base64: base64, 
-            type: "register",
-            student_id: selectedStudent.id
-          })
+      // Wrap FileReader in a Promise to properly await async operation
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = () => reject(new Error("Không thể đọc file ảnh."))
+        reader.readAsDataURL(file)
+      })
+
+      const res = await fetch("/api/monitor/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          image_base64: base64, 
+          type: "register",
+          student_id: selectedStudent.id
         })
-        const data = await res.json()
-        if (res.ok) {
-          setIsStudentFaceRegistered(true)
-          alert("Đăng ký khuôn mặt gốc cho em trai thành công! AI sẵn sàng đối khớp.")
-        } else {
-          alert("Lỗi đăng ký: " + data.error)
-        }
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setIsStudentFaceRegistered(true)
+        alert("Đăng ký khuôn mặt gốc cho em trai thành công! AI sẵn sàng đối khớp.")
+      } else {
+        alert("Lỗi đăng ký: " + (data.error || "Không rõ lỗi. Hãy chắc chắn FastAPI server (cổng 8000) đang chạy."))
       }
-      reader.readAsDataURL(file)
     } catch (err: any) {
       console.error("Lỗi upload khuôn mặt gốc:", err)
       alert("Lỗi: " + err.message)
     } finally {
       setRegisteringFace(false)
+      // Reset input so user can re-select the same file if needed
+      e.target.value = ""
     }
   }
 
