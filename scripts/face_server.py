@@ -171,7 +171,7 @@ def analyze_face(payload: FaceAnalyzeRequest):
             "is_verified": bool(is_verified),
             "cosine_distance": float(cosine_dist),
             "dominant_emotion": dominant_emotion,
-            "emotions_chart": emotion_predictions
+            "emotions_chart": {k: float(v) for k, v in emotion_predictions.items()} if isinstance(emotion_predictions, dict) else {}
         }
     except Exception as e:
         if os.path.exists(temp_file):
