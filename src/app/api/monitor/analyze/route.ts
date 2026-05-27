@@ -6,6 +6,9 @@ const PYTHON_SERVER_URL = process.env.PYTHON_SERVER_URL || "http://127.0.0.1:800
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
+    const cleanPythonServerUrl = PYTHON_SERVER_URL.endsWith("/") 
+      ? PYTHON_SERVER_URL.slice(0, -1) 
+      : PYTHON_SERVER_URL
 
     // 1. Xác thực người dùng học sinh
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -42,7 +45,7 @@ export async function POST(request: NextRequest) {
     // ----------------------------------------------------
     if (type === "register") {
       try {
-        const response = await fetch(`${PYTHON_SERVER_URL}/register-face`, {
+        const response = await fetch(`${cleanPythonServerUrl}/register-face`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
 
       try {
         // 2. Gửi snapshot kèm vector gốc sang Python FastAPI
-        const response = await fetch(`${PYTHON_SERVER_URL}/analyze-face`, {
+        const response = await fetch(`${cleanPythonServerUrl}/analyze-face`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
