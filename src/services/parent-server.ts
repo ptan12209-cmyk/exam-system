@@ -79,7 +79,7 @@ export class ParentServerService {
     // Fetch all submissions for this student
     const { data: submissions, error: subError } = await this.supabase
       .from('submissions')
-      .select('exam_id, score, total_marks, created_at')
+      .select('exam_id, score, created_at')
       .eq('student_id', studentId);
 
     if (subError) {
@@ -101,11 +101,11 @@ export class ParentServerService {
     const distinctExamIds = new Set(submissions.map((s: any) => s.exam_id));
     const examsTaken = distinctExamIds.size;
 
-    // Average overall score (percentage)
+    // Average overall score (percentage) - standard Vietnam scale is 10.0
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const totalPercent = submissions.reduce((sum: number, s: any) => {
       const score = Number(s.score) || 0;
-      const total = Number(s.total_marks) || 1;
+      const total = 10;
       return sum + (score / total) * 100;
     }, 0);
     const avgScore = Math.round(totalPercent / submissions.length);
@@ -141,7 +141,7 @@ export class ParentServerService {
       const subject = examSubjectMap.get(s.exam_id) || 'Unknown';
       if (!subjectScores[subject]) subjectScores[subject] = { total: 0, count: 0 };
       const score = Number(s.score) || 0;
-      const total = Number(s.total_marks) || 1;
+      const total = 10;
       subjectScores[subject].total += (score / total) * 100;
       subjectScores[subject].count += 1;
     });

@@ -47,11 +47,12 @@ interface Submission {
   id: string
   exam_id: string
   score: number
-  total_marks: number
+  correct_count: number
   submitted_at: string
   exam?: {
     title: string
     subject: string | null
+    total_questions: number
   }
 }
 
@@ -180,7 +181,7 @@ export default function TeacherMonitorPage() {
       // 3. Fetch submissions
       const { data: subsData } = await supabase
         .from("submissions")
-        .select("id, exam_id, score, total_marks, submitted_at, exam:exams(title, subject)")
+        .select("id, exam_id, score, correct_count, submitted_at, exam:exams(title, subject, total_questions)")
         .eq("student_id", studentId)
         .order("submitted_at", { ascending: false })
 
@@ -291,10 +292,41 @@ export default function TeacherMonitorPage() {
     
     setRegisteringFace(true)
     try {
-      // Wrap FileReader in a Promise to properly await async operation
+      // Compress image client-side to resolve 413 payload too large error
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
+        reader.onloadend = (event) => {
+          const img = new Image()
+          img.onload = () => {
+            const canvas = document.createElement("canvas")
+            const MAX_WIDTH = 640
+            const MAX_HEIGHT = 640
+            let width = img.width
+            let height = img.height
+
+            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+              if (width > height) {
+                height = Math.round((height * MAX_WIDTH) / width)
+                width = MAX_WIDTH
+              } else {
+                width = Math.round((width * MAX_HEIGHT) / height)
+                height = MAX_HEIGHT
+              }
+            }
+
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext("2d")
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height)
+              resolve(canvas.toDataURL("image/jpeg", 0.85))
+            } else {
+              reject(new Error("Không thể tạo canvas context."))
+            }
+          }
+          img.onerror = () => reject(new Error("Không thể tải ảnh chân dung."))
+          img.src = event.target?.result as string
+        }
         reader.onerror = () => reject(new Error("Không thể đọc file ảnh."))
         reader.readAsDataURL(file)
       })
@@ -308,7 +340,16 @@ export default function TeacherMonitorPage() {
           student_id: selectedStudent.id
         })
       })
-      const data = await res.json()
+
+      let data: any = {}
+      const contentType = res.headers.get("content-type")
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json()
+      } else {
+        const text = await res.text()
+        data = { error: text || `Mã phản hồi từ máy chủ: ${res.status}` }
+      }
+
       if (res.ok) {
         setIsStudentFaceRegistered(true)
         alert("Đăng ký khuôn mặt gốc cho em trai thành công! AI sẵn sàng đối khớp.")
@@ -1006,7 +1047,7 @@ export default function TeacherMonitorPage() {
                     </div>
                   ) : (
                     submissions.map((sub) => {
-                      const scorePercentage = Math.round((sub.score / sub.total_marks) * 100)
+                      const scorePercentage = Math.round((sub.score / 10) * 100)
                       
                       return (
                         <div 
@@ -1027,7 +1068,7 @@ export default function TeacherMonitorPage() {
 
                           <div className="flex items-center gap-3 justify-between sm:justify-end shrink-0">
                             <div className="text-right">
-                              <p className="text-base font-bold text-violet-500">{sub.score} / {sub.total_marks}</p>
+                              <p className="text-base font-bold text-violet-500">{sub.score} / 10</p>
                               <p className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">Tỷ lệ: {scorePercentage}%</p>
                             </div>
                             

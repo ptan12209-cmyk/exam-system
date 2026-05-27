@@ -172,8 +172,25 @@ export default function StudyChecklistPage() {
     try {
       const video = videoRef.current
       const canvas = canvasRef.current
-      canvas.width = video.videoWidth || 320
-      canvas.height = video.videoHeight || 240
+      
+      // Limit resolution client-side to resolve 413 Content Too Large and speed up API
+      const MAX_WIDTH = 480
+      const MAX_HEIGHT = 480
+      let width = video.videoWidth || 320
+      let height = video.videoHeight || 240
+      
+      if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+        if (width > height) {
+          height = Math.round((height * MAX_WIDTH) / width)
+          width = MAX_WIDTH
+        } else {
+          width = Math.round((width * MAX_HEIGHT) / height)
+          height = MAX_HEIGHT
+        }
+      }
+      
+      canvas.width = width
+      canvas.height = height
       const ctx = canvas.getContext("2d")
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
@@ -185,7 +202,15 @@ export default function StudyChecklistPage() {
           body: JSON.stringify({ image_base64: base64, type: "register" })
         })
         
-        const data = await res.json()
+        let data: any = {}
+        const contentType = res.headers.get("content-type")
+        if (contentType && contentType.includes("application/json")) {
+          data = await res.json()
+        } else {
+          const text = await res.text()
+          data = { error: text || `Lỗi máy chủ (${res.status})` }
+        }
+        
         if (!res.ok) {
           throw new Error(data.error || "Lỗi đăng ký khuôn mặt từ AI Server.")
         }
@@ -208,8 +233,25 @@ export default function StudyChecklistPage() {
     try {
       const video = videoRef.current
       const canvas = canvasRef.current
-      canvas.width = video.videoWidth || 320
-      canvas.height = video.videoHeight || 240
+      
+      // Limit resolution client-side to resolve 413 Content Too Large and speed up API
+      const MAX_WIDTH = 480
+      const MAX_HEIGHT = 480
+      let width = video.videoWidth || 320
+      let height = video.videoHeight || 240
+      
+      if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+        if (width > height) {
+          height = Math.round((height * MAX_WIDTH) / width)
+          width = MAX_WIDTH
+        } else {
+          width = Math.round((width * MAX_HEIGHT) / height)
+          height = MAX_HEIGHT
+        }
+      }
+      
+      canvas.width = width
+      canvas.height = height
       const ctx = canvas.getContext("2d")
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
@@ -220,8 +262,17 @@ export default function StudyChecklistPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image_base64: base64, type: "analyze" })
         })
-        const data = await res.json()
-        if (data.success) {
+        
+        let data: any = {}
+        const contentType = res.headers.get("content-type")
+        if (contentType && contentType.includes("application/json")) {
+          data = await res.json()
+        } else {
+          const text = await res.text()
+          data = { error: text || `Lỗi máy chủ (${res.status})` }
+        }
+        
+        if (res.ok && data.success) {
           setFaceLog(data)
         }
       }
