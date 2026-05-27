@@ -164,6 +164,60 @@ export default function StudyChecklistPage() {
     setIsCameraActive(false)
   }
 
+  // Bind camera stream to video element when active (fixes blank video rendering delay)
+  useEffect(() => {
+    if (isCameraActive && cameraStream && videoRef.current) {
+      videoRef.current.srcObject = cameraStream
+    }
+  }, [isCameraActive, cameraStream])
+
+  // Automatically start camera on load if face is registered
+  useEffect(() => {
+    if (isFaceRegistered && !isCameraActive) {
+      startCamera()
+    }
+  }, [isFaceRegistered])
+
+  // Synchronize study session state with Supabase when camera is active
+  useEffect(() => {
+    if (!supabase) return
+    
+    let active = true
+    const updateSessionStatus = async (status: "focusing" | "offline") => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      // Fetch existing focus seconds to prevent resetting progress
+      const { data: existing } = await supabase
+        .from("study_sessions")
+        .select("total_focus_seconds_today")
+        .eq("student_id", user.id)
+        .maybeSingle()
+      
+      const secondsToday = existing?.total_focus_seconds_today || 0
+      
+      if (active) {
+        await supabase.from("study_sessions").upsert({
+          student_id: user.id,
+          status: status,
+          total_focus_seconds_today: secondsToday,
+          last_status_change: new Date().toISOString()
+        }, { onConflict: "student_id" })
+      }
+    }
+
+    if (isCameraActive) {
+      updateSessionStatus("focusing")
+    } else {
+      updateSessionStatus("offline")
+    }
+
+    return () => {
+      active = false
+      updateSessionStatus("offline")
+    }
+  }, [isCameraActive, supabase])
+
   // 3. Đăng ký khuôn mặt mẫu
   const handleRegisterFace = async () => {
     if (!videoRef.current || !canvasRef.current) return
