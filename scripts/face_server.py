@@ -131,35 +131,27 @@ def analyze_face(payload: FaceAnalyzeRequest):
         is_present = False
         is_verified = False
         cosine_dist = 1.0
-        dominant_emotion = "unknown"
+        dominant_emotion = "neutral"
         emotion_predictions = {}
         
         # Nếu phát hiện thấy khuôn mặt trong snapshot
-        if embeddings and len(embeddings) > 0 and embeddings[0].get("face_relation", {}).get("left", 0) > 0 or len(embeddings) > 0:
-            # Kiểm tra xem có thực sự phát hiện được face không (nếu enforce_detection=False, deepface vẫn trả về embedding toàn ảnh nếu ko nhận diện được mặt)
-            # Ta kiểm chứng qua việc phân tích thuộc tính cảm xúc tiếp theo
-            is_present = True
-            current_embedding = embeddings[0]["embedding"]
+        if embeddings and len(embeddings) > 0:
+            facial_area = embeddings[0].get("facial_area", {})
+            x = facial_area.get("x", 0)
+            y = facial_area.get("y", 0)
             
-            # Tính khoảng cách Cosine với mặt gốc
-            # Ngưỡng (Threshold) Facenet Cosine là 0.40. Nhỏ hơn 0.4 là trùng khớp danh tính.
-            cosine_dist = calculate_cosine_distance(current_embedding, payload.target_embedding)
-            is_verified = cosine_dist < 0.40
-            
-            # 2. Phân tích cảm xúc
-            try:
-                analysis = df.analyze(
-                    img_path=temp_file,
-                    actions=["emotion"],
-                    enforce_detection=False,
-                    detector_backend="opencv"
-                )
-                if analysis and len(analysis) > 0:
-                    dominant_emotion = analysis[0]["dominant_emotion"]
-                    emotion_predictions = analysis[0]["emotion"]
-            except Exception as emotion_err:
-                print(f"Emotion analysis error: {str(emotion_err)}")
-                dominant_emotion = "neutral"
+            # Nếu x == 0 và y == 0, nghĩa là OpenCV không tìm thấy khuôn mặt nào
+            # và DeepFace tự động coi toàn bộ bức ảnh là khuôn mặt. Ta coi như vắng mặt (is_present = False)
+            if x == 0 and y == 0:
+                is_present = False
+            else:
+                is_present = True
+                current_embedding = embeddings[0]["embedding"]
+                
+                # Tính khoảng cách Cosine với mặt gốc
+                # Tăng ngưỡng Facenet Cosine lên 0.52 để cực kỳ bao dung với thay đổi ánh sáng, góc quay và biểu cảm
+                cosine_dist = calculate_cosine_distance(current_embedding, payload.target_embedding)
+                is_verified = cosine_dist < 0.52
                 
         # Dọn dẹp file tạm
         if os.path.exists(temp_file):
