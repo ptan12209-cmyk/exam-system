@@ -158,7 +158,7 @@ def analyze_face(payload: FaceAnalyzeRequest):
                     dominant_emotion = analysis[0]["dominant_emotion"]
                     emotion_predictions = analysis[0]["emotion"]
             except Exception as emotion_err:
-                print(f"Lỗi phân tích cảm xúc: {str(emotion_err)}")
+                print(f"Emotion analysis error: {str(emotion_err)}")
                 dominant_emotion = "neutral"
                 
         # Dọn dẹp file tạm
@@ -167,8 +167,8 @@ def analyze_face(payload: FaceAnalyzeRequest):
             
         return {
             "success": True,
-            "is_present": is_present,
-            "is_verified": is_verified,
+            "is_present": bool(is_present),
+            "is_verified": bool(is_verified),
             "cosine_distance": float(cosine_dist),
             "dominant_emotion": dominant_emotion,
             "emotions_chart": emotion_predictions
@@ -181,5 +181,5 @@ def analyze_face(payload: FaceAnalyzeRequest):
 if __name__ == "__main__":
     # Tạo thư mục temp nếu chưa có
     os.makedirs(os.path.join(os.getcwd(), "temp"), exist_ok=True)
-    print("Khởi chạy FastAPI DeepFace Server tại cổng 8000...")
+    print("Starting FastAPI DeepFace Server on port 8000...")
     uvicorn.run(app, host="127.0.0.1", port=8000)
