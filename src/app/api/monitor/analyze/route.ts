@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-const PYTHON_SERVER_URL = "http://127.0.0.1:8000"
+const PYTHON_SERVER_URL = process.env.PYTHON_SERVER_URL || "http://127.0.0.1:8000"
 
 export async function POST(request: NextRequest) {
   try {
