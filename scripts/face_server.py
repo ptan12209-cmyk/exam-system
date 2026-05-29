@@ -1,33 +1,74 @@
+"""
+ExamHub DeepFace Microservice v3.0
+===================================
+Face recognition API following DeepFace official standards.
+Uses DeepFace.verify() for identity comparison (not manual cosine distance).
+
+Changes from v2.0:
+- DeepFace.verify() replaces manual cosine distance calculation
+- enforce_detection=True + try/except for clean is_present detection
+- Facenet512 model (512-d, threshold 0.30) replaces Facenet (128-d, 0.40)
+- align=True for proper face alignment pipeline
+- Removed dead emotion fields
+- Added /health endpoint
+"""
+
 import os
+import sys
 import base64
-import json
+import time
 import numpy as np
-from fastapi import FastAPI, HTTPException, Body
+import cv2
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import List
 import uvicorn
 
-# Khởi tạo trễ cho deepface để server khởi động siêu tốc
-# và chỉ load TensorFlow khi có yêu cầu đầu tiên hoặc khởi chạy thực tế
-def get_deepface():
+# Fix Windows console encoding for Vietnamese
+if sys.platform == "win32":
     try:
-        from deepface import DeepFace
-        return DeepFace
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Lỗi khởi chạy DeepFace: {str(e)}. Nếu là lỗi thiếu DLL (msvcp140_1.dll), vui lòng cài đặt 'Microsoft Visual C++ Redistributable' từ link: https://aka.ms/vs/17/release/vc_redist.x64.exe"
-        )
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
+# =============================================
+# Configuration — single source of truth
+# =============================================
+MODEL_NAME = "Facenet512"       # 512-d embeddings, threshold 0.30
+DETECTOR_BACKEND = "opencv"     # Fast, sufficient for webcam
+DISTANCE_METRIC = "cosine"      # Default for Facenet512
+EXPECTED_EMBEDDING_DIM = 512    # Facenet512 output dimension
+
+# =============================================
+# Pre-loaded DeepFace module (singleton)
+# =============================================
+_df_module = None
+
+def get_deepface():
+    global _df_module
+    if _df_module is None:
+        try:
+            from deepface import DeepFace
+            _df_module = DeepFace
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"DeepFace not available: {str(e)}"
+            )
+    return _df_module
+
+# =============================================
+# FastAPI App
+# =============================================
 app = FastAPI(
     title="ExamHub DeepFace Microservice",
-    description="API Server phân tích nhận diện khuôn mặt và cảm xúc phục vụ đài giám sát học tập từ xa.",
-    version="1.0.0"
+    description="Face recognition API following DeepFace official standards.",
+    version="3.0.0"
 )
 
-# Cấu hình CORS để Next.js gọi trực tiếp từ client nếu cần
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,142 +77,225 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# =============================================
+# Pydantic Request Models
+# =============================================
 class FaceRegisterRequest(BaseModel):
-    image_base64: str  # Ảnh chụp chính diện dạng base64 string
+    image_base64: str
 
 class FaceAnalyzeRequest(BaseModel):
-    image_base64: str  # Ảnh snapshot hiện tại dạng base64 string
-    target_embedding: list  # Vector embedding mặt gốc đã lưu trong DB (Facenet 128-d hoặc 512-d)
+    image_base64: str
+    target_embedding: List[float]
 
-# Helper để chuyển base64 thành file ảnh tạm
-def save_temp_image(base64_str: str, filename: str = "temp.jpg") -> str:
+# =============================================
+# Helper: Decode base64 → numpy array (zero disk I/O)
+# =============================================
+def decode_base64_to_numpy(base64_str: str) -> np.ndarray:
+    """Convert base64 image string to OpenCV BGR numpy array in-memory."""
+    if "," in base64_str:
+        base64_str = base64_str.split(",")[1]
+    img_bytes = base64.b64decode(base64_str)
+    nparr = np.frombuffer(img_bytes, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img is None:
+        raise HTTPException(status_code=400, detail="Cannot decode image from base64")
+    return img
+
+# =============================================
+# Startup: Pre-load model into memory
+# =============================================
+@app.on_event("startup")
+async def preload_model():
+    """Pre-load Facenet512 model on server start for instant first response."""
     try:
-        if "," in base64_str:
-            base64_str = base64_str.split(",")[1]
-        img_data = base64.b64decode(base64_str)
-        temp_dir = os.path.join(os.getcwd(), "temp")
-        os.makedirs(temp_dir, exist_ok=True)
-        filepath = os.path.join(temp_dir, filename)
-        with open(filepath, "wb") as f:
-            f.write(img_data)
-        return filepath
+        df = get_deepface()
+        dummy = np.zeros((160, 160, 3), dtype=np.uint8)
+        df.represent(
+            img_path=dummy,
+            model_name=MODEL_NAME,
+            enforce_detection=False,
+            detector_backend="skip",
+        )
+        print(f"[OK] {MODEL_NAME} model pre-loaded into memory!")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Không thể giải mã ảnh base64: {str(e)}")
+        print(f"[WARN] Model pre-load failed (will lazy-load on first request): {e}")
 
-# Helper tính Cosine Distance giữa 2 vector
-def calculate_cosine_distance(v1, v2):
-    v1 = np.array(v1)
-    v2 = np.array(v2)
-    numerator = np.dot(v1, v2)
-    denominator = np.linalg.norm(v1) * np.linalg.norm(v2)
-    if not denominator:
-        return 1.0
-    return 1.0 - (numerator / denominator)
-
+# =============================================
+# GET / — Server status
+# =============================================
 @app.get("/")
 def read_root():
-    return {"status": "online", "message": "DeepFace API Server đang sẵn sàng!"}
+    return {
+        "status": "online",
+        "version": "3.0.0",
+        "model": MODEL_NAME,
+        "detector": DETECTOR_BACKEND,
+        "distance_metric": DISTANCE_METRIC,
+        "embedding_dim": EXPECTED_EMBEDDING_DIM,
+    }
 
+# =============================================
+# GET /health — Health check for monitoring
+# =============================================
+@app.get("/health")
+def health_check():
+    """Verify model is loaded and responsive."""
+    try:
+        df = get_deepface()
+        dummy = np.zeros((160, 160, 3), dtype=np.uint8)
+        t0 = time.perf_counter()
+        df.represent(
+            img_path=dummy,
+            model_name=MODEL_NAME,
+            enforce_detection=False,
+            detector_backend="skip",
+        )
+        latency_ms = (time.perf_counter() - t0) * 1000
+        return {
+            "status": "healthy",
+            "model": MODEL_NAME,
+            "embedding_dim": EXPECTED_EMBEDDING_DIM,
+            "inference_ms": round(latency_ms, 1),
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "error": str(e)}
+        )
+
+# =============================================
+# POST /register-face — Extract face embedding
+# =============================================
 @app.post("/register-face")
 def register_face(payload: FaceRegisterRequest):
     """
-    Trích xuất vector khuôn mặt (embedding) từ ảnh đăng ký đầu tiên.
-    Sử dụng model 'Facenet' mặc định (128 chiều) vì tốc độ nhanh và độ chính xác cao.
+    Extract face embedding from webcam snapshot.
+    Uses enforce_detection=True to GUARANTEE a real face is found.
+    
+    Returns:
+        embedding: List[float] — 512-d vector for Facenet512
+        face_confidence: float — detector confidence score
+        embedding_dim: int — dimension of the embedding
     """
     df = get_deepface()
-    temp_file = save_temp_image(payload.image_base64, "register_face.jpg")
-    
+    img = decode_base64_to_numpy(payload.image_base64)
+    t0 = time.perf_counter()
+
     try:
-        # Trích xuất embeddings
-        # model_name='Facenet' trích xuất ra vector 128 chiều
+        # enforce_detection=True: MUST find a real face for registration
+        # align=True: apply face alignment for better embedding quality
         embeddings = df.represent(
-            img_path=temp_file,
-            model_name="Facenet",
+            img_path=img,
+            model_name=MODEL_NAME,
             enforce_detection=True,
-            detector_backend="opencv"
+            detector_backend=DETECTOR_BACKEND,
+            align=True,
         )
-        
-        if not embeddings or len(embeddings) == 0:
-            raise HTTPException(status_code=400, detail="Không phát hiện thấy khuôn mặt trong ảnh chân dung đăng ký.")
-            
+
+        if not embeddings:
+            raise HTTPException(status_code=400, detail="No face detected in image.")
+
         embedding = embeddings[0]["embedding"]
-        
-        # Dọn dẹp file tạm
-        if os.path.exists(temp_file):
-            os.remove(temp_file)
-            
+        face_conf = embeddings[0].get("face_confidence", 0)
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+
+        print(
+            f"[REGISTER] confidence={face_conf:.3f}, "
+            f"dim={len(embedding)}, time={elapsed_ms:.0f}ms"
+        )
+
         return {
             "success": True,
-            "message": "Trích xuất khuôn mặt thành công!",
-            "embedding": embedding
+            "message": "Face registered successfully!",
+            "embedding": [float(x) for x in embedding],
+            "face_confidence": float(face_conf),
+            "embedding_dim": len(embedding),
+            "latency_ms": round(elapsed_ms, 1),
         }
-    except Exception as e:
-        if os.path.exists(temp_file):
-            os.remove(temp_file)
-        raise HTTPException(status_code=500, detail=f"Lỗi phân tích khuôn mặt: {str(e)}")
 
+    except ValueError as e:
+        # DeepFace raises ValueError when enforce_detection=True and no face found
+        raise HTTPException(
+            status_code=400,
+            detail=f"No clear face detected. Please look directly at the camera. ({str(e)})"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Face analysis error: {str(e)}")
+
+# =============================================
+# POST /analyze-face — Verify identity (Surveillance)
+# =============================================
 @app.post("/analyze-face")
 def analyze_face(payload: FaceAnalyzeRequest):
     """
-    Nhận snapshot hiện tại, đối sánh danh tính qua Cosine Distance
-    và phân tích cảm xúc (tập trung, buồn ngủ, mệt mỏi) của em trai.
+    Compare live snapshot against registered face embedding.
+    
+    Uses DeepFace.verify() — the OFFICIAL API for face comparison.
+    - img1_path: numpy array (live webcam snapshot)  
+    - img2_path: List[float] (pre-calculated embedding from registration)
+    
+    DeepFace.verify() handles:
+    - Face detection + alignment on img1
+    - Distance calculation (cosine)
+    - Threshold comparison (auto-tuned per model)
+    
+    When no face is detected (enforce_detection=True), catches ValueError
+    and returns is_present=False — cleaner than manual face_confidence checks.
     """
     df = get_deepface()
-    temp_file = save_temp_image(payload.image_base64, "analyze_snapshot.jpg")
-    
+    img = decode_base64_to_numpy(payload.image_base64)
+    t0 = time.perf_counter()
+
     try:
-        # 1. Trích xuất embedding của ảnh snapshot mới
-        embeddings = df.represent(
-            img_path=temp_file,
-            model_name="Facenet",
-            enforce_detection=False, # Không ép buộc để tránh báo lỗi crash server khi em rời vị trí
-            detector_backend="opencv"
+        # === DeepFace.verify() — Official API ===
+        # Replaces manual: represent() → cosine_distance() → threshold check
+        result = df.verify(
+            img1_path=img,                        # numpy BGR array (live snapshot)
+            img2_path=payload.target_embedding,   # List[float] (stored embedding)
+            model_name=MODEL_NAME,
+            detector_backend=DETECTOR_BACKEND,
+            distance_metric=DISTANCE_METRIC,
+            enforce_detection=True,               # Raise ValueError if no face
+            align=True,                           # Face alignment pipeline
         )
-        
-        is_present = False
-        is_verified = False
-        cosine_dist = 1.0
-        dominant_emotion = "neutral"
-        emotion_predictions = {}
-        
-        # Nếu phát hiện thấy khuôn mặt trong snapshot
-        if embeddings and len(embeddings) > 0:
-            facial_area = embeddings[0].get("facial_area", {})
-            x = facial_area.get("x", 0)
-            y = facial_area.get("y", 0)
-            
-            # Nếu x == 0 và y == 0, nghĩa là OpenCV không tìm thấy khuôn mặt nào
-            # và DeepFace tự động coi toàn bộ bức ảnh là khuôn mặt. Ta coi như vắng mặt (is_present = False)
-            if x == 0 and y == 0:
-                is_present = False
-            else:
-                is_present = True
-                current_embedding = embeddings[0]["embedding"]
-                
-                # Tính khoảng cách Cosine với mặt gốc
-                # Tăng ngưỡng Facenet Cosine lên 0.52 để cực kỳ bao dung với thay đổi ánh sáng, góc quay và biểu cảm
-                cosine_dist = calculate_cosine_distance(current_embedding, payload.target_embedding)
-                is_verified = cosine_dist < 0.52
-                
-        # Dọn dẹp file tạm
-        if os.path.exists(temp_file):
-            os.remove(temp_file)
-            
+
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+
         return {
             "success": True,
-            "is_present": bool(is_present),
-            "is_verified": bool(is_verified),
-            "cosine_distance": float(cosine_dist),
-            "dominant_emotion": dominant_emotion,
-            "emotions_chart": {k: float(v) for k, v in emotion_predictions.items()} if isinstance(emotion_predictions, dict) else {}
+            "is_present": True,
+            "is_verified": bool(result["verified"]),
+            "cosine_distance": float(result["distance"]),
+            "threshold_used": float(result["threshold"]),
+            "latency_ms": round(elapsed_ms, 1),
         }
-    except Exception as e:
-        if os.path.exists(temp_file):
-            os.remove(temp_file)
-        raise HTTPException(status_code=500, detail=f"Lỗi phân tích snapshot học tập: {str(e)}")
 
+    except ValueError:
+        # No face detected → student is not present at the desk
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+        return {
+            "success": True,
+            "is_present": False,
+            "is_verified": False,
+            "cosine_distance": 1.0,
+            "threshold_used": 0.0,
+            "latency_ms": round(elapsed_ms, 1),
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")
+
+# =============================================
+# Entry point
+# =============================================
 if __name__ == "__main__":
-    # Tạo thư mục temp nếu chưa có
-    os.makedirs(os.path.join(os.getcwd(), "temp"), exist_ok=True)
-    print("Starting FastAPI DeepFace Server on port 8000...")
+    print("=" * 50)
+    print(f"  DeepFace Server v3.0")
+    print(f"  Model:    {MODEL_NAME} ({EXPECTED_EMBEDDING_DIM}-d)")
+    print(f"  Detector: {DETECTOR_BACKEND}")
+    print(f"  Metric:   {DISTANCE_METRIC}")
+    print(f"  API:      DeepFace.verify() (official)")
+    print("=" * 50)
     uvicorn.run(app, host="127.0.0.1", port=8000)

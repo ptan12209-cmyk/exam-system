@@ -719,38 +719,35 @@ DECLARE
     v_student_name TEXT;
     v_exam_title  TEXT;
 BEGIN
-    -- Only fire when the inserted submission has status = 'completed'
-    IF NEW.status = 'completed' THEN
-        -- Look up the student's display name
-        SELECT full_name INTO v_student_name
-        FROM public.profiles
-        WHERE id = NEW.student_id;
+    -- Look up the student's display name
+    SELECT full_name INTO v_student_name
+    FROM public.profiles
+    WHERE id = NEW.student_id;
 
-        -- Look up the exam title
-        SELECT title INTO v_exam_title
-        FROM public.exams
-        WHERE id = NEW.exam_id;
+    -- Look up the exam title
+    SELECT title INTO v_exam_title
+    FROM public.exams
+    WHERE id = NEW.exam_id;
 
-        -- Insert one notification for every parent linked to this student
-        FOR parent_record IN
-            SELECT parent_id
-            FROM public.parent_student_links
-            WHERE student_id = NEW.student_id
-        LOOP
-            INSERT INTO public.notifications
-                (user_id, title, message, type, link, is_read, created_at)
-            VALUES (
-                parent_record.parent_id,
-                'Bài thi hoàn thành',
-                'Con bạn ' || COALESCE(v_student_name, 'Học sinh') ||
-                ' vừa hoàn thành bài thi: ' || COALESCE(v_exam_title, 'bài thi'),
-                'exam_completed',
-                '/exams/' || NEW.exam_id,
-                false,
-                now()
-            );
-        END LOOP;
-    END IF;
+    -- Insert one notification for every parent linked to this student
+    FOR parent_record IN
+        SELECT parent_id
+        FROM public.parent_student_links
+        WHERE student_id = NEW.student_id
+    LOOP
+        INSERT INTO public.notifications
+            (user_id, title, message, type, link, is_read, created_at)
+        VALUES (
+            parent_record.parent_id,
+            'Bài thi hoàn thành',
+            'Con bạn ' || COALESCE(v_student_name, 'Học sinh') ||
+            ' vừa hoàn thành bài thi: ' || COALESCE(v_exam_title, 'bài thi'),
+            'exam_completed',
+            '/exams/' || NEW.exam_id,
+            false,
+            now()
+        );
+    END LOOP;
 
     RETURN NEW;
 END;

@@ -529,6 +529,13 @@ html {
   100% { box-shadow: 0 0 0 1px hsl(var(--border) / 0.8), 0 0 0 0 hsl(var(--primary) / 0); }
 }
 
+@keyframes scanline {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
 /* ============================================
    Animation Classes
    ============================================ */

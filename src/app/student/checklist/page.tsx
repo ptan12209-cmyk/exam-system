@@ -81,9 +81,14 @@ export default function StudyChecklistPage() {
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [showAlertOverlay, setShowAlertOverlay] = useState(false)
   const [alertMessage, setAlertMessage] = useState("")
+  const [surveillanceFps, setSurveillanceFps] = useState(0)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const analyzeBusyRef = useRef(false)
+  const analyzeRafRef = useRef<number | null>(null)
+  const lastAnalyzeTimeRef = useRef(0)
+  const fpsCounterRef = useRef({ count: 0, lastTime: performance.now() })
 
   // 1. Kiểm tra đăng ký khuôn mặt mẫu gốc, cấu hình lắng nghe active_alert (cả Broadcast và Database)
   useEffect(() => {
@@ -213,12 +218,12 @@ export default function StudyChecklistPage() {
     }
   }, [isCameraActive, cameraStream])
 
-  // Automatically start camera on load if face is registered
+  // Automatically start camera on page load (always, regardless of registration)
   useEffect(() => {
-    if (isFaceRegistered && !isCameraActive) {
+    if (!isCameraActive) {
       startCamera()
     }
-  }, [isFaceRegistered])
+  }, [])
 
   // Synchronize study session state with Supabase when camera is active
   useEffect(() => {
@@ -260,16 +265,14 @@ export default function StudyChecklistPage() {
     }
   }, [isCameraActive, supabase])
 
-  // 3. Đăng ký khuôn mặt mẫu
-  const handleRegisterFace = async () => {
-    if (!videoRef.current || !canvasRef.current) return
-    setIsRegistering(true)
-    setCameraError(null)
+  // 3. Auto-register face: when camera is active but no face registered,
+  // automatically detect and save the face from webcam
+  const autoRegisterFace = async () => {
+    if (!videoRef.current || !canvasRef.current || isFaceRegistered) return false
     try {
       const video = videoRef.current
       const canvas = canvasRef.current
       
-      // Limit resolution client-side to resolve 413 Content Too Large and speed up API
       const MAX_WIDTH = 480
       const MAX_HEIGHT = 480
       let width = video.videoWidth || 320
@@ -304,35 +307,60 @@ export default function StudyChecklistPage() {
           data = await res.json()
         } else {
           const text = await res.text()
-          data = { error: text || `Lỗi máy chủ (${res.status})` }
+          data = { error: text || `Server error (${res.status})` }
         }
         
-        if (!res.ok) {
-          throw new Error(data.error || "Lỗi đăng ký khuôn mặt từ AI Server.")
+        if (res.ok && data.success) {
+          setIsFaceRegistered(true)
+          setIsRegistering(false)
+          return true // Successfully registered
         }
-        
-        setIsFaceRegistered(true)
-        alert("Đăng ký khuôn mặt gốc thành công! Chế độ giám sát tự động kích hoạt.")
       }
-    } catch (err: any) {
-      console.error("Lỗi đăng ký khuôn mặt gốc:", err)
-      setCameraError(err.message || "Không thể nhận dạng khuôn mặt trong ảnh chân dung đăng ký.")
-    } finally {
-      setIsRegistering(false)
+    } catch (err) {
+      // Silent — will retry on next cycle
     }
+    return false
   }
 
-  // 4. Capture & Phân tích snapshot định kỳ (30s)
-  const captureAndAnalyze = async () => {
+  // Auto-register effect: retry every 2s when camera is active but no face registered
+  useEffect(() => {
+    if (!isCameraActive || isFaceRegistered) return
+    
+    let active = true
+    setIsRegistering(true)
+    
+    const tryRegister = async () => {
+      if (!active) return
+      const success = await autoRegisterFace()
+      if (success || !active) return
+      // Retry after 2 seconds
+      setTimeout(() => {
+        if (active) tryRegister()
+      }, 2000)
+    }
+
+    // Wait 2s for camera to warm up then start trying
+    const warmup = setTimeout(() => {
+      if (active) tryRegister()
+    }, 2000)
+
+    return () => {
+      active = false
+      clearTimeout(warmup)
+      setIsRegistering(false)
+    }
+  }, [isCameraActive, isFaceRegistered])
+
+  // 4. Capture & Phân tích snapshot realtime (10 FPS = 100ms) — High-end Surveillance Mode
+  const captureAndAnalyzeSingle = async () => {
     if (!videoRef.current || !canvasRef.current || !isFaceRegistered) return
-    setIsAnalyzing(true)
     try {
       const video = videoRef.current
       const canvas = canvasRef.current
       
-      // Limit resolution client-side to resolve 413 Content Too Large and speed up API
-      const MAX_WIDTH = 480
-      const MAX_HEIGHT = 480
+      // Ultra-low resolution for maximum speed (DeepFace only needs 160x160)
+      const MAX_WIDTH = 240
+      const MAX_HEIGHT = 240
       let width = video.videoWidth || 320
       let height = video.videoHeight || 240
       
@@ -351,7 +379,7 @@ export default function StudyChecklistPage() {
       const ctx = canvas.getContext("2d")
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-        const base64 = canvas.toDataURL("image/jpeg", 0.6)
+        const base64 = canvas.toDataURL("image/jpeg", 0.5)
         
         const res = await fetch("/api/monitor/analyze", {
           method: "POST",
@@ -370,32 +398,72 @@ export default function StudyChecklistPage() {
         
         if (res.ok && data.success) {
           setFaceLog(data)
+          setIsAnalyzing(true) // Visual indicator that system is actively scanning
+        }
+
+        // Model migration: if API says face not registered (stale embedding deleted),
+        // trigger auto-re-register with the new model
+        if (!res.ok && data.error && data.error.includes("Chưa đăng ký")) {
+          setIsFaceRegistered(false)
+        }
+
+        // FPS counter
+        fpsCounterRef.current.count++
+        const now = performance.now()
+        const elapsed = now - fpsCounterRef.current.lastTime
+        if (elapsed >= 1000) {
+          setSurveillanceFps(Math.round((fpsCounterRef.current.count * 1000) / elapsed))
+          fpsCounterRef.current.count = 0
+          fpsCounterRef.current.lastTime = now
         }
       }
     } catch (err) {
-      console.error("Lỗi phân tích snapshot ngầm:", err)
-    } finally {
-      setIsAnalyzing(false)
+      // Silent fail — surveillance must not crash
     }
   }
 
-  // 5. Cấu hình đếm thời gian phân tích ngầm mỗi 30s
+  // 5. High-performance surveillance loop using requestAnimationFrame + busy-flag
+  // This guarantees: (a) no overlapping API calls, (b) maximum throughput, (c) smooth UI
   useEffect(() => {
-    let interval: any
-    if (isCameraActive && isFaceRegistered) {
-      // Chạy phân tích lần đầu tiên ngay khi bật sau 3s
-      const delayTimeout = setTimeout(() => {
-        captureAndAnalyze()
-      }, 3000)
+    if (!isCameraActive || !isFaceRegistered) {
+      setSurveillanceFps(0)
+      return
+    }
 
-      interval = setInterval(() => {
-        captureAndAnalyze()
-      }, 30000) // Chụp mỗi 30s
-      
-      return () => {
-        clearTimeout(delayTimeout)
-        clearInterval(interval)
+    let active = true
+    analyzeBusyRef.current = false
+
+    const THROTTLE_MS = 100 // Target: 10 FPS
+
+    const loop = (timestamp: number) => {
+      if (!active) return
+
+      const elapsed = timestamp - lastAnalyzeTimeRef.current
+      if (elapsed >= THROTTLE_MS && !analyzeBusyRef.current) {
+        analyzeBusyRef.current = true
+        lastAnalyzeTimeRef.current = timestamp
+
+        captureAndAnalyzeSingle().finally(() => {
+          analyzeBusyRef.current = false
+        })
       }
+
+      analyzeRafRef.current = requestAnimationFrame(loop)
+    }
+
+    // Initial delay 1s to let camera warm up
+    const delayTimeout = setTimeout(() => {
+      if (active) {
+        analyzeRafRef.current = requestAnimationFrame(loop)
+      }
+    }, 1000)
+
+    return () => {
+      active = false
+      if (analyzeRafRef.current) cancelAnimationFrame(analyzeRafRef.current)
+      clearTimeout(delayTimeout)
+      analyzeBusyRef.current = false
+      setIsAnalyzing(false)
     }
   }, [isCameraActive, isFaceRegistered])
 
@@ -471,7 +539,7 @@ export default function StudyChecklistPage() {
     const { error } = await supabase.from("study_tasks").insert(payload)
     if (error) {
       console.error("Error creating study task:", error)
-      setGlobalError(`Lỗi khi tạo mục tiêu: ${error.message}. Vui lòng chạy script migration-add-status-to-study-tasks.sql trong Supabase SQL Editor.`)
+      setGlobalError(`Lỗi khi tạo mục tiêu: ${error.message}. Vui lòng chạy script migrations/migration-add-status-to-study-tasks.sql trong Supabase SQL Editor.`)
       return
     }
 
@@ -497,7 +565,7 @@ export default function StudyChecklistPage() {
     })
     if (error) {
       console.error("Error in quick add study task:", error)
-      setGlobalError(`Lỗi khi thêm nhanh mục tiêu: ${error.message}. Vui lòng chạy script migration-add-status-to-study-tasks.sql trong Supabase SQL Editor.`)
+      setGlobalError(`Lỗi khi thêm nhanh mục tiêu: ${error.message}. Vui lòng chạy script migrations/migration-add-status-to-study-tasks.sql trong Supabase SQL Editor.`)
       return
     }
     await refreshTasks()
@@ -528,7 +596,7 @@ export default function StudyChecklistPage() {
     
     if (error) {
       console.error("Error moving study task status:", error)
-      setGlobalError(`Lỗi khi chuyển trạng thái mục tiêu: ${error.message}. Vui lòng chạy script migration-add-status-to-study-tasks.sql trong Supabase SQL Editor.`)
+      setGlobalError(`Lỗi khi chuyển trạng thái mục tiêu: ${error.message}. Vui lòng chạy script migrations/migration-add-status-to-study-tasks.sql trong Supabase SQL Editor.`)
       return
     }
     await refreshTasks()
@@ -1293,9 +1361,7 @@ export default function StudyChecklistPage() {
                   <div className="space-y-1">
                     <p className="text-xs font-bold">Giám sát tự động đang tắt</p>
                     <p className="text-[10px] text-[hsl(var(--muted-foreground))] leading-normal max-w-[200px] mx-auto">
-                      {isFaceRegistered 
-                        ? "Bật camera để đồng bộ trạng thái học tập realtime với người anh." 
-                        : "Đăng ký khuôn mặt mẫu chân dung trước khi bắt đầu giám sát."}
+                      Bật camera để AI tự động quét và đăng ký khuôn mặt, bắt đầu giám sát ngay.
                     </p>
                   </div>
                   <Button 
@@ -1326,10 +1392,23 @@ export default function StudyChecklistPage() {
                       <div className="absolute inset-0 border-2 border-red-500/60 pointer-events-none rounded-2xl animate-pulse" />
                     )}
 
+                    {/* Surveillance scan line animation */}
                     {isAnalyzing && (
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] text-white font-semibold backdrop-blur-[1px]">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5 text-indigo-400" />
-                        AI đang quét...
+                      <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+                        <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent" style={{ animation: 'scanline 2s linear infinite' }} />
+                      </div>
+                    )}
+
+                    {/* Live REC + FPS Badge */}
+                    {isAnalyzing && (
+                      <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                        <div className="flex items-center gap-1 rounded-md bg-red-600/90 px-1.5 py-0.5 text-[8px] font-black text-white tracking-wider shadow-md">
+                          <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                          REC
+                        </div>
+                        <div className="rounded-md bg-black/60 backdrop-blur-sm px-1.5 py-0.5 text-[8px] font-bold text-emerald-400 tabular-nums">
+                          {surveillanceFps} FPS
+                        </div>
                       </div>
                     )}
 
@@ -1374,35 +1453,24 @@ export default function StudyChecklistPage() {
                       )}
                     </div>
 
-                    {faceLog && faceLog.dominant_emotion && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-[hsl(var(--muted-foreground))]">Cảm xúc học:</span>
-                        <span className="rounded-full bg-violet-500/10 text-violet-500 border border-violet-500/20 px-2 py-0.5 text-[9px] font-bold capitalize">
-                          {faceLog.dominant_emotion}
-                        </span>
-                      </div>
-                    )}
                   </div>
 
                   <div className="flex gap-2">
                     {!isFaceRegistered ? (
-                      <Button 
-                        onClick={handleRegisterFace} 
-                        disabled={isRegistering}
-                        className="w-full rounded-xl text-xs py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold"
-                      >
-                        {isRegistering ? "Đang xử lý..." : "📸 Đăng ký mặt gốc"}
-                      </Button>
+                      <div className="w-full flex items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/5 py-3 gap-2">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
+                        <span className="text-[10px] font-bold text-amber-500">
+                          {isRegistering ? "Đang tự quét khuôn mặt..." : "Đang khởi tạo camera..."}
+                        </span>
+                      </div>
                     ) : (
                       <>
-                        <Button 
-                          onClick={captureAndAnalyze} 
-                          disabled={isAnalyzing}
-                          variant="outline"
-                          className="flex-1 rounded-xl text-[10px] py-4 border-indigo-500/20 text-indigo-500 hover:bg-indigo-50 font-bold"
-                        >
-                          Đồng bộ AI
-                        </Button>
+                        <div className="flex-1 flex items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/5 py-2.5 gap-1.5">
+                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="text-[10px] font-bold text-emerald-500">
+                            Surveillance {surveillanceFps > 0 ? 'Active' : 'Standby'}
+                          </span>
+                        </div>
                         <Button 
                           onClick={stopCamera}
                           variant="outline" 

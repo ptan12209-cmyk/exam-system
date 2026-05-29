@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react"
 
 type ViolationType = "tab_switch" | "fullscreen_exit" | "copy_attempt"
 
@@ -31,30 +31,88 @@ interface AntiCheatContextType {
 const AntiCheatContext = createContext<AntiCheatContextType | null>(null)
 
 const MAX_VIOLATIONS = 3
+const STORAGE_KEY = "anticheat_violations"
+
+/**
+ * Safely reads persisted violation counts from sessionStorage.
+ * sessionStorage survives F5 but is cleared when the tab is closed.
+ */
+function getPersistedViolations(examId: string): { tabSwitches: number; fullscreenExits: number; copyAttempts: number } {
+    try {
+        const raw = sessionStorage.getItem(`${STORAGE_KEY}_${examId}`)
+        if (raw) {
+            const parsed = JSON.parse(raw)
+            return {
+                tabSwitches: parsed.tabSwitches ?? 0,
+                fullscreenExits: parsed.fullscreenExits ?? 0,
+                copyAttempts: parsed.copyAttempts ?? 0,
+            }
+        }
+    } catch { /* ignore */ }
+    return { tabSwitches: 0, fullscreenExits: 0, copyAttempts: 0 }
+}
+
+function persistViolations(examId: string, data: { tabSwitches: number; fullscreenExits: number; copyAttempts: number }) {
+    try {
+        sessionStorage.setItem(`${STORAGE_KEY}_${examId}`, JSON.stringify(data))
+    } catch { /* ignore */ }
+}
 
 export function AntiCheatProvider({
     children,
     onMaxViolations,
     onViolation,
-    enabled = true
+    enabled = true,
+    examId = "",
+    initialViolations = 0,
 }: {
     children: ReactNode
     onMaxViolations?: () => void
     onViolation?: (type: ViolationType, count: number) => void
     enabled?: boolean
+    examId?: string
+    /** Number of violations already recorded on server (for session restore after F5) */
+    initialViolations?: number
 }) {
+    // Merge: take the MAX of server-side count and sessionStorage count to prevent gaming
+    const persisted = getPersistedViolations(examId)
+    const initTabSwitches = Math.max(persisted.tabSwitches, initialViolations)
+
     const [violations, setViolations] = useState<Violation[]>([])
-    const [tabSwitches, setTabSwitches] = useState(0)
-    const [fullscreenExits, setFullscreenExits] = useState(0)
-    const [copyAttempts, setCopyAttempts] = useState(0)
+    const [tabSwitches, setTabSwitches] = useState(initTabSwitches)
+    const [fullscreenExits, setFullscreenExits] = useState(persisted.fullscreenExits)
+    const [copyAttempts, setCopyAttempts] = useState(persisted.copyAttempts)
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [warningVisible, setWarningVisible] = useState(false)
     const [warningMessage, setWarningMessage] = useState("")
 
+    // Use refs for stable access in event handlers (avoids stale closures)
+    const tabSwitchesRef = useRef(initTabSwitches)
+    const fullscreenExitsRef = useRef(persisted.fullscreenExits)
+    const isFullscreenRef = useRef(false)
+    const hasEnteredFullscreenRef = useRef(false)
+
+    // Debounce: prevent duplicate violations from blur+visibilitychange firing together
+    const lastViolationTimeRef = useRef(0)
+    const VIOLATION_DEBOUNCE_MS = 2000
+
+    // Track if a viewport-size violation was already fired (prevent spam)
+    const viewportViolationFiredRef = useRef(false)
+
     const totalViolations = tabSwitches + fullscreenExits
+
+    // Persist to sessionStorage whenever counts change
+    useEffect(() => {
+        persistViolations(examId, { tabSwitches, fullscreenExits, copyAttempts })
+    }, [examId, tabSwitches, fullscreenExits, copyAttempts])
 
     const addViolation = useCallback((type: ViolationType, message: string) => {
         if (!enabled) return
+
+        // Debounce: prevent rapid-fire violations from overlapping browser events
+        const now = Date.now()
+        if (now - lastViolationTimeRef.current < VIOLATION_DEBOUNCE_MS) return
+        lastViolationTimeRef.current = now
 
         const violation: Violation = {
             type,
@@ -63,33 +121,31 @@ export function AntiCheatProvider({
 
         setViolations(prev => [...prev, violation])
 
-        let newCount = 0
+        let newTotal = 0
         if (type === "tab_switch") {
-            setTabSwitches(prev => {
-                newCount = prev + 1
-                return newCount
-            })
+            const newCount = tabSwitchesRef.current + 1
+            tabSwitchesRef.current = newCount
+            setTabSwitches(newCount)
+            newTotal = newCount + fullscreenExitsRef.current
         } else if (type === "fullscreen_exit") {
-            setFullscreenExits(prev => {
-                newCount = prev + 1
-                return newCount
-            })
+            const newCount = fullscreenExitsRef.current + 1
+            fullscreenExitsRef.current = newCount
+            setFullscreenExits(newCount)
+            newTotal = tabSwitchesRef.current + newCount
         } else if (type === "copy_attempt") {
-            setCopyAttempts(prev => {
-                newCount = prev + 1
-                return newCount
-            })
+            setCopyAttempts(prev => prev + 1)
+            return // Copy attempts don't count toward max violations
         }
 
         // Notify parent for session tracking
         if (onViolation) {
-            onViolation(type, tabSwitches + fullscreenExits + 1)
+            onViolation(type, newTotal)
         }
 
         // Show warning
         setWarningMessage(message)
         setWarningVisible(true)
-    }, [enabled, onViolation, tabSwitches, fullscreenExits])
+    }, [enabled, onViolation])
 
     // Check if max violations reached
     useEffect(() => {
@@ -98,33 +154,31 @@ export function AntiCheatProvider({
         }
     }, [totalViolations, onMaxViolations])
 
-    // Tab visibility detection
+    // Tab visibility detection (handles Alt+Tab, switching tabs)
     useEffect(() => {
         if (!enabled) return
 
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                // Check if PDF is being opened (whitelisted)
+                // Check if PDF is being opened (whitelisted action)
                 const pdfOpenAllowed = localStorage.getItem('pdf-open-allowed')
-
                 if (pdfOpenAllowed === 'true') {
-                    // Clear flag and don't count as violation
                     localStorage.removeItem('pdf-open-allowed')
                     console.log('PDF open detected - not counting as violation')
                     return
                 }
 
-                const newCount = tabSwitches + fullscreenExits + 1
+                const currentTotal = tabSwitchesRef.current + fullscreenExitsRef.current + 1
                 addViolation(
                     "tab_switch",
-                    `⚠️ Cảnh báo ${newCount}/${MAX_VIOLATIONS}: Bạn đã chuyển tab! Nếu vi phạm ${MAX_VIOLATIONS - newCount} lần nữa, bài sẽ tự động nộp.`
+                    `⚠️ Cảnh báo ${currentTotal}/${MAX_VIOLATIONS}: Bạn đã chuyển tab! Nếu vi phạm ${MAX_VIOLATIONS - currentTotal} lần nữa, bài sẽ tự động nộp.`
                 )
             }
         }
 
         document.addEventListener("visibilitychange", handleVisibilityChange)
         return () => document.removeEventListener("visibilitychange", handleVisibilityChange)
-    }, [enabled, tabSwitches, fullscreenExits, addViolation])
+    }, [enabled, addViolation])
 
     // Fullscreen detection
     useEffect(() => {
@@ -133,20 +187,26 @@ export function AntiCheatProvider({
         const handleFullscreenChange = () => {
             const isNowFullscreen = !!document.fullscreenElement
             setIsFullscreen(isNowFullscreen)
+            isFullscreenRef.current = isNowFullscreen
 
-            // Only count exit if we were in fullscreen before
-            if (!isNowFullscreen && (fullscreenExits > 0 || isFullscreen)) {
-                const newCount = tabSwitches + fullscreenExits + 1
+            if (isNowFullscreen) {
+                hasEnteredFullscreenRef.current = true
+                return
+            }
+
+            // Only count exit if we had previously entered fullscreen
+            if (!isNowFullscreen && hasEnteredFullscreenRef.current) {
+                const currentTotal = tabSwitchesRef.current + fullscreenExitsRef.current + 1
                 addViolation(
                     "fullscreen_exit",
-                    `⚠️ Cảnh báo ${newCount}/${MAX_VIOLATIONS}: Bạn đã thoát chế độ toàn màn hình! Nếu vi phạm ${MAX_VIOLATIONS - newCount} lần nữa, bài sẽ tự động nộp.`
+                    `⚠️ Cảnh báo ${currentTotal}/${MAX_VIOLATIONS}: Bạn đã thoát chế độ toàn màn hình! Nếu vi phạm ${MAX_VIOLATIONS - currentTotal} lần nữa, bài sẽ tự động nộp.`
                 )
             }
         }
 
         document.addEventListener("fullscreenchange", handleFullscreenChange)
         return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
-    }, [enabled, isFullscreen, fullscreenExits, tabSwitches, addViolation])
+    }, [enabled, addViolation])
 
     // Copy/paste prevention
     useEffect(() => {
@@ -188,73 +248,44 @@ export function AntiCheatProvider({
     }, [enabled])
 
     // Split-screen / Floating window detection
+    // IMPROVED: 
+    //   - Removed window.blur handler (it causes too many false positives from
+    //     system notifications, permission dialogs, etc.)
+    //   - Only use viewport ratio check which is more reliable
+    //   - Fire at most ONCE per resize to avoid spam
     useEffect(() => {
         if (!enabled) return
 
-        let blurTimeout: NodeJS.Timeout | null = null
-        const initialWidth = window.innerWidth
-
-        // 1. Window blur detection — fires when floating window overlays
-        const handleWindowBlur = () => {
-            // Small delay to avoid false positives from permission dialogs
-            blurTimeout = setTimeout(() => {
-                if (document.hidden) return // Already handled by visibility change
-                const newCount = tabSwitches + fullscreenExits + 1
-                addViolation(
-                    "tab_switch",
-                    `⚠️ Cảnh báo ${newCount}/${MAX_VIOLATIONS}: Phát hiện cửa sổ nổi/chia màn hình! Vui lòng quay lại bài thi.`
-                )
-            }, 500)
-        }
-
-        const handleWindowFocus = () => {
-            if (blurTimeout) { clearTimeout(blurTimeout); blurTimeout = null }
-        }
-
-        // 2. Window resize detection — split-screen changes viewport
+        // Window resize detection — split-screen changes viewport
         const handleResize = () => {
-            const currentWidth = window.innerWidth
-            const ratio = currentWidth / screen.width
+            const ratio = window.innerWidth / screen.width
 
-            // If window shrinks to < 75% of screen width → split-screen detected
-            if (ratio < 0.75 && initialWidth > 0 && currentWidth < initialWidth * 0.8) {
-                const newCount = tabSwitches + fullscreenExits + 1
+            // If window shrinks to < 70% of screen width → likely split-screen
+            if (ratio < 0.70 && !viewportViolationFiredRef.current) {
+                viewportViolationFiredRef.current = true
+                const currentTotal = tabSwitchesRef.current + fullscreenExitsRef.current + 1
                 addViolation(
                     "tab_switch",
-                    `⚠️ Cảnh báo ${newCount}/${MAX_VIOLATIONS}: Phát hiện chia màn hình! Vui lòng sử dụng toàn bộ màn hình cho bài thi.`
+                    `⚠️ Cảnh báo ${currentTotal}/${MAX_VIOLATIONS}: Phát hiện chia màn hình! Vui lòng sử dụng toàn bộ màn hình cho bài thi.`
                 )
+                // Allow re-detection after 60s cooldown
+                setTimeout(() => { viewportViolationFiredRef.current = false }, 60000)
             }
         }
 
-        window.addEventListener("blur", handleWindowBlur)
-        window.addEventListener("focus", handleWindowFocus)
         window.addEventListener("resize", handleResize)
 
-        // 3. Periodic viewport check (catches PiP/overlay that doesn't trigger resize)
-        const viewportCheck = setInterval(() => {
-            const ratio = window.innerWidth / screen.width
-            if (ratio < 0.6) {
-                const newCount = tabSwitches + fullscreenExits + 1
-                addViolation(
-                    "tab_switch",
-                    `⚠️ Cảnh báo ${newCount}/${MAX_VIOLATIONS}: Cửa sổ bài thi quá nhỏ! Vui lòng phóng to toàn màn hình.`
-                )
-            }
-        }, 10000) // Check every 10 seconds
-
         return () => {
-            window.removeEventListener("blur", handleWindowBlur)
-            window.removeEventListener("focus", handleWindowFocus)
             window.removeEventListener("resize", handleResize)
-            clearInterval(viewportCheck)
-            if (blurTimeout) clearTimeout(blurTimeout)
         }
-    }, [enabled, tabSwitches, fullscreenExits, addViolation])
+    }, [enabled, addViolation])
 
     const enterFullscreen = useCallback(async () => {
         try {
             await document.documentElement.requestFullscreen()
             setIsFullscreen(true)
+            isFullscreenRef.current = true
+            hasEnteredFullscreenRef.current = true
         } catch (err) {
             console.error("Fullscreen error:", err)
         }

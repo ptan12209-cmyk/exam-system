@@ -3,6 +3,81 @@ import { createClient, createAdminClient } from "@/lib/supabase/server"
 
 const PYTHON_SERVER_URL = process.env.PYTHON_SERVER_URL || "http://127.0.0.1:8000"
 
+// Model configuration — must match face_server.py
+const EXPECTED_EMBEDDING_DIM = 512 // Facenet512
+
+// ===== In-Memory Cache for 10 FPS Surveillance Mode =====
+// Avoids hitting Supabase every 100ms — cache embedding for 60s
+interface EmbeddingCacheEntry {
+  embedding: number[]
+  timestamp: number
+}
+const embeddingCache = new Map<string, EmbeddingCacheEntry>()
+const EMBEDDING_CACHE_TTL_MS = 60_000 // 60 seconds
+
+async function getCachedEmbedding(adminClient: any, userId: string): Promise<number[] | null> {
+  const cached = embeddingCache.get(userId)
+  if (cached && (Date.now() - cached.timestamp) < EMBEDDING_CACHE_TTL_MS) {
+    return cached.embedding
+  }
+  
+  const { data: registration, error } = await adminClient
+    .from("student_face_registrations")
+    .select("face_encoding")
+    .eq("student_id", userId)
+    .maybeSingle()
+  
+  if (error || !registration) return null
+  
+  const embedding = JSON.parse(registration.face_encoding) as number[]
+  
+  // Model migration: if embedding dimension doesn't match (e.g. Facenet 128→Facenet512 512),
+  // delete stale registration so auto-register creates a new one with the correct model
+  if (embedding.length !== EXPECTED_EMBEDDING_DIM) {
+    console.warn(
+      `[MIGRATION] Stale embedding for ${userId}: dim=${embedding.length}, expected=${EXPECTED_EMBEDDING_DIM}. Deleting.`
+    )
+    await adminClient
+      .from("student_face_registrations")
+      .delete()
+      .eq("student_id", userId)
+    embeddingCache.delete(userId)
+    return null
+  }
+  
+  embeddingCache.set(userId, { embedding, timestamp: Date.now() })
+  return embedding
+}
+
+// ===== Debounced DB Logging =====
+// Only log when status CHANGES (not every frame at 10 FPS)
+interface LastLogState {
+  is_present: boolean
+  is_verified: boolean
+  timestamp: number
+}
+const lastLogState = new Map<string, LastLogState>()
+
+// ===== Auth Cache for 10 FPS Mode =====
+// Avoids calling supabase.auth.getUser() every 100ms
+interface AuthCacheEntry {
+  userId: string
+  timestamp: number
+}
+const authCache = new Map<string, AuthCacheEntry>()
+const AUTH_CACHE_TTL_MS = 30_000 // 30 seconds
+
+// Simple string hash to create unique cache key from full cookie
+function hashString(str: string): string {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash |= 0 // Convert to 32-bit integer
+  }
+  return hash.toString(36)
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -11,13 +86,7 @@ export async function POST(request: NextRequest) {
       ? PYTHON_SERVER_URL.slice(0, -1) 
       : PYTHON_SERVER_URL
 
-    // 1. Xác thực người dùng học sinh
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: "Chưa xác thực người dùng." }, { status: 401 })
-    }
-
-    // 2. Phân tích request body
+    // 1. Parse request body first (fast, no network)
     const body = await request.json()
     const { image_base64, type, student_id } = body as { image_base64: string; type: "register" | "analyze"; student_id?: string }
 
@@ -25,13 +94,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Thiếu dữ liệu ảnh base64." }, { status: 400 })
     }
 
+    // 2. Xác thực người dùng (CACHED for 10 FPS surveillance)
+    const authHeader = request.headers.get("cookie") || request.headers.get("authorization") || ""
+    const authCacheKey = hashString(authHeader) // Full hash to avoid collisions between users
+    let userId: string | null = null
+
+    // For analyze (surveillance): use cache to avoid 100ms auth overhead per frame
+    if (type === "analyze" && authCacheKey) {
+      const cached = authCache.get(authCacheKey)
+      if (cached && (Date.now() - cached.timestamp) < AUTH_CACHE_TTL_MS) {
+        userId = cached.userId
+      }
+    }
+
+    // Cache miss or register request: authenticate fresh
+    if (!userId) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        return NextResponse.json({ error: "Chưa xác thực người dùng." }, { status: 401 })
+      }
+      userId = user.id
+      // Cache the result
+      if (authCacheKey) {
+        authCache.set(authCacheKey, { userId: user.id, timestamp: Date.now() })
+      }
+    }
+
     // Xác định target student_id (để người anh có thể tự đăng ký hộ cho em trai)
-    let targetStudentId = user.id
-    if (student_id && student_id !== user.id) {
+    let targetStudentId = userId
+    if (student_id && student_id !== userId) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", user.id)
+        .eq("id", userId)
         .single()
       
       if (profile && (profile.role === "teacher" || profile.role === "parent" || profile.role === "admin")) {
@@ -97,20 +192,14 @@ export async function POST(request: NextRequest) {
     // TRƯỜNG HỢP B: ĐỐI SÁNH & PHÂN TÍCH REALTIME (ANALYZE)
     // ----------------------------------------------------
     if (type === "analyze") {
-      // 1. Lấy dữ liệu khuôn mặt mẫu gốc của em trai (Dùng adminClient để vượt RLS)
-      const { data: registration, error: regError } = await adminClient
-        .from("student_face_registrations")
-        .select("face_encoding")
-        .eq("student_id", user.id)
-        .maybeSingle()
+      // 1. Lấy dữ liệu khuôn mặt mẫu gốc của em trai (CACHED — không gọi DB mỗi frame)
+      const targetEmbedding = await getCachedEmbedding(adminClient, userId)
 
-      if (regError || !registration) {
+      if (!targetEmbedding) {
         return NextResponse.json({ 
           error: "Chưa đăng ký khuôn mặt mẫu gốc. Vui lòng thiết lập đăng ký khuôn mặt trước." 
         }, { status: 400 })
       }
-
-      const targetEmbedding = JSON.parse(registration.face_encoding) as number[]
 
       try {
         // 2. Gửi snapshot kèm vector gốc sang Python FastAPI
@@ -136,62 +225,68 @@ export async function POST(request: NextRequest) {
           is_present: boolean
           is_verified: boolean
           cosine_distance: number
-          dominant_emotion: string
-          emotions_chart: Record<string, number>
+          threshold_used: number
+          latency_ms: number
         }
 
-        let snapshotPath: string | null = null
-
-        // 3. Nếu xảy ra vi phạm (vắng mặt hoặc sai danh tính), tải ảnh làm bằng chứng lên Storage
-        if (!data.is_present || !data.is_verified) {
-          try {
-            const buffer = Buffer.from(image_base64.split(",")[1], "base64")
-            const fileName = `${user.id}/${Date.now()}.jpg`
-            
-            // Upload ảnh lên bucket 'student-snapshots'
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from("student-snapshots")
-              .upload(fileName, buffer, {
-                contentType: "image/jpeg",
-                upsert: false
-              })
-
-            if (uploadData && !uploadError) {
-              // Lấy Public URL để lưu vào log
-              const { data: { publicUrl } } = supabase.storage
+        // 4. Debounced DB Logging — chỉ ghi log khi trạng thái THAY ĐỔI
+        const lastState = lastLogState.get(userId)
+        const stateChanged = !lastState 
+          || lastState.is_present !== data.is_present 
+          || lastState.is_verified !== data.is_verified
+        
+        if (stateChanged) {
+          // Upload snapshot chỉ khi vi phạm (vắng mặt hoặc sai danh tính)
+          let snapshotPath: string | null = null
+          if (!data.is_present || !data.is_verified) {
+            try {
+              const buffer = Buffer.from(image_base64.split(",")[1], "base64")
+              const fileName = `${userId}/${Date.now()}.jpg`
+              const { data: uploadData, error: uploadError } = await supabase.storage
                 .from("student-snapshots")
-                .getPublicUrl(fileName)
-              snapshotPath = publicUrl
+                .upload(fileName, buffer, {
+                  contentType: "image/jpeg",
+                  upsert: false
+                })
+              if (uploadData && !uploadError) {
+                const { data: { publicUrl } } = supabase.storage
+                  .from("student-snapshots")
+                  .getPublicUrl(fileName)
+                snapshotPath = publicUrl
+              }
+            } catch (storageErr) {
+              // Fault Tolerance: skip if storage not available
             }
-          } catch (storageErr) {
-            // Fault Tolerance: Nếu Storage chưa được tạo hoặc lỗi, ta chỉ log DB và bỏ qua upload ảnh
-            console.error("Storage upload skipped or failed:", storageErr)
           }
-        }
 
-        // 4. Ghi nhận log giám sát khuôn mặt vào Database (Dùng adminClient để vượt RLS)
-        const { error: logError } = await adminClient
-          .from("face_monitor_logs")
-          .insert({
-            student_id: user.id,
+          // Ghi log vào DB
+          const { error: logError } = await adminClient
+            .from("face_monitor_logs")
+            .insert({
+              student_id: userId,
+              is_present: data.is_present,
+              is_verified: data.is_verified,
+              confidence: data.is_present ? 1 - data.cosine_distance : 0.0,
+              snapshot_path: snapshotPath
+            })
+
+          if (logError) {
+            console.error("Lỗi ghi log giám sát khuôn mặt:", logError)
+          }
+
+          // Cập nhật trạng thái gần nhất
+          lastLogState.set(userId, {
             is_present: data.is_present,
             is_verified: data.is_verified,
-            dominant_emotion: data.dominant_emotion,
-            confidence: data.is_present ? 1 - data.cosine_distance : 0.0,
-            snapshot_path: snapshotPath
+            timestamp: Date.now()
           })
-
-        if (logError) {
-          console.error("Lỗi ghi log giám sát khuôn mặt:", logError)
         }
 
         return NextResponse.json({
           success: true,
           is_present: data.is_present,
           is_verified: data.is_verified,
-          dominant_emotion: data.dominant_emotion,
           cosine_distance: data.cosine_distance,
-          snapshot_url: snapshotPath
         })
 
       } catch (err: any) {
