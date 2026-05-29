@@ -31,7 +31,19 @@ export default function TakeExamPage() {
   const [activeMcIndex, setActiveMcIndex] = useState(0)
   const [activeTfIndex, setActiveTfIndex] = useState(0)
   const [activeSaIndex, setActiveSaIndex] = useState(0)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const localStorageKey = useMemo(() => (userId ? `exam_${examId}_${userId}_answers` : `exam_${examId}_answers`), [examId, userId])
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener("fullscreenchange", handleFsChange)
+    handleFsChange()
+    return () => document.removeEventListener("fullscreenchange", handleFsChange)
+  }, [])
+
+  const heightClass = isFullscreen ? "h-[85vh]" : "h-[75vh]"
 
   useEffect(() => { (async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return router.push("/login"); const response = await fetch(`/api/exams/${examId}/questions`); if (!response.ok) { const errorData = await response.json().catch(() => ({})); if (response.status === 403 && errorData.error === "Maximum attempts reached") return router.push(`/student/exams/${examId}/result`); router.push("/student/dashboard"); return } const examData = await response.json(); setExam(examData); setTimeLeft(examData.duration * 60); setUserId(user.id); setAntiCheatEnabled((examData.security_level ?? 1) >= 1); const { data: sessionData } = await supabase.from("exam_sessions").select("id, is_ranked, session_number, tab_switch_count").eq("exam_id", examId).eq("student_id", user.id).eq("status", "in_progress").order("created_at", { ascending: false }).limit(1).single(); if (sessionData) { setExistingSession(sessionData); setTabSwitchCount(sessionData.tab_switch_count ?? 0); setShowSessionChoice(true); setLoading(false); return } const { count } = await supabase.from("exam_sessions").select("*", { count: "exact", head: true }).eq("exam_id", examId).eq("student_id", user.id); const sessionCount = count ?? 0; setIsRanked(sessionCount === 0); const { data: newSession } = await supabase.from("exam_sessions").insert({ exam_id: examId, student_id: user.id, session_number: sessionCount + 1, is_ranked: sessionCount === 0, status: "in_progress" }).select().single(); if (newSession) setSessionId(newSession.id); const mcCount = examData.mc_questions?.length || examData.total_questions || 12; const defaultTf = examData.tf_questions?.map((item: { question: number }) => ({ question: item.question, a: null, b: null, c: null, d: null })) || []; const defaultSa = examData.sa_questions?.map((item: { question: number }) => ({ question: item.question, answer: "" })) || []; setStudentAnswers(shuffleWithMapping(Array.from({ length: mcCount }, (_, index) => index), createShuffleSeed(examId, user.id)).shuffled.map(() => null)); setTfStudentAnswers(defaultTf); setSaStudentAnswers(defaultSa); const saved = localStorage.getItem(localStorageKey); if (saved) { try { const parsed = JSON.parse(saved); if (parsed.mc) setStudentAnswers(parsed.mc); if (parsed.tf) setTfStudentAnswers(parsed.tf); if (parsed.sa) setSaStudentAnswers(parsed.sa) } catch (e) { console.error("Lỗi khôi phục đáp án từ localStorage:", e); localStorage.removeItem(localStorageKey); } } isRestoredRef.current = true; setLoading(false) })() }, [examId, localStorageKey, router, supabase])
 
@@ -91,13 +103,13 @@ export default function TakeExamPage() {
         </div>
 
         <main className="mx-auto grid max-w-7xl gap-6 px-4 py-4 pb-28 lg:grid-cols-12 lg:px-8">
-          {/* CỘT 1: ĐỀ THI PDF (CHIẾM 8/12 CỘT ~ 66% CHIỀU RỘNG ĐỂ NHÌN RÕ RÀNG TRÁNH MỎI MẮT) */}
-          <section className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] lg:col-span-8 shadow-sm">
-            {exam.pdf_url ? <InlinePdfViewer url={exam.pdf_url} className="h-[75vh]" /> : <div className="flex h-[75vh] items-center justify-center text-center text-[hsl(var(--muted-foreground))]"><div><FileText className="mx-auto mb-3 h-10 w-10" /><p>Không có file đề thi</p></div></div>}
+          {/* CỘT 1: ĐỀ THI PDF (CHIẾM 9/12 CỘT ~ 75% CHIỀU RỘNG ĐỂ NHÌN RÕ RÀNG TRÁNH MỎI MẮT) */}
+          <section className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] lg:col-span-9 shadow-sm">
+            {exam.pdf_url ? <InlinePdfViewer url={exam.pdf_url} className={heightClass} /> : <div className={cn("flex items-center justify-center text-center text-[hsl(var(--muted-foreground))]", heightClass)}><div><FileText className="mx-auto mb-3 h-10 w-10" /><p>Không có file đề thi</p></div></div>}
           </section>
 
-          {/* CỘT 2: KHU VỰC TRẢ LỜI ĐÁP ÁN (CHIẾM 4/12 CỘT) */}
-          <section className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] lg:col-span-4 flex flex-col h-[75vh]">
+          {/* CỘT 2: KHU VỰC TRẢ LỜI ĐÁP ÁN (CHIẾM 3/12 CỘT) */}
+          <section className={cn("overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] lg:col-span-3 flex flex-col", heightClass)}>
             <div className="border-b border-[hsl(var(--border))]/50 p-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
