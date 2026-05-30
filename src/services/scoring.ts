@@ -55,7 +55,13 @@ export function calculateScore(
                 if (studentTf.b === correctTf.b) subCorrect++
                 if (studentTf.c === correctTf.c) subCorrect++
                 if (studentTf.d === correctTf.d) subCorrect++
-                tfCorrect += subCorrect / 4
+                
+                let tfPoints = 0
+                if (subCorrect === 1) tfPoints = 0.1
+                else if (subCorrect === 2) tfPoints = 0.25
+                else if (subCorrect === 3) tfPoints = 0.5
+                else if (subCorrect === 4) tfPoints = 1.0
+                tfCorrect += tfPoints
             }
         })
     }
