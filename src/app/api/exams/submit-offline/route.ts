@@ -164,19 +164,21 @@ async function handlePOST(request: Request) {
                 .insert({
                     exam_id: sub.exam_id,
                     student_id: user.id,
-                    mc_answers: sub.mc_answers,
-                    tf_answers: sub.tf_answers,
-                    sa_answers: sub.sa_answers,
+                    student_answers: sub.mc_answers,
+                    mc_student_answers: sub.mc_answers?.map((a, i) => ({ question: i + 1, answer: a })),
+                    tf_student_answers: sub.tf_answers,
+                    sa_student_answers: sub.sa_answers,
                     score: scoring.score,
-                    total_correct: scoring.totalCorrect,
-                    total_questions: scoring.totalQuestions,
+                    correct_count: Math.round(scoring.totalCorrect),
+                    mc_correct: scoring.details.mc.correct,
+                    tf_correct: Math.round(scoring.details.tf.correct),
+                    sa_correct: scoring.details.sa.correct,
                     time_spent: sub.time_spent,
                     started_at: sub.started_at,
                     submitted_at: sub.submitted_at,
-                    cheat_flags: sub.cheat_flags ?? null,
-                    status: 'completed',
-                    client_ip: clientIP,
-                    is_offline: true,
+                    cheat_flags: sub.cheat_flags ?? { tab_switches: 0, multi_browser: false },
+                    attempt_number: (existingAttempts ?? 0) + 1,
+                    is_ranked: existingAttempts === 0
                 })
                 .select('id')
                 .single()
