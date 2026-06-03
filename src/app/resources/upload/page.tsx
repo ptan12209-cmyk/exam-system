@@ -39,7 +39,7 @@ export default function UploadResourcePage() {
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 
-  useEffect(() => { (async () => { const { data: { session } } = await supabase.auth.getSession(); if (!session) { router.push("/login"); return } setUser({ id: session.user.id }) })() }, [router, supabase])
+  useEffect(() => { (async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) { router.push("/login"); return } setUser({ id: user.id }) })() }, [router, supabase])
 
   const handleDrop = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); const droppedFile = e.dataTransfer.files[0]; if (droppedFile && droppedFile.type === "application/pdf") { setFile(droppedFile); if (!title) setTitle(droppedFile.name.replace(/\.pdf$/i, "")) } }, [title])
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { const selectedFile = e.target.files?.[0]; if (selectedFile) { setFile(selectedFile); if (!title) setTitle(selectedFile.name.replace(/\.pdf$/i, "")) } }

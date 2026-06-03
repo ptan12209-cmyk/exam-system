@@ -21,6 +21,8 @@ export interface Profile {
     full_name: string | null
     avatar_url: string | null
     class: string | null
+    grade: number | null
+    class_suffix: string | null
     phone: string | null
     xp: number
     level: number

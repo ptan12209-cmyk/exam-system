@@ -84,10 +84,10 @@ export default function LiveRoomPage() {
   }, [])
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    const { data: profile } = await supabase.from("profiles").select("full_name, email, role").eq("id", session.user.id).single()
-    setUser({ name: profile?.full_name || session.user.email?.split("@")[0] || "Học sinh", email: session.user.email || "", role: profile?.role })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data: profile } = await supabase.from("profiles").select("full_name, email, role").eq("id", user.id).single()
+    setUser({ name: profile?.full_name || user.email?.split("@")[0] || "Học sinh", email: user.email || "", role: profile?.role })
   }
 
   const fetchSchedule = async () => {

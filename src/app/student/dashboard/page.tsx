@@ -31,12 +31,15 @@ import { BottomNav } from "@/components/BottomNav"
 import { StudentHeader } from "@/components/student/StudentHeader"
 import { StudentShell } from "@/components/student/StudentShell"
 import { StudentStatCard } from "@/components/student/StudentStatCard"
+import { GradeOnboardingModal } from "@/components/student/GradeOnboardingModal"
 
 interface Profile {
   id: string
   role: string
   full_name: string | null
   class: string | null
+  grade: number | null
+  class_suffix: string | null
 }
 
 interface Exam {
@@ -93,12 +96,26 @@ export default function StudentDashboard() {
       const { stats } = await getUserStats(user.id)
       setUserXp(stats.xp)
 
-      const { data: examsData } = await supabase
+      let examsQuery = supabase
         .from("exams")
         .select("*")
         .eq("status", "published")
-        .order("created_at", { ascending: false })
-      if (examsData) setAvailableExams(examsData)
+
+      if (profileData.grade !== null) {
+        examsQuery = examsQuery.or(`target_grade.is.null,target_grade.eq.${profileData.grade}`)
+      }
+
+      const { data: examsData } = await examsQuery.order("created_at", { ascending: false })
+      if (examsData) {
+        const studentClassSuffix = profileData.class_suffix?.toUpperCase()
+        const visibleExams = examsData.filter((exam: any) => {
+          if (exam.target_classes && exam.target_classes.length > 0) {
+            return studentClassSuffix && exam.target_classes.map((c: string) => c.toUpperCase()).includes(studentClassSuffix)
+          }
+          return true
+        })
+        setAvailableExams(visibleExams)
+      }
 
       const { data: submissionsData } = await supabase
         .from("submissions")
@@ -337,6 +354,22 @@ export default function StudentDashboard() {
       </main>
 
       <BottomNav />
+      {profile && profile.grade === null && (
+        <GradeOnboardingModal
+          userId={profile.id}
+          onComplete={(selectedGrade, selectedClassSuffix) => {
+            // Update local state immediately for UI feedback
+            setProfile(prev => prev ? {
+              ...prev,
+              grade: selectedGrade,
+              class_suffix: selectedClassSuffix,
+              class: `${selectedGrade}${selectedClassSuffix}`
+            } : null)
+            // Force full reload to refetch exams with the new grade filter
+            window.location.reload()
+          }}
+        />
+      )}
     </StudentShell>
   )
 }

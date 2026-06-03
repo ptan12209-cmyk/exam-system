@@ -13,6 +13,10 @@ interface ExamInfoFormProps {
   onDurationChange: (value: number) => void;
   maxAttempts: number;
   onMaxAttemptsChange: (value: number) => void;
+  targetGrade: number | null;
+  onTargetGradeChange: (value: number | null) => void;
+  targetClasses: string;
+  onTargetClassesChange: (value: string) => void;
 }
 
 export function ExamInfoForm({
@@ -24,6 +28,10 @@ export function ExamInfoForm({
   onDurationChange,
   maxAttempts,
   onMaxAttemptsChange,
+  targetGrade,
+  onTargetGradeChange,
+  targetClasses,
+  onTargetClassesChange,
 }: ExamInfoFormProps) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -41,7 +49,7 @@ export function ExamInfoForm({
         <select
           value={subject}
           onChange={(e) => onSubjectChange(e.target.value)}
-          className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]"
         >
           {SUBJECTS.map((s) => (
             <option key={s.value} value={s.value}>
@@ -65,6 +73,30 @@ export function ExamInfoForm({
           type="number"
           value={maxAttempts}
           onChange={(e) => onMaxAttemptsChange(Number(e.target.value))}
+          className="rounded-xl"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Khối lớp giao bài</Label>
+        <select
+          value={targetGrade === null ? "" : String(targetGrade)}
+          onChange={(e) => onTargetGradeChange(e.target.value === "" ? null : Number(e.target.value))}
+          className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]"
+        >
+          <option value="">Tất cả các khối</option>
+          {Array.from({ length: 7 }, (_, i) => i + 6).map((g) => (
+            <option key={g} value={g}>
+              Khối {g}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="space-y-2">
+        <Label>Lớp học cụ thể (tùy chọn)</Label>
+        <Input
+          value={targetClasses}
+          onChange={(e) => onTargetClassesChange(e.target.value)}
+          placeholder="VD: A1, A2 (phân tách bằng dấu phẩy, để trống = cả khối)"
           className="rounded-xl"
         />
       </div>

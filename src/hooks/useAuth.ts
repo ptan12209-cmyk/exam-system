@@ -26,6 +26,10 @@ export interface Profile {
   full_name: string | null
   /** Class/group identifier, null if not set. */
   class: string | null
+  /** Grade identifier (6-12), null if not set. */
+  grade: number | null
+  /** Specific class suffix (e.g. A1, B2), null if not set. */
+  class_suffix: string | null
 }
 
 interface UseAuthOptions {
@@ -70,7 +74,7 @@ export function useAuth(options?: UseAuthOptions) {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("id, role, full_name, class")
+        .select("id, role, full_name, class, grade, class_suffix")
         .eq("id", authUser.id)
         .single()
 

@@ -17,6 +17,39 @@ export const SUBJECTS = [
 
 export type SubjectValue = typeof SUBJECTS[number]["value"]
 
+// Mapping từ frontend subject key → DB subject value
+// IMPORTANT: Mỗi môn phải có key riêng trong DB, tránh collision (gdcd/tin/dgnl trước đây đều map về 'other')
+export const MAP_SUBJECT_TO_DB: Record<string, string> = {
+  toan: "math",
+  ly: "physics",
+  hoa: "chemistry",
+  sinh: "biology",
+  anh: "english",
+  van: "literature",
+  su: "history",
+  dia: "geography",
+  gdcd: "civic_education",
+  tin: "informatics",
+  dgnl: "aptitude_test",
+  other: "other",
+}
+
+// Reverse mapping: DB subject value → frontend key
+export const MAP_DB_TO_SUBJECT: Record<string, string> = {
+  math: "toan",
+  physics: "ly",
+  chemistry: "hoa",
+  biology: "sinh",
+  english: "anh",
+  literature: "van",
+  history: "su",
+  geography: "dia",
+  civic_education: "gdcd",
+  informatics: "tin",
+  aptitude_test: "dgnl",
+  other: "other",
+}
+
 // Helper function to get subject info by value
 export function getSubjectInfo(value: string) {
     return SUBJECTS.find(s => s.value === value) || SUBJECTS[SUBJECTS.length - 1]

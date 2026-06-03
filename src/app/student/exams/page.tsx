@@ -78,14 +78,32 @@ export default function StudentExamsPage() {
         return
       }
 
-      const { data: profile } = await supabase.from("profiles").select("full_name, class").eq("id", authUser.id).single()
+      const { data: profile } = await supabase.from("profiles").select("full_name, class, grade, class_suffix").eq("id", authUser.id).single()
       setUser({ id: authUser.id, full_name: profile?.full_name, class: profile?.class })
 
       const { stats } = await getUserStats(authUser.id)
       setUserXp(stats.xp)
 
-      const { data: examsData } = await supabase.from("exams").select("*").eq("status", "published").order("created_at", { ascending: false })
-      if (examsData) setExams(examsData)
+      let examsQuery = supabase
+        .from("exams")
+        .select("*")
+        .eq("status", "published")
+
+      if (profile && profile.grade !== null) {
+        examsQuery = examsQuery.or(`target_grade.is.null,target_grade.eq.${profile.grade}`)
+      }
+
+      const { data: examsData } = await examsQuery.order("created_at", { ascending: false })
+      if (examsData) {
+        const studentClassSuffix = profile?.class_suffix?.toUpperCase()
+        const visibleExams = examsData.filter((exam: any) => {
+          if (exam.target_classes && exam.target_classes.length > 0) {
+            return studentClassSuffix && exam.target_classes.map((c: string) => c.toUpperCase()).includes(studentClassSuffix)
+          }
+          return true
+        })
+        setExams(visibleExams)
+      }
 
       const { data: subsData } = await supabase.from("submissions").select("exam_id, score").eq("student_id", authUser.id)
       if (subsData) {

@@ -51,6 +51,8 @@ export default function CreateExamPage() {
   const [answerTab, setAnswerTab] = useState<"mc" | "tf" | "sa">("mc")
   const [showLinkDialog, setShowLinkDialog] = useState(false)
   const [createdExamId, setCreatedExamId] = useState<string | null>(null)
+  const [targetGrade, setTargetGrade] = useState<number | null>(null)
+  const [targetClasses, setTargetClasses] = useState<string>("")
 
   const {
     correctAnswers, setCorrectAnswers,
@@ -204,10 +206,16 @@ export default function CreateExamPage() {
           })
         : []
 
+      const classesArray = targetClasses.trim()
+        ? targetClasses.split(",").map(c => c.trim().toUpperCase()).filter(Boolean)
+        : null
+
       const { data, error: insertError } = await supabase
         .from("exams")
         .insert({
           teacher_id: user.id,
+          target_grade: targetGrade,
+          target_classes: classesArray,
           title: title.trim(),
           subject,
           duration,
@@ -310,6 +318,10 @@ export default function CreateExamPage() {
               onDurationChange={setDuration}
               maxAttempts={maxAttempts}
               onMaxAttemptsChange={setMaxAttempts}
+              targetGrade={targetGrade}
+              onTargetGradeChange={setTargetGrade}
+              targetClasses={targetClasses}
+              onTargetClassesChange={setTargetClasses}
             />
             <div className="mt-6 grid gap-6 md:grid-cols-3">
               <PdfUploader uploadingPdf={uploadingPdf} pdfUrl={pdfUrl} onUpload={handlePdfUpload} />
