@@ -266,3 +266,116 @@ export interface PaginatedResponse<T> {
     limit: number
     totalPages: number
 }
+
+// =============================================
+// IELTS TYPES
+// =============================================
+
+export type IeltsSkill = 'reading' | 'listening' | 'writing'
+export type IeltsTestStatus = 'draft' | 'published' | 'archived'
+export type IeltsQuestionType = 
+  | 'multiple_choice' 
+  | 'true_false_ng' 
+  | 'yes_no_ng'
+  | 'fill_blank' 
+  | 'matching' 
+  | 'short_answer'
+  | 'sentence_completion' 
+  | 'diagram_label' 
+  | 'heading_match'
+export type IeltsWritingTaskType = 'task1' | 'task2'
+export type IeltsSubmissionStatus = 'in_progress' | 'submitted' | 'graded'
+
+export interface IeltsTest {
+    id: string
+    title: string
+    description?: string | null
+    skill: IeltsSkill
+    timer_mode: 'standard' | 'custom'
+    duration: number
+    total_questions: number
+    status: IeltsTestStatus
+    created_by?: string | null
+    created_at: string
+    updated_at: string
+    
+    // Optional loaded relations
+    sections?: IeltsSection[]
+}
+
+export interface IeltsSection {
+    id: string
+    test_id: string
+    title: string
+    order_index: number
+    
+    // Reading
+    passage_content?: string | null
+    
+    // Listening
+    audio_url?: string | null
+    audio_source?: 'upload' | 'youtube' | 'external' | null
+    
+    // Writing
+    writing_prompt?: string | null
+    writing_task_type?: IeltsWritingTaskType | null
+    writing_image_url?: string | null
+    min_words?: number | null
+    
+    created_at: string
+    
+    // Optional loaded relations
+    questions?: IeltsQuestion[]
+}
+
+export interface IeltsQuestion {
+    id: string
+    section_id: string
+    question_number: number
+    question_type: IeltsQuestionType
+    question_text: string
+    options?: any | null // JSON type representing options
+    correct_answer: string
+    explanation?: string | null
+    created_at: string
+}
+
+export interface IeltsSubmission {
+    id: string
+    test_id: string
+    student_id: string
+    answers: Array<{ question_id: string; answer: string }>
+    writing_response?: string | null
+    score?: number | null
+    correct_count: number
+    total_questions: number
+    band_score?: number | null
+    time_spent: number
+    started_at: string
+    submitted_at?: string | null
+    status: IeltsSubmissionStatus
+    created_at: string
+    
+    // Optional loaded relations
+    test?: IeltsTest
+    writing_score?: IeltsWritingScore | null
+}
+
+export interface IeltsWritingScore {
+    id: string
+    submission_id: string
+    task_achievement: number
+    coherence_cohesion: number
+    lexical_resource: number
+    grammar_accuracy: number
+    overall_band: number
+    feedback_task?: string | null
+    feedback_coherence?: string | null
+    feedback_lexical?: string | null
+    feedback_grammar?: string | null
+    feedback_overall?: string | null
+    sample_answer?: string | null
+    ai_model: string
+    graded_at: string
+}
+

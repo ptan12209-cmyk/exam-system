@@ -221,6 +221,7 @@ export default function StudentDashboard() {
           {[
             { href: "/resources", label: "Thư viện tài liệu", icon: BookOpen },
             { href: "/arena", label: "Đấu trường", icon: Swords },
+            { href: "/student/ielts", label: "Luyện thi IELTS", icon: GraduationCap },
             { href: "/student/achievements", label: "Thành tích", icon: Award },
             { href: "/student/checklist", label: "Checklist / Planner", icon: ListTodo },
             { href: "/student/co-study", label: "Phòng Pomodoro YPT", icon: Timer },
