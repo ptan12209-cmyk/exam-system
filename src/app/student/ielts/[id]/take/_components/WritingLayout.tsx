@@ -40,15 +40,15 @@ export function WritingLayout({
   return (
     <div className="space-y-4">
       {/* Task Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3">
+      <div className="flex flex-wrap gap-2 border-b border-[hsl(var(--border))]/25 pb-3">
         {sections.map((sec, idx) => (
           <button
             key={sec.id}
             onClick={() => setActiveTaskIdx(idx)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all ${
+            className={`px-4 py-2 rounded-full text-xs font-semibold border transition-all ${
               activeTaskIdx === idx
                 ? 'bg-orange-500/20 text-orange-400 border-orange-500/35 shadow-md'
-                : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10'
+                : 'bg-[hsl(var(--muted))]/20 border-[hsl(var(--border))]/60 text-muted-foreground hover:bg-[hsl(var(--muted))]/35'
             }`}
           >
             {sec.title} ({sec.writing_task_type === 'task2' ? 'Task 2' : 'Task 1'})
@@ -59,12 +59,12 @@ export function WritingLayout({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left pane: Writing Prompt */}
         <div className="lg:col-span-5 flex flex-col">
-          <div className="glass-card border border-white/10 rounded-2xl p-6 bg-neutral-900/60 h-[calc(100vh-280px)] overflow-y-auto min-h-[400px] flex-1 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
+          <div className="border border-[hsl(var(--border))]/60 rounded-[2rem] p-6 bg-[hsl(var(--card))] h-[calc(100vh-280px)] overflow-y-auto min-h-[400px] flex-1 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-2.5">
               <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">
                 Đề bài IELTS Writing
               </span>
-              <span className="text-[11px] font-semibold text-muted-foreground bg-white/5 px-2 py-1 rounded-lg">
+              <span className="text-[11px] font-semibold text-muted-foreground bg-[hsl(var(--muted))]/20 px-2 py-1 rounded-lg">
                 Min: {requiredMinWords} từ
               </span>
             </div>
@@ -74,11 +74,11 @@ export function WritingLayout({
             </p>
 
             {activeSection.writing_image_url && (
-              <div className="border border-white/10 rounded-xl overflow-hidden bg-black/40 p-2.5 flex items-center justify-center">
+              <div className="border border-[hsl(var(--border))]/60 rounded-xl overflow-hidden bg-black/40 p-2.5 flex items-center justify-center">
                 <img 
                   src={activeSection.writing_image_url} 
                   alt="Writing Chart" 
-                  className="max-h-[260px] object-contain rounded-lg border border-white/5" 
+                  className="max-h-[260px] object-contain rounded-lg border border-[hsl(var(--border))]/25" 
                 />
               </div>
             )}
@@ -87,7 +87,7 @@ export function WritingLayout({
 
         {/* Right pane: Text editor */}
         <div className="lg:col-span-7 flex flex-col">
-          <div className="glass-card border border-white/10 rounded-2xl p-5 bg-neutral-900/40 h-[calc(100vh-280px)] overflow-y-auto min-h-[400px] flex-1 flex flex-col justify-between">
+          <div className="border border-[hsl(var(--border))]/60 rounded-[2rem] p-5 bg-[hsl(var(--card))] h-[calc(100vh-280px)] overflow-y-auto min-h-[400px] flex-1 flex flex-col justify-between shadow-sm">
             <div className="space-y-3 flex-1 flex flex-col">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
@@ -105,12 +105,12 @@ export function WritingLayout({
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder="Nhập câu trả lời bài luận của bạn tại đây (sử dụng tiếng Anh học thuật)..."
-                className="w-full flex-1 min-h-[250px] rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-foreground focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all font-sans leading-relaxed resize-none"
+                className="w-full flex-1 min-h-[250px] rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] p-4 text-sm text-foreground focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all font-sans leading-relaxed resize-none"
               />
             </div>
 
             {/* Word count status & indicator */}
-            <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between text-xs font-semibold">
+            <div className="pt-4 mt-4 border-t border-[hsl(var(--border))]/20 flex items-center justify-between text-xs font-semibold">
               <div className="flex items-center gap-2">
                 <span className={`px-2.5 py-1 rounded-lg ${
                   hasEnoughWords 

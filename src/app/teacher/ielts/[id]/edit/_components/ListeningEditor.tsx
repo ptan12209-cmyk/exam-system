@@ -116,23 +116,23 @@ export function ListeningEditor({ section, onSave, onClose }: ListeningEditorPro
   }
 
   return (
-    <div className="glass-card p-6 rounded-2xl border border-white/10 bg-neutral-900/50 space-y-4">
+    <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50 p-6 space-y-4 shadow-xl">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+      <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/30 pb-4">
         <div>
           <span className="text-xs font-semibold text-violet-400 uppercase">Cài đặt Audio bài nghe</span>
           <h4 className="text-base font-bold text-foreground mt-0.5">{section.title}</h4>
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5"
+          className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--muted))]/20 transition-all"
         >
           <X className="h-5 w-5" />
         </button>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3.5 text-sm text-red-400">
+        <div className="rounded-[1.5rem] border border-red-500/20 bg-red-500/5 p-3.5 text-sm text-red-400">
           {error}
         </div>
       )}
@@ -145,7 +145,7 @@ export function ListeningEditor({ section, onSave, onClose }: ListeningEditorPro
             required
             value={title}
             onChange={e => setTitle(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus:outline-none focus:border-violet-500/50"
+            className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all"
           />
         </div>
         <div>
@@ -156,7 +156,7 @@ export function ListeningEditor({ section, onSave, onClose }: ListeningEditorPro
             min={1}
             value={orderIndex}
             onChange={e => setOrderIndex(Number(e.target.value))}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus:outline-none focus:border-violet-500/50"
+            className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all"
           />
         </div>
       </div>
@@ -183,7 +183,7 @@ export function ListeningEditor({ section, onSave, onClose }: ListeningEditorPro
                 className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all text-xs font-medium ${
                   isSelected 
                     ? opt.color + ' border-current'
-                    : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10 hover:border-white/20'
+                    : 'border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] text-muted-foreground hover:bg-[hsl(var(--muted))]/10 hover:border-[hsl(var(--border))] hover:text-foreground'
                 }`}
               >
                 <Icon className="h-5 w-5" />
@@ -195,7 +195,7 @@ export function ListeningEditor({ section, onSave, onClose }: ListeningEditorPro
       </div>
 
       {/* Vùng điều khiển nhập liệu tương ứng */}
-      <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+      <div className="bg-[hsl(var(--muted))]/10 p-4 rounded-xl border border-[hsl(var(--border))]/30">
         {audioSource === 'youtube' && (
           <div className="space-y-2">
             <label className="text-xs font-semibold text-muted-foreground uppercase block">Đường dẫn YouTube Video</label>
@@ -204,7 +204,7 @@ export function ListeningEditor({ section, onSave, onClose }: ListeningEditorPro
               placeholder="Dán link youtube vào đây (VD: https://www.youtube.com/watch?v=dQw4w9WgXcQ)"
               value={audioUrl}
               onChange={e => setAudioUrl(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-red-500/50"
+              className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all"
             />
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               * Hệ thống sẽ tự động chuyển đổi thành mã nhúng dạng bảo mật không chứa quảng cáo và thanh điều khiển YouTube.
@@ -217,9 +217,9 @@ export function ListeningEditor({ section, onSave, onClose }: ListeningEditorPro
             <label className="text-xs font-semibold text-muted-foreground uppercase block">Tải tệp âm thanh (.mp3, .wav, .m4a)</label>
             
             {audioUrl ? (
-              <div className="flex items-center justify-between p-3 rounded-xl border border-violet-500/20 bg-violet-500/5">
+              <div className="flex items-center justify-between p-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5">
                 <div className="flex items-center gap-2 text-sm text-foreground overflow-hidden">
-                  <Music className="h-4 w-4 text-violet-400 shrink-0" />
+                  <Music className="h-4 w-4 text-cyan-400 shrink-0" />
                   <span className="truncate font-mono text-xs">{audioUrl.split('/').pop()}</span>
                 </div>
                 <button
@@ -231,7 +231,7 @@ export function ListeningEditor({ section, onSave, onClose }: ListeningEditorPro
                 </button>
               </div>
             ) : (
-              <div className="relative border-2 border-dashed border-white/10 rounded-xl p-6 flex flex-col items-center justify-center hover:border-violet-500/30 hover:bg-white/5 transition-all group">
+              <div className="relative border-2 border-dashed border-[hsl(var(--border))]/60 rounded-xl p-6 flex flex-col items-center justify-center hover:border-cyan-500/30 hover:bg-[hsl(var(--muted))]/10 transition-all group">
                 <input
                   type="file"
                   accept="audio/*"
@@ -242,12 +242,12 @@ export function ListeningEditor({ section, onSave, onClose }: ListeningEditorPro
                 
                 {uploading ? (
                   <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="h-8 w-8 text-violet-400 animate-spin" />
+                    <Loader2 className="h-8 w-8 text-cyan-400 animate-spin" />
                     <span className="text-xs text-muted-foreground">Đang tải lên: {uploadProgress}%</span>
                   </div>
                 ) : (
                   <>
-                    <Upload className="h-8 w-8 text-muted-foreground group-hover:text-violet-400 transition-colors mb-2" />
+                    <Upload className="h-8 w-8 text-muted-foreground group-hover:text-cyan-400 transition-colors mb-2" />
                     <span className="text-xs font-semibold text-foreground">Chọn file âm thanh để tải lên</span>
                     <span className="text-[10px] text-muted-foreground mt-1">Giới hạn file tối đa 50MB</span>
                   </>
@@ -265,17 +265,17 @@ export function ListeningEditor({ section, onSave, onClose }: ListeningEditorPro
               placeholder="VD: https://domain.com/audio/test-1.mp3"
               value={audioUrl}
               onChange={e => setAudioUrl(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500/50"
+              className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all"
             />
           </div>
         )}
       </div>
 
       {audioUrl && (
-        <div className="p-3 bg-neutral-950 rounded-xl border border-white/10 flex flex-col gap-2">
+        <div className="p-3 bg-[hsl(var(--muted))]/10 rounded-xl border border-[hsl(var(--border))]/60 flex flex-col gap-2">
           <span className="text-[10px] font-bold text-muted-foreground uppercase">Trình nghe thử (Preview Audio)</span>
           {audioSource === 'youtube' ? (
-            <div className="relative pt-[56.25%] rounded-lg overflow-hidden bg-black border border-white/10">
+            <div className="relative pt-[56.25%] rounded-xl overflow-hidden bg-black border border-[hsl(var(--border))]/30">
               <iframe
                 src={`https://www.youtube.com/embed/${parseYoutubeId(audioUrl)}?controls=1`}
                 className="absolute inset-0 w-full h-full"
@@ -295,11 +295,11 @@ export function ListeningEditor({ section, onSave, onClose }: ListeningEditorPro
       )}
 
       {/* Footer Actions */}
-      <div className="flex justify-end gap-3 pt-2 border-t border-white/10">
+      <div className="flex justify-end gap-3 pt-2 border-t border-[hsl(var(--border))]/30">
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-2 text-xs font-semibold rounded-lg border border-white/10 text-muted-foreground hover:bg-white/5"
+          className="px-5 py-2 text-xs font-semibold rounded-full border border-[hsl(var(--border))]/60 text-muted-foreground hover:bg-[hsl(var(--muted))]/20 hover:text-foreground transition-all bg-transparent"
         >
           Hủy bỏ
         </button>
@@ -307,7 +307,7 @@ export function ListeningEditor({ section, onSave, onClose }: ListeningEditorPro
           type="button"
           onClick={handleSave}
           disabled={saving || uploading || !audioUrl}
-          className="px-4 py-2 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-500 text-white flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50"
+          className="px-5 py-2 text-xs font-semibold rounded-full bg-cyan-500 hover:bg-cyan-400 text-white flex items-center gap-1.5 transition-all shadow-md active:scale-95 disabled:opacity-50"
         >
           {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           <Save className="h-4 w-4" /> Lưu cấu hình

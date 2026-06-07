@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { IeltsTest } from '@/types'
+import { IeltsTest, IeltsSubmitResult } from '@/types'
 
 /**
  * Hook quản lý trạng thái làm bài, tự động lưu nháp và nộp bài IELTS của học sinh
@@ -17,9 +17,16 @@ export function useIeltsSubmission(testId: string | null) {
 
   const [submitting, setSubmitting] = useState(false)
   const [grading, setGrading] = useState(false)
-  const [submissionResult, setSubmissionResult] = useState<any | null>(null)
+  const [submissionResult, setSubmissionResult] = useState<IeltsSubmitResult | null>(null)
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  // Refs để tránh timer bị destroy/recreate mỗi khi student gõ phím
+  const answersRef = useRef(answers)
+  const writingResponseRef = useRef(writingResponse)
+
+  // Đồng bộ refs mỗi khi state thay đổi
+  useEffect(() => { answersRef.current = answers }, [answers])
+  useEffect(() => { writingResponseRef.current = writingResponse }, [writingResponse])
 
   // 1. Tải thông tin đề thi (dành cho học sinh, không chứa đáp án đúng)
   useEffect(() => {
@@ -67,7 +74,8 @@ export function useIeltsSubmission(testId: string | null) {
     }
   }, [testId])
 
-  // 2. Bộ đếm thời gian tự động tích lũy time_spent (chỉ chạy khi chưa nộp bài và đã tải xong đề)
+  // 2. Bộ đếm thời gian — chỉ phụ thuộc test + submissionResult, KHÔNG phụ thuộc answers/writingResponse
+  // Sử dụng refs để đọc giá trị mới nhất mà không gây recreate interval
   useEffect(() => {
     if (!test || submissionResult) return
 
@@ -78,8 +86,8 @@ export function useIeltsSubmission(testId: string | null) {
         if (nextTime % 5 === 0) {
           const draftKey = `ECODEx_IELTS_draft_${testId}`
           localStorage.setItem(draftKey, JSON.stringify({
-            answers,
-            writingResponse,
+            answers: answersRef.current,
+            writingResponse: writingResponseRef.current,
             timeSpent: nextTime
           }))
         }
@@ -90,17 +98,22 @@ export function useIeltsSubmission(testId: string | null) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [test, testId, answers, writingResponse, submissionResult])
+  }, [test, testId, submissionResult])
 
-  // 3. Tự động lưu nháp mỗi khi answers hoặc writingResponse thay đổi
+  // 3. Tự động lưu nháp mỗi khi answers hoặc writingResponse thay đổi (với debounce 500ms)
   useEffect(() => {
     if (!testId || submissionResult) return
-    const draftKey = `ECODEx_IELTS_draft_${testId}`
-    localStorage.setItem(draftKey, JSON.stringify({
-      answers,
-      writingResponse,
-      timeSpent
-    }))
+    
+    const timeoutId = setTimeout(() => {
+      const draftKey = `ECODEx_IELTS_draft_${testId}`
+      localStorage.setItem(draftKey, JSON.stringify({
+        answers,
+        writingResponse,
+        timeSpent
+      }))
+    }, 500)
+
+    return () => clearTimeout(timeoutId)
   }, [answers, writingResponse, testId, timeSpent, submissionResult])
 
   // 4. Hàm chọn câu trả lời (cho Reading/Listening)
@@ -170,7 +183,19 @@ export function useIeltsSubmission(testId: string | null) {
       })
       const json = await response.json()
       if (json.success) {
-        setSubmissionResult((prev: any) => prev ? { ...prev, status: 'graded', ...json.data } : json.data)
+        setSubmissionResult((prev) => prev ? {
+          ...prev,
+          status: 'graded',
+          band_score: json.data.overall_band,
+          score: json.data.overall_band
+        } : {
+          submission_id: submissionId,
+          status: 'graded',
+          correct_count: 0,
+          total_questions: 0,
+          band_score: json.data.overall_band,
+          score: json.data.overall_band
+        })
         return json.data
       } else {
         setError(json.error?.message || 'AI không thể chấm điểm lúc này')
@@ -200,3 +225,4 @@ export function useIeltsSubmission(testId: string | null) {
     gradeWritingSubmission
   }
 }
+

@@ -6,6 +6,7 @@ import { IeltsTest, IeltsSection, IeltsQuestion } from '@/types'
 import { QUESTION_TYPE_LABELS } from '@/lib/ielts'
 import { QuestionForm } from './QuestionForm'
 
+// QuestionEditor handles listing, editing and deleting questions within a section.
 interface QuestionEditorProps {
   test: IeltsTest
   sections: IeltsSection[]
@@ -55,7 +56,7 @@ export function QuestionEditor({
 
   if (sections.length === 0) {
     return (
-      <div className="glass-card p-8 rounded-xl border border-white/10 text-center text-muted-foreground">
+      <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50 p-8 text-center text-muted-foreground shadow-sm">
         <AlertCircle className="h-8 w-8 mx-auto mb-2 text-amber-500" />
         <p className="text-xs">Vui lòng tạo ít nhất một phần thi (Section/Passage) trước khi thêm câu hỏi.</p>
       </div>
@@ -65,14 +66,14 @@ export function QuestionEditor({
   return (
     <div className="space-y-4">
       {/* Chọn section để quản lý câu hỏi */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[hsl(var(--card))]/50 p-4 rounded-[2rem] border border-[hsl(var(--border))]/60 shadow-sm">
         <div className="flex items-center gap-2">
           <ListFilter className="h-4.5 w-4.5 text-cyan-400" />
           <span className="text-xs font-semibold text-muted-foreground uppercase">Quản lý câu hỏi của phần:</span>
           <select
             value={selectedSectionId}
             onChange={e => setSelectedSectionId(e.target.value)}
-            className="rounded-lg border border-white/10 bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:border-cyan-500/50 cursor-pointer"
+            className="rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:border-cyan-500/50 cursor-pointer transition-all"
           >
             {sections.map(s => (
               <option key={s.id} value={s.id}>
@@ -84,7 +85,7 @@ export function QuestionEditor({
 
         <button
           onClick={() => setIsAdding(true)}
-          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-cyan-500 hover:bg-cyan-400 text-white flex items-center gap-1 transition-all"
+          className="px-4 py-1.5 text-xs font-semibold rounded-full bg-cyan-500 hover:bg-cyan-400 text-white flex items-center gap-1 transition-all active:scale-95 shadow-md border-0"
         >
           <Plus className="h-4 w-4" /> Thêm câu hỏi
         </button>
@@ -92,7 +93,7 @@ export function QuestionEditor({
 
       {/* Hiển thị list câu hỏi trong section */}
       {questions.length === 0 ? (
-        <div className="glass-card p-12 rounded-xl border border-white/10 text-center text-muted-foreground">
+        <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50 p-12 text-center text-muted-foreground shadow-sm">
           <HelpCircle className="h-10 w-10 mx-auto mb-2 opacity-35" />
           <p className="text-xs">Phần thi này chưa có câu hỏi nào. Hãy nhấn &quot;Thêm câu hỏi&quot; để thiết lập đáp án.</p>
         </div>
@@ -101,7 +102,7 @@ export function QuestionEditor({
           {questions.map((q) => (
             <div
               key={q.id}
-              className="glass-card p-4 rounded-xl border border-white/10 hover:border-white/20 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 group"
+              className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 hover:border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]/10 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 group shadow-sm"
             >
               <div className="flex-1 space-y-1.5">
                 <div className="flex items-center gap-2">
@@ -119,7 +120,7 @@ export function QuestionEditor({
 
                 {/* Hiển thị Options nếu có (MC hoặc Matching) */}
                 {q.options && typeof q.options === 'object' && (
-                  <div className="text-xs text-muted-foreground space-y-0.5 pl-4 border-l border-white/10">
+                  <div className="text-xs text-muted-foreground space-y-0.5 pl-4 border-l border-[hsl(var(--border))]/40">
                     {Array.isArray(q.options) ? (
                       q.options.map((opt: any, idx: number) => (
                         <div key={idx} className="flex items-start gap-1">
@@ -150,17 +151,17 @@ export function QuestionEditor({
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-white/5 shrink-0">
+              <div className="flex items-center justify-end gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-[hsl(var(--border))]/30 shrink-0">
                 <button
                   onClick={() => setEditingQuestion(q)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-white/5 transition-all"
+                  className="p-1.5 rounded-full text-muted-foreground hover:text-cyan-400 hover:bg-[hsl(var(--muted))]/20 transition-all"
                   title="Chỉnh sửa câu hỏi"
                 >
                   <Edit2 className="h-4 w-4 text-cyan-400" />
                 </button>
                 <button
                   onClick={() => handleDelete(q.id, q.question_number)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-white/5 transition-all"
+                  className="p-1.5 rounded-full text-muted-foreground hover:text-red-400 hover:bg-[hsl(var(--muted))]/20 transition-all"
                   title="Xóa câu hỏi"
                 >
                   <Trash2 className="h-4 w-4 text-red-500" />

@@ -32,15 +32,15 @@ export function ReadingLayout({
   return (
     <div className="space-y-4">
       {/* Passage Tab Select */}
-      <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3">
+      <div className="flex flex-wrap gap-2 border-b border-[hsl(var(--border))]/25 pb-3">
         {sections.map((sec, idx) => (
           <button
             key={sec.id}
             onClick={() => setActivePassageIdx(idx)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all ${
+            className={`px-4 py-2 rounded-full text-xs font-semibold border transition-all ${
               activePassageIdx === idx
                 ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/35 shadow-md'
-                : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10'
+                : 'bg-[hsl(var(--muted))]/20 border-[hsl(var(--border))]/60 text-muted-foreground hover:bg-[hsl(var(--muted))]/35'
             }`}
           >
             {sec.title}
@@ -52,7 +52,7 @@ export function ReadingLayout({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left pane: Reading Passage */}
         <div className="lg:col-span-7 flex flex-col">
-          <div className="glass-card border border-white/10 rounded-2xl p-6 bg-neutral-900/60 h-[calc(100vh-280px)] overflow-y-auto min-h-[400px] flex-1">
+          <div className="border border-[hsl(var(--border))]/60 rounded-[2rem] p-6 bg-[hsl(var(--card))] h-[calc(100vh-280px)] overflow-y-auto min-h-[400px] flex-1 shadow-sm">
             <h2 className="text-lg sm:text-xl font-extrabold text-foreground text-center mb-6 leading-tight select-none">
               {activeSection.title}
             </h2>
@@ -73,8 +73,8 @@ export function ReadingLayout({
 
         {/* Right pane: Question list */}
         <div className="lg:col-span-5 flex flex-col">
-          <div className="glass-card border border-white/10 rounded-2xl p-5 bg-neutral-900/40 h-[calc(100vh-280px)] overflow-y-auto min-h-[400px] flex-1 space-y-6">
-            <div className="flex items-center gap-1.5 border-b border-white/5 pb-2">
+          <div className="border border-[hsl(var(--border))]/60 rounded-[2rem] p-5 bg-[hsl(var(--card))] h-[calc(100vh-280px)] overflow-y-auto min-h-[400px] flex-1 space-y-6 shadow-sm">
+            <div className="flex items-center gap-1.5 border-b border-[hsl(var(--border))]/20 pb-2">
               <HelpCircle className="h-4.5 w-4.5 text-cyan-400" />
               <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
                 Câu hỏi của {activeSection.title}
@@ -86,7 +86,7 @@ export function ReadingLayout({
                 Không tìm thấy câu hỏi cho phần này.
               </p>
             ) : (
-              <div className="space-y-6 divide-y divide-white/5">
+              <div className="space-y-6 divide-y divide-[hsl(var(--border))]/10">
                 {activeSection.questions.map((q, idx) => (
                   <div key={q.id} className={idx > 0 ? 'pt-6' : ''}>
                     <QuestionRenderer

@@ -240,6 +240,38 @@ CREATE POLICY "Allow students to view own writing scores" ON public.ielts_writin
         )
     );
 
+-- INSERT/UPDATE policies cho ielts_writing_scores (cần thiết cho API chấm điểm)
+DROP POLICY IF EXISTS "Allow teachers to manage writing scores" ON public.ielts_writing_scores;
+CREATE POLICY "Allow teachers to manage writing scores" ON public.ielts_writing_scores
+    FOR ALL TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles p
+            WHERE p.id = auth.uid() AND p.role IN ('teacher', 'admin')
+        )
+    );
+
+-- Cho phép student trigger AI chấm bài viết của chính mình
+DROP POLICY IF EXISTS "Allow students to insert own writing scores" ON public.ielts_writing_scores;
+CREATE POLICY "Allow students to insert own writing scores" ON public.ielts_writing_scores
+    FOR INSERT TO authenticated
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.ielts_submissions s
+            WHERE s.id = ielts_writing_scores.submission_id AND s.student_id = auth.uid()
+        )
+    );
+
+DROP POLICY IF EXISTS "Allow students to update own writing scores" ON public.ielts_writing_scores;
+CREATE POLICY "Allow students to update own writing scores" ON public.ielts_writing_scores
+    FOR UPDATE TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.ielts_submissions s
+            WHERE s.id = ielts_writing_scores.submission_id AND s.student_id = auth.uid()
+        )
+    );
+
 -- 9. Storage Buckets and Policies
 -- Create 'ielts' bucket for audio files and images
 INSERT INTO storage.buckets (id, name, public)

@@ -34,10 +34,10 @@ export function IeltsTimer({ durationMinutes, timeSpentSeconds, onTimeUp }: Ielt
   const isLowTime = remainingSeconds <= 5 * 60 // Dưới 5 phút
 
   return (
-    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
+    <div className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
       isLowTime 
         ? 'border-red-500/30 bg-red-500/10 text-red-400 animate-pulse font-extrabold shadow-lg shadow-red-500/5' 
-        : 'border-white/10 bg-white/5 text-foreground font-bold'
+        : 'border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50 text-foreground font-bold'
     }`}>
       <Clock className={`h-4.5 w-4.5 ${isLowTime ? 'text-red-400' : 'text-cyan-400'}`} />
       <span className="text-sm tracking-widest font-mono">

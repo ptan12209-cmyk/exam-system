@@ -69,7 +69,7 @@ export function TestList({ tests, onDelete }: TestListProps) {
             placeholder="Tìm kiếm tiêu đề đề thi..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all placeholder:text-muted-foreground/50"
+            className="w-full pl-10 pr-4 py-2.5 rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all placeholder:text-muted-foreground/50"
           />
         </div>
 
@@ -77,7 +77,7 @@ export function TestList({ tests, onDelete }: TestListProps) {
           <select
             value={filterSkill}
             onChange={e => setFilterSkill(e.target.value)}
-            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus:outline-none cursor-pointer [&>option]:bg-neutral-900"
+            className="rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none cursor-pointer [&>option]:bg-neutral-900"
           >
             <option value="all">Tất cả kỹ năng</option>
             <option value="reading">Reading</option>
@@ -88,7 +88,7 @@ export function TestList({ tests, onDelete }: TestListProps) {
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
-            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus:outline-none cursor-pointer [&>option]:bg-neutral-900"
+            className="rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none cursor-pointer [&>option]:bg-neutral-900"
           >
             <option value="all">Tất cả trạng thái</option>
             <option value="draft">Bản nháp</option>
@@ -99,7 +99,7 @@ export function TestList({ tests, onDelete }: TestListProps) {
       </div>
 
       {/* Tests List */}
-      <div className="glass-card rounded-2xl border border-white/10 overflow-hidden">
+      <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden shadow-sm">
         {filteredTests.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
@@ -109,7 +109,7 @@ export function TestList({ tests, onDelete }: TestListProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-muted-foreground">
+                <tr className="border-b border-[hsl(var(--border))]/20 text-muted-foreground">
                   <th className="p-4 font-semibold">Tên đề thi</th>
                   <th className="p-4 font-semibold text-center">Kỹ năng</th>
                   <th className="p-4 font-semibold text-center">Thời gian</th>
@@ -119,9 +119,9 @@ export function TestList({ tests, onDelete }: TestListProps) {
                   <th className="p-4 font-semibold text-right">Hành động</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-[hsl(var(--border))]/10">
                 {filteredTests.map((test) => (
-                  <tr key={test.id} className="hover:bg-white/5 transition-colors group">
+                  <tr key={test.id} className="hover:bg-[hsl(var(--muted))]/10 transition-colors group">
                     <td className="p-4">
                       <div>
                         <span className="font-semibold text-foreground block group-hover:text-cyan-400 transition-colors">
@@ -152,14 +152,14 @@ export function TestList({ tests, onDelete }: TestListProps) {
                       <div className="flex items-center justify-end gap-2">
                         <Link
                           href={`/teacher/ielts/${test.id}/edit`}
-                          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
+                          className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--muted))]/20 transition-all"
                           title="Chỉnh sửa nội dung đề"
                         >
                           <Edit2 className="h-4.5 w-4.5 text-cyan-400" />
                         </Link>
                         <button
                           onClick={() => handleDeleteConfirm(test)}
-                          className="p-1.5 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-white/5 transition-all"
+                          className="p-1.5 rounded-full text-muted-foreground hover:text-red-400 hover:bg-[hsl(var(--muted))]/20 transition-all"
                           title="Xóa đề thi"
                         >
                           <Trash2 className="h-4.5 w-4.5 text-red-500" />

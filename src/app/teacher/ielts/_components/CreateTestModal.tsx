@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { IeltsSkill, IeltsTestStatus } from '@/types'
 import { STANDARD_DURATIONS } from '@/lib/ielts'
+import { Button } from '@/components/ui/button'
 
 interface CreateTestModalProps {
   isOpen: boolean
@@ -80,15 +81,15 @@ export function CreateTestModal({ isOpen, onClose, onSuccess }: CreateTestModalP
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div 
-        className="glass-card w-full max-w-lg rounded-2xl border border-white/10 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+        className="w-full max-w-lg rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 border-b border-white/10 flex items-center justify-between">
+        <div className="p-5 border-b border-[hsl(var(--border))]/20 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-foreground">Tạo đề thi IELTS mới</h3>
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
+            className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
           >
             <X className="h-5 w-5" />
           </button>
@@ -110,7 +111,7 @@ export function CreateTestModal({ isOpen, onClose, onSuccess }: CreateTestModalP
               placeholder="VD: Cambridge IELTS 18 - Academic Test 1"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all placeholder:text-muted-foreground/50"
+              className="w-full rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all placeholder:text-muted-foreground/50"
             />
           </div>
 
@@ -121,7 +122,7 @@ export function CreateTestModal({ isOpen, onClose, onSuccess }: CreateTestModalP
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={3}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all placeholder:text-muted-foreground/50"
+              className="w-full rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all placeholder:text-muted-foreground/50"
             />
           </div>
 
@@ -131,7 +132,7 @@ export function CreateTestModal({ isOpen, onClose, onSuccess }: CreateTestModalP
               <select
                 value={skill}
                 onChange={e => handleSkillChange(e.target.value as IeltsSkill)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all cursor-pointer [&>option]:bg-neutral-900"
+                className="w-full rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all cursor-pointer [&>option]:bg-neutral-900"
               >
                 <option value="reading">Reading (Đọc)</option>
                 <option value="listening">Listening (Nghe)</option>
@@ -144,7 +145,7 @@ export function CreateTestModal({ isOpen, onClose, onSuccess }: CreateTestModalP
               <select
                 value={status}
                 onChange={e => setStatus(e.target.value as IeltsTestStatus)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all cursor-pointer [&>option]:bg-neutral-900"
+                className="w-full rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all cursor-pointer [&>option]:bg-neutral-900"
               >
                 <option value="draft">Bản nháp (Draft)</option>
                 <option value="published">Xuất bản (Published)</option>
@@ -158,7 +159,7 @@ export function CreateTestModal({ isOpen, onClose, onSuccess }: CreateTestModalP
               <select
                 value={timerMode}
                 onChange={e => handleTimerModeChange(e.target.value as 'standard' | 'custom')}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all cursor-pointer [&>option]:bg-neutral-900"
+                className="w-full rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all cursor-pointer [&>option]:bg-neutral-900"
               >
                 <option value="standard">Standard (Chuẩn IELTS)</option>
                 <option value="custom">Custom (Tùy chỉnh)</option>
@@ -176,29 +177,30 @@ export function CreateTestModal({ isOpen, onClose, onSuccess }: CreateTestModalP
                 disabled={timerMode === 'standard'}
                 value={duration}
                 onChange={e => setDuration(Number(e.target.value))}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none disabled:opacity-60 transition-all"
+                className="w-full rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none disabled:opacity-60 transition-all"
               />
             </div>
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-3">
-            <button
+          <div className="pt-4 border-t border-[hsl(var(--border))]/20 flex items-center justify-end gap-3">
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
               disabled={loading}
-              className="px-5 py-2.5 text-sm font-semibold rounded-xl border border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
+              className="px-5 py-2.5 text-sm font-semibold rounded-full border border-[hsl(var(--border))]/70 bg-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all h-auto"
             >
               Hủy
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={loading}
-              className="px-5 py-2.5 text-sm font-semibold rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
+              className="px-5 py-2.5 text-sm font-semibold rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:pointer-events-none border-0 h-auto"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               Tạo bài test
-            </button>
+            </Button>
           </div>
         </form>
       </div>

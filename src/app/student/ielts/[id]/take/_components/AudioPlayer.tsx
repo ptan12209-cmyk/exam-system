@@ -61,11 +61,11 @@ export function AudioPlayer({ url, source }: AudioPlayerProps) {
 
   if (source === 'youtube') {
     return (
-      <div className="glass-card p-4 rounded-2xl border border-white/10 bg-neutral-900/60 space-y-3">
+      <div className="p-4 rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] space-y-3 shadow-sm">
         <div className="flex items-center gap-2.5 text-red-400">
           <YoutubePlayerNotice />
         </div>
-        <div className="relative pt-[25%] sm:pt-[15%] w-full rounded-xl overflow-hidden border border-white/10 bg-black">
+        <div className="relative pt-[25%] sm:pt-[15%] w-full rounded-2xl overflow-hidden border border-[hsl(var(--border))]/60 bg-black">
           <iframe
             src={getYoutubeEmbedUrl(url)}
             className="absolute inset-0 w-full h-full"
@@ -78,10 +78,10 @@ export function AudioPlayer({ url, source }: AudioPlayerProps) {
   }
 
   return (
-    <div className="glass-card p-5 rounded-2xl border border-white/10 bg-neutral-900/60 space-y-3">
+    <div className="p-5 rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] space-y-3 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400">
+          <div className="p-2.5 rounded-[1rem] bg-violet-500/10 border border-violet-500/20 text-violet-400">
             <Headphones className="h-5 w-5" />
           </div>
           <div>
@@ -109,7 +109,7 @@ export function AudioPlayer({ url, source }: AudioPlayerProps) {
       <div className="flex items-center gap-4">
         <button
           onClick={handlePlayPause}
-          className="p-3 rounded-xl bg-violet-500 hover:bg-violet-400 text-white font-semibold transition-all active:scale-95 shadow-md shadow-violet-500/20 flex items-center justify-center shrink-0"
+          className="p-3 rounded-full bg-violet-500 hover:bg-violet-400 text-white font-semibold transition-all active:scale-95 shadow-md shadow-violet-500/20 flex items-center justify-center shrink-0"
         >
           {isPlaying ? <Pause className="h-4.5 w-4.5 fill-current" /> : <Play className="h-4.5 w-4.5 fill-current" />}
         </button>
@@ -121,11 +121,11 @@ export function AudioPlayer({ url, source }: AudioPlayerProps) {
           max="100"
           value={progress}
           onChange={handleSeek}
-          className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-white/10 accent-violet-500 focus:outline-none"
+          className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[hsl(var(--muted))]/40 accent-violet-500 focus:outline-none"
         />
       </div>
 
-      <div className="flex items-center gap-1.5 text-[10px] text-amber-400/80 bg-amber-500/5 px-3 py-2 rounded-lg border border-amber-500/10">
+      <div className="flex items-center gap-1.5 text-[10px] text-amber-400/80 bg-amber-500/5 px-3 py-2 rounded-xl border border-amber-500/25">
         <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
         <span>Lưu ý: Trong kỳ thi IELTS thực tế, băng ghi âm chỉ được phát duy nhất một lần. Hãy tập trung nghe kỹ!</span>
       </div>
@@ -135,7 +135,7 @@ export function AudioPlayer({ url, source }: AudioPlayerProps) {
 
 function YoutubePlayerNotice() {
   return (
-    <div className="flex items-center gap-1.5 text-[10px] text-red-400 bg-red-500/5 px-3 py-2 rounded-lg border border-red-500/10 w-full">
+    <div className="flex items-center gap-1.5 text-[10px] text-red-400 bg-red-500/5 px-3 py-2 rounded-xl border border-red-500/25 w-full">
       <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
       <span>Trình phát YouTube: Nhấn play trên video để nghe băng ghi âm của bài thi. Không tua đi tua lại để đảm bảo tính thực tế.</span>
     </div>

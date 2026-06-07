@@ -2,9 +2,11 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ToastProvider } from "@/components/ui/toast";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { MobileNav } from "@/components/pwa/MobileNav";
 import NextTopLoader from "nextjs-toploader";
+
 
 const inter = Inter({
   variable: "--font-inter",
@@ -70,11 +72,13 @@ export default function RootLayout({
           Bỏ qua đến nội dung chính
         </a>
         <ThemeProvider>
-          <div id="main-content" className="relative">
-            {children}
-          </div>
-          <MobileNav />
-          <ServiceWorkerRegister />
+          <ToastProvider>
+            <div id="main-content" className="relative">
+              {children}
+            </div>
+            <MobileNav />
+            <ServiceWorkerRegister />
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

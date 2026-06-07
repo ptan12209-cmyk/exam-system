@@ -50,10 +50,10 @@ export function SkillSelector({ selectedSkill, onChangeSkill }: SkillSelectorPro
             whileHover={{ y: -4 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onChangeSkill(skill.value)}
-            className={`glass-card p-5 rounded-2xl border cursor-pointer relative overflow-hidden transition-all duration-300 flex flex-col justify-between ${
+            className={`p-5 rounded-[2rem] border cursor-pointer relative overflow-hidden transition-all duration-300 flex flex-col justify-between ${
               isSelected 
-                ? `${skill.color} border-current shadow-lg ring-1 ring-white/10` 
-                : 'border-white/10 bg-white/5 text-muted-foreground hover:text-foreground hover:bg-white/10 hover:border-white/20'
+                ? `${skill.color} border-current shadow-lg ring-1 ring-[hsl(var(--border))]/20` 
+                : 'border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--card))]/85 hover:border-[hsl(var(--border))]'
             }`}
           >
             {/* Active Glow Dot */}
@@ -62,10 +62,10 @@ export function SkillSelector({ selectedSkill, onChangeSkill }: SkillSelectorPro
             )}
 
             <div className="space-y-4">
-              <div className={`p-3.5 rounded-xl border w-fit ${
+              <div className={`p-3.5 rounded-[1.25rem] border w-fit ${
                 isSelected 
-                  ? 'bg-black/20 border-white/10 text-current' 
-                  : 'bg-white/5 border-white/5 text-muted-foreground'
+                  ? 'bg-black/20 border-[hsl(var(--border))]/30 text-current' 
+                  : 'bg-[hsl(var(--muted))]/20 border-[hsl(var(--border))]/20 text-muted-foreground'
               }`}>
                 <Icon className="h-6 w-6" />
               </div>

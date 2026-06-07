@@ -112,23 +112,23 @@ export function WritingEditor({ section, onSave, onClose }: WritingEditorProps) 
   }
 
   return (
-    <div className="glass-card p-6 rounded-2xl border border-white/10 bg-neutral-900/50 space-y-4">
+    <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50 p-6 space-y-4 shadow-xl">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+      <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/30 pb-4">
         <div>
-          <span className="text-xs font-semibold text-orange-400 uppercase">Thiết lập đề bài Writing</span>
+          <span className="text-xs font-semibold text-cyan-400 uppercase">Thiết lập đề bài Writing</span>
           <h4 className="text-base font-bold text-foreground mt-0.5">{section.title}</h4>
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5"
+          className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--muted))]/20 transition-all"
         >
           <X className="h-5 w-5" />
         </button>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3.5 text-sm text-red-400">
+        <div className="rounded-[1.5rem] border border-red-500/20 bg-red-500/5 p-3.5 text-sm text-red-400">
           {error}
         </div>
       )}
@@ -141,7 +141,7 @@ export function WritingEditor({ section, onSave, onClose }: WritingEditorProps) 
             required
             value={title}
             onChange={e => setTitle(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus:outline-none focus:border-orange-500/50"
+            className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all"
           />
         </div>
         <div>
@@ -152,7 +152,7 @@ export function WritingEditor({ section, onSave, onClose }: WritingEditorProps) 
             min={1}
             value={orderIndex}
             onChange={e => setOrderIndex(Number(e.target.value))}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus:outline-none focus:border-orange-500/50"
+            className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all"
           />
         </div>
       </div>
@@ -163,7 +163,7 @@ export function WritingEditor({ section, onSave, onClose }: WritingEditorProps) 
           <select
             value={taskType}
             onChange={e => handleTaskTypeChange(e.target.value as IeltsWritingTaskType)}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-orange-500/50 cursor-pointer [&>option]:bg-neutral-900"
+            className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 cursor-pointer [&>option]:bg-neutral-950"
           >
             <option value="task1">Writing Task 1 (Mô tả biểu đồ/sơ đồ)</option>
             <option value="task2">Writing Task 2 (Bài luận nghị luận xã hội)</option>
@@ -178,7 +178,7 @@ export function WritingEditor({ section, onSave, onClose }: WritingEditorProps) 
             min={1}
             value={minWords}
             onChange={e => setMinWords(Number(e.target.value))}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-orange-500/50"
+            className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all"
           />
         </div>
       </div>
@@ -192,7 +192,7 @@ export function WritingEditor({ section, onSave, onClose }: WritingEditorProps) 
           value={prompt}
           onChange={e => setPrompt(e.target.value)}
           placeholder="Nhập chi tiết đề bài viết IELTS..."
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-foreground focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all placeholder:text-muted-foreground/30"
+          className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-3 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-muted-foreground/50"
         />
       </div>
 
@@ -201,22 +201,22 @@ export function WritingEditor({ section, onSave, onClose }: WritingEditorProps) 
         <label className="text-xs font-semibold text-muted-foreground uppercase block">Hình ảnh sơ đồ, biểu đồ đính kèm (Thường dùng cho Task 1)</label>
         
         {imageUrl ? (
-          <div className="relative border border-white/10 rounded-xl overflow-hidden bg-black/30 p-2 flex flex-col items-center">
+          <div className="relative border border-[hsl(var(--border))]/60 rounded-xl overflow-hidden bg-[hsl(var(--muted))]/10 p-2 flex flex-col items-center">
             <img 
               src={imageUrl} 
               alt="Writing Chart" 
-              className="max-h-[220px] object-contain rounded-lg border border-white/5" 
+              className="max-h-[220px] object-contain rounded-xl border border-[hsl(var(--border))]/30" 
             />
             <button
               type="button"
               onClick={() => setImageUrl('')}
-              className="absolute top-4 right-4 bg-red-600 hover:bg-red-500 text-white rounded-lg px-2.5 py-1 text-xs font-semibold shadow-lg transition-all"
+              className="absolute top-4 right-4 bg-red-600 hover:bg-red-500 text-white rounded-full px-3 py-1 text-xs font-semibold shadow-lg transition-all"
             >
               Xóa hình ảnh
             </button>
           </div>
         ) : (
-          <div className="relative border-2 border-dashed border-white/10 rounded-xl p-6 flex flex-col items-center justify-center hover:border-orange-500/30 hover:bg-white/5 transition-all group">
+          <div className="relative border-2 border-dashed border-[hsl(var(--border))]/60 rounded-xl p-6 flex flex-col items-center justify-center hover:border-cyan-500/30 hover:bg-[hsl(var(--muted))]/10 transition-all group">
             <input
               type="file"
               accept="image/*"
@@ -227,12 +227,12 @@ export function WritingEditor({ section, onSave, onClose }: WritingEditorProps) 
             
             {uploading ? (
               <div className="flex flex-col items-center gap-2">
-                <Loader2 className="h-8 w-8 text-orange-400 animate-spin" />
+                <Loader2 className="h-8 w-8 text-cyan-400 animate-spin" />
                 <span className="text-xs text-muted-foreground">Đang tải ảnh lên...</span>
               </div>
             ) : (
               <>
-                <Upload className="h-8 w-8 text-muted-foreground group-hover:text-orange-400 transition-colors mb-2" />
+                <Upload className="h-8 w-8 text-muted-foreground group-hover:text-cyan-400 transition-colors mb-2" />
                 <span className="text-xs font-semibold text-foreground">Chọn hình ảnh biểu đồ để tải lên</span>
                 <span className="text-[10px] text-muted-foreground mt-1">Hỗ trợ PNG, JPG, JPEG. Tối đa 8MB.</span>
               </>
@@ -242,11 +242,11 @@ export function WritingEditor({ section, onSave, onClose }: WritingEditorProps) 
       </div>
 
       {/* Footer Actions */}
-      <div className="flex justify-end gap-3 pt-2 border-t border-white/10">
+      <div className="flex justify-end gap-3 pt-2 border-t border-[hsl(var(--border))]/30">
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-2 text-xs font-semibold rounded-lg border border-white/10 text-muted-foreground hover:bg-white/5"
+          className="px-5 py-2 text-xs font-semibold rounded-full border border-[hsl(var(--border))]/60 text-muted-foreground hover:bg-[hsl(var(--muted))]/20 hover:text-foreground transition-all bg-transparent"
         >
           Hủy bỏ
         </button>
@@ -254,7 +254,7 @@ export function WritingEditor({ section, onSave, onClose }: WritingEditorProps) 
           type="button"
           onClick={handleSave}
           disabled={saving || uploading}
-          className="px-4 py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50"
+          className="px-5 py-2 text-xs font-semibold rounded-full bg-cyan-500 hover:bg-cyan-400 text-white flex items-center gap-1.5 transition-all shadow-md active:scale-95 disabled:opacity-50"
         >
           {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           <Save className="h-4 w-4" /> Lưu cấu hình

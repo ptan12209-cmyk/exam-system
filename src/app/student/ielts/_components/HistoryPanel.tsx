@@ -3,24 +3,11 @@
 import React from 'react'
 import Link from 'next/link'
 import { Calendar, Eye, FileText, CheckCircle, Clock } from 'lucide-react'
-
-interface HistoryItem {
-  id: string
-  test_id: string
-  test_title: string
-  skill: 'reading' | 'listening' | 'writing'
-  duration: number
-  score: number | null
-  correct_count: number
-  total_questions: number
-  band_score: number | null
-  time_spent: number
-  submitted_at: string
-  status: 'in_progress' | 'submitted' | 'graded'
-}
+import { IeltsHistoryItem } from '@/types'
+import { formatTimeSpentShort } from '@/lib/format'
 
 interface HistoryPanelProps {
-  history: HistoryItem[]
+  history: IeltsHistoryItem[]
 }
 
 export function HistoryPanel({ history }: HistoryPanelProps) {
@@ -33,25 +20,20 @@ export function HistoryPanel({ history }: HistoryPanelProps) {
     }
   }
 
-  const getStatusDisplay = (item: HistoryItem) => {
+  const getStatusDisplay = (item: IeltsHistoryItem) => {
     if (item.status === 'in_progress') {
-      return <span className="text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg text-[10px] font-semibold">Đang làm</span>
+      return <span className="text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full text-[10px] font-semibold">Đang làm</span>
     }
     if (item.status === 'submitted' && item.skill === 'writing') {
-      return <span className="text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-lg text-[10px] font-semibold animate-pulse">Đang chấm AI</span>
+      return <span className="text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-0.5 rounded-full text-[10px] font-semibold animate-pulse">Đang chấm AI</span>
     }
-    return <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg text-[10px] font-semibold">Đã hoàn thành</span>
+    return <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full text-[10px] font-semibold">Đã hoàn thành</span>
   }
 
-  const formatTimeSpent = (sec: number) => {
-    const mins = Math.floor(sec / 60)
-    const secs = sec % 60
-    return `${mins}p ${secs}s`
-  }
 
   return (
-    <div className="glass-card rounded-2xl border border-white/10 overflow-hidden">
-      <div className="p-4 border-b border-white/10 flex items-center gap-2">
+    <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden shadow-sm">
+      <div className="p-4 border-b border-[hsl(var(--border))]/20 flex items-center gap-2">
         <CheckCircle className="h-4.5 w-4.5 text-cyan-400" />
         <h3 className="text-sm font-bold text-foreground">Lịch sử làm bài gần đây</h3>
       </div>
@@ -65,7 +47,7 @@ export function HistoryPanel({ history }: HistoryPanelProps) {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-white/5 text-muted-foreground bg-white/[0.02]">
+              <tr className="border-b border-[hsl(var(--border))]/10 text-muted-foreground bg-[hsl(var(--muted))]/10">
                 <th className="p-4 font-semibold">Tên đề thi</th>
                 <th className="p-4 font-semibold text-center">Kỹ năng</th>
                 <th className="p-4 font-semibold text-center">Kết quả</th>
@@ -75,9 +57,9 @@ export function HistoryPanel({ history }: HistoryPanelProps) {
                 <th className="p-4 font-semibold text-right">Chi tiết</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-[hsl(var(--border))]/10">
               {history.map((sub) => (
-                <tr key={sub.id} className="hover:bg-white/5 transition-colors">
+                <tr key={sub.id} className="hover:bg-[hsl(var(--muted))]/5 transition-colors">
                   <td className="p-4">
                     <span className="font-semibold text-foreground block line-clamp-1">
                       {sub.test_title}
@@ -96,7 +78,7 @@ export function HistoryPanel({ history }: HistoryPanelProps) {
                   </td>
                   <td className="p-4 text-center">
                     {sub.status === 'graded' && sub.band_score !== null ? (
-                      <span className="font-bold text-sm text-cyan-400 bg-cyan-400/10 border border-cyan-400/20 px-2 py-1 rounded-lg">
+                      <span className="font-bold text-sm text-cyan-400 bg-cyan-400/10 border border-cyan-400/20 px-2.5 py-1 rounded-full">
                         Band {sub.band_score.toFixed(1)}
                       </span>
                     ) : sub.skill !== 'writing' && sub.status === 'graded' ? (
@@ -108,7 +90,7 @@ export function HistoryPanel({ history }: HistoryPanelProps) {
                   <td className="p-4 text-center font-medium">
                     <span className="inline-flex items-center gap-1">
                       <Clock className="h-3 w-3 opacity-60" />
-                      {formatTimeSpent(sub.time_spent)}
+                      {formatTimeSpentShort(sub.time_spent)}
                     </span>
                   </td>
                   <td className="p-4 text-center">{getStatusDisplay(sub)}</td>
@@ -121,7 +103,7 @@ export function HistoryPanel({ history }: HistoryPanelProps) {
                   <td className="p-4 text-right">
                     <Link
                       href={`/student/ielts/${sub.test_id}/result?submissionId=${sub.id}`}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/35 hover:text-cyan-400 hover:bg-cyan-500/5 transition-all font-semibold"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-[hsl(var(--border))]/70 bg-transparent hover:border-cyan-500/35 hover:text-cyan-400 hover:bg-cyan-500/5 transition-all font-semibold text-[11px]"
                     >
                       <Eye className="w-3.5 h-3.5" /> Xem bài làm
                     </Link>

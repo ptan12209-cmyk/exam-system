@@ -3,8 +3,12 @@ import { createClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth-utils'
 import { withErrorHandler, successResponse, ApiError } from '@/lib/api-utils'
 
-const V98_API_KEY = process.env.GEMINI_API_KEY || "sk-ewNhLj4fTcPUGWDstbRMibwnhjtZ5gB4q4CxMhEQ0gg5xZlx"
+const V98_API_KEY = process.env.GEMINI_API_KEY
 const V98_BASE_URL = process.env.GEMINI_BASE_URL || "https://v98store.com"
+
+if (!V98_API_KEY) {
+  console.error('GEMINI_API_KEY environment variable is not set')
+}
 
 const SYSTEM_PROMPT = `Bạn là giám khảo chấm thi IELTS Writing chuyên nghiệp được chứng nhận bởi IDP và British Council với hơn 15 năm kinh nghiệm.
 Nhiệm vụ của bạn là chấm điểm bài viết IELTS Writing của học sinh dựa trên đề bài được cung cấp, tuân thủ nghiêm ngặt theo Hướng dẫn chấm điểm IELTS Writing công khai (Writing Band Descriptors) cho cả Task 1 và Task 2.
@@ -58,6 +62,10 @@ QUY TẮC ĐÁNH GIÁ CHUYÊN MÔN:
 // POST /api/ielts/grade-writing
 // Chấm bài viết Writing bằng AI
 async function handlePOST(request: NextRequest) {
+  if (!V98_API_KEY) {
+    throw new ApiError('INTERNAL_ERROR', 'Dịch vụ AI chấm điểm chưa được cấu hình (thiếu GEMINI_API_KEY)', 500)
+  }
+
   const supabase = await createClient()
   const user = await requireAuth(supabase)
 
@@ -78,6 +86,18 @@ async function handlePOST(request: NextRequest) {
   if (subError || !submission) {
     throw new ApiError('NOT_FOUND', 'Bài làm không tồn tại', 404)
   }
+
+  // Kiểm tra xem bài đã được chấm chưa
+  const { data: existingScore } = await supabase
+    .from('ielts_writing_scores')
+    .select('id, graded_at')
+    .eq('submission_id', submission_id)
+    .maybeSingle()
+
+  if (existingScore) {
+    throw new ApiError('CONFLICT', 'Bài viết đã được chấm điểm trước đó', 409)
+  }
+
 
   // Chỉ cho phép học sinh sở hữu hoặc giáo viên chấm
   const { data: profile } = await supabase

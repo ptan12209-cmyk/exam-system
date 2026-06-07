@@ -51,7 +51,7 @@ export function IeltsStats({ tests, submissionsCount, avgBandScore }: IeltsStats
       {stats.map((stat, idx) => (
         <div
           key={idx}
-          className="glass-card p-5 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 flex items-start justify-between relative overflow-hidden group"
+          className="liquid-glass p-5 rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] hover:border-[hsl(var(--border))] transition-all duration-300 flex items-start justify-between relative overflow-hidden group shadow-sm"
         >
           {/* Decorative fluid background on hover */}
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -62,7 +62,7 @@ export function IeltsStats({ tests, submissionsCount, avgBandScore }: IeltsStats
             <span className="text-xs text-muted-foreground mt-1 block font-medium">{stat.desc}</span>
           </div>
 
-          <div className={`p-3 rounded-xl border ${stat.color} flex items-center justify-center`}>
+          <div className={`p-3 rounded-[1rem] border ${stat.color} flex items-center justify-center`}>
             <stat.icon className="h-5 w-5" />
           </div>
         </div>

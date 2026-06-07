@@ -51,7 +51,7 @@ export function BandScoreDisplay({ score, skill }: BandScoreDisplayProps) {
   const strokeDashoffset = circumference - (score / 9) * circumference
 
   return (
-    <div className={`glass-card p-6 rounded-2xl border flex flex-col items-center justify-center text-center ${theme.bg}`}>
+    <div className={`p-6 rounded-[2rem] border flex flex-col items-center justify-center text-center ${theme.bg} shadow-sm`}>
       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Kết quả IELTS Overall</span>
 
       {/* SVG Circle Gauge */}
@@ -63,7 +63,7 @@ export function BandScoreDisplay({ score, skill }: BandScoreDisplayProps) {
             cy="64"
             r={radius}
             fill="transparent"
-            stroke="rgba(255,255,255,0.05)"
+            className="stroke-[hsl(var(--border))]/30"
             strokeWidth="8"
           />
           {/* Progress circle */}

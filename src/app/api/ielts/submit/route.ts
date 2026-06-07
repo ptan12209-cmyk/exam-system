@@ -33,6 +33,19 @@ async function handlePOST(request: NextRequest) {
     throw new ApiError('NOT_FOUND', 'Bài thi không tồn tại', 404)
   }
 
+  // Kiểm tra student đã có submission chưa hoàn thành
+  const { data: existing } = await supabase
+    .from('ielts_submissions')
+    .select('id, status')
+    .eq('test_id', test_id)
+    .eq('student_id', user.id)
+    .in('status', ['submitted', 'graded'])
+
+  if (existing && existing.length > 0) {
+    // Cho phép làm lại (tạo submission mới) nhưng log warning
+    console.warn(`Student ${user.id} đã có ${existing.length} submission(s) cho test ${test_id}`)
+  }
+
   const studentAnswers = answers || []
   let correctCount = 0
   let score: number | null = null

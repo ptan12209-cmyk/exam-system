@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from 'react'
-import { IeltsTest } from '@/types'
+import { IeltsTest, IeltsSectionInput, IeltsQuestionInput } from '@/types'
 
 /**
  * Hook quản lý nạp đề và chỉnh sửa đề thi IELTS (dành cho giáo viên/admin)
@@ -63,7 +63,7 @@ export function useIeltsTest(testId: string | null) {
   }
 
   // Quản lý sections
-  const addSection = async (sectionData: any) => {
+  const addSection = async (sectionData: IeltsSectionInput) => {
     setSaving(true)
     setError(null)
     try {
@@ -88,7 +88,7 @@ export function useIeltsTest(testId: string | null) {
     }
   }
 
-  const updateSection = async (sectionId: string, sectionData: any) => {
+  const updateSection = async (sectionId: string, sectionData: Partial<IeltsSectionInput>) => {
     setSaving(true)
     setError(null)
     try {
@@ -137,7 +137,7 @@ export function useIeltsTest(testId: string | null) {
   }
 
   // Quản lý questions
-  const addQuestion = async (questionData: any) => {
+  const addQuestion = async (questionData: IeltsQuestionInput) => {
     setSaving(true)
     setError(null)
     try {
@@ -162,7 +162,8 @@ export function useIeltsTest(testId: string | null) {
     }
   }
 
-  const updateQuestion = async (questionId: string, questionData: any) => {
+  const updateQuestion = async (questionId: string, questionData: Partial<IeltsQuestionInput>) => {
+
     setSaving(true)
     setError(null)
     try {

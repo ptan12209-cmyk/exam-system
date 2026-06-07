@@ -121,17 +121,17 @@ export function QuestionForm({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div 
-        className="glass-card w-full max-w-lg rounded-2xl border border-white/10 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+        className="w-full max-w-lg rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 border-b border-white/10 flex items-center justify-between">
+        <div className="p-5 border-b border-[hsl(var(--border))]/20 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-foreground">
             {question ? `Sửa câu hỏi số ${question.question_number}` : 'Thêm câu hỏi mới'}
           </h3>
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
+            className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--muted))]/20 transition-all"
           >
             <X className="h-5 w-5" />
           </button>
@@ -140,7 +140,7 @@ export function QuestionForm({
         {/* Body Form */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1">
           {error && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3.5 text-sm text-red-400">
+            <div className="rounded-[1.5rem] border border-red-500/20 bg-red-500/5 p-3.5 text-sm text-red-400">
               {error}
             </div>
           )}
@@ -154,7 +154,7 @@ export function QuestionForm({
                 min={1}
                 value={qNumber}
                 onChange={e => setQNumber(Number(e.target.value))}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-foreground focus:outline-none focus:border-cyan-500/50"
+                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-xs text-foreground focus:outline-none focus:border-cyan-500/50 transition-all"
               />
             </div>
             <div className="col-span-2">
@@ -162,7 +162,7 @@ export function QuestionForm({
               <select
                 value={qType}
                 onChange={e => handleTypeChange(e.target.value as IeltsQuestionType)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-foreground focus:outline-none focus:border-cyan-500/50 cursor-pointer [&>option]:bg-neutral-900"
+                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-xs text-foreground focus:outline-none focus:border-cyan-500/50 cursor-pointer [&>option]:bg-neutral-950"
               >
                 {Object.entries(QUESTION_TYPE_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
@@ -179,13 +179,13 @@ export function QuestionForm({
               placeholder="VD: What is the main purpose of the study?"
               value={qText}
               onChange={e => setQText(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 placeholder:text-muted-foreground/30"
+              className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-muted-foreground/50"
             />
           </div>
 
           {/* Cấu hình trắc nghiệm (Options) */}
           {qType === 'multiple_choice' && (
-            <div className="space-y-2.5 bg-white/5 p-4 rounded-xl border border-white/5">
+            <div className="space-y-2.5 bg-[hsl(var(--muted))]/10 p-4 rounded-xl border border-[hsl(var(--border))]/30">
               <span className="text-[10px] font-bold text-cyan-400 uppercase block">Thiết lập các lựa chọn</span>
               {mcOptions.map((opt, idx) => (
                 <div key={opt.key} className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export function QuestionForm({
                     placeholder={`Nhập nội dung lựa chọn ${opt.key}`}
                     value={opt.text}
                     onChange={e => handleOptionChange(idx, e.target.value)}
-                    className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-cyan-500/50"
+                    className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-cyan-500/50 transition-all"
                   />
                 </div>
               ))}
@@ -210,7 +210,7 @@ export function QuestionForm({
               <select
                 value={correctAnswer}
                 onChange={e => setCorrectAnswer(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 [&>option]:bg-neutral-900"
+                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all [&>option]:bg-neutral-950"
               >
                 <option value="True">True</option>
                 <option value="False">False</option>
@@ -220,7 +220,7 @@ export function QuestionForm({
               <select
                 value={correctAnswer}
                 onChange={e => setCorrectAnswer(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 [&>option]:bg-neutral-900"
+                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all [&>option]:bg-neutral-950"
               >
                 <option value="Yes">Yes</option>
                 <option value="No">No</option>
@@ -237,7 +237,7 @@ export function QuestionForm({
                 }
                 value={correctAnswer}
                 onChange={e => setCorrectAnswer(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50"
+                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all"
               />
             )}
           </div>
@@ -250,24 +250,24 @@ export function QuestionForm({
               placeholder="Nhập phần giải thích tại sao đáp án này đúng..."
               value={explanation}
               onChange={e => setExplanation(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-foreground focus:outline-none focus:border-cyan-500/50 placeholder:text-muted-foreground/30"
+              className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-xs text-foreground focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-muted-foreground/50"
             />
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-[hsl(var(--border))]/30 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 text-xs font-semibold rounded-lg border border-white/10 text-muted-foreground hover:bg-white/5 transition-all"
+              className="px-5 py-2 text-xs font-semibold rounded-full border border-[hsl(var(--border))]/60 text-muted-foreground hover:bg-[hsl(var(--muted))]/20 hover:text-foreground transition-all bg-transparent"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 text-xs font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center gap-1.5 transition-all shadow-md"
+              className="px-5 py-2 text-xs font-semibold rounded-full bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 disabled:opacity-50"
             >
               {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {question ? 'Lưu thay đổi' : 'Thêm câu hỏi'}

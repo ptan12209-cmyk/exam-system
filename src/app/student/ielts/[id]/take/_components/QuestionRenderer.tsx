@@ -9,7 +9,9 @@ interface QuestionRendererProps {
   onChange: (value: string) => void
 }
 
-export function QuestionRenderer({ question, value = '', onChange }: QuestionRendererProps) {
+export const QuestionRenderer = React.memo(function QuestionRenderer(
+  { question, value = '', onChange }: QuestionRendererProps
+) {
   const qType = question.question_type
 
   // 1. Trắc nghiệm (Multiple Choice)
@@ -22,26 +24,27 @@ export function QuestionRenderer({ question, value = '', onChange }: QuestionRen
           {question.question_text}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-4">
-          {options.map((opt: any, idx: number) => {
-            const key = opt.key || String.fromCharCode(65 + idx)
-            const text = opt.text || opt
+          {options.map((opt: { key?: string; text?: string } | string, idx: number) => {
+            const key = (typeof opt === 'object' && opt ? opt.key : null) || String.fromCharCode(65 + idx)
+            const text = String((typeof opt === 'object' && opt ? opt.text : opt) || '')
             const isSelected = value === key
+
             
             return (
               <button
                 key={key}
                 type="button"
                 onClick={() => onChange(key)}
-                className={`p-3 rounded-xl border text-left text-xs font-semibold transition-all flex items-start gap-2.5 ${
+                className={`p-3 rounded-2xl border text-left text-xs font-semibold transition-all flex items-start gap-2.5 ${
                   isSelected
                     ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400 shadow-md ring-1 ring-cyan-500/20'
-                    : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10 hover:border-white/20 hover:text-foreground'
+                    : 'border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50 text-muted-foreground hover:bg-[hsl(var(--muted))]/30 hover:border-[hsl(var(--border))] hover:text-foreground'
                 }`}
               >
-                <span className={`h-5 w-5 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-extrabold border ${
+                <span className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-extrabold border ${
                   isSelected 
-                    ? 'bg-cyan-500 border-transparent text-white' 
-                    : 'bg-white/5 border-white/10'
+                    ? 'bg-cyan-50 border-transparent text-cyan-950 font-black' 
+                    : 'bg-[hsl(var(--muted))]/30 border-[hsl(var(--border))]/50'
                 }`}>
                   {key}
                 </span>
@@ -71,10 +74,10 @@ export function QuestionRenderer({ question, value = '', onChange }: QuestionRen
                 key={opt}
                 type="button"
                 onClick={() => onChange(opt)}
-                className={`px-4 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                className={`px-4 py-2.5 rounded-full border text-xs font-semibold transition-all ${
                   isSelected
                     ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
-                    : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10 hover:border-white/20'
+                    : 'border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50 text-muted-foreground hover:bg-[hsl(var(--muted))]/30 hover:border-[hsl(var(--border))] hover:text-foreground'
                 }`}
               >
                 {opt}
@@ -103,10 +106,10 @@ export function QuestionRenderer({ question, value = '', onChange }: QuestionRen
                 key={opt}
                 type="button"
                 onClick={() => onChange(opt)}
-                className={`px-4 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                className={`px-4 py-2.5 rounded-full border text-xs font-semibold transition-all ${
                   isSelected
                     ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
-                    : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10 hover:border-white/20'
+                    : 'border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50 text-muted-foreground hover:bg-[hsl(var(--muted))]/30 hover:border-[hsl(var(--border))] hover:text-foreground'
                 }`}
               >
                 {opt}
@@ -134,10 +137,10 @@ export function QuestionRenderer({ question, value = '', onChange }: QuestionRen
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Nhập câu trả lời..."
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-foreground focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"
+            className="w-full rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50 px-4 py-2 text-xs text-foreground focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"
           />
         </div>
       </div>
     </div>
   )
-}
+})

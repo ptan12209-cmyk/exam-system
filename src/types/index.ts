@@ -358,6 +358,7 @@ export interface IeltsSubmission {
     
     // Optional loaded relations
     test?: IeltsTest
+    ielts_tests?: IeltsTest | null
     writing_score?: IeltsWritingScore | null
 }
 
@@ -378,4 +379,77 @@ export interface IeltsWritingScore {
     ai_model: string
     graded_at: string
 }
+
+// Kết quả nộp bài trả về từ API /api/ielts/submit
+export interface IeltsSubmitResult {
+  submission_id: string
+  status: IeltsSubmissionStatus
+  correct_count: number
+  total_questions: number
+  band_score: number | null
+  score: number | null
+}
+
+// Lịch sử làm bài trả về từ API /api/ielts/history (đã flatten)
+export interface IeltsHistoryItem {
+  id: string
+  test_id: string
+  test_title: string
+  skill: IeltsSkill
+  duration: number
+  score: number | null
+  correct_count: number
+  total_questions: number
+  band_score: number | null
+  time_spent: number
+  started_at: string
+  submitted_at: string
+  status: IeltsSubmissionStatus
+}
+
+// Kết quả chấm Writing AI trả về từ API /api/ielts/grade-writing
+export interface IeltsGradeWritingResult {
+  submission_id: string
+  overall_band: number
+  scores: {
+    task_achievement: number
+    coherence_cohesion: number
+    lexical_resource: number
+    grammar_accuracy: number
+  }
+  feedback: {
+    task: string
+    coherence: string
+    lexical: string
+    grammar: string
+    overall: string
+  }
+  sample_answer: string
+}
+
+// Dữ liệu đầu vào khi tạo/cập nhật Section
+export interface IeltsSectionInput {
+  test_id?: string
+  title: string
+  order_index?: number
+  passage_content?: string
+  audio_url?: string
+  audio_source?: 'upload' | 'youtube' | 'external'
+  writing_prompt?: string
+  writing_task_type?: 'task1' | 'task2'
+  writing_image_url?: string
+  min_words?: number
+}
+
+// Dữ liệu đầu vào khi tạo/cập nhật Question
+export interface IeltsQuestionInput {
+  section_id: string
+  question_number: number
+  question_type: IeltsQuestionType
+  question_text: string
+  options?: any // JSON structure tùy theo question_type — giữ any vì schema linh hoạt
+  correct_answer: string
+  explanation?: string
+}
+
 

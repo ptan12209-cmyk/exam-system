@@ -32,15 +32,15 @@ export function ReadingResult({ test, sections, studentAnswers }: ReadingResultP
   return (
     <div className="space-y-6">
       {/* Passage Selector */}
-      <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3">
+      <div className="flex flex-wrap gap-2 border-b border-[hsl(var(--border))]/20 pb-3">
         {sections.map((sec, idx) => (
           <button
             key={sec.id}
             onClick={() => setActiveTabIdx(idx)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all ${
+            className={`px-4 py-2 rounded-full text-xs font-semibold border transition-all ${
               activeTabIdx === idx
                 ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/35 shadow-md'
-                : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10'
+                : 'bg-[hsl(var(--muted))]/20 border-[hsl(var(--border))]/60 text-muted-foreground hover:bg-[hsl(var(--muted))]/35'
             }`}
           >
             {sec.title}
@@ -52,7 +52,7 @@ export function ReadingResult({ test, sections, studentAnswers }: ReadingResultP
         {/* Cột trái: Nội dung Passage bài đọc (Chỉ hiện cho Reading) */}
         {test.skill === 'reading' && (
           <div className="lg:col-span-6 flex flex-col">
-            <div className="glass-card border border-white/10 rounded-2xl p-6 bg-neutral-900/60 h-[550px] overflow-y-auto prose prose-invert select-none">
+            <div className="border border-[hsl(var(--border))]/60 rounded-[2rem] p-6 bg-[hsl(var(--card))] h-[550px] overflow-y-auto prose prose-invert select-none shadow-sm">
               <h2 className="text-base sm:text-lg font-extrabold text-foreground text-center mb-6">{activeSection.title}</h2>
               <div dangerouslySetInnerHTML={{ __html: activeSection.passage_content || '' }} />
             </div>
@@ -61,15 +61,15 @@ export function ReadingResult({ test, sections, studentAnswers }: ReadingResultP
 
         {/* Cột phải: Đáp án chi tiết (Cho Reading/Listening) */}
         <div className={test.skill === 'reading' ? 'lg:col-span-6 flex flex-col' : 'w-full'}>
-          <div className="glass-card border border-white/10 rounded-2xl p-5 bg-neutral-900/40 h-[550px] overflow-y-auto space-y-6">
-            <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider border-b border-white/5 pb-2">
+          <div className="border border-[hsl(var(--border))]/60 rounded-[2rem] p-5 bg-[hsl(var(--card))] h-[550px] overflow-y-auto space-y-6 shadow-sm">
+            <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider border-b border-[hsl(var(--border))]/20 pb-2">
               Chi tiết câu trả lời
             </h3>
 
             {(!activeSection.questions || activeSection.questions.length === 0) ? (
               <p className="text-xs text-muted-foreground italic text-center py-12">Phần này không có câu hỏi.</p>
             ) : (
-              <div className="space-y-6 divide-y divide-white/5">
+              <div className="space-y-6 divide-y divide-[hsl(var(--border))]/10">
                 {activeSection.questions.map((q, idx) => {
                   const studentAns = getStudentAnswer(q.id)
                   const correct = isCorrect(q)
@@ -77,7 +77,7 @@ export function ReadingResult({ test, sections, studentAnswers }: ReadingResultP
                   return (
                     <div key={q.id} className={`space-y-2 ${idx > 0 ? 'pt-6' : ''}`}>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-bold">
+                        <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-bold">
                           Câu {q.question_number}
                         </span>
                         
@@ -95,22 +95,23 @@ export function ReadingResult({ test, sections, studentAnswers }: ReadingResultP
                       {/* Options hiển thị trắc nghiệm */}
                       {q.question_type === 'multiple_choice' && q.options && (
                         <div className="grid grid-cols-2 gap-2 pl-4 text-xs text-muted-foreground mt-1">
-                          {q.options.map((opt: any, i: number) => {
-                            const key = opt.key || String.fromCharCode(65 + i)
-                            const isSelect = studentAns === key
+                          {q.options.map((opt: { key?: string; text?: string } | string, i: number) => {
+                             const key = (typeof opt === 'object' && opt ? opt.key : null) || String.fromCharCode(65 + i)
+                             const text = String((typeof opt === 'object' && opt ? opt.text : opt) || '')
+                             const isSelect = studentAns === key
                             const isCorrectKey = q.correct_answer === key
                             return (
                               <div 
                                 key={key} 
-                                className={`p-2 rounded-lg border ${
+                                className={`p-2 rounded-xl border ${
                                   isCorrectKey 
                                     ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' 
                                     : isSelect 
                                     ? 'border-red-500/30 bg-red-500/5 text-red-400' 
-                                    : 'border-white/5 bg-neutral-950/30'
+                                    : 'border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50 text-muted-foreground'
                                 }`}
                               >
-                                <span className="font-bold mr-1">{key}.</span> {opt.text || opt}
+                                <span className="font-bold mr-1">{key}.</span> {text}
                               </div>
                             )
                           })}
@@ -119,11 +120,11 @@ export function ReadingResult({ test, sections, studentAnswers }: ReadingResultP
 
                       {/* Kết quả text */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1.5 pl-4 text-xs font-semibold">
-                        <div className={`p-2 rounded-lg border flex flex-col ${correct ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400' : 'border-red-500/20 bg-red-500/5 text-red-400'}`}>
+                        <div className={`p-2.5 rounded-xl border flex flex-col ${correct ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400' : 'border-red-500/20 bg-red-500/5 text-red-400'}`}>
                           <span className="text-[10px] text-muted-foreground font-bold uppercase">Bạn trả lời:</span>
                           <span className="mt-0.5">{studentAns || '(Bỏ trống)'}</span>
                         </div>
-                        <div className="p-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 flex flex-col">
+                        <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 flex flex-col">
                           <span className="text-[10px] text-muted-foreground font-bold uppercase">Đáp án đúng:</span>
                           <span className="mt-0.5">{q.correct_answer}</span>
                         </div>
@@ -131,7 +132,7 @@ export function ReadingResult({ test, sections, studentAnswers }: ReadingResultP
 
                       {/* Giải thích đáp án */}
                       {q.explanation && (
-                        <div className="mt-2 pl-4 text-[11px] leading-relaxed text-muted-foreground bg-white/5 p-2.5 rounded-xl border border-white/5">
+                        <div className="mt-2 pl-4 text-[11px] leading-relaxed text-muted-foreground bg-[hsl(var(--muted))]/10 p-2.5 rounded-xl border border-[hsl(var(--border))]/50">
                           <strong>Lý giải:</strong> {q.explanation}
                         </div>
                       )}
