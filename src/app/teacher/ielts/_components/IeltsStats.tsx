@@ -54,7 +54,7 @@ export function IeltsStats({ tests, submissionsCount, avgBandScore }: IeltsStats
           className="liquid-glass p-5 rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] hover:border-[hsl(var(--border))] transition-all duration-300 flex items-start justify-between relative overflow-hidden group shadow-sm"
         >
           {/* Decorative fluid background on hover */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white/0 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[hsl(var(--muted))]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           
           <div>
             <span className="text-xs text-muted-foreground block mb-1 font-medium">{stat.label}</span>

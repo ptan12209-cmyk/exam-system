@@ -163,7 +163,7 @@ export function WritingEditor({ section, onSave, onClose }: WritingEditorProps) 
           <select
             value={taskType}
             onChange={e => handleTaskTypeChange(e.target.value as IeltsWritingTaskType)}
-            className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 cursor-pointer [&>option]:bg-neutral-950"
+            className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 cursor-pointer [&>option]:bg-[hsl(var(--card))]"
           >
             <option value="task1">Writing Task 1 (Mô tả biểu đồ/sơ đồ)</option>
             <option value="task2">Writing Task 2 (Bài luận nghị luận xã hội)</option>

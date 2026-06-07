@@ -89,7 +89,7 @@ export function CreateTestModal({ isOpen, onClose, onSuccess }: CreateTestModalP
           <h3 className="text-lg font-semibold text-foreground">Tạo đề thi IELTS mới</h3>
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
+            className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--muted))]/20 transition-all"
           >
             <X className="h-5 w-5" />
           </button>
@@ -132,7 +132,7 @@ export function CreateTestModal({ isOpen, onClose, onSuccess }: CreateTestModalP
               <select
                 value={skill}
                 onChange={e => handleSkillChange(e.target.value as IeltsSkill)}
-                className="w-full rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all cursor-pointer [&>option]:bg-neutral-900"
+                className="w-full rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all cursor-pointer [&>option]:bg-[hsl(var(--card))]"
               >
                 <option value="reading">Reading (Đọc)</option>
                 <option value="listening">Listening (Nghe)</option>
@@ -145,7 +145,7 @@ export function CreateTestModal({ isOpen, onClose, onSuccess }: CreateTestModalP
               <select
                 value={status}
                 onChange={e => setStatus(e.target.value as IeltsTestStatus)}
-                className="w-full rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all cursor-pointer [&>option]:bg-neutral-900"
+                className="w-full rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all cursor-pointer [&>option]:bg-[hsl(var(--card))]"
               >
                 <option value="draft">Bản nháp (Draft)</option>
                 <option value="published">Xuất bản (Published)</option>
@@ -159,7 +159,7 @@ export function CreateTestModal({ isOpen, onClose, onSuccess }: CreateTestModalP
               <select
                 value={timerMode}
                 onChange={e => handleTimerModeChange(e.target.value as 'standard' | 'custom')}
-                className="w-full rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all cursor-pointer [&>option]:bg-neutral-900"
+                className="w-full rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:border-cyan-500/50 focus:outline-none transition-all cursor-pointer [&>option]:bg-[hsl(var(--card))]"
               >
                 <option value="standard">Standard (Chuẩn IELTS)</option>
                 <option value="custom">Custom (Tùy chỉnh)</option>
@@ -189,7 +189,7 @@ export function CreateTestModal({ isOpen, onClose, onSuccess }: CreateTestModalP
               variant="outline"
               onClick={onClose}
               disabled={loading}
-              className="px-5 py-2.5 text-sm font-semibold rounded-full border border-[hsl(var(--border))]/70 bg-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all h-auto"
+              className="px-5 py-2.5 text-sm font-semibold rounded-full border border-[hsl(var(--border))]/70 bg-transparent text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--muted))]/20 transition-all h-auto"
             >
               Hủy
             </Button>

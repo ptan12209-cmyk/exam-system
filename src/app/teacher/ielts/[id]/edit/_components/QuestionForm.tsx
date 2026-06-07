@@ -162,7 +162,7 @@ export function QuestionForm({
               <select
                 value={qType}
                 onChange={e => handleTypeChange(e.target.value as IeltsQuestionType)}
-                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-xs text-foreground focus:outline-none focus:border-cyan-500/50 cursor-pointer [&>option]:bg-neutral-950"
+                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-xs text-foreground focus:outline-none focus:border-cyan-500/50 cursor-pointer [&>option]:bg-[hsl(var(--card))]"
               >
                 {Object.entries(QUESTION_TYPE_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
@@ -210,7 +210,7 @@ export function QuestionForm({
               <select
                 value={correctAnswer}
                 onChange={e => setCorrectAnswer(e.target.value)}
-                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all [&>option]:bg-neutral-950"
+                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all [&>option]:bg-[hsl(var(--card))]"
               >
                 <option value="True">True</option>
                 <option value="False">False</option>
@@ -220,7 +220,7 @@ export function QuestionForm({
               <select
                 value={correctAnswer}
                 onChange={e => setCorrectAnswer(e.target.value)}
-                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all [&>option]:bg-neutral-950"
+                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none focus:border-cyan-500/50 transition-all [&>option]:bg-[hsl(var(--card))]"
               >
                 <option value="Yes">Yes</option>
                 <option value="No">No</option>

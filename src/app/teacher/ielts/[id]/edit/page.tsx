@@ -125,7 +125,7 @@ export default function EditIeltsTestPage(props: { params: Promise<{ id: string 
           </div>
 
           {/* Tab Controls */}
-          <div className="flex gap-1.5 bg-white/5 p-1 rounded-full border border-white/5 self-start">
+          <div className="flex gap-1.5 bg-[hsl(var(--muted))]/20 p-1 rounded-full border border-[hsl(var(--border))]/25 self-start">
             <button
               onClick={() => { setActiveTab('details'); setSelectedSection(null) }}
               className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${
@@ -208,7 +208,7 @@ export default function EditIeltsTestPage(props: { params: Promise<{ id: string 
                             setDuration(test.skill === 'reading' ? 60 : test.skill === 'listening' ? 30 : 60)
                           }
                         }}
-                        className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:outline-none cursor-pointer [&>option]:bg-neutral-900"
+                        className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:outline-none cursor-pointer [&>option]:bg-[hsl(var(--card))]"
                       >
                         <option value="standard">Standard (Mặc định)</option>
                         <option value="custom">Custom (Tùy chỉnh)</option>
@@ -234,7 +234,7 @@ export default function EditIeltsTestPage(props: { params: Promise<{ id: string 
                     <select
                       value={status}
                       onChange={e => setStatus(e.target.value as any)}
-                      className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:outline-none cursor-pointer [&>option]:bg-neutral-900"
+                      className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2.5 text-sm text-foreground focus:outline-none cursor-pointer [&>option]:bg-[hsl(var(--card))]"
                     >
                       <option value="draft">Draft (Bản nháp - Học sinh chưa thấy)</option>
                       <option value="published">Published (Công khai cho học sinh làm)</option>

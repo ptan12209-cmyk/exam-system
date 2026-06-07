@@ -137,7 +137,7 @@ export function useIeltsTest(testId: string | null) {
   }
 
   // Quản lý questions
-  const addQuestion = async (questionData: IeltsQuestionInput) => {
+  const addQuestion = async (questionData: IeltsQuestionInput | IeltsQuestionInput[]) => {
     setSaving(true)
     setError(null)
     try {

@@ -1,10 +1,11 @@
 "use client"
 
 import React, { useState } from 'react'
-import { Plus, Edit2, Trash2, HelpCircle, ListFilter, AlertCircle } from 'lucide-react'
+import { Plus, Edit2, Trash2, HelpCircle, ListFilter, AlertCircle, ClipboardList } from 'lucide-react'
 import { IeltsTest, IeltsSection, IeltsQuestion } from '@/types'
 import { QUESTION_TYPE_LABELS } from '@/lib/ielts'
 import { QuestionForm } from './QuestionForm'
+import { BulkImportModal } from './BulkImportModal'
 
 // QuestionEditor handles listing, editing and deleting questions within a section.
 interface QuestionEditorProps {
@@ -27,6 +28,7 @@ export function QuestionEditor({
   )
   const [editingQuestion, setEditingQuestion] = useState<IeltsQuestion | null>(null)
   const [isAdding, setIsAdding] = useState(false)
+  const [isBulkAdding, setIsBulkAdding] = useState(false)
 
   const currentSection = sections.find(s => s.id === selectedSectionId)
   const questions = currentSection?.questions || []
@@ -83,12 +85,20 @@ export function QuestionEditor({
           </select>
         </div>
 
-        <button
-          onClick={() => setIsAdding(true)}
-          className="px-4 py-1.5 text-xs font-semibold rounded-full bg-cyan-500 hover:bg-cyan-400 text-white flex items-center gap-1 transition-all active:scale-95 shadow-md border-0"
-        >
-          <Plus className="h-4 w-4" /> Thêm câu hỏi
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsBulkAdding(true)}
+            className="px-4 py-1.5 text-xs font-semibold rounded-full border border-[hsl(var(--border))]/70 bg-transparent text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--muted))]/25 flex items-center gap-1 transition-all active:scale-95"
+          >
+            <ClipboardList className="h-4 w-4 text-cyan-400" /> Nhập hàng loạt
+          </button>
+          <button
+            onClick={() => setIsAdding(true)}
+            className="px-4 py-1.5 text-xs font-semibold rounded-full bg-cyan-500 hover:bg-cyan-400 text-white flex items-center gap-1 transition-all active:scale-95 shadow-md border-0"
+          >
+            <Plus className="h-4 w-4" /> Thêm câu hỏi
+          </button>
+        </div>
       </div>
 
       {/* Hiển thị list câu hỏi trong section */}
@@ -193,6 +203,16 @@ export function QuestionEditor({
             if (success) setEditingQuestion(null)
             return success
           }}
+        />
+      )}
+
+      {/* Form modal nhập hàng loạt câu hỏi */}
+      {isBulkAdding && (
+        <BulkImportModal
+          sectionId={selectedSectionId}
+          suggestedStartNumber={getNextQuestionNumber()}
+          onClose={() => setIsBulkAdding(false)}
+          onSave={onAddQuestion}
         />
       )}
     </div>

@@ -77,7 +77,7 @@ export function TestList({ tests, onDelete }: TestListProps) {
           <select
             value={filterSkill}
             onChange={e => setFilterSkill(e.target.value)}
-            className="rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none cursor-pointer [&>option]:bg-neutral-900"
+            className="rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none cursor-pointer [&>option]:bg-[hsl(var(--card))]"
           >
             <option value="all">Tất cả kỹ năng</option>
             <option value="reading">Reading</option>
@@ -88,7 +88,7 @@ export function TestList({ tests, onDelete }: TestListProps) {
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
-            className="rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none cursor-pointer [&>option]:bg-neutral-900"
+            className="rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-4 py-2 text-sm text-foreground focus:outline-none cursor-pointer [&>option]:bg-[hsl(var(--card))]"
           >
             <option value="all">Tất cả trạng thái</option>
             <option value="draft">Bản nháp</option>

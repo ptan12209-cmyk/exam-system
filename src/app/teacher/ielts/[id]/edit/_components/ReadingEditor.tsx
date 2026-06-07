@@ -133,7 +133,7 @@ export function ReadingEditor({ section, onSave, onClose }: ReadingEditorProps) 
               <button 
                 type="button" 
                 onClick={() => handleInsertTag('b', 'b')}
-                className="px-2 py-0.5 text-[10px] font-bold rounded bg-white/5 hover:bg-white/10 text-foreground"
+                className="px-2 py-0.5 text-[10px] font-bold rounded bg-[hsl(var(--muted))]/40 hover:bg-[hsl(var(--muted))]/70 text-foreground"
                 title="Bold"
               >
                 B
@@ -141,7 +141,7 @@ export function ReadingEditor({ section, onSave, onClose }: ReadingEditorProps) 
               <button 
                 type="button" 
                 onClick={() => handleInsertTag('i', 'i')}
-                className="px-2 py-0.5 text-[10px] italic rounded bg-white/5 hover:bg-white/10 text-foreground"
+                className="px-2 py-0.5 text-[10px] italic rounded bg-[hsl(var(--muted))]/40 hover:bg-[hsl(var(--muted))]/70 text-foreground"
                 title="Italic"
               >
                 I
@@ -149,7 +149,7 @@ export function ReadingEditor({ section, onSave, onClose }: ReadingEditorProps) 
               <button 
                 type="button" 
                 onClick={() => handleInsertTag('p', 'p')}
-                className="px-2 py-0.5 text-[10px] rounded bg-white/5 hover:bg-white/10 text-foreground"
+                className="px-2 py-0.5 text-[10px] rounded bg-[hsl(var(--muted))]/40 hover:bg-[hsl(var(--muted))]/70 text-foreground"
                 title="Paragraph"
               >
                 Paragraph
@@ -157,7 +157,7 @@ export function ReadingEditor({ section, onSave, onClose }: ReadingEditorProps) 
               <button 
                 type="button" 
                 onClick={() => handleInsertTag('h3', 'h3')}
-                className="px-2 py-0.5 text-[10px] rounded bg-white/5 hover:bg-white/10 text-foreground font-semibold"
+                className="px-2 py-0.5 text-[10px] rounded bg-[hsl(var(--muted))]/40 hover:bg-[hsl(var(--muted))]/70 text-foreground font-semibold"
                 title="Subheading"
               >
                 H3
@@ -165,7 +165,7 @@ export function ReadingEditor({ section, onSave, onClose }: ReadingEditorProps) 
               <button 
                 type="button" 
                 onClick={() => handleInsertTag('br')}
-                className="px-2 py-0.5 text-[10px] rounded bg-white/5 hover:bg-white/10 text-foreground"
+                className="px-2 py-0.5 text-[10px] rounded bg-[hsl(var(--muted))]/40 hover:bg-[hsl(var(--muted))]/70 text-foreground"
                 title="Line Break"
               >
                 Break
@@ -173,7 +173,7 @@ export function ReadingEditor({ section, onSave, onClose }: ReadingEditorProps) 
               <button 
                 type="button" 
                 onClick={() => handleInsertTag('ul', 'ul')}
-                className="px-2 py-0.5 text-[10px] rounded bg-white/5 hover:bg-white/10 text-foreground"
+                className="px-2 py-0.5 text-[10px] rounded bg-[hsl(var(--muted))]/40 hover:bg-[hsl(var(--muted))]/70 text-foreground"
                 title="Bullet List"
               >
                 UL List
@@ -181,7 +181,7 @@ export function ReadingEditor({ section, onSave, onClose }: ReadingEditorProps) 
               <button 
                 type="button" 
                 onClick={() => handleInsertTag('li', 'li')}
-                className="px-2 py-0.5 text-[10px] rounded bg-white/5 hover:bg-white/10 text-foreground"
+                className="px-2 py-0.5 text-[10px] rounded bg-[hsl(var(--muted))]/40 hover:bg-[hsl(var(--muted))]/70 text-foreground"
                 title="List Item"
               >
                 Item

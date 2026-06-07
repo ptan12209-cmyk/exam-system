@@ -81,7 +81,7 @@ export default function StudentIeltsLobby() {
       
       <main className="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:py-10 space-y-8">
         {/* Banner */}
-        <div className="relative rounded-[2rem] border border-[hsl(var(--border))]/60 bg-gradient-to-r from-blue-950/40 via-purple-950/20 to-neutral-900/60 p-6 sm:p-8 overflow-hidden shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="relative rounded-[2rem] border border-[hsl(var(--border))]/60 bg-gradient-to-r from-blue-950/40 via-purple-950/20 to-[hsl(var(--card))]/60 p-6 sm:p-8 overflow-hidden shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           {/* Liquid gradient highlights */}
           <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-cyan-500/10 blur-[120px] rounded-full -mr-20 -mt-20 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-purple-500/10 blur-[80px] rounded-full -ml-10 -mb-10 pointer-events-none" />
