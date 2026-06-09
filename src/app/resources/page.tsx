@@ -258,8 +258,8 @@ export default function ResourcesPage() {
                   <FolderOpen className="h-3.5 w-3.5" /> Học tập
                 </p>
                 <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">Kho Bài Giảng & Tài Liệu</h1>
-                <p className="mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--muted-foreground))] md:text-lg">
-                  Truy cập bài giảng trực tuyến dạng video và các tài liệu tham khảo phân loại theo chương trình học chính thức của bạn.
+                <p className="mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--muted-foreground))] md:text-lg italic">
+                  "Ngọc không mài không thành đồ dùng, người không học không biết đạo lý." – Lễ Ký
                 </p>
               </div>
               

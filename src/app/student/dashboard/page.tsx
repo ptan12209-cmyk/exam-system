@@ -169,11 +169,11 @@ export default function StudentDashboard() {
             <h1 className="max-w-4xl text-5xl font-medium tracking-[-2px] md:text-7xl lg:text-8xl">
               Xin chào, {profile?.full_name || "bạn"}
               <span className="mt-3 block max-w-2xl font-serif-italic text-3xl leading-tight tracking-normal text-[hsl(var(--muted-foreground))] md:text-5xl">
-                sẵn sàng bắt đầu một phiên học mới?
+                "Hành trình vạn dặm bắt đầu từ một bước chân"
               </span>
             </h1>
-            <p className="mt-6 max-w-2xl text-base leading-[1.7] text-[hsl(var(--muted-foreground))] md:text-lg">
-              Theo dõi tiến độ, chọn đề thi và tiếp tục luyện tập trong một không gian tối giản, rõ ràng và ít nhiễu hơn.
+            <p className="mt-6 max-w-2xl text-base leading-[1.7] text-[hsl(var(--muted-foreground))] md:text-lg italic">
+              "Đường tuy gần không đi không bao giờ đến, việc tuy nhỏ không làm không bao giờ thành." – Tuân Tử
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/student/exams">

@@ -215,11 +215,11 @@ export default function StudentXDashboard() {
             <h1 className={cn("max-w-4xl text-5xl tracking-[-0.03em] leading-tight text-[#F1EDF9] md:text-7xl lg:text-8xl font-normal", instrumentSerif.className)}>
               Xin chào, X
               <span className="mt-3 block max-w-2xl font-normal text-3xl leading-tight text-[#8C87A2] md:text-5xl italic">
-                sẵn sàng học tập tập trung?
+                "Học nhi thời tập chi, bất diệc duyệt hồ?"
               </span>
             </h1>
-            <p className="mt-6 max-w-2xl text-base leading-[1.7] text-[#8C87A2] md:text-lg">
-              Không gian cá nhân hóa tối giản được thiết kế đặc biệt. Tập trung hoàn thành bài học, tích lũy năng lượng và theo đuổi sự xuất sắc.
+            <p className="mt-6 max-w-2xl text-base leading-[1.7] text-[#8C87A2] md:text-lg italic">
+              "Học mà thường ôn tập, chẳng cũng vui lắm sao? Không tích lũy từng bước nhỏ, không thể đi xa vạn dặm." – Tuân Tử
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href="#available-exams">

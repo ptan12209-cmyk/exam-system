@@ -122,8 +122,7 @@ export default function HomePage() {
           </motion.h1>
 
           <motion.p {...fadeUp(0.3)} className="mb-12 max-w-3xl text-lg leading-[1.7] text-[hsl(var(--hero-subtitle))]">
-            Một nền tảng thi trắc nghiệm hiện đại giúp học sinh luyện tập, giáo viên tổ chức bài thi và cả hai bên theo dõi
-            tiến độ rõ ràng hơn.
+            "Cây lớn ôm vòng, sinh từ mầm nhỏ; đài cao chín tầng, khởi từ đất bao; hành trình vạn dặm, bắt đầu dưới chân." – Lão Tử
           </motion.p>
 
           <motion.div {...fadeUp(0.4)} className="flex flex-col gap-4 sm:flex-row">
@@ -156,7 +155,7 @@ export default function HomePage() {
             Một hệ thống <span className="font-serif-italic">gọn</span> nhưng đủ mạnh
           </motion.h2>
           <motion.p {...fadeUp(0.2)} className="mx-auto max-w-2xl text-lg text-[hsl(var(--muted-foreground))]">
-            Tập trung vào những tính năng cốt lõi để việc luyện thi, tổ chức đề và theo dõi tiến độ trở nên rõ ràng hơn.
+            "Đời người có hạn, nhưng sự học là vô hạn." – Trang Tử
           </motion.p>
         </div>
 
@@ -177,7 +176,7 @@ export default function HomePage() {
         </div>
 
         <motion.p {...fadeUp(0.6)} className="text-center text-sm text-[hsl(var(--muted-foreground))]">
-          Tập trung vào trải nghiệm học tập trước, trang trí sau.
+          "Đường tuy gần không đi không bao giờ đến, việc tuy nhỏ không làm không bao giờ thành." – Tuân Tử
         </motion.p>
       </section>
 
@@ -197,12 +196,10 @@ export default function HomePage() {
 
         <div className="mx-auto flex max-w-5xl flex-col text-center md:text-left">
           <div className="mb-10 max-w-5xl text-2xl font-medium leading-tight tracking-[-1px] md:text-4xl lg:text-5xl">
-            Chúng tôi xây dựng một không gian nơi học sinh dễ tập trung hơn, giáo viên dễ vận hành hơn, và mỗi lần ôn tập
-            đều đi thẳng vào giá trị cốt lõi.
+            "Tích đất thành núi, gió mưa tự sinh; tích lũy điều thiện sẽ thành đức lớn, trí tuệ tự mở, tâm thánh tự có." – Tuân Tử
           </div>
-          <div className="max-w-5xl text-xl font-medium leading-tight md:text-2xl lg:text-3xl">
-            Một nền tảng nơi nội dung, cộng đồng và dữ liệu học tập cùng vận hành mượt mà — ít nhiễu hơn, ít ma sát hơn,
-            và rõ ràng hơn cho mọi người dùng.
+          <div className="max-w-5xl text-xl font-medium leading-tight md:text-2xl lg:text-3xl text-[hsl(var(--muted-foreground))]">
+            "Biết mà học không bằng thích mà học, thích mà học không bằng vui mà học." – Khổng Tử
           </div>
         </div>
       </section>
@@ -259,8 +256,7 @@ export default function HomePage() {
           </motion.h2>
 
           <motion.p {...fadeUp(0.3)} className="mb-10 max-w-md text-lg text-[hsl(var(--muted-foreground))]">
-            Nền tảng thi trắc nghiệm hiện đại dành cho học sinh và giáo viên, được thiết kế để việc luyện tập và tổ chức
-            đề thi trở nên rõ ràng hơn.
+            "Ngọc không mài không thành đồ dùng, người không học không biết đạo lý." – Lễ Ký
           </motion.p>
 
           <motion.div {...fadeUp(0.4)} className="flex flex-col gap-4 sm:flex-row">

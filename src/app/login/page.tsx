@@ -85,11 +85,11 @@ export default function LoginPage() {
             <h1 className="max-w-2xl text-5xl font-medium tracking-[-2px] md:text-7xl lg:text-8xl">
               Đăng nhập
               <span className="mt-3 block max-w-xl font-serif-italic text-3xl leading-tight tracking-normal text-[hsl(var(--muted-foreground))] md:text-5xl">
-                gọn, nhanh, rõ.
+                "Đời người hữu hạn, sự học vô hạn."
               </span>
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-[hsl(var(--muted-foreground))] md:text-lg">
-              Đăng nhập để tiếp tục học tập và theo dõi tiến độ trong một trải nghiệm rõ ràng, thống nhất với landing page.
+              "Không tích lũy từng bước nhỏ, không thể đi xa vạn dặm; không tích lũy dòng nước nhỏ, không thể thành sông biển." – Tuân Tử
             </p>
           </section>
 

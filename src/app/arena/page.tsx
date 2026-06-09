@@ -62,8 +62,8 @@ export default function ArenaPage() {
               <Swords className="h-3.5 w-3.5" /> Arena
             </p>
             <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">Đấu trường lý thuyết</h1>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--muted-foreground))] md:text-lg">
-              Thi đấu theo đợt, theo dõi trạng thái mở và xem kết quả của bạn ngay trong danh sách.
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--muted-foreground))] md:text-lg italic">
+              "Học mà không suy nghĩ thì mờ tối, suy nghĩ mà không học thì nguy ngập." – Khổng Tử
             </p>
           </div>
 

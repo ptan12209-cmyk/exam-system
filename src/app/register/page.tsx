@@ -99,11 +99,11 @@ export default function RegisterPage() {
             <h1 className="max-w-2xl text-5xl font-medium tracking-[-2px] md:text-7xl lg:text-8xl">
               Đăng ký
               <span className="mt-3 block max-w-xl font-serif-italic text-3xl leading-tight tracking-normal text-[hsl(var(--muted-foreground))] md:text-5xl">
-                nhanh và rõ.
+                "Học nhi thời tập chi, bất diệc duyệt hồ?"
               </span>
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-[hsl(var(--muted-foreground))] md:text-lg">
-              Tạo tài khoản student hoặc teacher để bắt đầu trải nghiệm hệ thống và đi sâu vào các tính năng học tập và quản lý bài thi.
+              "Đường tuy gần không đi không bao giờ đến, việc tuy nhỏ không làm không bao giờ thành. Hãy bắt đầu hành trình tích lũy tri thức ngay hôm nay." – Tuân Tử
             </p>
           </section>
 
