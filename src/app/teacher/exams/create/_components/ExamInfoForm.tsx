@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SUBJECTS } from "@/lib/subjects";
+import { cn } from "@/lib/utils";
 
 interface ExamInfoFormProps {
   title: string;
@@ -17,6 +18,8 @@ interface ExamInfoFormProps {
   onTargetGradeChange: (value: number | null) => void;
   targetClasses: string;
   onTargetClassesChange: (value: string) => void;
+  assignedTo: "normal" | "x";
+  onAssignedToChange: (value: "normal" | "x") => void;
 }
 
 export function ExamInfoForm({
@@ -32,6 +35,8 @@ export function ExamInfoForm({
   onTargetGradeChange,
   targetClasses,
   onTargetClassesChange,
+  assignedTo,
+  onAssignedToChange,
 }: ExamInfoFormProps) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -99,6 +104,39 @@ export function ExamInfoForm({
           placeholder="VD: A1, A2 (phân tách bằng dấu phẩy, để trống = cả khối)"
           className="rounded-xl"
         />
+      </div>
+      <div className="space-y-2 md:col-span-2">
+        <Label className="text-sm font-medium">Đối tượng giao bài</Label>
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            type="button"
+            onClick={() => onAssignedToChange("normal")}
+            className={cn(
+              "flex flex-col items-center justify-center p-4 rounded-xl border transition-all text-center cursor-pointer",
+              assignedTo === "normal"
+                ? "border-[hsl(var(--foreground))] bg-[hsl(var(--foreground))]/5 text-[hsl(var(--foreground))]"
+                : "border-[hsl(var(--border))]/60 hover:border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
+            )}
+          >
+            <span className="font-semibold text-sm">Học sinh thường</span>
+            <span className="text-xs opacity-75 mt-1">Giao bài cho học sinh đại trà</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onAssignedToChange("x")}
+            className={cn(
+              "flex flex-col items-center justify-center p-4 rounded-xl border transition-all text-center cursor-pointer",
+              assignedTo === "x"
+                ? "border-[#C18CFF] bg-[#C18CFF]/10 text-[#C18CFF]"
+                : "border-[hsl(var(--border))]/60 hover:border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
+            )}
+          >
+            <span className="font-semibold text-sm flex items-center gap-1.5">
+              Học sinh X <span className="inline-block w-2 h-2 rounded-full bg-[#C18CFF] animate-pulse"></span>
+            </span>
+            <span className="text-xs opacity-75 mt-1">Giao riêng cho học sinh X</span>
+          </button>
+        </div>
       </div>
     </div>
   );

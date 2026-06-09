@@ -90,6 +90,10 @@ export default function StudentDashboard() {
         router.push("/teacher/dashboard")
         return
       }
+      if (profileData.nickname === "X") {
+        router.push("/student/X/dashboard")
+        return
+      }
 
       setProfile(profileData)
 
@@ -100,6 +104,7 @@ export default function StudentDashboard() {
         .from("exams")
         .select("*")
         .eq("status", "published")
+        .eq("assigned_to", "normal")
 
       if (profileData.grade !== null) {
         examsQuery = examsQuery.or(`target_grade.is.null,target_grade.eq.${profileData.grade}`)

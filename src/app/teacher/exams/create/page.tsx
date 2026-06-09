@@ -43,6 +43,7 @@ export default function CreateExamPage() {
     scoreThreshold, setScoreThreshold,
     securityLevel, setSecurityLevel,
     totalQuestions,
+    assignedTo, setAssignedTo,
   } = useExamForm()
 
   const [error, setError] = useState<string | null>(null)
@@ -233,6 +234,7 @@ export default function CreateExamPage() {
           score_visibility_mode: scoreVisibilityMode,
           score_visibility_threshold: scoreVisibilityMode === "threshold" ? scoreThreshold : null,
           security_level: securityLevel,
+          assigned_to: assignedTo,
         })
         .select()
         .single()
@@ -322,6 +324,8 @@ export default function CreateExamPage() {
               onTargetGradeChange={setTargetGrade}
               targetClasses={targetClasses}
               onTargetClassesChange={setTargetClasses}
+              assignedTo={assignedTo}
+              onAssignedToChange={setAssignedTo}
             />
             <div className="mt-6 grid gap-6 md:grid-cols-3">
               <PdfUploader uploadingPdf={uploadingPdf} pdfUrl={pdfUrl} onUpload={handlePdfUpload} />

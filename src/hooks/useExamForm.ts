@@ -34,6 +34,7 @@ export function useExamForm() {
   const [scoreVisibilityMode, setScoreVisibilityMode] = useState<"always" | "never" | "threshold">("always");
   const [scoreThreshold, setScoreThreshold] = useState(5.0);
   const [securityLevel, setSecurityLevel] = useState(1);
+  const [assignedTo, setAssignedTo] = useState<"normal" | "x">("normal");
 
   const totalQuestions = useMemo(
     () => mcCount + (enableTF ? tfCount : 0) + (enableSA ? saCount : 0),
@@ -58,6 +59,7 @@ export function useExamForm() {
     scoreVisibilityMode,
     scoreThreshold,
     securityLevel,
+    assignedTo,
     // Setters
     setTitle,
     setSubject,
@@ -75,6 +77,7 @@ export function useExamForm() {
     setScoreVisibilityMode,
     setScoreThreshold,
     setSecurityLevel,
+    setAssignedTo,
     // Computed
     totalQuestions,
   };

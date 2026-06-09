@@ -22,6 +22,7 @@ export default function StudentProfileEditPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [originalNickname, setOriginalNickname] = useState("")
   const [formData, setFormData] = useState({ 
     full_name: "", 
     nickname: "", 
@@ -52,6 +53,7 @@ export default function StudentProfileEditPage() {
           phone: profile.phone || "", 
           avatar_url: profile.avatar_url || "" 
         })
+        setOriginalNickname(profile.nickname || "")
       }
       setLoading(false)
     }
@@ -70,7 +72,12 @@ export default function StudentProfileEditPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Not authenticated")
       if (!formData.full_name.trim()) throw new Error("Họ và tên không được để trống")
-      if (formData.nickname && (formData.nickname.length < 3 || formData.nickname.length > 20)) throw new Error("Biệt danh phải từ 3-20 ký tự")
+      if (formData.nickname && formData.nickname !== "X" && (formData.nickname.length < 3 || formData.nickname.length > 20)) {
+        throw new Error("Biệt danh phải từ 3-20 ký tự")
+      }
+      if (formData.nickname && formData.nickname.toUpperCase() === "X" && originalNickname !== "X") {
+        throw new Error("Biệt danh này đã được bảo lưu và không thể sử dụng")
+      }
       if (formData.nickname && !/^[a-zA-Z0-9_]+$/.test(formData.nickname)) throw new Error("Biệt danh chỉ được chứa chữ cái, số và dấu gạch dưới")
       
       const gradeNum = formData.grade ? parseInt(formData.grade) : null

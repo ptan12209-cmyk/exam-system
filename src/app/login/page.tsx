@@ -44,8 +44,14 @@ export default function LoginPage() {
       return
     }
 
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single()
-    router.push(profile?.role === "teacher" ? "/teacher/dashboard" : "/student/dashboard")
+    const { data: profile } = await supabase.from("profiles").select("role, nickname").eq("id", data.user.id).single()
+    if (profile?.role === "teacher") {
+      router.push("/teacher/dashboard")
+    } else if (profile?.nickname === "X") {
+      router.push("/student/X/dashboard")
+    } else {
+      router.push("/student/dashboard")
+    }
   }
 
   return (

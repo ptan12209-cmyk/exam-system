@@ -28,8 +28,9 @@ export default function EditExamPage() {
   const [title, setTitle] = useState(""); const [duration, setDuration] = useState(15); const [mcCount, setMcCount] = useState(12); const [tfCount, setTfCount] = useState(4); const [saCount, setSaCount] = useState(6); const [mcAnswers, setMcAnswers] = useState<(Option | null)[]>([]); const [tfAnswers, setTfAnswers] = useState<TFAnswer[]>([]); const [saAnswers, setSaAnswers] = useState<SAAnswer[]>([]); const [answerTab, setAnswerTab] = useState<"mc" | "tf" | "sa">("mc"); const [securityLevel, setSecurityLevel] = useState(1)
   const [targetGrade, setTargetGrade] = useState<number | null>(null);
   const [targetClasses, setTargetClasses] = useState<string>("");
+  const [assignedTo, setAssignedTo] = useState<"normal" | "x">("normal");
 
-  useEffect(() => { (async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) { router.push("/login"); return } const { data: profileData } = await supabase.from("profiles").select("full_name").eq("id", user.id).single(); setProfile(profileData); const { data: exam } = await supabase.from("exams").select("*").eq("id", examId).eq("teacher_id", user.id).single(); if (!exam) { const { data: anyExam } = await supabase.from("exams").select("teacher_id, title").eq("id", examId).single(); if (anyExam) setAuthError("Bạn không có quyền chỉnh sửa đề thi này. Đề thi thuộc về giáo viên khác."); else router.push("/teacher/dashboard"); setLoading(false); return } setTitle(exam.title); setDuration(exam.duration); setTargetGrade(exam.target_grade ?? null); setTargetClasses(exam.target_classes ? exam.target_classes.join(", ") : ""); if (exam.mc_answers?.length > 0) { const mc = exam.mc_answers as { question: number; answer: Option }[]; setMcCount(mc.length); const newMc: (Option | null)[] = Array(mc.length).fill(null); mc.forEach((item) => { const idx = item.question - 1; if (idx >= 0 && idx < mc.length) newMc[idx] = item.answer }); setMcAnswers(newMc) } else if (exam.correct_answers) { setMcCount(exam.correct_answers.length); setMcAnswers(exam.correct_answers) } setTfCount(exam.tf_answers?.length || 0); setTfAnswers(exam.tf_answers || []); setSaCount(exam.sa_answers?.length || 0); setSaAnswers(exam.sa_answers || []); setSecurityLevel(exam.security_level ?? 1); setLoading(false) })() }, [examId, router, supabase])
+  useEffect(() => { (async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) { router.push("/login"); return } const { data: profileData } = await supabase.from("profiles").select("full_name").eq("id", user.id).single(); setProfile(profileData); const { data: exam } = await supabase.from("exams").select("*").eq("id", examId).eq("teacher_id", user.id).single(); if (!exam) { const { data: anyExam } = await supabase.from("exams").select("teacher_id, title").eq("id", examId).single(); if (anyExam) setAuthError("Bạn không có quyền chỉnh sửa đề thi này. Đề thi thuộc về giáo viên khác."); else router.push("/teacher/dashboard"); setLoading(false); return } setTitle(exam.title); setDuration(exam.duration); setTargetGrade(exam.target_grade ?? null); setTargetClasses(exam.target_classes ? exam.target_classes.join(", ") : ""); setAssignedTo(exam.assigned_to ?? "normal"); if (exam.mc_answers?.length > 0) { const mc = exam.mc_answers as { question: number; answer: Option }[]; setMcCount(mc.length); const newMc: (Option | null)[] = Array(mc.length).fill(null); mc.forEach((item) => { const idx = item.question - 1; if (idx >= 0 && idx < mc.length) newMc[idx] = item.answer }); setMcAnswers(newMc) } else if (exam.correct_answers) { setMcCount(exam.correct_answers.length); setMcAnswers(exam.correct_answers) } setTfCount(exam.tf_answers?.length || 0); setTfAnswers(exam.tf_answers || []); setSaCount(exam.sa_answers?.length || 0); setSaAnswers(exam.sa_answers || []); setSecurityLevel(exam.security_level ?? 1); setLoading(false) })() }, [examId, router, supabase])
   const handleMcCountChange = (newCount: number) => { setMcCount(newCount); setMcAnswers(Array.from({ length: newCount }, (_, i) => mcAnswers[i] || null)) }
   const handleTfCountChange = (newCount: number) => { setTfCount(newCount); setTfAnswers(Array.from({ length: newCount }, (_, i) => tfAnswers[i] || { question: mcCount + 1 + i, a: true, b: true, c: true, d: true })) }
   const handleSaCountChange = (newCount: number) => { setSaCount(newCount); setSaAnswers(Array.from({ length: newCount }, (_, i) => saAnswers[i] || { question: mcCount + tfCount + 1 + i, answer: "" })) }
@@ -83,6 +84,7 @@ export default function EditExamPage() {
           security_level: securityLevel,
           target_grade: targetGrade,
           target_classes: targetClasses.trim() ? targetClasses.split(",").map(c => c.trim().toUpperCase()).filter(Boolean) : null,
+          assigned_to: assignedTo,
         })
         .eq("id", examId)
 
@@ -217,6 +219,37 @@ export default function EditExamPage() {
               <div className="space-y-2">
                 <Label className="text-xs font-medium uppercase text-[hsl(var(--muted-foreground))]">Lớp học cụ thể (tùy chọn)</Label>
                 <Input value={targetClasses} onChange={(e) => setTargetClasses(e.target.value)} className="rounded-xl border-[hsl(var(--border))]/60 bg-transparent" placeholder="VD: A1, A2 (ngăn cách bằng dấu phẩy)" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium uppercase text-[hsl(var(--muted-foreground))]">Đối tượng giao bài</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setAssignedTo("normal")}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-3 text-center transition-all cursor-pointer rounded-xl border",
+                      assignedTo === "normal"
+                        ? "border-[hsl(var(--foreground))] bg-[hsl(var(--foreground))]/5 text-[hsl(var(--foreground))]"
+                        : "border-[hsl(var(--border))]/60 hover:border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
+                    )}
+                  >
+                    <span className="font-semibold text-xs">Học sinh thường</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAssignedTo("x")}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-3 text-center transition-all cursor-pointer rounded-xl border",
+                      assignedTo === "x"
+                        ? "border-[#C18CFF] bg-[#C18CFF]/10 text-[#C18CFF]"
+                        : "border-[hsl(var(--border))]/60 hover:border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
+                    )}
+                  >
+                    <span className="font-semibold text-xs flex items-center gap-1">
+                      Học sinh X <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#C18CFF] animate-pulse"></span>
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

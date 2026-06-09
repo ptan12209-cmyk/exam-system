@@ -78,16 +78,18 @@ export default function StudentExamsPage() {
         return
       }
 
-      const { data: profile } = await supabase.from("profiles").select("full_name, class, grade, class_suffix").eq("id", authUser.id).single()
+      const { data: profile } = await supabase.from("profiles").select("full_name, class, grade, class_suffix, nickname").eq("id", authUser.id).single()
       setUser({ id: authUser.id, full_name: profile?.full_name, class: profile?.class })
 
       const { stats } = await getUserStats(authUser.id)
       setUserXp(stats.xp)
 
+      const isStudentX = profile?.nickname === "X"
       let examsQuery = supabase
         .from("exams")
         .select("*")
         .eq("status", "published")
+        .eq("assigned_to", isStudentX ? "x" : "normal")
 
       if (profile && profile.grade !== null) {
         examsQuery = examsQuery.or(`target_grade.is.null,target_grade.eq.${profile.grade}`)

@@ -18,7 +18,7 @@ import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
 
 interface Profile { id: string; role: string; full_name: string | null }
-interface Exam { id: string; title: string; duration: number; total_questions: number; status: "draft" | "published"; created_at: string; submission_count?: number; subject?: string }
+interface Exam { id: string; title: string; duration: number; total_questions: number; status: "draft" | "published"; created_at: string; submission_count?: number; subject?: string; assigned_to?: "normal" | "x" }
 
 export default function TeacherDashboard() {
   const router = useRouter()
@@ -170,6 +170,11 @@ export default function TeacherDashboard() {
                           >
                             {exam.status === "published" ? "Đã phát hành" : "Nháp"}
                           </span>
+                          {exam.assigned_to === "x" && (
+                            <span className="rounded-full border border-[#C18CFF] bg-[#C18CFF]/15 text-[#C18CFF] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] animate-pulse">
+                              Học sinh X
+                            </span>
+                          )}
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[hsl(var(--muted-foreground))]">
                           <span className="flex items-center gap-1">
