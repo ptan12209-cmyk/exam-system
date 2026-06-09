@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ToastProvider } from "@/components/ui/toast";
@@ -11,6 +11,21 @@ import NextTopLoader from "nextjs-toploader";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin", "vietnamese"],
+  display: "swap",
+});
+
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  weight: ["400", "700"],
   display: "swap",
 });
 
@@ -56,7 +71,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className={`${inter.variable} antialiased selection:bg-[hsl(var(--foreground))] selection:text-[hsl(var(--background))]`}>
+      <body className={`${inter.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} antialiased selection:bg-[hsl(var(--primary))] selection:text-[hsl(var(--primary-foreground))]`}>
         <NextTopLoader 
           color="hsl(var(--foreground))"
           initialPosition={0.08}

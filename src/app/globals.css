@@ -3,26 +3,26 @@
 @import "tailwindcss";
 
 :root {
-  /* Premium Light palette */
-  --background: 0 0% 100%;
-  --foreground: 0 0% 0%;
-  --card: 0 0% 98%;
-  --card-foreground: 0 0% 0%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 0%;
-  --primary: 0 0% 0%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 92%;
-  --secondary-foreground: 0 0% 20%;
-  --muted: 0 0% 95%;
-  --muted-foreground: 0 0% 40%;
-  --accent: 170 10% 40%;
-  --accent-foreground: 0 0% 100%;
+  /* Premium Dark palette (Matching Space X Style globally) */
+  --background: 248 29% 6%; /* #0B0A13 */
+  --foreground: 260 38% 95%; /* #F1EDF9 */
+  --card: 250 24% 10%; /* #15131F */
+  --card-foreground: 260 38% 95%;
+  --popover: 250 24% 10%;
+  --popover-foreground: 260 38% 95%;
+  --primary: 268 100% 77%; /* #C18CFF */
+  --primary-foreground: 248 29% 6%; /* #0B0A13 */
+  --secondary: 250 24% 15%; /* #1C1A2D */
+  --secondary-foreground: 260 38% 95%;
+  --muted: 253 11% 58% / 0.15;
+  --muted-foreground: 253 11% 58%; /* #8C87A2 */
+  --accent: 268 100% 77% / 0.15;
+  --accent-foreground: 268 100% 77%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 90%;
-  --input: 0 0% 90%;
-  --ring: 0 0% 20%;
+  --border: 253 11% 58% / 0.15; /* #8C87A2 mờ */
+  --input: 253 11% 58% / 0.15;
+  --ring: 268 100% 77%;
   --radius: 0.75rem;
 
   /* Success & Warning */
@@ -33,26 +33,26 @@
 }
 
 .dark {
-  /* Premium Dark palette (Matching Landing Page) */
-  --background: 0 0% 0%;
-  --foreground: 0 0% 100%;
-  --card: 0 0% 5%;
-  --card-foreground: 0 0% 100%;
-  --popover: 0 0% 5%;
-  --popover-foreground: 0 0% 100%;
-  --primary: 0 0% 100%;
-  --primary-foreground: 0 0% 0%;
-  --secondary: 0 0% 12%;
-  --secondary-foreground: 0 0% 85%;
-  --muted: 0 0% 15%;
-  --muted-foreground: 0 0% 65%;
-  --accent: 170 15% 45%;
-  --accent-foreground: 0 0% 100%;
+  /* Premium Dark palette (Matching Space X Style globally) */
+  --background: 248 29% 6%; /* #0B0A13 */
+  --foreground: 260 38% 95%; /* #F1EDF9 */
+  --card: 250 24% 10%; /* #15131F */
+  --card-foreground: 260 38% 95%;
+  --popover: 250 24% 10%;
+  --popover-foreground: 260 38% 95%;
+  --primary: 268 100% 77%; /* #C18CFF */
+  --primary-foreground: 248 29% 6%; /* #0B0A13 */
+  --secondary: 250 24% 15%; /* #1C1A2D */
+  --secondary-foreground: 260 38% 95%;
+  --muted: 253 11% 58% / 0.15;
+  --muted-foreground: 253 11% 58%; /* #8C87A2 */
+  --accent: 268 100% 77% / 0.15;
+  --accent-foreground: 268 100% 77%;
   --destructive: 0 63% 31%;
   --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 20%;
-  --input: 0 0% 18%;
-  --ring: 0 0% 40%;
+  --border: 253 11% 58% / 0.15; /* #8C87A2 mờ */
+  --input: 253 11% 58% / 0.15;
+  --ring: 268 100% 77%;
 
   --success: 142 71% 45%;
   --success-foreground: 0 0% 100%;
@@ -754,39 +754,20 @@ select option {
 }
 
 /* ============================================
-   Dream Engine Theme - Space X Style Override
+   Dream Engine - Font & Scrollbar Style Override Globally
    ============================================ */
-.theme-dream-engine {
-  --background: 248 29% 6%; /* #0B0A13 */
-  --foreground: 260 38% 95%; /* #F1EDF9 */
-  --card: 250 24% 10%; /* #15131F */
-  --card-foreground: 260 38% 95%;
-  --popover: 250 24% 10%;
-  --popover-foreground: 260 38% 95%;
-  --border: 253 11% 58% / 0.15; /* #8C87A2 mờ */
-  --input: 253 11% 58% / 0.15;
-  --ring: 268 100% 77%; /* #C18CFF */
-  --primary: 268 100% 77%; /* #C18CFF */
-  --primary-foreground: 248 29% 6%;
-  --secondary: 250 24% 15%;
-  --secondary-foreground: 260 38% 95%;
-  --muted: 253 11% 58% / 0.15;
-  --muted-foreground: 253 11% 58%;
-  --accent: 268 100% 77% / 0.15;
-  --accent-foreground: 268 100% 77%;
-}
 
-/* Ép font-family và phong cách Instrument Serif nghệ thuật của X cho các tiêu đề lớn */
-.theme-dream-engine h1, 
-.theme-dream-engine .h1-style {
+/* Ép font-family và phong cách Instrument Serif nghệ thuật cho tất cả tiêu đề h1 hệ thống */
+h1, 
+.h1-style {
   font-family: 'Instrument Serif', serif !important;
   font-weight: 400 !important;
 }
 
-/* Áp dụng một số hiệu ứng mịn màng cho scrollbar trong theme */
-.theme-dream-engine ::-webkit-scrollbar-thumb {
+/* Áp dụng hiệu ứng mịn màng cho scrollbar toàn cục */
+::-webkit-scrollbar-thumb {
   background: rgba(193, 140, 255, 0.15) !important;
 }
-.theme-dream-engine ::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background: rgba(193, 140, 255, 0.3) !important;
 }
