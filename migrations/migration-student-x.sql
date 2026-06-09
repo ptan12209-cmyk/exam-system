@@ -75,14 +75,14 @@ BEGIN
       provider_id
     )
     VALUES (
-      new_user_id::text,
+      gen_random_uuid(), -- Cột "id" yêu cầu kiểu dữ liệu UUID
       new_user_id,
       json_build_object('sub', new_user_id::text, 'email', 'X@gmail.com'),
       'email',
       NULL,
       NOW(),
       NOW(),
-      new_user_id::text
+      new_user_id::text -- Cột "provider_id" yêu cầu kiểu dữ liệu TEXT
     );
 
     -- Cập nhật nickname 'X' trong profiles (được tạo tự động nhờ trigger handle_new_user)
