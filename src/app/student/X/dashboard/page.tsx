@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import {
   BookOpen,
+  Calendar,
   Clock,
   FileText,
   GraduationCap,
@@ -286,7 +287,7 @@ export default function StudentXDashboard() {
               { href: "/arena", label: "Đấu trường", icon: Swords },
               { href: "/student/ielts", label: "Luyện thi IELTS", icon: GraduationCap },
               { href: "/student/achievements", label: "Kho thành tích", icon: Award },
-              { href: "/student/checklist", label: "Kế hoạch / Checklist", icon: ListTodo },
+              { href: "/student/X/timetable", label: "Thời khóa biểu X", icon: Calendar },
               { href: "/student/co-study", label: "Phòng Pomodoro", icon: Timer },
               { href: "/live", label: "Lớp học trực tuyến", icon: Video },
             ].map((item) => (
