@@ -71,16 +71,18 @@ BEGIN
       provider,
       last_sign_in_at,
       created_at,
-      updated_at
+      updated_at,
+      provider_id
     )
     VALUES (
-      gen_random_uuid(),
+      new_user_id::text,
       new_user_id,
       json_build_object('sub', new_user_id::text, 'email', 'X@gmail.com'),
       'email',
       NULL,
       NOW(),
-      NOW()
+      NOW(),
+      new_user_id::text
     );
 
     -- Cập nhật nickname 'X' trong profiles (được tạo tự động nhờ trigger handle_new_user)
