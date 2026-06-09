@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { NotificationBell } from "@/components/NotificationBell"
-import { UserMenu } from "@/components/UserMenu"
+import { StudentHeader } from "@/components/student/StudentHeader"
 import { BottomNav } from "@/components/BottomNav"
 import { Swords, Plus, Play, Calendar, Clock, Trophy, Users, Search, GraduationCap, HelpCircle } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
@@ -18,12 +17,12 @@ interface ArenaResult { arena_id: string; score: number; rank: number | null; st
 export default function ArenaPage() {
   const router = useRouter(); const supabase = createClient()
   const [sessions, setSessions] = useState<ArenaSession[]>([]); const [myResults, setMyResults] = useState<ArenaResult[]>([]); const [topPlayers, setTopPlayers] = useState<ArenaResult[]>([])
-  const [loading, setLoading] = useState(true); const [user, setUser] = useState<{ id: string; full_name?: string } | null>(null); const [selectedTab, setSelectedTab] = useState("all");  const [searchQuery, setSearchQuery] = useState("")
+  const [loading, setLoading] = useState(true); const [user, setUser] = useState<{ id: string; full_name?: string; class?: string; nickname?: string } | null>(null); const [selectedTab, setSelectedTab] = useState("all");  const [searchQuery, setSearchQuery] = useState("")
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
 
-  useEffect(() => { (async () => { const { data: { user: authUser } } = await supabase.auth.getUser(); if (!authUser) { router.push("/login"); return } const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", authUser.id).single(); setUser({ id: authUser.id, full_name: profile?.full_name }); const { data: sessionsData } = await supabase.from("arena_sessions").select("*").order("start_time", { ascending: false }); if (sessionsData) setSessions(sessionsData); const { data: resultsData } = await supabase.from("arena_results").select("arena_id, score, rank").eq("student_id", authUser.id); if (resultsData) setMyResults(resultsData); const { data: topData } = await supabase.from("arena_results").select("*, profiles!student_id(full_name)").order("score", { ascending: false }).limit(10); if (topData) setTopPlayers(topData); setLoading(false) })() }, [router, supabase])
+  useEffect(() => { (async () => { const { data: { user: authUser } } = await supabase.auth.getUser(); if (!authUser) { router.push("/login"); return } const { data: profile } = await supabase.from("profiles").select("full_name, class, nickname").eq("id", authUser.id).single(); setUser({ id: authUser.id, full_name: profile?.full_name, class: profile?.class, nickname: profile?.nickname }); const { data: sessionsData } = await supabase.from("arena_sessions").select("*").order("start_time", { ascending: false }); if (sessionsData) setSessions(sessionsData); const { data: resultsData } = await supabase.from("arena_results").select("arena_id, score, rank").eq("student_id", authUser.id); if (resultsData) setMyResults(resultsData); const { data: topData } = await supabase.from("arena_results").select("*, profiles!student_id(full_name)").order("score", { ascending: false }).limit(10); if (topData) setTopPlayers(topData); setLoading(false) })() }, [router, supabase])
 
   const getMyResult = (arenaId: string) => myResults.find((r) => r.arena_id === arenaId)
   const getStatusInfo = (session: ArenaSession) => { 
@@ -49,24 +48,12 @@ export default function ArenaPage() {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] selection:bg-[hsl(var(--foreground))] selection:text-[hsl(var(--background))]">
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/70 px-4 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-          <Link href="/student/dashboard" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[hsl(var(--border))]/60">
-              <GraduationCap className="h-4 w-4" />
-            </div>
-            <span className="hidden text-lg font-semibold tracking-tight md:block">ExamHub</span>
-          </Link>
-          <div className="hidden md:flex items-center gap-6 text-sm text-[hsl(var(--muted-foreground))]">
-            <Link href="/student/dashboard" className="transition-colors hover:text-[hsl(var(--foreground))]">Trang chủ</Link>
-            <Link href="/resources" className="transition-colors hover:text-[hsl(var(--foreground))]">Tài liệu</Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <NotificationBell />
-            <UserMenu userName={user?.full_name || ""} onLogout={handleLogout} role="student" />
-          </div>
-        </div>
-      </header>
+      <StudentHeader 
+        name={user?.full_name} 
+        studentClass={user?.class || "Học sinh"} 
+        onLogout={handleLogout} 
+        nickname={user?.nickname}
+      />
 
       <main className="mx-auto grid max-w-7xl gap-8 px-4 pb-28 pt-6 lg:grid-cols-[1.35fr_0.65fr] lg:px-8">
         <section>

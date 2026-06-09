@@ -6,8 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NotificationBell } from "@/components/NotificationBell";
-import { UserMenu } from "@/components/UserMenu";
+import { StudentHeader } from "@/components/student/StudentHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { 
   Search, 
@@ -35,6 +34,7 @@ interface Profile {
   full_name: string | null;
   grade: number | null;
   class_suffix: string | null;
+  nickname?: string | null;
 }
 
 interface Chapter {
@@ -109,7 +109,7 @@ export default function ResourcesPage() {
     
     const { data: profileData } = await supabase
       .from("profiles")
-      .select("id, role, full_name, grade, class_suffix")
+      .select("id, role, full_name, grade, class_suffix, nickname")
       .eq("id", user.id)
       .single();
 
@@ -117,7 +117,7 @@ export default function ResourcesPage() {
       setProfile(profileData as Profile);
       // For students, lock selection to their own grade
       if (profileData.role === "student") {
-        setSelectedGrade(profileData.grade);
+        setSelectedGrade(profileData.grade ?? (profileData.nickname === "X" ? 12 : null));
       } else {
         // Teachers/Admins default to grade 12
         setSelectedGrade(12);
@@ -210,6 +210,7 @@ export default function ResourcesPage() {
   };
 
   const isTeacher = profile?.role === "teacher" || profile?.role === "admin";
+  const canSelectAnyGrade = isTeacher || profile?.nickname === "X";
 
   if (loadingProfile) {
     return (
@@ -219,52 +220,17 @@ export default function ResourcesPage() {
     );
   }
 
-  // If student has NULL grade, show restriction
-  const isStudentBlocked = profile?.role === "student" && profile?.grade === null;
+  // If student has NULL grade, show restriction (exclude student X)
+  const isStudentBlocked = profile?.role === "student" && profile?.grade === null && profile?.nickname !== "X";
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] pb-24 lg:pb-8">
-      {/* Navigation Header */}
-      <header className="glass-nav sticky top-0 z-50">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--foreground))] text-[hsl(var(--background))]">
-              <GraduationCap className="h-5 w-5" />
-            </div>
-            <span className="hidden text-xl font-bold text-[hsl(var(--foreground))] sm:block">ExamHub</span>
-          </Link>
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--muted-foreground))]" />
-              <Input 
-                type="text" 
-                placeholder="Tìm kiếm chương học..." 
-                value={searchQuery} 
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)} 
-                className="pl-10 rounded-full bg-[hsl(var(--card))]" 
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {profile ? (
-              <>
-                <NotificationBell />
-                <UserMenu 
-                  userName={profile.full_name || ""} 
-                  onLogout={handleLogout} 
-                  role={isTeacher ? "teacher" : "student"} 
-                />
-              </>
-            ) : (
-              <Link href="/login">
-                <Button className="rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90">
-                  Đăng nhập
-                </Button>
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
+      <StudentHeader 
+        name={profile?.full_name} 
+        studentClass={profile?.role === "student" ? (profile.nickname === "X" ? "Lớp X" : `${profile.grade}${profile.class_suffix || ""}`) : "Giáo viên"}
+        onLogout={handleLogout} 
+        nickname={profile?.nickname}
+      />
 
       {/* Main Container */}
       <main className="mx-auto max-w-7xl px-4 py-6 lg:py-10 lg:pl-10">
@@ -300,18 +266,20 @@ export default function ResourcesPage() {
               <div className="liquid-glass rounded-[2rem] p-6 shadow-sm border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50">
                 <p className="text-xs text-[hsl(var(--muted-foreground))] uppercase tracking-wider font-semibold">Khối lớp hiện tại</p>
                 <div className="mt-2 text-3xl font-bold text-foreground">
-                  {profile?.role === "student" ? `Khối ${profile?.grade} (${profile?.grade}${profile?.class_suffix})` : `Khối lớp ${selectedGrade}`}
+                  {profile?.role === "student" ? (profile.nickname === "X" ? `Không gian X - Khối ${selectedGrade}` : `Khối ${profile?.grade} (${profile?.grade}${profile?.class_suffix || ""})`) : `Khối lớp ${selectedGrade}`}
                 </div>
-                {isTeacher && (
-                  <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Giáo viên có toàn quyền xem các khối</p>
+                {canSelectAnyGrade && (
+                  <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                    {profile?.nickname === "X" ? "Tài khoản X có quyền truy cập tất cả các khối" : "Giáo viên có toàn quyền xem các khối"}
+                  </p>
                 )}
               </div>
             </section>
 
             {/* Teacher Toolbar filters */}
-            {isTeacher && (
+            {canSelectAnyGrade && (
               <div className="mb-6 flex flex-wrap gap-2 items-center rounded-2xl bg-[hsl(var(--muted))]/20 p-3 border border-[hsl(var(--border))]/40">
-                <span className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mr-2">Khối hiển thị (GV):</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mr-2">Khối hiển thị:</span>
                 {Array.from({ length: 7 }, (_, i) => i + 6).map((g) => (
                   <button
                     key={g}
@@ -326,11 +294,13 @@ export default function ResourcesPage() {
                     Khối {g}
                   </button>
                 ))}
-                <Link href="/teacher/study" className="ml-auto">
-                  <Button size="sm" className="rounded-full bg-emerald-600 text-white hover:bg-emerald-500 text-xs">
-                    Quản lý học liệu
-                  </Button>
-                </Link>
+                {isTeacher && (
+                  <Link href="/teacher/study" className="ml-auto">
+                    <Button size="sm" className="rounded-full bg-emerald-600 text-white hover:bg-emerald-500 text-xs">
+                      Quản lý học liệu
+                    </Button>
+                  </Link>
+                )}
               </div>
             )}
 

@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { StudentHeader } from "@/components/student/StudentHeader"
 import { cn } from "@/lib/utils"
 import { ArrowLeft, BookOpen, Calendar, Clock, Edit, GraduationCap, MessageCircle, Plus, Save, Settings, Trash2, User, Video, Youtube, X } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
@@ -41,7 +41,7 @@ export default function LiveRoomPage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<{ name: string; email: string; role?: string } | null>(null)
+  const [user, setUser] = useState<{ name: string; email: string; role?: string; class?: string; nickname?: string } | null>(null)
   const [schedule, setSchedule] = useState<ScheduleItem[]>([])
   const [liveConfig, setLiveConfig] = useState<LiveConfig | null>(null)
   const [showEditor, setShowEditor] = useState(false)
@@ -86,8 +86,8 @@ export default function LiveRoomPage() {
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const { data: profile } = await supabase.from("profiles").select("full_name, email, role").eq("id", user.id).single()
-    setUser({ name: profile?.full_name || user.email?.split("@")[0] || "Học sinh", email: user.email || "", role: profile?.role })
+    const { data: profile } = await supabase.from("profiles").select("full_name, email, role, class, nickname").eq("id", user.id).single()
+    setUser({ name: profile?.full_name || user.email?.split("@")[0] || "Học sinh", email: user.email || "", role: profile?.role, class: profile?.class, nickname: profile?.nickname })
   }
 
   const fetchSchedule = async () => {
@@ -233,43 +233,27 @@ export default function LiveRoomPage() {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] selection:bg-[hsl(var(--foreground))] selection:text-[hsl(var(--background))]">
-      <nav className="fixed inset-x-0 top-0 z-50 border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/70 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[hsl(var(--border))]/60">
-              {liveConfig?.live_mode === "jitsi" ? <Video className="h-4 w-4 text-indigo-500" /> : <Youtube className="h-4 w-4 text-red-500" />}
-            </div>
-            <span className="text-lg font-semibold tracking-tight">Live Class</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            {canEdit && (
-              <Button onClick={() => setShowLiveSettings(true)} variant="outline" className="rounded-full border-[hsl(var(--border))]/70 bg-transparent">
-                <Settings className="mr-2 h-4 w-4" />Cài đặt Live
-              </Button>
-            )}
-            {user ? (
-              <div className="hidden sm:flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[hsl(var(--muted))]/20">
-                  <User className="h-4 w-4" />
-                </div>
-                <span>{user.name}</span>
-              </div>
-            ) : (
-              <Link href="/login">
-                <Button className="rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90">
-                  Đăng nhập
-                </Button>
-              </Link>
-            )}
-          </div>
-        </div>
-      </nav>
+      <StudentHeader 
+        name={user?.name} 
+        studentClass={user?.role === "student" ? (user.nickname === "X" ? "Lớp X" : user.class || "Học sinh") : "Giáo viên"}
+        onLogout={async () => {
+          await supabase.auth.signOut()
+          router.push("/login")
+        }} 
+        nickname={user?.nickname}
+      />
 
       <main className="mx-auto max-w-7xl px-4 pb-24 pt-6">
-        <Link href="/student/dashboard" className="mb-6 inline-flex items-center gap-2 text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]">
-          <ArrowLeft className="h-4 w-4" />Quay lại Dashboard
-        </Link>
+        <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
+          <Link href="/student/dashboard" className="inline-flex items-center gap-2 text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]">
+            <ArrowLeft className="h-4 w-4" />Quay lại Dashboard
+          </Link>
+          {canEdit && (
+            <Button onClick={() => setShowLiveSettings(true)} variant="outline" className="rounded-xl border-[hsl(var(--border))]/70 bg-transparent">
+              <Settings className="mr-2 h-4 w-4" />Cài đặt Live
+            </Button>
+          )}
+        </div>
 
         {liveConfig?.is_live && (
           <div className="mb-6 flex items-center gap-2 text-red-500">
