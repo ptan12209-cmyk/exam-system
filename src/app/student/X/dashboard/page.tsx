@@ -86,6 +86,33 @@ export default function StudentXDashboard() {
   const [userXp, setUserXp] = useState(0)
   const [selectedSubject, setSelectedSubject] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+
+  useEffect(() => {
+    const targetDate = new Date("2027-06-11T07:30:00").getTime()
+
+    const updateCountdown = () => {
+      const now = new Date().getTime()
+      const difference = targetDate - now
+
+      if (difference <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+        return
+      }
+
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((difference % (1000 * 60)) / 1000)
+
+      setTimeLeft({ days, hours, minutes, seconds })
+    }
+
+    updateCountdown()
+    const interval = setInterval(updateCountdown, 1000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -237,6 +264,39 @@ export default function StudentXDashboard() {
 
           {/* Gamification Widget */}
           <div className="space-y-6">
+            {/* Countdown to THPT 2027 Widget */}
+            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-[#C18CFF]/5 rounded-full blur-xl pointer-events-none" />
+              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#C18CFF] mb-4">
+                <Clock className="h-4 w-4 animate-pulse" />
+                <span>Đếm ngược THPT Quốc Gia 2027</span>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-2 text-center">
+                {[
+                  { label: "Ngày", value: timeLeft.days },
+                  { label: "Giờ", value: timeLeft.hours },
+                  { label: "Phút", value: timeLeft.minutes },
+                  { label: "Giây", value: timeLeft.seconds }
+                ].map((item) => (
+                  <div key={item.label} className="bg-[#0B0A13] border border-[#8C87A2]/10 rounded-xl p-2.5">
+                    <span className={cn("text-2xl font-bold text-[#F1EDF9]", jetbrainsMono.className)}>
+                      {String(item.value).padStart(2, '0')}
+                    </span>
+                    <span className="block text-[9px] uppercase tracking-wider text-[#8C87A2] mt-1">
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-4 text-center">
+                <p className="text-[10px] text-[#8C87A2]">
+                  Ngày thi dự kiến: <span className="text-[#C18CFF] font-semibold">11/06/2027</span>
+                </p>
+              </div>
+            </div>
+
             <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-xl">
               <div className="mb-4 flex items-center justify-between">
                 <div>
