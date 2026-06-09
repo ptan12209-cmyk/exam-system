@@ -70,7 +70,7 @@ export default function ProfilePage() {
 
   return (
     <StudentShell>
-      <StudentHeader name={fullName} studentClass={userClass || undefined} onLogout={handleLogout} />
+      <StudentHeader name={fullName} studentClass={userClass || undefined} onLogout={handleLogout} nickname={profile?.nickname} />
       <main className="mx-auto max-w-6xl px-4 pt-6 pb-24 sm:px-6 lg:px-8 lg:py-10">
         <section className="mb-8 grid gap-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
           <div>

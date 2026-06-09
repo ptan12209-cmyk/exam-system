@@ -117,7 +117,7 @@ export default function StudentProfileEditPage() {
 
   return (
     <StudentShell>
-      <StudentHeader name={formData.full_name} studentClass={formData.class} onLogout={handleLogout} />
+      <StudentHeader name={formData.full_name} studentClass={formData.class} onLogout={handleLogout} nickname={formData.nickname} />
       <main className="mx-auto max-w-3xl px-4 pt-6 pb-24 sm:px-6 lg:px-8 lg:py-10">
         <div className="mb-8 flex items-center gap-4">
           <Link href="/student/profile">
