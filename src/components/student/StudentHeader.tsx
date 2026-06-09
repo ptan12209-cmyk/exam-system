@@ -30,8 +30,6 @@ export function StudentHeader({ name, studentClass, onLogout }: Readonly<Student
         </Link>
 
         <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <div className="h-4 w-[1px] bg-[hsl(var(--border))]/40 mx-1 hidden sm:block" />
           <NotificationBell />
           <UserMenu 
             userName={name || ""} 

@@ -751,4 +751,42 @@ select option {
   color: hsl(var(--foreground)) !important;
   font-size: 0.875rem !important;
   padding: 0.5rem !important;
+}
+
+/* ============================================
+   Dream Engine Theme - Space X Style Override
+   ============================================ */
+.theme-dream-engine {
+  --background: 248 29% 6%; /* #0B0A13 */
+  --foreground: 260 38% 95%; /* #F1EDF9 */
+  --card: 250 24% 10%; /* #15131F */
+  --card-foreground: 260 38% 95%;
+  --popover: 250 24% 10%;
+  --popover-foreground: 260 38% 95%;
+  --border: 253 11% 58% / 0.15; /* #8C87A2 mờ */
+  --input: 253 11% 58% / 0.15;
+  --ring: 268 100% 77%; /* #C18CFF */
+  --primary: 268 100% 77%; /* #C18CFF */
+  --primary-foreground: 248 29% 6%;
+  --secondary: 250 24% 15%;
+  --secondary-foreground: 260 38% 95%;
+  --muted: 253 11% 58% / 0.15;
+  --muted-foreground: 253 11% 58%;
+  --accent: 268 100% 77% / 0.15;
+  --accent-foreground: 268 100% 77%;
+}
+
+/* Ép font-family và phong cách Instrument Serif nghệ thuật của X cho các tiêu đề lớn */
+.theme-dream-engine h1, 
+.theme-dream-engine .h1-style {
+  font-family: 'Instrument Serif', serif !important;
+  font-weight: 400 !important;
+}
+
+/* Áp dụng một số hiệu ứng mịn màng cho scrollbar trong theme */
+.theme-dream-engine ::-webkit-scrollbar-thumb {
+  background: rgba(193, 140, 255, 0.15) !important;
+}
+.theme-dream-engine ::-webkit-scrollbar-thumb:hover {
+  background: rgba(193, 140, 255, 0.3) !important;
 }
