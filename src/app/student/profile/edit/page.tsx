@@ -23,6 +23,7 @@ export default function StudentProfileEditPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [originalNickname, setOriginalNickname] = useState("")
+  const isX = originalNickname === "X"
   const [formData, setFormData] = useState({ 
     full_name: "", 
     nickname: "", 
@@ -81,19 +82,25 @@ export default function StudentProfileEditPage() {
       if (formData.nickname && !/^[a-zA-Z0-9_]+$/.test(formData.nickname)) throw new Error("Biệt danh chỉ được chứa chữ cái, số và dấu gạch dưới")
       
       const gradeNum = formData.grade ? parseInt(formData.grade) : null
-      if (gradeNum === null || isNaN(gradeNum) || gradeNum < 6 || gradeNum > 12) throw new Error("Vui lòng chọn khối lớp hợp lệ (6 - 12)")
-      if (!formData.class_suffix.trim()) throw new Error("Vui lòng nhập tên lớp của bạn")
+      if (!isX) {
+        if (gradeNum === null || isNaN(gradeNum) || gradeNum < 6 || gradeNum > 12) throw new Error("Vui lòng chọn khối lớp hợp lệ (6 - 12)")
+        if (!formData.class_suffix.trim()) throw new Error("Vui lòng nhập tên lớp của bạn")
+      } else {
+        if (formData.grade && (isNaN(gradeNum!) || gradeNum! < 6 || gradeNum! > 12)) throw new Error("Vui lòng chọn khối lớp hợp lệ (6 - 12)")
+      }
       
       if (formData.bio && formData.bio.length > 200) throw new Error("Giới thiệu tối đa 200 ký tự")
 
-      const fullClassName = `${gradeNum}${formData.class_suffix.trim().toUpperCase()}`
+      const fullClassName = (gradeNum && formData.class_suffix.trim()) 
+        ? `${gradeNum}${formData.class_suffix.trim().toUpperCase()}` 
+        : (isX ? null : `${gradeNum}${formData.class_suffix.trim().toUpperCase()}`)
 
       const { error: updateError } = await supabase.from("profiles").update({
         full_name: formData.full_name,
         nickname: formData.nickname || null,
         class: fullClassName,
         grade: gradeNum,
-        class_suffix: formData.class_suffix.trim().toUpperCase(),
+        class_suffix: formData.class_suffix.trim() ? formData.class_suffix.trim().toUpperCase() : null,
         bio: formData.bio || null,
         phone: formData.phone || null,
         avatar_url: formData.avatar_url || null,
@@ -152,15 +159,19 @@ export default function StudentProfileEditPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="grade-select" className="text-sm font-bold">Khối lớp <span className="text-red-500">*</span></Label>
+              <Label htmlFor="grade-select" className="text-sm font-bold">Khối lớp {!isX && <span className="text-red-500">*</span>}</Label>
               <select
                 id="grade-select"
                 value={formData.grade}
                 onChange={(e) => setFormData((prev) => ({ ...prev, grade: e.target.value }))}
                 className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 px-4 py-3 text-sm focus:border-[hsl(var(--foreground))] focus:ring-1 focus:ring-[hsl(var(--foreground))] outline-none transition-all duration-200"
-                required
+                required={!isX}
               >
-                <option value="" disabled>-- Chọn khối --</option>
+                {isX ? (
+                  <option value="">-- Không chọn (Mở khóa toàn bộ khối) --</option>
+                ) : (
+                  <option value="" disabled>-- Chọn khối --</option>
+                )}
                 {Array.from({ length: 7 }, (_, i) => i + 6).map((g) => (
                   <option key={g} value={g}>Khối {g}</option>
                 ))}
@@ -168,8 +179,8 @@ export default function StudentProfileEditPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="class_suffix" className="text-sm font-bold">Tên lớp <span className="text-red-500">*</span></Label>
-              <Input id="class_suffix" value={formData.class_suffix} onChange={(e) => setFormData((prev) => ({ ...prev, class_suffix: e.target.value }))} placeholder="vd: A1, B2" required className="rounded-xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))]" />
+              <Label htmlFor="class_suffix" className="text-sm font-bold">Tên lớp {!isX && <span className="text-red-500">*</span>}</Label>
+              <Input id="class_suffix" value={formData.class_suffix} onChange={(e) => setFormData((prev) => ({ ...prev, class_suffix: e.target.value }))} placeholder="vd: A1, B2" required={!isX} className="rounded-xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))]" />
             </div>
 
             <div className="space-y-2">
