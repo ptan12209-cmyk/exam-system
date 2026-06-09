@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
   },
   // Explicitly use webpack (avoid turbopack conflicts)
   turbopack: {},
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+      },
+    ],
+  },
   async headers() {
     return [
       {

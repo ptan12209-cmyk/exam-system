@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Upload, X, Loader2, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
@@ -17,6 +17,10 @@ export function AvatarUpload({ currentUrl, onUploadComplete, onRemove }: AvatarU
     const [error, setError] = useState<string | null>(null)
     const [isDragging, setIsDragging] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        setPreview(currentUrl || null)
+    }, [currentUrl])
 
     const handleFileSelect = async (file: File) => {
         setError(null)
