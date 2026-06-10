@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo Cáo Tổng Quan Hệ Thống - ExamHub</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #06050a;
+      --fg: #f3effa;
+      --sidebar-bg: #0c0a14;
+      --secondary: #131022;
+      --card-bg: rgba(19, 16, 34, 0.65);
+      --card-hover-bg: rgba(27, 23, 48, 0.8);
+      --primary: #c084fc;
+      --primary-glow: rgba(192, 132, 252, 0.15);
+      --accent: #818cf8;
+      --accent-glow: rgba(129, 140, 248, 0.1);
+      --border: rgba(192, 132, 252, 0.12);
+      --border-hover: rgba(192, 132, 252, 0.25);
+      --muted-fg: #94a3b8;
+      --code-bg: #090710;
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.15);
+      --warning: #f59e0b;
+      --warning-glow: rgba(245, 158, 11, 0.15);
+      --danger: #f43f5e;
+      --danger-glow: rgba(244, 63, 94, 0.15);
+      --radius: 1.25rem;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--primary-glow) transparent;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--primary-glow);
+      border-radius: 99px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(192, 132, 252, 0.3);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Sidebar Navigation */
+    aside {
+      width: 320px;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 100;
+      padding: 2.5rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .brand-icon {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #07060B;
+      font-size: 1.25rem;
+      box-shadow: 0 0 20px var(--primary-glow);
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .brand-text h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff, #e2d8ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.25em;
+      display: block;
+    }
+
+    .nav-container {
+      flex-grow: 1;
+      overflow-y: auto;
+      margin-bottom: 2rem;
+      padding-right: 0.25rem;
+    }
+
+    .nav-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item button {
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted-fg);
+      text-align: left;
+      padding: 0.85rem 1.15rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      transition: var(--transition);
+    }
+
+    .nav-item.active button,
+    .nav-item button:hover {
+      color: var(--fg);
+      background-color: var(--secondary);
+      border-color: var(--border);
+      box-shadow: inset 4px 0 0 var(--primary);
+      padding-left: 1.35rem;
+    }
+
+    .nav-item.active button {
+      background: rgba(192, 132, 252, 0.06);
+      border-color: rgba(192, 132, 252, 0.2);
+    }
+
+    .nav-footer {
+      font-size: 0.75rem;
+      color: var(--muted-fg);
+      text-align: center;
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+    }
+
+    /* Main Content Area */
+    main {
+      margin-left: 320px;
+      flex-grow: 1;
+      padding: 3.5rem 4rem;
+      max-width: 1300px;
+      transition: var(--transition);
+      overflow-y: auto;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Typography */
+    .title-group {
+      margin-bottom: 3rem;
+      position: relative;
+    }
+
+    .title-group::after {
+      content: '';
+      position: absolute;
+      top: -120px;
+      right: 5%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(192, 132, 252, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .title-badge {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--primary);
+      background-color: rgba(192, 132, 252, 0.08);
+      border: 1px solid rgba(192, 132, 252, 0.25);
+      padding: 0.4rem 0.9rem;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      margin-bottom: 1.25rem;
+    }
+
+    h1.sec-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 3.25rem;
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 40%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.75rem;
+    }
+
+    .sec-desc {
+      color: var(--muted-fg);
+      font-size: 1.15rem;
+      font-weight: 400;
+      max-width: 800px;
+    }
+
+    h3.section-header {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.65rem;
+      font-weight: 600;
+      margin: 3.5rem 0 1.25rem;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      color: #f3effa;
+    }
+
+    h3.section-header::before {
+      content: '';
+      display: inline-block;
+      width: 5px;
+      height: 24px;
+      background: linear-gradient(to bottom, var(--primary), var(--accent));
+      border-radius: 99px;
+    }
+
+    p.body-text {
+      color: #cbd5e1;
+      font-size: 1.025rem;
+      margin-bottom: 1.5rem;
+      text-align: justify;
+      line-height: 1.65;
+    }
+
+    p.body-text strong {
+      color: #fff;
+    }
+
+    /* Cards & Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-cols: 1fr 1fr;
+      gap: 1.75rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-cols: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      transition: var(--transition);
+      backdrop-filter: blur(16px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, var(--primary-glow), transparent);
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      background-color: var(--card-hover-bg);
+      border-color: var(--border-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .card-icon {
+      font-size: 2.25rem;
+      margin-bottom: 1.25rem;
+      background: rgba(255, 255, 255, 0.03);
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.65rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-desc {
+      color: var(--muted-fg);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+
+    /* Tables */
+    .table-container {
+      background-color: var(--secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 2.5rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    th {
+      background-color: rgba(12, 10, 20, 0.8);
+      padding: 1.1rem 1.4rem;
+      font-weight: 600;
+      color: var(--primary);
+      border-bottom: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    td {
+      padding: 1.1rem 1.4rem;
+      border-bottom: 1px solid rgba(192, 132, 252, 0.06);
+      color: #cbd5e1;
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    tr:hover td {
+      background-color: rgba(255, 255, 255, 0.015);
+      color: #f1f5f9;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    td strong {
+      color: #fff;
+    }
+
+    .badge-tag {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-primary { background: rgba(192, 132, 252, 0.1); color: var(--primary); border: 1px solid rgba(192, 132, 252, 0.25); }
+    .badge-success { background: var(--success-glow); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.25); }
+    .badge-warning { background: var(--warning-glow); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.25); }
+    .badge-danger { background: var(--danger-glow); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.25); }
+
+    /* Code Blocks */
+    .code-wrapper {
+      position: relative;
+      margin-bottom: 1.75rem;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .code-header {
+      background-color: rgba(12, 10, 20, 0.8);
+      padding: 0.5rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted-fg);
+    }
+
+    pre {
+      background-color: var(--code-bg);
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 0;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: #e2d8ff;
+      line-height: 1.5;
+    }
+
+    /* Timeline */
+    .timeline {
+      position: relative;
+      margin: 2.5rem 0;
+      padding-left: 2.5rem;
+      border-left: 2px dashed rgba(192, 132, 252, 0.2);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 2.5rem;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: calc(-2.5rem - 7px);
+      top: 6px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      box-shadow: 0 0 10px var(--primary);
+    }
+
+    .timeline-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+
+    /* Visual Flow Chart */
+    .flow-chart {
+      background-color: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      align-items: center;
+      margin: 2rem 0;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+    }
+
+    .flow-node {
+      border: 1px solid var(--border);
+      background-color: var(--secondary);
+      padding: 1rem 1.75rem;
+      border-radius: 12px;
+      text-align: center;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      transition: var(--transition);
+    }
+
+    .flow-node:hover {
+      border-color: var(--primary);
+      transform: scale(1.02);
+    }
+
+    .flow-node strong {
+      color: var(--primary);
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .flow-node span {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted-fg);
+      margin-top: 0.25rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .flow-arrow {
+      color: var(--primary);
+      font-size: 1.2rem;
+      animation: float-arrow 2s infinite ease-in-out;
+      user-select: none;
+    }
+
+    @keyframes float-arrow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(5px); }
+    }
+
+    /* Mobile Menu Toggle */
+    .menu-toggle {
+      display: none;
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background-color: var(--secondary);
+      border: 1px solid var(--border);
+      color: var(--fg);
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      z-index: 1000;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      transition: var(--transition);
+    }
+
+    .menu-toggle:hover {
+      background-color: var(--sidebar-bg);
+      border-color: var(--primary);
+    }
+
+    @media (max-width: 991px) {
+      aside {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+      aside.open {
+        transform: translateX(0);
+      }
+      main {
+        margin-left: 0;
+        padding: 2.5rem 1.5rem;
+      }
+      .menu-toggle {
+        display: flex;
+      }
+      .grid-2, .grid-3 {
+        grid-template-cols: 1fr;
+        gap: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mobile Menu Toggle -->
+  <button class="menu-toggle" id="menuBtn">☰</button>
+
+  <!-- Left Sidebar -->
+  <aside id="sidebar">
+    <div>
+      <div class="brand">
+        <div class="brand-icon">E</div>
+        <div class="brand-text">
+          <h2>ExamHub System</h2>
+          <span>Space X Engine</span>
+        </div>
+      </div>
+
+      <div class="nav-container">
+        <ul class="nav-menu">
+          <li class="nav-item active" data-tab="overview">
+            <button>📖 1. Tổng quan & Tầm nhìn</button>
+          </li>
+          <li class="nav-item" data-tab="architecture">
+            <button>🏗️ 2. Kiến trúc & Công nghệ</button>
+          </li>
+          <li class="nav-item" data-tab="schema">
+            <button>🗄️ 3. Cơ sở Dữ liệu Schema</button>
+          </li>
+          <li class="nav-item" data-tab="features">
+            <button>🎮 4. Đặc tả Tính năng</button>
+          </li>
+          <li class="nav-item" data-tab="workflows">
+            <button>🤖 5. Luồng Tích hợp AI</button>
+          </li>
+          <li class="nav-item" data-tab="security">
+            <button>🔐 6. Bảo mật RLS Policy</button>
+          </li>
+          <li class="nav-item" data-tab="operations">
+            <button>⚙️ 7. Vận hành & Khắc phục</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="nav-footer">
+      <p>ExamHub Engine v2.5</p>
+      <p style="margin-top: 0.25rem; color: var(--primary); font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;">Antigravity System Architect</p>
+    </div>
+  </aside>
+
+  <!-- Main Content View -->
+  <main>
+
+    <!-- SECTION 1: OVERVIEW -->
+    <div class="tab-content active" id="overview">
+      <div class="title-group">
+        <div class="title-badge">Strategic Vision</div>
+        <h1 class="sec-title">Tổng Quan & Tầm Nhìn</h1>
+        <p class="sec-desc">Nền tảng thi và luyện tập trực tuyến gamified kết hợp giám sát và phân tích thông minh.</p>
+      </div>
+
+      <p class="body-text">
+        <strong>ExamHub</strong> là một giải pháp EdTech đột phá nhằm tối ưu hóa toàn diện việc luyện tập, quản lý thi cử và đánh giá năng lực học tập. Hệ thống lấy triết lý <strong>Học-thông-qua-Chơi (Gamified Learning)</strong> làm giá trị cốt lõi, từ đó giải quyết đồng thời hai nỗi đau lớn trong giáo dục: sự thiếu động lực tự học từ học sinh và sự quá tải của giáo viên trong việc số hóa giáo án và kiểm soát tiến độ làm bài.
+      </p>
+
+      <h3 class="section-header">Các Trụ Cột Chiến Lược</h3>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon">🧠</div>
+          <div class="card-title">Số Hóa Đề Thi AI</div>
+          <div class="card-desc">Sử dụng Google Gemini AI bóc tách cấu trúc phức tạp của các tệp PDF đề thi thành dữ liệu trắc nghiệm JSON chuẩn hóa trong vòng 10 giây, giảm thiểu 90% nỗ lực nhập tay của giáo viên.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚡</div>
+          <div class="card-title">Giám Sát Realtime</div>
+          <div class="card-desc">Đài Giám Sát Học Tập cập nhật trạng thái làm bài, lịch sử hoạt động và liên kết thoại Discord thời gian thực giúp can thiệp sư phạm tức thì từ xa.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🏆</div>
+          <div class="card-title">Trò Chơi Hóa Học Tập</div>
+          <div class="card-desc">Thiết lập vòng lặp động lực thông qua hệ thống XP (điểm kinh nghiệm), Streak liên tục, thăng cấp Danh hiệu và Shop đổi phần thưởng nhằm tăng tính tự giác của học sinh.</div>
+        </div>
+      </div>
+
+      <h3 class="section-header">Ma Trận Đối Tượng Phân Quyền</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 25%;">Vai trò</th>
+              <th>Đặc quyền nghiệp vụ chính trên hệ thống</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Học sinh (Student)</strong></td>
+              <td>
+                <ul>
+                  <li>Luyện tập các đề thi được chỉ định, xem lại đáp án và lời giải chi tiết.</li>
+                  <li>Luyện kỹ năng <strong>IELTS Academic</strong> (Reading, Listening, Writing) với AI chấm điểm tự động.</li>
+                  <li>Tham gia <strong>Đấu trường PvP</strong> realtime để thi tài trực tiếp với bạn bè.</li>
+                  <li>Điểm danh hàng ngày nhận Streak XP, thăng cấp Danh hiệu, đổi quà trong Shop bằng XP tích lũy.</li>
+                  <li>Theo dõi thời khóa biểu học tập 24 ca và hoàn thành Checklist học tập được giao.</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Giáo viên (Teacher)</strong></td>
+              <td>
+                <ul>
+                  <li>Tạo đề thi (bằng tay hoặc thông qua công nghệ AI PDF Extractor) và quản lý ngân hàng đề thi.</li>
+                  <li>Quản lý và soạn ngân hàng câu hỏi dùng chung cho toàn bộ môn.</li>
+                  <li>Giám sát chi tiết học sinh qua <strong>Đài Giám Sát Học Tập</strong> thời gian thực (trạng thái, thời lượng thoại Discord).</li>
+                  <li>Cấu hình lịch trình giảng dạy, phát livestream (YouTube Live) và mở phòng đấu trường thi đấu.</li>
+                  <li>Xem báo cáo thống kê, phân tích phổ điểm bài nộp của từng học sinh và của toàn lớp học.</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Phụ huynh (Parent)</strong></td>
+              <td>
+                <ul>
+                  <li>Liên kết với tài khoản học sinh để theo dõi lịch sử và tiến độ học tập thực tế.</li>
+                  <li>Quan sát tình hình học tập realtime qua Đài Giám Sát dành riêng cho phụ huynh.</li>
+                  <li>Quản lý mua sắm các gói đề VIP phục vụ nâng cấp lộ trình học tập của con em.</li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECTION 2: ARCHITECTURE -->
+    <div class="tab-content" id="architecture">
+      <div class="title-group">
+        <div class="title-badge">Architecture & Specs</div>
+        <h1 class="sec-title">Kiến Trúc & Công Nghệ</h1>
+        <p class="sec-desc">Hạ tầng Serverless kết hợp cấu trúc Microservices chịu tải cao.</p>
+      </div>
+
+      <p class="body-text">
+        ExamHub vận hành trên mô hình kiến trúc <strong>3-Tier Serverless</strong> hiện đại, tách biệt hoàn toàn giữa tầng giao diện hiển thị (Client), tầng logic xử lý trung gian (Logic) và tầng lưu trữ dữ liệu (Data) để đảm bảo hệ thống có thể mở rộng quy mô một cách linh hoạt, đạt thời gian tải trang tối thiểu và duy trì độ ổn định lớn.
+      </p>
+
+      <h3 class="section-header">Mô Hình 3-Tier Chi Tiết</h3>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-title">Tier 1: Giao Diện Người Dùng (Client App)</div>
+          <p class="body-text" style="margin-bottom: 0.5rem;">
+            Được phát triển bằng <strong>Next.js 16.1</strong> (dưới sự hỗ trợ của trình biên dịch Turbopack) và <strong>React 19</strong>.
+          </p>
+          <p class="body-text" style="margin-bottom: 0.5rem;">
+            Toàn bộ giao diện được thiết kế theo trường phái hiện đại (Dark Theme chủ đạo, phối màu neon, hiệu ứng kính mờ glassmorphism và tối ưu hóa CSS Vanilla/Tailwind).
+          </p>
+          <p class="body-text">
+            <em>Phương thức triển khai:</em> Deploy tự động và phân phối thông qua Vercel Edge Network để tối ưu hóa hiệu suất truyền dẫn trên toàn cầu.
+          </p>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-title">Tier 2: Tầng Nghiệp Vụ & AI (Logic Services)</div>
+          <p class="body-text" style="margin-bottom: 0.5rem;">
+            <strong>Supabase Edge / PostgREST:</strong> Đóng vai trò là cầu nối API an toàn cho phép Client truy xuất cơ sở dữ liệu trực tiếp thông qua cơ chế Row Level Security (RLS) mà không cần xây dựng thêm các API CRUD truyền thống.
+          </p>
+          <p class="body-text" style="margin-bottom: 0.5rem;">
+            <strong>Python AI Worker:</strong> Một dịch vụ Microservice độc lập chạy trên hạ tầng đám mây Render. Sử dụng FastAPI kết hợp các thư viện xử lý tài liệu (pdfplumber) và tích hợp các mô hình ngôn ngữ lớn (LLMs) của Google Gemini thông qua các API chuyên biệt nhằm thực thi các tác vụ bóc tách tài liệu nặng và chấm điểm tự động.
+          </p>
+          <p class="body-text">
+            <strong>Discord Tracker Bot:</strong> Bot dịch vụ viết bằng Node.js (discord.js v14) chạy nền liên tục trên máy chủ VPS nhằm theo dõi hoạt động thoại của học sinh và gọi webhook đồng bộ về máy chủ Web.
+          </p>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-title">Tier 3: Cơ Sở Dữ Liệu & Lưu Trữ (Data Layer)</div>
+          <p class="body-text">
+            Hạ tầng dữ liệu quan hệ được xây dựng trên nền tảng <strong>PostgreSQL Serverless (Supabase Cloud)</strong>. Tích hợp trực tiếp các hàm logic nội bộ (Postgres Functions & Triggers) để tính toán điểm thưởng XP, tính chuỗi Streak và xử lý các sự kiện thăng cấp tự động ngay ở tầng cơ sở dữ liệu. Lưu trữ các tệp đề thi PDF gốc và tài liệu đa phương tiện trên <strong>Supabase Storage Buckets</strong>.
+          </p>
+        </div>
+      </div>
+
+      <h3 class="section-header">Danh Mục Công Nghệ (Tech Stack)</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 25%;">Cấu phần</th>
+              <th style="width: 35%;">Công nghệ sử dụng</th>
+              <th>Vai trò & Tác vụ nghiệp vụ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Frontend Framework</strong></td>
+              <td>Next.js 16.1 (App Router), React 19, TypeScript</td>
+              <td>Xây dựng kiến trúc định tuyến, quản lý trạng thái, Server-Side Rendering (SSR) và Client-Side Rendering (CSR).</td>
+            </tr>
+            <tr>
+              <td><strong>BaaS & Database</strong></td>
+              <td>Supabase Cloud (PostgreSQL 15+)</td>
+              <td>Cung cấp hạ tầng xác thực (Auth), CSDL quan hệ, Realtime WebSockets, Storage Buckets và quản lý phân quyền (RLS).</td>
+            </tr>
+            <tr>
+              <td><strong>AI Core Service</strong></td>
+              <td>Python 3.10, FastAPI, Google Gemini API, pdfplumber</td>
+              <td>Xử lý bóc tách cấu trúc đề thi PDF và thực hiện tự động chấm điểm bài viết tiếng Anh IELTS.</td>
+            </tr>
+            <tr>
+              <td><strong>Realtime Communication</strong></td>
+              <td>Supabase Realtime WebSockets</td>
+              <td>Đồng bộ bảng điểm đấu trường PvP realtime, các cảnh báo khẩn cấp và cập nhật trạng thái Đài Giám Sát.</td>
+            </tr>
+            <tr>
+              <td><strong>Discord Integration</strong></td>
+              <td>Node.js, Discord.js v14, Axios, Webhooks</td>
+              <td>Lắng nghe trạng thái kênh thoại của học sinh, tính thời gian tích lũy và đồng bộ tự động.</td>
+            </tr>
+            <tr>
+              <td><strong>Libraries & UI</strong></td>
+              <td>Tailwind CSS, Radix UI, Lucide Icons, Recharts</td>
+              <td>Xây dựng hệ thống UI đồng bộ, tối giản và hệ thống biểu đồ trực quan hóa số liệu học tập.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECTION 3: DATABASE SCHEMA -->
+    <div class="tab-content" id="schema">
+      <div class="title-group">
+        <div class="title-badge">Data Design</div>
+        <h1 class="sec-title">Cơ Sở Dữ Liệu Schema</h1>
+        <p class="sec-desc">Đặc tả chi tiết cấu trúc các bảng dữ liệu quan hệ trong Supabase PostgreSQL.</p>
+      </div>
+
+      <p class="body-text">
+        Cơ sở dữ liệu của ExamHub được tổ chức thành các nhóm thực thể nghiệp vụ rõ ràng, liên kết chặt chẽ qua các khóa ngoại (Foreign Keys) và được tối ưu hóa hiệu năng bằng các chỉ mục (Indexes). Dưới đây là đặc tả chi tiết của từng bảng trong hệ thống:
+      </p>
+
+      <h3 class="section-header">1. Nhóm Core CSDL & Học Tập</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%;">Bảng CSDL</th>
+              <th style="width: 35%;">Các trường chính & Kiểu dữ liệu</th>
+              <th>Mục đích & Mô tả nghiệp vụ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong><code>profiles</code></strong></td>
+              <td>
+                `id` (PK, uuid references auth.users),<br>
+                `role` (text: 'teacher'|'student'|'parent'|'admin'),<br>
+                `full_name` (text), `class` (text), `grade` (text),<br>
+                `discord_id` (text, unique)
+              </td>
+              <td>Lưu trữ thông tin chi tiết của người dùng liên kết với tài khoản xác thực Supabase Auth. Hỗ trợ liên kết tài khoản Discord qua `discord_id`.</td>
+            </tr>
+            <tr>
+              <td><strong><code>exams</code></strong></td>
+              <td>
+                `id` (PK, uuid), `title` (text), `description` (text),<br>
+                `duration` (integer), `total_questions` (integer),<br>
+                `subject` (text), `status` (text), `teacher_id` (uuid)
+              </td>
+              <td>Thông tin chung của một đề thi trắc nghiệm (môn học, thời gian làm bài, số câu hỏi, trạng thái nháp/xuất bản).</td>
+            </tr>
+            <tr>
+              <td><strong><code>questions</code></strong></td>
+              <td>
+                `id` (PK, uuid), `exam_id` (uuid references exams),<br>
+                `question_text` (text), `options` (jsonb),<br>
+                `correct_answer` (text), `order_index` (integer)
+              </td>
+              <td>Chi tiết từng câu hỏi trắc nghiệm thuộc một đề thi. Cột `options` chứa danh sách 4 đáp án dạng JSONB.</td>
+            </tr>
+            <tr>
+              <td><strong><code>submissions</code></strong></td>
+              <td>
+                `id` (PK, uuid), `exam_id` (uuid), `student_id` (uuid),<br>
+                `answers` (jsonb), `score` (numeric), `time_spent` (integer),<br>
+                `submitted_at` (timestamptz)
+              </td>
+              <td>Lịch sử và kết quả bài làm của học sinh. Có ràng buộc unique trên cặp `(exam_id, student_id)` để chống nộp bài lặp.</td>
+            </tr>
+            <tr>
+              <td><strong><code>spaced_repetition_cards</code></strong></td>
+              <td>
+                `id` (PK, uuid), `user_id` (uuid), `question_id` (uuid),<br>
+                `box` (integer), `next_review` (timestamptz),<br>
+                `history` (jsonb)
+              </td>
+              <td>Lưu trữ các thẻ nhớ học tập lặp lại ngắt quãng (Leitner System), tự động tạo khi học sinh làm sai một câu hỏi nào đó trong đề thi.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="section-header">2. Nhóm Giám Sát Ca Học (Discord Monitor)</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%;">Bảng CSDL</th>
+              <th style="width: 35%;">Các trường chính & Kiểu dữ liệu</th>
+              <th>Mục đích & Mô tả nghiệp vụ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong><code>study_sessions</code></strong></td>
+              <td>
+                `student_id` (PK, uuid references profiles),<br>
+                `status` (text CHECK: 'focusing'|'resting'|'offline'|<br>'discord_class'|'discord_afk'),<br>
+                `total_focus_seconds_today` (integer),<br>
+                `discord_duration` (integer), `discord_deafened` (boolean),<br>
+                `discord_last_active` (timestamptz)
+              </td>
+              <td>Theo dõi thời gian tự học thực tế của học sinh. Hỗ trợ giám sát thời lượng tham gia kênh thoại lớp học trên Discord và cảnh báo trạng thái treo máy (Deafened/Muted).</td>
+            </tr>
+            <tr>
+              <td><strong><code>study_tasks</code></strong></td>
+              <td>
+                `id` (PK, uuid), `student_id` (uuid), `title` (text),<br>
+                `subject` (text), `status` (text), `is_completed` (boolean),<br>
+                `completed_at` (timestamptz)
+              </td>
+              <td>Nhiệm vụ học tập cần hoàn thành trong ngày. Bot Discord có thể tự động duyệt hoàn thành nhiệm vụ này khi học sinh đủ thời lượng thoại.</td>
+            </tr>
+            <tr>
+              <td><strong><code>timetable_entries</code></strong></td>
+              <td>
+                `id` (PK, uuid), `student_id` (uuid), `day_of_week` (integer),<br>
+                `slot_index` (integer), `subject` (text), `is_checked` (boolean),<br>
+                `checked_at` (timestamptz)
+              </td>
+              <td>Quản lý lưới thời khóa biểu cá nhân của học sinh gồm 24 ca học định kỳ mỗi tuần. Tự động Reset về trạng thái chưa học vào 00:00 Thứ 2 hàng tuần.</td>
+            </tr>
+            <tr>
+              <td><strong><code>parent_student_links</code></strong></td>
+              <td>
+                `id` (PK, uuid), `parent_id` (uuid references profiles),<br>
+                `student_id` (uuid references profiles)
+              </td>
+              <td>Quản lý quan hệ liên kết giám sát giữa phụ huynh/giáo viên với tài khoản học sinh.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="section-header">3. Nhóm Đấu Trường PvP Realtime</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%;">Bảng CSDL</th>
+              <th style="width: 35%;">Các trường chính & Kiểu dữ liệu</th>
+              <th>Mục đích & Mô tả nghiệp vụ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong><code>arena_sessions</code></strong></td>
+              <td>
+                `id` (PK, uuid), `title` (text), `exam_id` (uuid),<br>
+                `status` (text: 'waiting'|'active'|'finished'),<br>
+                `created_by` (uuid), `started_at` (timestamptz)
+              </td>
+              <td>Phiên thi đấu trực tiếp được khởi tạo bởi giáo viên. Điều phối quá trình đếm ngược bắt đầu thi và kết thúc thi đấu.</td>
+            </tr>
+            <tr>
+              <td><strong><code>arena_results</code></strong></td>
+              <td>
+                `id` (PK, uuid), `session_id` (uuid), `student_id` (uuid),<br>
+                `score` (numeric), `correct_count` (integer),<br>
+                `total_questions` (integer), `time_spent` (integer)
+              </td>
+              <td>Kết quả thi đấu của từng học sinh trong đấu trường PvP để xếp hạng trao thưởng XP.</td>
+            </tr>
+            <tr>
+              <td><strong><code>exam_participants</code></strong></td>
+              <td>
+                `id` (PK, uuid), `exam_id` (uuid), `student_id` (uuid),<br>
+                `joined_at` (timestamptz)
+              </td>
+              <td>Ghi nhận danh sách học sinh đang truy cập vào phòng thi đấu của một đề thi cụ thể.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="section-header">4. Nhóm Mô-đun IELTS Practice</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%;">Bảng CSDL</th>
+              <th style="width: 35%;">Các trường chính & Kiểu dữ liệu</th>
+              <th>Mục đích & Mô tả nghiệp vụ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong><code>ielts_tests</code></strong></td>
+              <td>
+                `id` (PK, uuid), `title` (text), `description` (text),<br>
+                `skill` (text: 'reading'|'listening'|'writing'),<br>
+                `timer_mode` (text), `duration` (integer), `status` (text)
+              </td>
+              <td>Lưu thông tin đề thi chuẩn IELTS học thuật phân loại theo kỹ năng Reading, Listening hoặc Writing.</td>
+            </tr>
+            <tr>
+              <td><strong><code>ielts_sections</code></strong></td>
+              <td>
+                `id` (PK, uuid), `test_id` (uuid), `title` (text),<br>
+                `order_index` (integer), `passage_content` (text),<br>
+                `audio_url` (text), `writing_prompt` (text), `min_words` (integer)
+              </td>
+              <td>Nội dung các phần thi (Passage, Audio nghe hoặc Đề bài luận) tương ứng với từng kỹ năng thi IELTS.</td>
+            </tr>
+            <tr>
+              <td><strong><code>ielts_questions</code></strong></td>
+              <td>
+                `id` (PK, uuid), `section_id` (uuid), `question_number` (integer),<br>
+                `question_type` (text: 'multiple_choice'|'true_false_ng'|<br>'fill_blank'|'matching'|'short_answer'|...),<br>
+                `question_text` (text), `options` (jsonb), `correct_answer` (text)
+              </td>
+              <td>Các câu hỏi cụ thể trong phần thi Reading/Listening. Hỗ trợ đầy đủ các dạng bài thi thực tế của IELTS.</td>
+            </tr>
+            <tr>
+              <td><strong><code>ielts_submissions</code></strong></td>
+              <td>
+                `id` (PK, uuid), `test_id` (uuid), `student_id` (uuid),<br>
+                `answers` (jsonb), `writing_response` (text), `band_score` (numeric),<br>
+                `status` (text: 'in_progress'|'submitted'|'graded')
+              </td>
+              <td>Lưu trữ bài làm IELTS của học sinh. Đối với bài Writing sẽ lưu bài luận dài để chờ AI phân tích chấm điểm.</td>
+            </tr>
+            <tr>
+              <td><strong><code>ielts_writing_scores</code></strong></td>
+              <td>
+                `id` (PK, uuid), `submission_id` (uuid references ielts_submissions),<br>
+                `task_achievement` (numeric), `coherence_cohesion` (numeric),<br>
+                `lexical_resource` (numeric), `grammar_accuracy` (numeric),<br>
+                `overall_band` (numeric), `feedback_overall` (text),<br>
+                `sample_answer` (text)
+              </td>
+              <td>Phân tích điểm số chi tiết từ AI dựa trên 4 tiêu chí chấm thi IELTS Writing quốc tế cùng lời khuyên cải thiện cụ thể.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="section-header">5. Nhóm Gamification Engine (Trò chơi hóa)</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%;">Bảng CSDL</th>
+              <th style="width: 35%;">Các trường chính & Kiểu dữ liệu</th>
+              <th>Mục đích & Mô tả nghiệp vụ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong><code>daily_logins</code></strong></td>
+              <td>
+                `id` (PK, uuid), `user_id` (uuid),<br>
+                `login_date` (date), `streak` (integer)
+              </td>
+              <td>Lưu lịch sử đăng nhập mỗi ngày của học sinh để tự động tính chuỗi streak liên tục.</td>
+            </tr>
+            <tr>
+              <td><strong><code>achievements</code></strong></td>
+              <td>
+                `id` (PK, uuid), `title` (text), `description` (text),<br>
+                `icon_url` (text), `xp_reward` (integer)
+              </td>
+              <td>Danh mục các danh hiệu thiết lập trên hệ thống (Ví dụ: "Chiến thần tự học", "Luyện đề không mệt mỏi").</td>
+            </tr>
+            <tr>
+              <td><strong><code>user_achievements</code></strong></td>
+              <td>
+                `id` (PK, uuid), `user_id` (uuid),<br>
+                `achievement_id` (uuid), `unlocked_at` (timestamptz)
+              </td>
+              <td>Ghi nhận lịch sử đạt được danh hiệu của từng học sinh.</td>
+            </tr>
+            <tr>
+              <td><strong><code>student_stats</code></strong></td>
+              <td>
+                `student_id` (PK, uuid references profiles),<br>
+                `xp` (integer), `level` (integer), `streak` (integer),<br>
+                `total_study_minutes` (integer)
+              </td>
+              <td>Bảng lưu trữ thông số Gamification động của học sinh, được tự động cập nhật qua trigger.</td>
+            </tr>
+            <tr>
+              <td><strong><code>rewards</code></strong> & <code>student_rewards</code></td>
+              <td>
+                `id` (PK, uuid), `title` (text), `xp_cost` (integer),<br>
+                `stock` (integer) / `redeemed_at` (timestamptz)
+              </td>
+              <td>Danh sách các gói tài liệu học tập VIP hoặc quà tặng có trong Shop và lịch sử đổi thưởng của học sinh bằng XP.</td>
+            </tr>
+            <tr>
+              <td><strong><code>weekly_challenges</code></strong></td>
+              <td>
+                `id` (PK, uuid), `title` (text), `target_type` (text),<br>
+                `target_value` (integer), `xp_reward` (integer)
+              </td>
+              <td>Các thử thách tuần tự động làm mới nhằm kích thích tính thi đua giữa các học sinh.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="section-header">6. Nhóm Thương Mại Hóa & Đăng Ký</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%;">Bảng CSDL</th>
+              <th style="width: 35%;">Các trường chính & Kiểu dữ liệu</th>
+              <th>Mục đích & Mô tả nghiệp vụ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong><code>subscription_plans</code></strong></td>
+              <td>`id` (PK, uuid), `name` (text), `description` (text), `price` (numeric), `duration_days` (integer)</td>
+              <td>Các gói đăng ký thành viên VIP theo tháng/năm trên hệ thống.</td>
+            </tr>
+            <tr>
+              <td><strong><code>user_subscriptions</code></strong></td>
+              <td>`id` (PK, uuid), `user_id` (uuid), `plan_id` (uuid), `starts_at` (timestamptz), `ends_at` (timestamptz), `status` (text)</td>
+              <td>Theo dõi thời hạn và trạng thái kích hoạt gói dịch vụ VIP của từng người dùng.</td>
+            </tr>
+            <tr>
+              <td><strong><code>exam_packages</code></strong></td>
+              <td>`id` (PK, uuid), `title` (text), `description` (text), `price` (numeric), `subject` (text)</td>
+              <td>Gói đề thi nâng cao được khóa bản quyền thương mại để bán riêng lẻ.</td>
+            </tr>
+            <tr>
+              <td><strong><code>purchases</code></strong></td>
+              <td>`id` (PK, uuid), `user_id` (uuid), `package_id` (uuid), `amount` (numeric), `purchased_at` (timestamptz)</td>
+              <td>Giao dịch thanh toán mua gói đề của học sinh hoặc phụ huynh mua cho con.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECTION 4: FEATURES -->
+    <div class="tab-content" id="features">
+      <div class="title-group">
+        <div class="title-badge">Functional Specs</div>
+        <h1 class="sec-title">Đặc Tả Tính Năng Cốt Lõi</h1>
+        <p class="sec-desc">Mô tả chi tiết trải nghiệm nghiệp vụ và tương tác giao diện.</p>
+      </div>
+
+      <h3 class="section-header">1. Phân Hệ Dành Cho Học Sinh (Space X Student Desk)</h3>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🖥️ Bàn Học Dashboard Gamified</div>
+          <div class="card-desc">
+            Không gian học tập tích hợp thanh đo XP, Streak ngày, cấp độ hiện tại cùng hiệu ứng thăng cấp. Hiển thị bộ đếm ngược thời gian (Countdown) chính xác đến kỳ thi THPT Quốc gia để tạo áp lực học tập tích cực.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📅 Thời Khóa Biểu Tuần 24 Ca</div>
+          <div class="card-desc">
+            Bao gồm 24 ca học cố định được chia lưới khoa học. Học sinh có thể bấm check-in ca học trực tiếp. Dữ liệu tiến độ tự động làm mới về trạng thái ban đầu vào 00:00 sáng Thứ Hai hàng tuần (giờ Việt Nam).
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">✍️ Đề Thi & Chế Độ IELTS Luyện Tập</div>
+          <div class="card-desc">
+            Luyện tập đề trắc nghiệm chuẩn với giao diện trực quan, chia màn hình làm hai (bên trái hiển thị đề/modal, bên phải điền phiếu đáp án). Module IELTS hỗ trợ đầy đủ âm thanh nghe Listening và khung soạn thảo bài essay Writing.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🔄 Thẻ Nhớ Lặp Lại Spaced Repetition</div>
+          <div class="card-desc">
+            Tự động phát hiện các câu hỏi bị làm sai trong bài kiểm tra và đẩy vào hệ thống thẻ nhớ Leitner. Lên lịch ôn tập lặp đi lặp lại sau 1 ngày, 3 ngày, 7 ngày cho đến khi học sinh ghi nhớ sâu kiến thức.
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-header">2. Phân Hệ Dành Cho Giáo Viên (Teacher Control Center)</h3>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🤖 AI PDF Extractor & Editor</div>
+          <div class="card-desc">
+            Tải lên tệp đề thi PDF, hệ thống tự động bóc tách bằng Gemini AI và hiển thị ra một trình soạn thảo câu hỏi thông minh. Giáo viên có thể tùy biến chỉnh sửa, thêm hình ảnh minh họa trước khi lưu vào ngân hàng đề thi.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📡 Đài Giám Sát Học Tập Realtime</div>
+          <div class="card-desc">
+            Theo dõi danh sách học sinh trực quan. Hiển thị trạng thái realtime của học sinh (đang làm đề gì, tiến độ câu mấy, thời gian tự học trong ngày). Đồng bộ trực tiếp với phòng thoại Discord để hiển thị trạng thái và thời lượng cụ thể.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📈 Phân Tích & Phổ Điểm Lớp Học</div>
+          <div class="card-desc">
+            Hệ thống biểu đồ Recharts thể hiện phổ điểm thi, tỷ lệ trả lời đúng/sai của từng câu hỏi trong đề để giáo viên biết được phần kiến thức học sinh bị hổng nhiều nhất, từ đó điều chỉnh giáo án.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📺 Live Class & Đấu Trường PvP</div>
+          <div class="card-desc">
+            Tích hợp YouTube Live Embed và khung thảo luận trực tiếp. Giáo viên có thể khởi động Đấu trường PvP cho toàn bộ học sinh trong phòng tham gia giải đề nhanh tranh tài bảng xếp hạng.
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-header">3. Đài Giám Sát Học Tập Không Camera (Chính Thức)</h3>
+      <p class="body-text">
+        Để tôn trọng sự riêng tư tối đa và đảm bảo hiệu năng tối ưu nhất trên trình duyệt, <strong>chức năng AI Giám sát Camera & Cảnh báo gương mặt đã được loại bỏ hoàn toàn</strong>. Thay vào đó, giáo viên và phụ huynh sẽ thực hiện quan sát qua các thông số kỹ thuật số phi hình ảnh:
+      </p>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 25%;">Trạng thái giám sát</th>
+              <th style="width: 20%;">Màu sắc nhận diện</th>
+              <th>Cơ chế phát hiện và xử lý cảnh báo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Đang tự học (Focusing)</strong></td>
+              <td><span class="badge-tag badge-primary">Xanh tím</span></td>
+              <td>Học sinh đang mở trang web học tập, làm đề thi hoặc xem tài liệu học tập chủ động. Biểu đồ đếm giây tăng dần liên tục.</td>
+            </tr>
+            <tr>
+              <td><strong>Trong phòng Discord (Discord Class)</strong></td>
+              <td><span class="badge-tag badge-success">Xanh lá</span></td>
+              <td>Học sinh đã kết nối và đang online nghe giảng trong kênh thoại Discord được cấu hình. Hiển thị số phút nghe thực tế.</td>
+            </tr>
+            <tr>
+              <td><strong>Treo máy Discord (Discord AFK)</strong></td>
+              <td><span class="badge-tag badge-warning">Cam</span></td>
+              <td>Học sinh đang ở trong kênh thoại Discord nhưng thực hiện hành động tắt tai nghe (Deafened) hoặc tắt tiếng (Muted). Giao diện Đài Giám Sát nhấp nháy dòng cảnh báo màu cam và phát âm thanh cảnh báo tới giáo viên.</td>
+            </tr>
+            <tr>
+              <td><strong>Ngoại tuyến (Offline)</strong></td>
+              <td><span class="badge-tag badge-danger">Đỏ</span></td>
+              <td>Học sinh không mở trang web và không có mặt trên kênh thoại học tập Discord.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECTION 5: WORKFLOWS -->
+    <div class="tab-content" id="workflows">
+      <div class="title-group">
+        <div class="title-badge">AI & Webhook Pipelines</div>
+        <h1 class="sec-title">Luồng Tích Hợp AI & Webhook</h1>
+        <p class="sec-desc">Đặc tả chi tiết các tiến trình tự động hóa thông minh kết hợp trong hệ thống.</p>
+      </div>
+
+      <h3 class="section-header">1. Quy Trình Bóc Tách Đề Thi PDF Qua Gemini AI</h3>
+      <p class="body-text">
+        Luồng nghiệp vụ cho phép giáo viên chuyển đổi trực tiếp một tệp đề thi dạng PDF hoặc file hình ảnh thành ngân hàng câu hỏi trắc nghiệm hoàn chỉnh:
+      </p>
+      
+      <div class="flow-chart">
+        <div class="flow-node">
+          <strong>Bước 1: Tải tệp lên Storage</strong>
+          <span>Giáo viên upload PDF -> Lưu vào bucket 'exam-pdfs' -> Trả về URL</span>
+        </div>
+        <div class="flow-arrow">▼</div>
+        <div class="flow-node">
+          <strong>Bước 2: POST request sang Python Worker</strong>
+          <span>Next.js Client gửi POST kèm file URL sang API Python (Render)</span>
+        </div>
+        <div class="flow-arrow">▼</div>
+        <div class="flow-node">
+          <strong>Bước 3: Trích xuất và cấu trúc hóa bằng LLM</strong>
+          <span>Worker chạy pdfplumber -> Chuyển thành text -> Gọi Gemini 2.5 Pro với JSON Schema</span>
+        </div>
+        <div class="flow-arrow">▼</div>
+        <div class="flow-node">
+          <strong>Bước 4: Phản hồi JSON & Lưu Database</strong>
+          <span>Trả về JSON -> Tự động điền vào Form UI -> Giáo viên kiểm tra lại rồi lưu vào Postgres</span>
+        </div>
+      </div>
+
+      <h3 class="section-header">2. Quy Trình Giám Sát Kênh Thoại Discord</h3>
+      <p class="body-text">
+        Theo dõi thời gian tham gia lớp học qua kênh thoại Discord của học sinh và tự động cập nhật tiến trình hoàn thành bài tập trên web:
+      </p>
+
+      <div class="flow-chart">
+        <div class="flow-node">
+          <strong>Bước 1: Bot Discord lắng nghe VoiceStateUpdate</strong>
+          <span>Bot Discord bắt đầu ghi nhận thời điểm Join/Leave/Mute/Deafen của User</span>
+        </div>
+        <div class="flow-arrow">▼</div>
+        <div class="flow-node">
+          <strong>Bước 2: Tính thời lượng và Gọi Webhook</strong>
+          <span>Định kỳ 30 giây/lần, Bot tính số giây tích lũy và POST Webhook tới API Next.js</span>
+        </div>
+        <div class="flow-arrow">▼</div>
+        <div class="flow-node">
+          <strong>Bước 3: Xác thực Webhook & Cập nhật CSDL</strong>
+          <span>API Next.js kiểm tra DISCORD_SYNC_SECRET, cập nhật bảng study_sessions qua Service Role Key</span>
+        </div>
+        <div class="flow-arrow">▼</div>
+        <div class="flow-node">
+          <strong>Bước 4: Đồng bộ Websocket Realtime & Duyệt Checklist</strong>
+          <span>Supabase đẩy Websocket -> Giao diện Đài Giám Sát đổi màu. Nếu >= 130 phút -> Auto tích hoàn thành ca học</span>
+        </div>
+      </div>
+
+      <h3 class="section-header">3. Luồng AI Chấm Điểm Bài Luận IELTS Writing</h3>
+      <p class="body-text">
+        Hệ thống tự động đánh giá bài essay của học sinh theo thang điểm 9.0 tiêu chuẩn IELTS quốc tế:
+      </p>
+
+      <div class="flow-chart">
+        <div class="flow-node">
+          <strong>Bước 1: Nộp bài luận</strong>
+          <span>Học sinh viết luận trực tiếp trên web -> Nộp vào bảng ielts_submissions</span>
+        </div>
+        <div class="flow-arrow">▼</div>
+        <div class="flow-node">
+          <strong>Bước 2: Gửi yêu cầu chấm điểm sang API AI</strong>
+          <span>Next.js API gọi API Gemini 2.0 Flash kèm theo Đề bài, Bài luận và Tiêu chí chấm chi tiết</span>
+        </div>
+        <div class="flow-arrow">▼</div>
+        <div class="flow-node">
+          <strong>Bước 3: Đánh giá 4 tiêu chí IELTS chuẩn</strong>
+          <span>AI phân tích lỗi sai ngữ pháp, từ vựng, tính liên kết mạch lạc và mức độ hoàn thành yêu cầu</span>
+        </div>
+        <div class="flow-arrow">▼</div>
+        <div class="flow-node">
+          <strong>Bước 4: Lưu kết quả và Hiển thị phản hồi</strong>
+          <span>Lưu điểm chi tiết vào bảng ielts_writing_scores -> Hiển thị lời khuyên và bài viết mẫu tham khảo</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 6: SECURITY -->
+    <div class="tab-content" id="security">
+      <div class="title-group">
+        <div class="title-badge">Security Architecture</div>
+        <h1 class="sec-title">Chính Sách Bảo Mật RLS</h1>
+        <p class="sec-desc">Cô lập dữ liệu nghiêm ngặt ngay dưới tầng CSDL với Row Level Security (RLS).</p>
+      </div>
+
+      <p class="body-text">
+        ExamHub áp dụng triệt để chính sách bảo mật <strong>Row Level Security (RLS)</strong> trực tiếp trong PostgreSQL của Supabase. Điều này đảm bảo rằng mỗi yêu cầu từ trình duyệt của học sinh hay giáo viên đều được lọc và xác thực quyền hạn trực tiếp dưới database thông qua mã khóa JWT của tài khoản, ngăn chặn hoàn toàn việc rò rỉ dữ liệu chéo ngay cả khi kẻ xấu biết được URL endpoint của cơ sở dữ liệu.
+      </p>
+
+      <h3 class="section-header">Bảng Chính Sách RLS Cho Từng Phân Hệ</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%;">Bảng CSDL</th>
+              <th style="width: 35%;">Chính sách RLS áp dụng (Postgres Rules)</th>
+              <th>Mục đích bảo vệ an toàn dữ liệu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong><code>profiles</code></strong></td>
+              <td>`auth.uid() = id`</td>
+              <td>Người dùng chỉ được quyền cập nhật thông tin cá nhân của chính mình. Cho phép người dùng khác SELECT để hiển thị tên.</td>
+            </tr>
+            <tr>
+              <td><strong><code>exams</code></strong></td>
+              <td>
+                `SELECT`: `status = 'published'` hoặc giáo viên tạo đề.<br>
+                `INSERT/UPDATE/DELETE`: tài khoản có role `teacher` hoặc `admin`.
+              </td>
+              <td>Học sinh chỉ được quyền xem các đề thi đã xuất bản. Quyền tạo, chỉnh sửa và xóa đề hoàn toàn thuộc về giáo viên.</td>
+            </tr>
+            <tr>
+              <td><strong><code>submissions</code></strong></td>
+              <td>
+                `SELECT`: `student_id = auth.uid()` hoặc người dùng có vai trò `teacher`.<br>
+                `INSERT`: `student_id = auth.uid()`.
+              </td>
+              <td>Học sinh chỉ được phép làm đề và xem lại kết quả bài nộp của chính mình. Giáo viên được quyền xem tất cả bài nộp để chấm điểm và thống kê.</td>
+            </tr>
+            <tr>
+              <td><strong><code>ielts_writing_scores</code></strong></td>
+              <td>
+                `SELECT`: xem điểm của chính mình thông qua liên kết submissions hoặc là giáo viên.<br>
+                `INSERT/UPDATE`: Chỉ giáo viên hoặc do API chấm điểm (vượt qua kiểm tra bảo mật).
+              </td>
+              <td>Bảo vệ quyền riêng tư điểm số IELTS của học sinh. Học sinh chỉ có quyền đọc feedback và bài mẫu sau khi đã được chấm.</td>
+            </tr>
+            <tr>
+              <td><strong><code>parent_student_links</code></strong></td>
+              <td>`parent_id = auth.uid()`</td>
+              <td>Phụ huynh/giáo viên chỉ được phép truy vấn dữ liệu liên kết học sinh của chính họ quản lý, ngăn chặn xem trộm học sinh khác.</td>
+            </tr>
+            <tr>
+              <td><strong><code>study_sessions</code></strong></td>
+              <td>`student_id = auth.uid()` hoặc người dùng là `teacher`.</td>
+              <td>Chỉ cho phép học sinh tự cập nhật thời gian tự học của mình, và cho phép giáo viên liên kết đọc để hiển thị lên Đài Giám Sát.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="section-header">Cơ Chế Bảo Mật Tích Hợp Webhook</h3>
+      <p class="body-text">
+        Đối với các tác vụ đồng bộ chạy tự động từ Discord Bot bên ngoài:
+      </p>
+      <ul>
+        <li>Cơ chế RLS thông thường sẽ chặn đứng các API cập nhật từ các máy chủ bên ngoài do không có phiên đăng nhập của người dùng.</li>
+        <li>Hệ thống giải quyết an toàn bằng cách sử dụng <strong>Supabase Service Role Key</strong> (Khóa quản trị hệ thống tối cao) chỉ cấu hình và chạy ở phía Server-side.</li>
+        <li>Đồng thời, mỗi yêu cầu gửi đi từ Bot Discord bắt buộc phải kèm theo mã băm <strong>`DISCORD_SYNC_SECRET`</strong> ở header. API Router sẽ xác thực mã này trước khi thực thi truy vấn để loại bỏ các cuộc tấn công giả mạo dữ liệu.</li>
+      </ul>
+    </div>
+
+    <!-- SECTION 7: OPERATIONS -->
+    <div class="tab-content" id="operations">
+      <div class="title-group">
+        <div class="title-badge">Ops & Maintenance</div>
+        <h1 class="sec-title">Vận Hành & Khắc Phục</h1>
+        <p class="sec-desc">Hướng dẫn khởi chạy local, cấu hình cloud và các lưu ý kỹ thuật khi triển khai thực tế.</p>
+      </div>
+
+      <h3 class="section-header">1. Khởi Chạy Local (Local Development)</h3>
+      <p class="body-text">Yêu cầu cài đặt sẵn: Node.js 18+, Python 3.9+ và Git.</p>
+
+      <p><strong>A. Chạy Frontend Next.js:</strong></p>
+      <div class="code-wrapper">
+        <div class="code-header"><span>Terminal</span><span>bash</span></div>
+        <pre><code># Cài đặt toàn bộ thư viện dependencies
+npm install
+
+# Khởi chạy dev server với Turbopack cực nhanh
+npm run dev</code></pre>
+      </div>
+
+      <p><strong>B. Chạy Python AI Worker:</strong></p>
+      <div class="code-wrapper">
+        <div class="code-header"><span>Terminal - Thư mục worker</span><span>bash</span></div>
+        <pre><code>cd worker
+
+# Khởi tạo và kích hoạt môi trường ảo Python
+python -m venv venv
+.\venv\Scripts\Activate.ps1   # Trên Windows
+source venv/bin/activate       # Trên macOS/Linux
+
+# Cài đặt dependencies
+pip install -r requirements.txt
+
+# Khởi chạy máy chủ FastAPI trên cổng 8000
+uvicorn main:app --reload --port 8000</code></pre>
+      </div>
+
+      <p><strong>C. Chạy Discord Tracker Bot:</strong></p>
+      <div class="code-wrapper">
+        <div class="code-header"><span>Terminal - scripts/discord-bot</span><span>bash</span></div>
+        <pre><code>cd scripts/discord-bot
+npm install
+node tracker.js</code></pre>
+      </div>
+
+      <h3 class="section-header">2. Bảng Biến Môi Trường Hệ Thống (Environment Variables)</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 25%;">Tên biến</th>
+              <th style="width: 20%;">Phạm vi áp dụng</th>
+              <th>Mô tả tác vụ & giá trị cấu hình</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>`NEXT_PUBLIC_SUPABASE_URL`</strong></td>
+              <td>Frontend & API Router</td>
+              <td>URL Endpoint kết nối tới dịch vụ cơ sở dữ liệu Supabase của dự án.</td>
+            </tr>
+            <tr>
+              <td><strong>`NEXT_PUBLIC_SUPABASE_ANON_KEY`</strong></td>
+              <td>Frontend Client</td>
+              <td>Khóa ẩn danh công khai dùng để thực thi các lệnh gọi RLS trực tiếp từ phía trình duyệt.</td>
+            </tr>
+            <tr>
+              <td><strong>`SUPABASE_SERVICE_ROLE_KEY`</strong></td>
+              <td>API Router (Server-side)</td>
+              <td>Khóa bảo mật tối cao dùng để ghi đè RLS (Bypass RLS) phục vụ đồng bộ tự động thời lượng từ Discord Webhook. <strong>Tuyệt đối không để lộ phía Client.</strong></td>
+            </tr>
+            <tr>
+              <td><strong>`DISCORD_SYNC_SECRET`</strong></td>
+              <td>API Router & Discord Bot</td>
+              <td>Mật mã khóa do giáo viên tự thiết lập để xác minh tính hợp lệ của Webhook gửi đi từ Bot Discord.</td>
+            </tr>
+            <tr>
+              <td><strong>`GEMINI_API_KEY`</strong></td>
+              <td>FastAPI Python Worker</td>
+              <td>Khóa kết nối với trí tuệ nhân tạo của Google Gemini để thực thi bóc tách PDF đề thi và chấm điểm IELTS Writing.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="section-header">3. Hướng Dẫn Khắc Phục Sự Cố Kỹ Thuật (Troubleshooting Guide)</h3>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🌐 Lỗi Google Font Fetching Khi Build</div>
+          <div class="card-desc">
+            <strong>Nguyên nhân:</strong> Khi biên dịch Next.js trên Vercel hoặc môi trường offline, `next/font/google` sẽ cố gắng tải font trực tiếp từ Google API. Nếu kết nối mạng bị chặn, quá trình build sẽ thất bại lập tức với lỗi `npm run build exited with 1`.
+            <br><br>
+            <strong>Giải pháp khắc phục:</strong> Chuyển sang import CSS Google Fonts trực tiếp bằng `@import` hoặc `<link>` tại tệp client-runtime. Trong mã nguồn, thay thế bằng mock font variables để giữ nguyên kiểu typescript (Ví dụ: `const inter = { className: 'font-inter' }`).
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🕒 Lỗi Hook Temporal Dead Zone (TDZ)</div>
+          <div class="card-desc">
+            <strong>Nguyên nhân:</strong> Khai báo hàm callback hoặc biến (như `fetchLinkedStudents` bằng useCallback) bên dưới hook `useEffect` có sử dụng hàm đó trong mảng dependency array. Trình biên dịch Next.js strict mode sẽ báo lỗi biến được dùng trước khi khởi tạo.
+            <br><br>
+            <strong>Giải pháp khắc phục:</strong> Di chuyển toàn bộ các hàm callback sử dụng `useCallback` hoặc `useState` lên đầu component, nằm phía trên các hiệu ứng `useEffect` để đảm bảo chúng luôn được định nghĩa đầy đủ trước khi thực thi.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🔒 Lỗi Lộ Khóa Service Role Key</div>
+          <div class="card-desc">
+            <strong>Nguyên nhân:</strong> Nhập nhầm biến `SUPABASE_SERVICE_ROLE_KEY` hoặc `SERVICE_ROLE_KEY` có tiền tố `NEXT_PUBLIC_` dẫn đến việc khóa quản trị tối cao bị phơi bày trên trình duyệt của người dùng. Kẻ xấu có thể bypass hoàn toàn RLS.
+            <br><br>
+            <strong>Giải pháp khắc phục:</strong> Chỉ sử dụng biến `SUPABASE_SERVICE_ROLE_KEY` không có tiền tố `NEXT_PUBLIC_` và chỉ tham chiếu nó trong các tệp tin API Route nằm trong thư mục `/src/app/api/...` nơi mã nguồn chạy trên server.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🛠️ Lỗi Strict Type Map Parameter</div>
+          <div class="card-desc">
+            <strong>Nguyên nhân:</strong> Trình biên dịch TypeScript báo lỗi implicit type `any` trên các tham số của vòng lặp `map(...)` khi lấy dữ liệu từ Supabase JSONB hoặc các bảng liên kết chưa được khai báo interface chuẩn.
+            <br><br>
+            <strong>Giải pháp khắc phục:</strong> Định nghĩa rõ ràng kiểu dữ liệu của tham số bằng cách ép kiểu hoặc sử dụng Utility Types của TypeScript (Ví dụ: `tasksData.map((t: Omit<StudyTask, "status"> & { status: string | null }) => ...)`).
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // Tab switching logic
+    const navItems = document.querySelectorAll('.nav-item');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.getElementById('menuBtn');
+
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        // Remove active class from all nav items
+        navItems.forEach(nav => nav.classList.remove('active'));
+        // Add active class to clicked item
+        item.classList.add('active');
+
+        // Hide all tab contents
+        tabContents.forEach(content => content.classList.remove('active'));
+        // Show target tab content
+        const tabId = item.getAttribute('data-tab');
+        document.getElementById(tabId).classList.add('active');
+
+        // Smooth scroll to top of main content
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Close sidebar on mobile after clicking
+        if (window.innerWidth <= 991) {
+          sidebar.classList.remove('open');
+          menuBtn.textContent = '☰';
+        }
+      });
+    });
+
+    // Mobile menu toggle logic
+    menuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      if (sidebar.classList.contains('open')) {
+        menuBtn.textContent = '✕';
+      } else {
+        menuBtn.textContent = '☰';
+      }
+    });
+
+    // Close sidebar on resize if window becomes large
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 991) {
+        sidebar.classList.remove('open');
+        menuBtn.textContent = '☰';
+      }
+    });
+  </script>
+</body>
+</html>
