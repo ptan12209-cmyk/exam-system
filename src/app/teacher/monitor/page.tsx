@@ -59,6 +59,13 @@ interface Submission {
   }
 }
 
+interface TeacherProfile {
+  id: string
+  full_name: string | null
+  email: string | null
+  role: string
+}
+
 const PRIORITIES = [
   { value: "low", label: "Thấp", color: "bg-slate-500/10 text-slate-500 border-slate-500/20" },
   { value: "medium", label: "Trung bình", color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
@@ -77,7 +84,7 @@ export default function TeacherMonitorPage() {
   const supabase = useMemo(() => createClient(), [])
 
   // State
-  const [teacherProfile, setTeacherProfile] = useState<any>(null)
+  const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null)
   const [students, setStudents] = useState<StudentProfile[]>([])
   const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null)
   const [session, setSession] = useState<StudySession | null>(null)
@@ -101,12 +108,7 @@ export default function TeacherMonitorPage() {
   const [taskLoading, setTaskLoading] = useState(false)
   const [taskError, setTaskError] = useState<string | null>(null)
 
-  // AI Face Proctoring & Active Alert States
-  const [latestFaceLog, setLatestFaceLog] = useState<any>(null)
-  const [alertMsgInput, setAlertMsgInput] = useState("")
-  const [sendingAlert, setSendingAlert] = useState(false)
-  const [isStudentFaceRegistered, setIsStudentFaceRegistered] = useState(false)
-  const [registeringFace, setRegisteringFace] = useState(false)
+
 
   // Fetch initial profile and linked students list
   useEffect(() => {
@@ -124,10 +126,10 @@ export default function TeacherMonitorPage() {
     }
 
     init()
-  }, [router, supabase])
+  }, [router, supabase, fetchLinkedStudents])
 
   // Fetch linked students
-  const fetchLinkedStudents = async (userId: string) => {
+  const fetchLinkedStudents = useCallback(async (userId: string) => {
     const { data: links, error } = await supabase
       .from("parent_student_links")
       .select(`
@@ -141,14 +143,14 @@ export default function TeacherMonitorPage() {
       return
     }
 
-    const studentsList = (links || []).map((l: any) => l.profiles).filter(Boolean) as StudentProfile[]
+    const studentsList = (links || []).map((l: unknown) => (l as { profiles: StudentProfile | null }).profiles).filter(Boolean) as StudentProfile[]
     setStudents(studentsList)
     
     // Auto-select first student if available and none selected yet
     if (studentsList.length > 0 && !selectedStudent) {
       setSelectedStudent(studentsList[0])
     }
-  }
+  }, [supabase, selectedStudent])
 
   // Load student detailed data
   const fetchStudentData = useCallback(async (studentId: string) => {
@@ -172,9 +174,9 @@ export default function TeacherMonitorPage() {
 
       if (tasksData) {
         setTasks(
-          tasksData.map((t: any) => ({
+          tasksData.map((t) => ({
             ...t,
-            status: t.status || (t.is_completed ? "done" : "todo")
+            status: (t.status || (t.is_completed ? "done" : "todo")) as StudyTask["status"]
           })) as StudyTask[]
         )
       } else {
@@ -188,27 +190,8 @@ export default function TeacherMonitorPage() {
         .eq("student_id", studentId)
         .order("submitted_at", { ascending: false })
 
-      setSubmissions((subsData || []) as any[])
+      setSubmissions((subsData || []) as Submission[])
 
-      // 4. Fetch latest face monitor log
-      const { data: faceLogData } = await supabase
-        .from("face_monitor_logs")
-        .select("*")
-        .eq("student_id", studentId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      
-      setLatestFaceLog(faceLogData)
-
-      // 5. Check if student has face registration
-      const { data: regFace } = await supabase
-        .from("student_face_registrations")
-        .select("id")
-        .eq("student_id", studentId)
-        .maybeSingle()
-      
-      setIsStudentFaceRegistered(!!regFace)
 
     } catch (err) {
       console.error("Error fetching student details:", err)
@@ -222,25 +205,18 @@ export default function TeacherMonitorPage() {
     if (selectedStudent) {
       fetchStudentData(selectedStudent.id)
 
-      // Realtime listener for focus session and face log changes
+      // Realtime listener for focus session changes
       const channel = supabase
         .channel(`teacher_monitor_${selectedStudent.id}`)
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "study_sessions", filter: `student_id=eq.${selectedStudent.id}` },
-          (payload: any) => {
+          (payload: { eventType: string; new: StudySession }) => {
             if (payload.eventType === "DELETE") {
               setSession(null)
             } else {
-              setSession(payload.new as StudySession)
+              setSession(payload.new)
             }
-          }
-        )
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "face_monitor_logs", filter: `student_id=eq.${selectedStudent.id}` },
-          (payload: any) => {
-            setLatestFaceLog(payload.new)
           }
         )
         .subscribe()
@@ -252,135 +228,10 @@ export default function TeacherMonitorPage() {
       setSession(null)
       setTasks([])
       setSubmissions([])
-      setLatestFaceLog(null)
     }
   }, [selectedStudent, fetchStudentData, supabase])
 
-  // Send active alert to student via Database (highly reliable and persistent) and Broadcast
-  const handleSendActiveAlert = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedStudent) return
-    setSendingAlert(true)
 
-    try {
-      const alertMsg = alertMsgInput.trim() || "Tập trung học đi em trai ơi! Người anh đang quan sát đó!"
-      
-      // 1. Update the database study_sessions row (persistent and 100% reliable)
-      const { error } = await supabase
-        .from("study_sessions")
-        .update({
-          active_alert: alertMsg,
-          last_status_change: new Date().toISOString()
-        })
-        .eq("student_id", selectedStudent.id)
-
-      if (error) throw error
-
-      // 2. Also send broadcast as a fallback/immediate alert channel
-      const channel = supabase.channel(`observatory:${selectedStudent.id}`)
-      await channel.subscribe(async (status: string) => {
-        if (status === "SUBSCRIBED") {
-          await channel.send({
-            type: "broadcast",
-            event: "active_alert",
-            payload: { 
-              message: alertMsg,
-              timestamp: new Date().toISOString()
-            }
-          })
-        }
-      })
-
-      setAlertMsgInput("")
-      alert("Đã phát cảnh báo cưỡng chế tức thời tới em trai!")
-    } catch (err: any) {
-      console.error("Lỗi gửi cảnh báo:", err)
-      alert("Lỗi khi gửi cảnh báo: " + err.message)
-    } finally {
-      setSendingAlert(false)
-    }
-  }
-
-  // Upload student face registration from teacher dashboard (Lựa chọn B)
-  const handleUploadFaceRegistration = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !selectedStudent) return
-    
-    setRegisteringFace(true)
-    try {
-      // Compress image client-side to resolve 413 payload too large error
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = (event) => {
-          const img = new Image()
-          img.onload = () => {
-            const canvas = document.createElement("canvas")
-            const MAX_WIDTH = 640
-            const MAX_HEIGHT = 640
-            let width = img.width
-            let height = img.height
-
-            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-              if (width > height) {
-                height = Math.round((height * MAX_WIDTH) / width)
-                width = MAX_WIDTH
-              } else {
-                width = Math.round((width * MAX_HEIGHT) / height)
-                height = MAX_HEIGHT
-              }
-            }
-
-            canvas.width = width
-            canvas.height = height
-            const ctx = canvas.getContext("2d")
-            if (ctx) {
-              ctx.drawImage(img, 0, 0, width, height)
-              resolve(canvas.toDataURL("image/jpeg", 0.85))
-            } else {
-              reject(new Error("Không thể tạo canvas context."))
-            }
-          }
-          img.onerror = () => reject(new Error("Không thể tải ảnh chân dung."))
-          img.src = event.target?.result as string
-        }
-        reader.onerror = () => reject(new Error("Không thể đọc file ảnh."))
-        reader.readAsDataURL(file)
-      })
-
-      const res = await fetch("/api/monitor/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          image_base64: base64, 
-          type: "register",
-          student_id: selectedStudent.id
-        })
-      })
-
-      let data: any = {}
-      const contentType = res.headers.get("content-type")
-      if (contentType && contentType.includes("application/json")) {
-        data = await res.json()
-      } else {
-        const text = await res.text()
-        data = { error: text || `Mã phản hồi từ máy chủ: ${res.status}` }
-      }
-
-      if (res.ok) {
-        setIsStudentFaceRegistered(true)
-        alert("Đăng ký khuôn mặt gốc cho em trai thành công! AI sẵn sàng đối khớp.")
-      } else {
-        alert("Lỗi đăng ký: " + (data.error || "Không rõ lỗi. Hãy chắc chắn FastAPI server (cổng 8000) đang chạy."))
-      }
-    } catch (err: any) {
-      console.error("Lỗi upload khuôn mặt gốc:", err)
-      alert("Lỗi: " + err.message)
-    } finally {
-      setRegisteringFace(false)
-      // Reset input so user can re-select the same file if needed
-      e.target.value = ""
-    }
-  }
 
   // Link a student by email
   const handleLinkStudent = async (e: React.FormEvent) => {
@@ -434,9 +285,10 @@ export default function TeacherMonitorPage() {
       
       // Auto-select the newly linked student
       setSelectedStudent(student)
-    } catch (err: any) {
+    } catch (err) {
       console.error("Link error:", err)
-      setLinkingError("Có lỗi xảy ra: " + err.message)
+      const msg = err instanceof Error ? err.message : "Có lỗi xảy ra"
+      setLinkingError("Có lỗi xảy ra: " + msg)
     } finally {
       setLinkingLoading(false)
     }
@@ -480,9 +332,10 @@ export default function TeacherMonitorPage() {
       if (selectedStudent) {
         await fetchStudentData(selectedStudent.id)
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Add task error:", err)
-      setTaskError("Lỗi khi giao mục tiêu: " + err.message + ". Vui lòng chắc chắn bạn đã chạy SQL vá lỗi RLS.")
+      const msg = err instanceof Error ? err.message : "Có lỗi xảy ra"
+      setTaskError("Lỗi khi giao mục tiêu: " + msg + ". Vui lòng chắc chắn bạn đã chạy SQL vá lỗi RLS.")
     } finally {
       setTaskLoading(false)
     }
@@ -590,17 +443,17 @@ export default function TeacherMonitorPage() {
         <section className="mb-8 grid gap-6 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
           <div>
             <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 px-3 py-1 text-[10px] sm:text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
-              <Activity className="h-3.5 w-3.5 text-violet-500 animate-pulse" /> Parent/Elder Brother observatory desk
+              <Activity className="h-3.5 w-3.5 text-violet-500 animate-pulse" /> Giáo viên / Phụ huynh giám sát
             </p>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-6xl">Đài Giám Sát Học Tập</h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--muted-foreground))] md:text-lg">
-              Quan sát trạng thái học realtime của em trai, giao việc trực tiếp vào Checklist và theo dõi kết quả làm bài tập trực tuyến.
+              Quan sát trạng thái học realtime của học sinh, giao việc trực tiếp vào Checklist và theo dõi kết quả làm bài tập trực tuyến.
             </p>
           </div>
           
           {/* Linked student switcher or add links container */}
           <div className="rounded-[1.5rem] sm:rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-sm">
-            <p className="text-xs uppercase font-bold tracking-wider text-[hsl(var(--muted-foreground))] mb-3">Em trai đang quan sát</p>
+            <p className="text-xs uppercase font-bold tracking-wider text-[hsl(var(--muted-foreground))] mb-3">Học sinh đang quan sát</p>
             {students.length === 0 ? (
               <p className="text-sm italic text-[hsl(var(--muted-foreground))]">Chưa liên kết tài khoản nào</p>
             ) : (
@@ -628,9 +481,9 @@ export default function TeacherMonitorPage() {
         {students.length === 0 && (
           <section className="mb-8 rounded-[2.5rem] border border-dashed border-[hsl(var(--border))] bg-[hsl(var(--card))]/50 p-8 text-center max-w-xl mx-auto shadow-sm">
             <UserPlus className="mx-auto mb-4 h-12 w-12 text-violet-500/80" strokeWidth={1.2} />
-            <h2 className="text-xl font-bold mb-2">Chưa có tài khoản em trai liên kết</h2>
+            <h2 className="text-xl font-bold mb-2">Chưa có tài khoản học sinh liên kết</h2>
             <p className="text-sm text-[hsl(var(--muted-foreground))] mb-6 max-w-md mx-auto">
-              Nhập chính xác email tài khoản của em trai bạn (tài khoản Học sinh) để thiết lập luồng liên kết quan sát từ xa.
+              Nhập chính xác email tài khoản của học sinh để thiết lập luồng liên kết quan sát từ xa.
             </p>
             <form onSubmit={handleLinkStudent} className="space-y-4">
               <div className="flex gap-2">
@@ -672,7 +525,7 @@ export default function TeacherMonitorPage() {
                 <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-6">
                   <div>
                     <h3 className="font-bold text-lg">Giám Sát Trạng Thái Live</h3>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Đang kết nối cổng realtime với thiết bị của em</p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Đang kết nối cổng realtime với thiết bị của học sinh</p>
                   </div>
                   <button 
                     onClick={() => fetchStudentData(selectedStudent.id)}
@@ -759,171 +612,13 @@ export default function TeacherMonitorPage() {
                 </div>
               </div>
 
-              {/* Card 1.5: AI Proctoring & Cảnh Báo Cưỡng Chế */}
-              <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md relative overflow-hidden">
-                <div className="absolute -left-16 -bottom-16 h-36 w-36 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
-                
-                <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
-                  <div>
-                    <h3 className="font-bold text-lg">AI Giám Sát Camera & Cảnh Báo</h3>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Phát hiện khuôn mặt, cảm xúc học tập và can thiệp từ xa</p>
-                  </div>
-                  <span className="rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-bold text-indigo-500">DeepFace AI</span>
-                </div>
 
-                <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
-                  {/* Cột trái: AI Proctoring View */}
-                  <div className="space-y-4">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-500">Trạng thái từ Camera của em</p>
-                    
-                    {latestFaceLog ? (
-                      <div className="space-y-3 rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/30 p-4">
-                        <div className="space-y-2 text-xs font-semibold">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[hsl(var(--muted-foreground))]">Hiện diện:</span>
-                            <span className={latestFaceLog.is_present ? "text-emerald-500 flex items-center gap-1" : "text-rose-500 flex items-center gap-1 animate-pulse"}>
-                              <span className={cn("h-2 w-2 rounded-full", latestFaceLog.is_present ? "bg-emerald-500" : "bg-red-500 animate-ping")} />
-                              {latestFaceLog.is_present ? "Đang ngồi học" : "Đã rời bàn học"}
-                            </span>
-                          </div>
-                          
-                          <div className="flex justify-between items-center">
-                            <span className="text-[hsl(var(--muted-foreground))]">Xác thực danh tính:</span>
-                            <span className={latestFaceLog.is_verified ? "text-emerald-500 flex items-center gap-1" : "text-rose-500 flex items-center gap-1 animate-pulse"}>
-                              <span className={cn("h-2 w-2 rounded-full", latestFaceLog.is_verified ? "bg-emerald-500" : "bg-red-500 animate-ping")} />
-                              {latestFaceLog.is_verified ? "Chính chủ em trai" : "Sai người/Không khớp"}
-                            </span>
-                          </div>
-
-                          {latestFaceLog.dominant_emotion && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-[hsl(var(--muted-foreground))]">Cảm xúc học tập:</span>
-                              <span className="rounded-full bg-violet-500/10 px-2.5 py-0.5 text-violet-500 capitalize text-[10px] font-bold border border-violet-500/20">
-                                {latestFaceLog.dominant_emotion}
-                              </span>
-                            </div>
-                          )}
-
-                          <div className="text-[9px] text-[hsl(var(--muted-foreground))] border-t border-[hsl(var(--border))]/20 pt-2 flex justify-between">
-                            <span>Cập nhật mới nhất:</span>
-                            <span>{new Date(latestFaceLog.created_at).toLocaleTimeString("vi-VN")}</span>
-                          </div>
-                        </div>
-
-                        {/* Snapshot bằng chứng vi phạm nếu có */}
-                        {latestFaceLog.snapshot_path && (
-                          <div className="mt-3 space-y-1">
-                            <p className="text-[9px] uppercase font-bold text-rose-500">Ảnh bằng chứng vi phạm:</p>
-                            <div className="relative rounded-xl overflow-hidden aspect-video border border-rose-500/30 group cursor-pointer shadow-md">
-                              <img 
-                                src={latestFaceLog.snapshot_path} 
-                                alt="Bằng chứng học tập" 
-                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                              />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white font-semibold">
-                                Bấm để xem to
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="py-8 rounded-2xl border border-dashed border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/10 text-center text-xs text-[hsl(var(--muted-foreground))] flex flex-col justify-center items-center p-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[hsl(var(--muted-foreground))]/50 mb-2 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        Chưa nhận được tín hiệu camera.<br />Đang đợi em trai bật camera tự học.
-                      </div>
-                    )}
-                    {/* Widget Cấu hình khuôn mặt gốc (Lựa chọn B) */}
-                    <div className="rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/20 p-4 space-y-3 mt-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Khuôn mặt mẫu đối khớp</span>
-                        <span className={cn(
-                          "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase",
-                          isStudentFaceRegistered ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse"
-                        )}>
-                          {isStudentFaceRegistered ? "Đã Thiết Lập" : "Chưa Thiết Lập"}
-                        </span>
-                      </div>
-
-                      <div className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
-                        {isStudentFaceRegistered ? (
-                          "Khuôn mặt của em trai đã được cấu hình và đồng bộ an toàn. Hệ thống AI sẵn sàng đối sánh mỗi khi em tự học."
-                        ) : (
-                          "Để bắt đầu tự động giám sát, bạn cần tải lên một bức ảnh chân dung rõ nét, chính diện của em trai."
-                        )}
-                      </div>
-
-                      <div className="relative">
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          id="face-upload-input"
-                          onChange={handleUploadFaceRegistration}
-                          disabled={registeringFace}
-                          className="hidden" 
-                        />
-                        <label 
-                          htmlFor="face-upload-input"
-                          className={cn(
-                            "w-full rounded-xl py-3 border border-dashed text-center text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[hsl(var(--muted))]/20 transition-all",
-                            registeringFace ? "opacity-50 pointer-events-none" : "border-indigo-500/40 text-indigo-500"
-                          )}
-                        >
-                          {registeringFace ? (
-                            <>
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              Đang xử lý trích xuất AI...
-                            </>
-                          ) : (
-                            <>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                              {isStudentFaceRegistered ? "Cập nhật ảnh chân dung khác" : "Tải lên ảnh chân dung em 📸"}
-                            </>
-                          )}
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Cột phải: Active Alerting Form */}
-                  <div className="space-y-4">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-rose-500">Đài phát cảnh báo cưỡng chế</p>
-                    
-                    <form onSubmit={handleSendActiveAlert} className="space-y-3 rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4">
-                      <div className="space-y-1.5">
-                        <Label className="text-[9px] uppercase font-bold text-rose-600">Lời nhắn nhắc nhở cưỡng chế</Label>
-                        <Input 
-                          placeholder="VD: Tập trung học đi em trai ơi!"
-                          value={alertMsgInput}
-                          onChange={(e) => setAlertMsgInput(e.target.value)}
-                          className="rounded-xl border-rose-500/30 bg-transparent text-xs"
-                        />
-                      </div>
-                      <Button 
-                        type="submit" 
-                        disabled={sendingAlert}
-                        className="w-full rounded-xl py-4.5 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold tracking-wide shadow-md flex items-center justify-center gap-1.5"
-                      >
-                        {sendingAlert ? <Loader2 className="h-3 w-3 animate-spin" /> : (
-                          <>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                            Phát cảnh báo đỏ ngay
-                          </>
-                        )}
-                      </Button>
-                      <p className="text-[10px] text-rose-500/80 leading-normal text-center">
-                        * Màn hình của em trai sẽ lập tức bị khóa overlay đỏ mờ, đồng thời phát âm thanh lớn cảnh báo và tự động đọc to lời nhắn của bạn!
-                      </p>
-                    </form>
-                  </div>
-                </div>
-              </div>
 
               {/* Card 2: Checklist Manager */}
               <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md">
                 <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
                   <div>
-                    <h3 className="font-bold text-lg">Checklist & Planner của em</h3>
+                    <h3 className="font-bold text-lg">Checklist & Planner của học sinh</h3>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">Đã hoàn thành {completedTasksCount}/{tasks.length} đầu việc ({completionRate}%)</p>
                   </div>
                   <span className="rounded-full bg-[hsl(var(--foreground))]/5 px-3 py-1 text-xs font-bold">{tasks.length} tasks</span>
@@ -961,7 +656,7 @@ export default function TeacherMonitorPage() {
                       <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Độ ưu tiên</Label>
                       <select 
                         value={taskPriority} 
-                        onChange={(e) => setTaskPriority(e.target.value as any)}
+                        onChange={(e) => setTaskPriority(e.target.value as "low" | "medium" | "high")}
                         className="w-full rounded-xl border border-[hsl(var(--border))]/50 bg-[hsl(var(--background))] text-sm px-3 py-2 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_10px_center] bg-[length:12px] pr-8 bg-no-repeat"
                       >
                         <option value="low">Thấp</option>
@@ -995,7 +690,7 @@ export default function TeacherMonitorPage() {
 
                   <div className="pt-1">
                     <Button type="submit" disabled={taskLoading || !taskTitle.trim()} className="w-full rounded-xl py-5 bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90 flex items-center justify-center gap-1.5 text-xs font-semibold shadow-md">
-                      {taskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-4 w-4" /> Thêm vào Checklist của em</>}
+                      {taskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-4 w-4" /> Thêm vào Checklist của học sinh</>}
                     </Button>
                   </div>
                   {taskError && <p className="text-xs font-semibold text-red-500 flex items-center gap-1.5 justify-center"><AlertCircle className="h-3.5 w-3.5" />{taskError}</p>}
@@ -1090,7 +785,7 @@ export default function TeacherMonitorPage() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
                   <div>
                     <h3 className="font-bold text-lg">Bài Tập Trực Tuyến</h3>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Xem kết quả bài kiểm tra em trai đã làm</p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Xem kết quả bài kiểm tra học sinh đã làm</p>
                   </div>
                   <Link href="/teacher/exams/create" className="no-print">
                     <Button size="sm" className="rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90 py-4 px-4 text-xs font-semibold">
@@ -1150,7 +845,7 @@ export default function TeacherMonitorPage() {
                 <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
                   <div>
                     <h3 className="font-bold text-lg">Khung Giờ Học Tập</h3>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Lịch trình tự học được người anh lập ra</p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Lịch trình tự học của học sinh</p>
                   </div>
                   <Link href="/teacher/timetable">
                     <Button variant="outline" size="sm" className="rounded-full border-[hsl(var(--border))]/70 bg-transparent text-xs font-semibold py-4 px-4">
@@ -1162,7 +857,7 @@ export default function TeacherMonitorPage() {
                   <Calendar className="mx-auto mb-3 h-8 w-8 text-violet-500/80 animate-bounce" strokeWidth={1.2} />
                   <p className="text-sm font-semibold tracking-tight mb-1">Mọi thay đổi trên lịch dạy học của bạn</p>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] leading-normal max-w-sm mx-auto">
-                    sẽ tự động đồng bộ sang mục Lịch học trên thanh PWA Pinned app của em trai.
+                    sẽ tự động đồng bộ sang mục Lịch học trên thanh PWA Pinned app của học sinh.
                   </p>
                 </div>
               </div>
