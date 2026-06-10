@@ -140,7 +140,19 @@ export default function TakeExamPage() {
         .select()
         .single()
 
-      if (newSession) setSessionId(newSession.id)
+      if (newSession) {
+        setSessionId(newSession.id)
+        await supabase
+          .from("exam_participants")
+          .upsert({
+            exam_id: examId,
+            user_id: user.id,
+            status: "active",
+            last_active: new Date().toISOString()
+          }, {
+            onConflict: "exam_id,user_id"
+          })
+      }
       setLoading(false)
     })()
   }, [examId, localStorageKey, router, supabase])
@@ -148,7 +160,28 @@ export default function TakeExamPage() {
   const handleSubmit = useCallback(async (autoSubmit = false) => { if (submitting || !exam) return; setSubmitting(true); try { const timeSpent = Math.max(1, Math.floor((exam.duration * 60) - timeLeft)); const response = await fetch("/api/exams/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ exam_id: examId, mc_answers: studentAnswers, tf_answers: tfStudentAnswers, sa_answers: saStudentAnswers, session_id: sessionId, time_spent: timeSpent, cheat_flags: { tab_switches: tabSwitchCount, auto_submit: autoSubmit } }) }); if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Submission failed"); localStorage.removeItem(localStorageKey); router.push(`/student/exams/${examId}/result`) } catch (error) { alert("Lỗi nộp bài: " + (error instanceof Error ? error.message : "Unknown error")); setSubmitting(false) } }, [exam, examId, studentAnswers, tfStudentAnswers, saStudentAnswers, sessionId, tabSwitchCount, submitting, localStorageKey, router, timeLeft])
   useEffect(() => { if (timeLeft <= 0 || loading) return; const timer = setInterval(() => setTimeLeft((prev) => { if (prev <= 1) { clearInterval(timer); if (!isSubmittingRef.current) { isSubmittingRef.current = true; handleSubmit(true) } return 0 } return prev - 1 }), 1000); return () => clearInterval(timer) }, [timeLeft, loading, handleSubmit])
   useEffect(() => { if (isRestoredRef.current && (studentAnswers.length || tfStudentAnswers.length || saStudentAnswers.length)) localStorage.setItem(localStorageKey, JSON.stringify({ mc: studentAnswers, tf: tfStudentAnswers, sa: saStudentAnswers })) }, [studentAnswers, tfStudentAnswers, saStudentAnswers, localStorageKey])
-  useEffect(() => { if (!sessionId) return; const timer = setInterval(async () => { await supabase.from("exam_sessions").update({ answers_snapshot: { mc: studentAnswers, tf: tfStudentAnswers, sa: saStudentAnswers }, last_active_at: new Date().toISOString(), tab_switch_count: tabSwitchCount }).eq("id", sessionId) }, 30000); return () => clearInterval(timer) }, [sessionId, studentAnswers, tfStudentAnswers, saStudentAnswers, tabSwitchCount, supabase])
+  useEffect(() => {
+    if (!sessionId) return;
+    const timer = setInterval(async () => {
+      await supabase.from("exam_sessions").update({
+        answers_snapshot: { mc: studentAnswers, tf: tfStudentAnswers, sa: saStudentAnswers },
+        last_active_at: new Date().toISOString(),
+        tab_switch_count: tabSwitchCount
+      }).eq("id", sessionId)
+
+      if (userId) {
+        await supabase.from("exam_participants").upsert({
+          exam_id: examId,
+          user_id: userId,
+          status: "active",
+          last_active: new Date().toISOString()
+        }, {
+          onConflict: "exam_id,user_id"
+        })
+      }
+    }, 30000);
+    return () => clearInterval(timer)
+  }, [sessionId, studentAnswers, tfStudentAnswers, saStudentAnswers, tabSwitchCount, supabase, userId, examId])
   const handleViolation = useCallback((type: string, count: number) => { setTabSwitchCount(count); if (count >= 5 && isRanked) { setIsRanked(false); if (sessionId) supabase.from("exam_sessions").update({ is_ranked: false, tab_switch_count: count }).eq("id", sessionId) } fetch("/api/exams/violation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ exam_id: examId, session_id: sessionId, action: type, details: { count, timestamp: new Date().toISOString() } }) }).catch(() => {}) }, [examId, isRanked, sessionId, supabase])
   const handleContinueSession = async () => {
     if (!existingSession || !exam) return
@@ -162,6 +195,19 @@ export default function TakeExamPage() {
     const remainingSeconds = Math.max(0, durationSeconds - elapsedSeconds)
     setTimeLeft(remainingSeconds)
 
+    if (userId) {
+      await supabase
+        .from("exam_participants")
+        .upsert({
+          exam_id: examId,
+          user_id: userId,
+          status: "active",
+          last_active: new Date().toISOString()
+        }, {
+          onConflict: "exam_id,user_id"
+        })
+    }
+
     setShowSessionChoice(false)
   }
   const handleRestartSession = async () => {
@@ -170,6 +216,17 @@ export default function TakeExamPage() {
     const { data: newSession } = await supabase.from("exam_sessions").insert({ exam_id: examId, student_id: userId, session_number: existingSession.session_number + 1, is_ranked: false, status: "in_progress" }).select().single()
     if (newSession) setSessionId(newSession.id)
     
+    await supabase
+      .from("exam_participants")
+      .upsert({
+        exam_id: examId,
+        user_id: userId,
+        status: "active",
+        last_active: new Date().toISOString()
+      }, {
+        onConflict: "exam_id,user_id"
+      })
+
     const mcCount = exam.mc_questions?.length || exam.total_questions || 12
     const defaultTf = exam.tf_questions?.map((item: { question: number }) => ({ question: item.question, a: null, b: null, c: null, d: null })) || []
     const defaultSa = exam.sa_questions?.map((item: { question: number }) => ({ question: item.question, answer: "" })) || []

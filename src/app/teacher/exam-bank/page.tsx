@@ -30,6 +30,8 @@ import {
   X,
 } from "lucide-react"
 
+import { SUBJECTS, MAP_SUBJECT_TO_DB, MAP_DB_TO_SUBJECT } from "@/lib/subjects"
+
 interface ExamInBank {
   id: string
   title: string
@@ -40,18 +42,11 @@ interface ExamInBank {
   total_questions: number
   created_at: string
   questions?: Array<{ question: string; options: string[]; answer: string }>
+  target_grade?: number | null
+  chapter_id?: string | null
+  lesson_id?: string | null
+  section_id?: string | null
 }
-
-const SUBJECTS = [
-  { value: "math", label: "Toán" },
-  { value: "physics", label: "Vật Lý" },
-  { value: "chemistry", label: "Hóa Học" },
-  { value: "english", label: "Tiếng Anh" },
-  { value: "biology", label: "Sinh Học" },
-  { value: "history", label: "Lịch Sử" },
-  { value: "geography", label: "Địa Lý" },
-  { value: "et", label: "Giáo dục kinh tế & pháp luật" },
-]
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || "http://localhost:8000"
 
@@ -71,7 +66,7 @@ export default function ExamBankPage() {
   const [scanning, setScanning] = useState(false)
   const [scanResult, setScanResult] = useState<{ multiple_choice?: string[]; true_false?: string[] } | null>(null)
   const [title, setTitle] = useState("")
-  const [subject, setSubject] = useState("physics")
+  const [subject, setSubject] = useState("toan")
   const [description, setDescription] = useState("")
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [pdfUrl, setPdfUrl] = useState("")
@@ -79,6 +74,15 @@ export default function ExamBankPage() {
   const [totalQuestions, setTotalQuestions] = useState(30)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [previewExam, setPreviewExam] = useState<ExamInBank | null>(null)
+
+  // Grade & Hierarchy states
+  const [targetGrade, setTargetGrade] = useState<number | null>(null)
+  const [selectedChapterId, setSelectedChapterId] = useState<string>("")
+  const [selectedLessonId, setSelectedLessonId] = useState<string>("")
+  const [selectedSectionId, setSelectedSectionId] = useState<string>("")
+  const [availableChapters, setAvailableChapters] = useState<any[]>([])
+  const [availableLessons, setAvailableLessons] = useState<any[]>([])
+  const [availableSections, setAvailableSections] = useState<any[]>([])
 
   const fetchExams = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -88,7 +92,7 @@ export default function ExamBankPage() {
     setFullName(profile?.full_name || "")
 
     const { data } = await supabase.from("exams").select("*").eq("created_by", user.id).order("created_at", { ascending: false })
-    setExams((data || []).map((e: ExamInBank) => ({ ...e, subject: e.subject || "physics", total_questions: e.total_questions || 0 })))
+    setExams((data || []).map((e: ExamInBank) => ({ ...e, subject: MAP_DB_TO_SUBJECT[e.subject] || e.subject || "toan", total_questions: e.total_questions || 0 })))
     setLoading(false)
   }, [router, supabase])
 
@@ -96,9 +100,34 @@ export default function ExamBankPage() {
     void fetchExams()
   }, [fetchExams])
 
+  // Cascade: load chapters when grade+subject available
+  useEffect(() => {
+    if (!targetGrade || !subject) { setAvailableChapters([]); return }
+    const dbSubject = MAP_SUBJECT_TO_DB[subject] || subject
+    fetch(`/api/study/chapters?subject=${dbSubject}&grade=${targetGrade}`)
+      .then(r => r.json()).then(d => { if (d.data) setAvailableChapters(d.data); else setAvailableChapters([]) })
+      .catch(() => setAvailableChapters([]))
+  }, [targetGrade, subject])
+
+  // Cascade: load lessons when chapter changes
+  useEffect(() => {
+    if (!selectedChapterId) { setAvailableLessons([]); setAvailableSections([]); return }
+    fetch(`/api/study/lessons?chapter_id=${selectedChapterId}`)
+      .then(r => r.json()).then(d => { if (d.data) setAvailableLessons(d.data); else setAvailableLessons([]) })
+      .catch(() => setAvailableLessons([]))
+  }, [selectedChapterId])
+
+  // Cascade: load sections when lesson changes
+  useEffect(() => {
+    if (!selectedLessonId) { setAvailableSections([]); return }
+    fetch(`/api/study/sections?lesson_id=${selectedLessonId}`)
+      .then(r => r.json()).then(d => { if (d.data) setAvailableSections(d.data); else setAvailableSections([]) })
+      .catch(() => setAvailableSections([]))
+  }, [selectedLessonId])
+
   const resetForm = () => {
     setTitle("")
-    setSubject("physics")
+    setSubject("toan")
     setDescription("")
     setPdfFile(null)
     setPdfUrl("")
@@ -107,6 +136,10 @@ export default function ExamBankPage() {
     setEditingId(null)
     setAnswerPdfFile(null)
     setScanResult(null)
+    setTargetGrade(null)
+    setSelectedChapterId("")
+    setSelectedLessonId("")
+    setSelectedSectionId("")
   }
 
   const handleAIScan = async () => {
@@ -134,11 +167,15 @@ export default function ExamBankPage() {
   const handleEdit = (exam: ExamInBank) => {
     setEditingId(exam.id)
     setTitle(exam.title)
-    setSubject(exam.subject)
+    setSubject(MAP_DB_TO_SUBJECT[exam.subject] || exam.subject || "toan")
     setDescription(exam.description || "")
     setPdfUrl(exam.pdf_url || "")
     setAnswerKey(exam.answer_key || "")
     setTotalQuestions(exam.total_questions)
+    setTargetGrade(exam.target_grade ?? null)
+    setSelectedChapterId(exam.chapter_id ?? "")
+    setSelectedLessonId(exam.lesson_id ?? "")
+    setSelectedSectionId(exam.section_id ?? "")
     setShowCreate(true)
   }
 
@@ -178,7 +215,22 @@ export default function ExamBankPage() {
       if (!user) throw new Error("Not authenticated")
       const parsedAnswers = parseAnswerKey(answerKey)
       const questions = Object.entries(parsedAnswers).map(([num, ans]) => ({ question: `Câu ${num}`, options: ["A", "B", "C", "D"], answer: ans }))
-      const data = { title, subject, description: description || null, pdf_url: pdfUrl || null, answer_key: answerKey || null, total_questions: totalQuestions, questions: questions.length > 0 ? questions : null, status: "published", created_by: user.id }
+      const data = {
+        title,
+        subject,
+        description: description || null,
+        pdf_url: pdfUrl || null,
+        answer_key: answerKey || null,
+        total_questions: totalQuestions,
+        questions: questions.length > 0 ? questions : null,
+        status: "published",
+        created_by: user.id,
+        teacher_id: user.id,
+        target_grade: targetGrade,
+        chapter_id: selectedChapterId || null,
+        lesson_id: selectedLessonId || null,
+        section_id: selectedSectionId || null
+      }
       const query = editingId ? supabase.from("exams").update(data).eq("id", editingId) : supabase.from("exams").insert(data)
       const { error } = await query
       if (error) throw error
@@ -316,9 +368,70 @@ export default function ExamBankPage() {
               <form onSubmit={handleSubmit} className="space-y-6 p-5">
                 <section className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2"><Label>Tên đề thi <span className="text-red-500">*</span></Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="VD: Đề thi HK1 Vật Lý 12" className="rounded-xl" required /></div>
-                  <div className="space-y-2"><Label>Môn học</Label><select value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-sm">{SUBJECTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></div>
+                  <div className="space-y-2"><Label>Môn học</Label><select value={subject} onChange={(e) => { setSubject(e.target.value); setSelectedChapterId(""); setSelectedLessonId(""); setSelectedSectionId("") }} className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-sm">{SUBJECTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></div>
                 </section>
                 <div className="space-y-2"><Label>Mô tả</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Mô tả chi tiết về đề thi..." className="rounded-xl" rows={2} /></div>
+                <section className="space-y-4 rounded-2xl border border-[hsl(var(--border))]/60 p-4 bg-[hsl(var(--muted))]/10">
+                  <Label className="font-semibold flex items-center gap-2">
+                    Phân tầng hệ thống bài tập (tuỳ chọn)
+                  </Label>
+                  <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium uppercase text-[hsl(var(--muted-foreground))]">Khối lớp</Label>
+                      <select
+                        value={targetGrade === null ? "" : String(targetGrade)}
+                        onChange={(e) => { setTargetGrade(e.target.value === "" ? null : Number(e.target.value)); setSelectedChapterId(""); setSelectedLessonId(""); setSelectedSectionId("") }}
+                        className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]"
+                      >
+                        <option value="">Tất cả các khối</option>
+                        {Array.from({ length: 7 }, (_, i) => i + 6).map((g) => (
+                          <option key={g} value={g}>
+                            Khối {g}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium uppercase text-[hsl(var(--muted-foreground))]">Chương</Label>
+                      <select
+                        value={selectedChapterId}
+                        onChange={(e) => { setSelectedChapterId(e.target.value); setSelectedLessonId(""); setSelectedSectionId("") }}
+                        disabled={!targetGrade || !subject}
+                        className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))] disabled:opacity-50"
+                      >
+                        <option value="">-- Chọn chương --</option>
+                        {availableChapters.map((c: any) => <option key={c.id} value={c.id}>{c.title}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium uppercase text-[hsl(var(--muted-foreground))]">Bài học</Label>
+                      <select
+                        value={selectedLessonId}
+                        onChange={(e) => { setSelectedLessonId(e.target.value); setSelectedSectionId("") }}
+                        disabled={!selectedChapterId}
+                        className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))] disabled:opacity-50"
+                      >
+                        <option value="">-- Chọn bài --</option>
+                        {availableLessons.map((l: any) => <option key={l.id} value={l.id}>{l.title}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium uppercase text-[hsl(var(--muted-foreground))]">Phần</Label>
+                      <select
+                        value={selectedSectionId}
+                        onChange={(e) => setSelectedSectionId(e.target.value)}
+                        disabled={!selectedLessonId}
+                        className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))] disabled:opacity-50"
+                      >
+                        <option value="">-- Chọn phần --</option>
+                        {availableSections.map((s: any) => <option key={s.id} value={s.id}>{s.title}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  {!targetGrade || !subject ? (
+                    <p className="text-[10px] text-amber-500">⚠️ Cần chọn Khối lớp và Môn học để hiển thị danh sách Chương.</p>
+                  ) : null}
+                </section>
                 <section className="rounded-2xl border border-indigo-200/50 bg-indigo-50/40 p-4">
                   <Label className="mb-2 flex items-center gap-2 font-semibold text-indigo-700"><FileText className="h-4 w-4" />File đề thi (PDF)</Label>
                   <div className="flex gap-2">

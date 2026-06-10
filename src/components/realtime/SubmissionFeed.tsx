@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { CheckCircle2, Trophy, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 interface Submission {
     id: string
@@ -121,28 +122,28 @@ export function SubmissionFeed({ examId, className, maxItems = 5 }: SubmissionFe
 
     const getScoreColor = (score: number, total: number) => {
         const percentage = (score / total) * 100
-        if (percentage >= 80) return "text-green-600 bg-green-50 border-green-200"
-        if (percentage >= 50) return "text-yellow-600 bg-yellow-50 border-yellow-200"
-        return "text-red-600 bg-red-50 border-red-200"
+        if (percentage >= 80) return "text-emerald-600 bg-emerald-500/10 border-emerald-500/20"
+        if (percentage >= 50) return "text-amber-600 bg-amber-500/10 border-amber-500/20"
+        return "text-red-600 bg-red-500/10 border-red-500/20"
     }
 
     if (loading) {
         return (
-            <div className={cn("bg-white rounded-xl p-4 border border-gray-200 shadow-sm", className)}>
+            <div className={cn("rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-sm", className)}>
                 <div className="animate-pulse space-y-3">
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    <div className="h-12 bg-gray-100 rounded"></div>
-                    <div className="h-12 bg-gray-100 rounded"></div>
+                    <div className="h-4 bg-[hsl(var(--muted))]/30 rounded w-1/2"></div>
+                    <div className="h-12 bg-[hsl(var(--muted))]/20 rounded"></div>
+                    <div className="h-12 bg-[hsl(var(--muted))]/20 rounded"></div>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className={cn("bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden", className)}>
+        <div className={cn("rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm overflow-hidden", className)}>
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+            <div className="px-5 py-4 border-b border-[hsl(var(--border))]/50 bg-[hsl(var(--muted))]/10">
+                <h3 className="font-semibold text-[hsl(var(--foreground))] flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
                     Bài nộp gần đây
                 </h3>
@@ -151,18 +152,18 @@ export function SubmissionFeed({ examId, className, maxItems = 5 }: SubmissionFe
             {/* Feed */}
             <div className="max-h-64 overflow-y-auto custom-scrollbar">
                 {submissions.length === 0 ? (
-                    <div className="p-8 text-center text-gray-400">
+                    <div className="p-8 text-center text-[hsl(var(--muted-foreground))]">
                         <Trophy className="w-8 h-8 mx-auto mb-2 opacity-30" />
                         <p className="text-sm">Chưa có bài nộp</p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-[hsl(var(--border))]/30">
                         {submissions.map((submission, index) => (
                             <div
                                 key={submission.id}
                                 className={cn(
-                                    "px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors",
-                                    index === 0 && "bg-blue-50/30"
+                                    "px-5 py-3 flex items-center justify-between hover:bg-[hsl(var(--muted))]/20 transition-colors",
+                                    index === 0 && "bg-blue-500/5"
                                 )}
                             >
                                 <div className="flex items-center gap-3">
@@ -170,16 +171,21 @@ export function SubmissionFeed({ examId, className, maxItems = 5 }: SubmissionFe
                                         {submission.student_name?.charAt(0) || "?"}
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-800 font-medium">
-                                            {submission.student_name}
+                                        <p className="text-sm text-[hsl(var(--foreground))] font-medium">
+                                            <Link 
+                                                href={`/profile/${submission.student_id}`}
+                                                className="hover:underline hover:text-indigo-600 transition-colors"
+                                            >
+                                                {submission.student_name}
+                                            </Link>
                                         </p>
-                                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                                        <p className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
                                             {formatTime(submission.submitted_at)}
                                         </p>
                                     </div>
                                     {index === 0 && (
-                                        <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">Mới</span>
+                                        <span className="text-[10px] bg-blue-500/10 text-blue-600 border border-blue-500/20 px-1.5 py-0.5 rounded font-medium">Mới</span>
                                     )}
                                 </div>
                                 <div className={cn(

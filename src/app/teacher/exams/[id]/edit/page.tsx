@@ -15,7 +15,7 @@ import { TeacherSidebar } from "@/components/TeacherSidebar"
 import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
-import { MAP_SUBJECT_TO_DB } from "@/lib/subjects"
+import { MAP_SUBJECT_TO_DB, MAP_DB_TO_SUBJECT, SUBJECTS } from "@/lib/subjects"
 
 const OPTIONS = ["A", "B", "C", "D"] as const
 
@@ -40,7 +40,7 @@ export default function EditExamPage() {
   const [availableLessons, setAvailableLessons] = useState<any[]>([]);
   const [availableSections, setAvailableSections] = useState<any[]>([]);
 
-  useEffect(() => { (async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) { router.push("/login"); return } const { data: profileData } = await supabase.from("profiles").select("full_name").eq("id", user.id).single(); setProfile(profileData); const { data: exam } = await supabase.from("exams").select("*").eq("id", examId).eq("teacher_id", user.id).single(); if (!exam) { const { data: anyExam } = await supabase.from("exams").select("teacher_id, title").eq("id", examId).single(); if (anyExam) setAuthError("Bạn không có quyền chỉnh sửa đề thi này. Đề thi thuộc về giáo viên khác."); else router.push("/teacher/dashboard"); setLoading(false); return } setTitle(exam.title); setDuration(exam.duration); setTargetGrade(exam.target_grade ?? null); setTargetClasses(exam.target_classes ? exam.target_classes.join(", ") : ""); setAssignedTo(exam.assigned_to ?? "normal"); setExamSubject(exam.subject ?? ""); setSelectedChapterId(exam.chapter_id ?? ""); setSelectedLessonId(exam.lesson_id ?? ""); setSelectedSectionId(exam.section_id ?? ""); if (exam.mc_answers?.length > 0) { const mc = exam.mc_answers as { question: number; answer: Option }[]; setMcCount(mc.length); const newMc: (Option | null)[] = Array(mc.length).fill(null); mc.forEach((item) => { const idx = item.question - 1; if (idx >= 0 && idx < mc.length) newMc[idx] = item.answer }); setMcAnswers(newMc) } else if (exam.correct_answers) { setMcCount(exam.correct_answers.length); setMcAnswers(exam.correct_answers) } setTfCount(exam.tf_answers?.length || 0); setTfAnswers(exam.tf_answers || []); setSaCount(exam.sa_answers?.length || 0); setSaAnswers(exam.sa_answers || []); setSecurityLevel(exam.security_level ?? 1); setLoading(false) })() }, [examId, router, supabase])
+  useEffect(() => { (async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) { router.push("/login"); return } const { data: profileData } = await supabase.from("profiles").select("full_name").eq("id", user.id).single(); setProfile(profileData); const { data: exam } = await supabase.from("exams").select("*").eq("id", examId).eq("teacher_id", user.id).single(); if (!exam) { const { data: anyExam } = await supabase.from("exams").select("teacher_id, title").eq("id", examId).single(); if (anyExam) setAuthError("Bạn không có quyền chỉnh sửa đề thi này. Đề thi thuộc về giáo viên khác."); else router.push("/teacher/dashboard"); setLoading(false); return } setTitle(exam.title); setDuration(exam.duration); setTargetGrade(exam.target_grade ?? null); setTargetClasses(exam.target_classes ? exam.target_classes.join(", ") : ""); setAssignedTo(exam.assigned_to ?? "normal"); setExamSubject(MAP_DB_TO_SUBJECT[exam.subject] || exam.subject || "other"); setSelectedChapterId(exam.chapter_id ?? ""); setSelectedLessonId(exam.lesson_id ?? ""); setSelectedSectionId(exam.section_id ?? ""); if (exam.mc_answers?.length > 0) { const mc = exam.mc_answers as { question: number; answer: Option }[]; setMcCount(mc.length); const newMc: (Option | null)[] = Array(mc.length).fill(null); mc.forEach((item) => { const idx = item.question - 1; if (idx >= 0 && idx < mc.length) newMc[idx] = item.answer }); setMcAnswers(newMc) } else if (exam.correct_answers) { setMcCount(exam.correct_answers.length); setMcAnswers(exam.correct_answers) } setTfCount(exam.tf_answers?.length || 0); setTfAnswers(exam.tf_answers || []); setSaCount(exam.sa_answers?.length || 0); setSaAnswers(exam.sa_answers || []); setSecurityLevel(exam.security_level ?? 1); setLoading(false) })() }, [examId, router, supabase])
 
   // Cascade: load chapters when grade+subject available
   useEffect(() => {
@@ -111,6 +111,7 @@ export default function EditExamPage() {
         .update({
           title: title.trim(),
           duration,
+          subject: examSubject,
           total_questions: mcCount + tfCount + saCount,
           correct_answers: mcAnswers,
           mc_answers: mcAnswerObjects,
@@ -238,6 +239,21 @@ export default function EditExamPage() {
               <div className="space-y-2">
                 <Label className="text-xs font-medium uppercase text-[hsl(var(--muted-foreground))]">Thời gian (phút)</Label>
                 <Input type="number" value={duration} onChange={(e) => setDuration(Math.max(1, parseInt(e.target.value) || 1))} className="rounded-xl border-[hsl(var(--border))]/60 bg-transparent" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium uppercase text-[hsl(var(--muted-foreground))]">Môn học</Label>
+                <select
+                  value={examSubject}
+                  onChange={(e) => { setExamSubject(e.target.value); setSelectedChapterId(""); setSelectedLessonId(""); setSelectedSectionId("") }}
+                  className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-transparent px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]"
+                >
+                  <option value="">-- Chọn môn học --</option>
+                  {SUBJECTS.map((s) => (
+                    <option key={s.value} value={s.value} className="bg-[hsl(var(--background))]">
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-medium uppercase text-[hsl(var(--muted-foreground))]">Khối lớp giao bài</Label>

@@ -43,6 +43,7 @@ interface LeaderboardEntry {
   id: string
   score: number
   time_spent: number
+  student_id: string
   profile: { full_name: string | null }
 }
 
@@ -106,9 +107,9 @@ export default function ExamResultPage() {
 
       if (leaderboardData) {
         setLeaderboard(
-          leaderboardData.map((item: { id: string; score: number; time_spent: number; profile: { full_name: string | null } | { full_name: string | null }[] | null }) => {
+          leaderboardData.map((item: { id: string; score: number; time_spent: number; student_id: string; profile: { full_name: string | null } | { full_name: string | null }[] | null }) => {
             const profileData = Array.isArray(item.profile) ? item.profile[0] : item.profile
-            return { id: item.id, score: item.score, time_spent: item.time_spent, profile: { full_name: profileData?.full_name ?? null } }
+            return { id: item.id, score: item.score, time_spent: item.time_spent, student_id: item.student_id, profile: { full_name: profileData?.full_name ?? null } }
           })
         )
       }
@@ -385,7 +386,12 @@ export default function ExamResultPage() {
                         <div className="flex items-center gap-3">
                           <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[hsl(var(--border))]/60 text-xs font-semibold">{index + 1}</div>
                           <div>
-                            <p className="text-sm font-medium">{entry.profile?.full_name || "Ẩn danh"}{entry.id === submission.id && " (Bạn)"}</p>
+                            <p className="text-sm font-medium">
+                              <Link href={`/profile/${entry.student_id}`} className="hover:underline hover:text-indigo-600 transition-colors">
+                                {entry.profile?.full_name || "Ẩn danh"}
+                              </Link>
+                              {entry.id === submission.id && " (Bạn)"}
+                            </p>
                             <p className="text-xs text-[hsl(var(--muted-foreground))]">{formatTime(entry.time_spent)}</p>
                           </div>
                         </div>
