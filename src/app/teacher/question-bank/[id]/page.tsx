@@ -216,7 +216,10 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
                 content: q.content,
                 options: q.options || null,
                 correct_answer: q.correct_answer,
-                explanation: q.explanation || ""
+                explanation: q.explanation || "",
+                chapter_id: selectedChapterId || null,
+                lesson_id: selectedLessonId || null,
+                section_id: selectedSectionId || null
             }))
 
             const { error } = await supabase.from("questions").insert(insertData)
