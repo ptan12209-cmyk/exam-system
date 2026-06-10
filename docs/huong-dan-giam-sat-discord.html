@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hướng Dẫn Vận Hành Giám Sát Học Tập Discord</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #0B0A13;
+      --fg: #F1EDF9;
+      --card: #15131F;
+      --card-border: rgba(140, 135, 162, 0.2);
+      --primary: #C18CFF;
+      --secondary: #1C1A2D;
+      --muted-fg: #8C87A2;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --code-bg: #07060C;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* Premium Header */
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      top: -50px;
+      right: 20%;
+      width: 150px;
+      height: 150px;
+      background: rgba(193, 140, 255, 0.1);
+      border-radius: 50%;
+      blur: 80px;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(193, 140, 255, 0.1);
+      border: 1px solid rgba(193, 140, 255, 0.3);
+      color: var(--primary);
+      padding: 0.5rem 1rem;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-weight: 400;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #F1EDF9 30%, #C18CFF 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--muted-fg);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+      font-style: italic;
+    }
+
+    /* Grid Layout */
+    .sections-grid {
+      display: grid;
+      gap: 2rem;
+    }
+
+    /* Premium Cards */
+    .card {
+      background-color: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 1.5rem;
+      padding: 2.5rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+      transition: border-color 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(193, 140, 255, 0.3);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border-b: 1px solid rgba(140, 135, 162, 0.1);
+      padding-bottom: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .step-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: rgba(193, 140, 255, 0.1);
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      border: 1px solid rgba(193, 140, 255, 0.2);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      color: var(--muted-fg);
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+
+    p strong {
+      color: var(--fg);
+    }
+
+    /* Code Block styles */
+    .code-container {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .code-label {
+      position: absolute;
+      top: 0.75rem;
+      right: 1rem;
+      font-size: 0.65rem;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      color: var(--muted-fg);
+      font-weight: 700;
+      letter-spacing: 0.1em;
+    }
+
+    pre {
+      background-color: var(--code-bg);
+      border: 1px solid rgba(140, 135, 162, 0.15);
+      border-radius: 12px;
+      padding: 1.25rem;
+      overflow-x: auto;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: #D4C5F9;
+    }
+
+    /* Lists */
+    ul, ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: var(--muted-fg);
+      font-size: 0.95rem;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    li strong {
+      color: var(--fg);
+    }
+
+    /* Alerts */
+    .alert {
+      display: flex;
+      gap: 1rem;
+      background: rgba(245, 158, 11, 0.05);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+    }
+
+    .alert-icon {
+      color: var(--warning);
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .alert-content {
+      color: #E2D9C8;
+    }
+
+    .alert-content strong {
+      color: #fff;
+    }
+
+    /* Flow Graphic */
+    .flow-chart {
+      background-color: var(--code-bg);
+      border: 1px solid rgba(140, 135, 162, 0.15);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .flow-node {
+      border: 1px solid rgba(193, 140, 255, 0.3);
+      background-color: var(--card);
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .flow-arrow {
+      color: var(--primary);
+      font-size: 1rem;
+      animation: float-arrow 2s infinite ease-in-out;
+    }
+
+    @keyframes float-arrow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(4px); }
+    }
+
+    footer {
+      text-align: center;
+      padding: 3rem 0;
+      color: var(--muted-fg);
+      font-size: 0.8rem;
+      border-top: 1px solid rgba(140, 135, 162, 0.1);
+      margin-top: 4rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <header>
+      <div class="badge">
+        <span>Space X Integration</span>
+      </div>
+      <h1>Hướng Dẫn Vận Hành<br>Giám Sát Ca Học Discord</h1>
+      <p class="subtitle">Tài liệu chi tiết hướng dẫn thiết lập, liên kết và vận hành hệ thống giám sát học tập tích hợp thời gian thực.</p>
+    </header>
+
+    <div class="sections-grid">
+      
+      <!-- Card Overview -->
+      <section class="card">
+        <div class="card-header">
+          <div class="step-number">00</div>
+          <h2>Cơ Chế Hoạt Động Tổng Quan</h2>
+        </div>
+        <p>Hệ thống tự động hóa quá trình điểm danh học sinh thông qua kênh thoại (Voice Channel) trên Discord, đồng bộ trực tiếp lên <strong>Đài Giám Sát Học Tập</strong> và tự động tích hợp hoàn thành ca học trong thời khóa biểu học tập của học sinh.</p>
+        
+        <div class="flow-chart">
+          <div class="flow-node" style="border-color: var(--primary);">
+            🎧 Học sinh Join Voice Channel Lớp Học (Discord)
+          </div>
+          <div class="flow-arrow">▼</div>
+          <div class="flow-node">
+            🤖 Discord Bot bắt đầu tính thời gian và cập nhật Realtime (30s/lần)
+          </div>
+          <div class="flow-arrow">▼</div>
+          <div class="flow-node" style="border-color: var(--success);">
+            📊 Đài Giám Sát Web hiển thị: "Đang học qua Discord 🎧"
+          </div>
+          <div class="flow-arrow">▼</div>
+          <div class="flow-node">
+            🚫 Chống AFK: Tự động dừng tính thời gian nếu học sinh tắt tai nghe (Deafen)
+          </div>
+          <div class="flow-arrow">▼</div>
+          <div class="flow-node" style="border-color: var(--primary);">
+            ✅ Đạt 130 phút -> Web tự động hoàn thành checklist ca học Discord
+          </div>
+        </div>
+      </section>
+
+      <!-- Card Step 1 -->
+      <section class="card">
+        <div class="card-header">
+          <div class="step-number">01</div>
+          <h2>Chạy SQL Database Migration</h2>
+        </div>
+        <p>Để hỗ trợ lưu trữ trạng thái học tập qua Discord của học sinh, thầy cần bổ sung cấu trúc cơ sở dữ liệu trên trang quản trị Supabase của mình.</p>
+        <div class="alert">
+          <div class="alert-icon">⚠️</div>
+          <div class="alert-content">
+            Thầy mở trang quản trị <strong>Supabase Dashboard</strong> -> chọn <strong>SQL Editor</strong> -> tạo một Query mới, sao chép nội dung tệp tin bên dưới và bấm <strong>Run</strong>.
+          </div>
+        </div>
+        <div class="code-container">
+          <div class="code-label">migration-discord-monitor.sql</div>
+          <pre><code>-- Bổ sung trường discord_id vào bảng profiles
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS discord_id TEXT UNIQUE;
+
+-- Điều chỉnh trạng thái hỗ trợ trong study_sessions
+ALTER TABLE public.study_sessions DROP CONSTRAINT IF EXISTS study_sessions_status_check;
+ALTER TABLE public.study_sessions ADD CONSTRAINT study_sessions_status_check 
+    CHECK (status IN ('focusing', 'resting', 'offline', 'discord_class', 'discord_afk'));
+
+-- Bổ sung trường đo lường thời lượng cuộc gọi
+ALTER TABLE public.study_sessions ADD COLUMN IF NOT EXISTS discord_duration INTEGER DEFAULT 0;
+ALTER TABLE public.study_sessions ADD COLUMN IF NOT EXISTS discord_deafened BOOLEAN DEFAULT false;
+ALTER TABLE public.study_sessions ADD COLUMN IF NOT EXISTS discord_last_active TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());</code></pre>
+        </div>
+      </section>
+
+      <!-- Card Step 2 -->
+      <section class="card">
+        <div class="card-header">
+          <div class="step-number">02</div>
+          <h2>Liên Kết Tài Khoản Discord của Học Sinh</h2>
+        </div>
+        <p>Để hệ thống nhận biết chính xác học sinh nào đang tham gia thoại Discord, thầy cần cập nhật tài khoản định danh Discord của học sinh vào cơ sở dữ liệu.</p>
+        <ol>
+          <li>Bật <strong>Developer Mode</strong> trên cài đặt Discord cá nhân của thầy.</li>
+          <li>Click chuột phải vào tài khoản của học sinh trên Discord -> Chọn <strong>Copy User ID</strong> (Sẽ thu được dãy số có định dạng ví dụ như: <code>392182049182390281</code>).</li>
+          <li>Truy cập vào Supabase table editor -> Mở bảng <code>profiles</code> -> Tìm đúng dòng của học sinh -> Nhập dãy số ID vừa copy vào cột <code>discord_id</code>.</li>
+        </ol>
+      </section>
+
+      <!-- Card Step 3 -->
+      <section class="card">
+        <div class="card-header">
+          <div class="step-number">03</div>
+          <h2>Cấu Hình Biến Môi Trường (Environment Variables)</h2>
+        </div>
+        <p>Để đồng bộ an toàn từ xa, hệ thống Next.js Web và Discord Bot cần cấu hình các thông số bảo mật liên kết:</p>
+        
+        <p><strong>A. Cấu hình trên Vercel Dashboard (Dành cho Web):</strong></p>
+        <ul>
+          <li><strong><code>SUPABASE_SERVICE_ROLE_KEY</code></strong>: Dùng để cập nhật trực tiếp checklist học tập của học sinh mà không bị chặn bởi bộ lọc chính sách bảo mật RLS.</li>
+          <li><strong><code>DISCORD_SYNC_SECRET</code></strong>: Đặt mã token bảo mật bất kỳ (Ví dụ: <code>super_secret_discord_desk_key</code>) dùng để kiểm soát quyền gọi Webhook.</li>
+        </ul>
+
+        <p><strong>B. Cấu hình file .env (Dành cho Discord Bot):</strong></p>
+        <p>Tạo một tệp tin <code>.env</code> đặt trong thư mục chạy Bot Discord của thầy:</p>
+        <div class="code-container">
+          <div class="code-label">.env</div>
+          <pre><code>DISCORD_BOT_TOKEN=TOKEN_BOT_DISCORD_CUA_BAN
+CLASS_VOICE_CHANNEL_ID=ID_PHONG_THOAI_LOP_HOC_TREN_DISCORD
+WEB_API_URL=https://examhub.vercel.app/api/study-sessions/discord-sync
+DISCORD_SYNC_SECRET=super_secret_discord_desk_key</code></pre>
+        </div>
+      </section>
+
+      <!-- Card Step 4 -->
+      <section class="card">
+        <div class="card-header">
+          <div class="step-number">04</div>
+          <h2>Khởi Chạy Discord Bot</h2>
+        </div>
+        <p>Mã nguồn bot Discord đã được viết sẵn tại đường dẫn thư mục: <code>scripts/discord-bot/tracker.js</code>.</p>
+        <p>Để khởi chạy bot:</p>
+        <ol>
+          <li>Di chuyển vào thư mục bot và cài đặt các thư viện cần thiết:
+            <div class="code-container" style="margin-top: 0.5rem;">
+              <pre><code>npm install discord.js axios dotenv</code></pre>
+            </div>
+          </li>
+          <li>Khởi động bot Discord lên để lắng nghe:
+            <div class="code-container" style="margin-top: 0.5rem;">
+              <pre><code>node tracker.js</code></pre>
+            </div>
+          </li>
+        </ol>
+        <p><em>Lưu ý: Thầy có thể triển khai chạy bot này trên máy tính cá nhân trong suốt buổi học hoặc lưu trữ trực tiếp trên máy chủ VPS để hệ thống hoạt động 24/7.</em></p>
+      </section>
+
+      <!-- Card Step 5 -->
+      <section class="card">
+        <div class="card-header">
+          <div class="step-number">05</div>
+          <h2>Theo Dõi Trực Quan Trên Đài Giám Sát</h2>
+        </div>
+        <p>Khi các bước cấu hình hoàn tất, thầy chỉ cần truy cập vào <strong>Đài Giám Sát Học Tập</strong> trên Web để xem kết quả:</p>
+        <ul>
+          <li><strong>Theo dõi Realtime</strong>: Trạng thái của học sinh tự động đổi sang <code>Đang học qua Discord 🎧</code> màu xanh khi bắt đầu vào phòng học.</li>
+          <li><strong>Cảnh báo AFK 🚫</strong>: Nếu học sinh tắt tai nghe hoặc tắt tiếng (Mute/Deafen) để treo máy, giao diện lập tức nhấp nháy dòng chữ màu cam <code>Treo máy/Tắt tiếng Discord 🚫</code> và phát âm thanh/hiển thị cảnh báo trực quan cho giáo viên biết.</li>
+          <li><strong>Đo lường thời gian thực tế</strong>: Thanh tiến độ YPT-style sẽ hiển thị rõ ràng số phút học tích lũy (ví dụ: <em>Đã học: 45 / 130 phút</em>).</li>
+          <li><strong>Tự động duyệt Checklist</strong>: Khi số phút vượt ngưỡng 130 phút, một checklist nhiệm vụ trên trang cá nhân của học sinh sẽ tự động được đánh dấu hoàn thành 100% thời lượng bài học.</li>
+        </ul>
+      </section>
+
+    </div>
+
+    <footer>
+      <p>ExamHub Smart Observatory Panel © 2026. Thiết kế và tối ưu bởi Antigravity.</p>
+    </footer>
+
+  </div>
+
+</body>
+</html>
