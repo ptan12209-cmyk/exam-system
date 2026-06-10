@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SUBJECTS } from "@/lib/subjects";
 import { cn } from "@/lib/utils";
+import { BookOpen } from "lucide-react";
 
 interface ExamInfoFormProps {
   title: string;
@@ -20,6 +21,16 @@ interface ExamInfoFormProps {
   onTargetClassesChange: (value: string) => void;
   assignedTo: "normal" | "x";
   onAssignedToChange: (value: "normal" | "x") => void;
+  // Hierarchy props
+  selectedChapterId?: string;
+  onChapterChange?: (value: string) => void;
+  selectedLessonId?: string;
+  onLessonChange?: (value: string) => void;
+  selectedSectionId?: string;
+  onSectionChange?: (value: string) => void;
+  availableChapters?: any[];
+  availableLessons?: any[];
+  availableSections?: any[];
 }
 
 export function ExamInfoForm({
@@ -37,6 +48,15 @@ export function ExamInfoForm({
   onTargetClassesChange,
   assignedTo,
   onAssignedToChange,
+  selectedChapterId = "",
+  onChapterChange,
+  selectedLessonId = "",
+  onLessonChange,
+  selectedSectionId = "",
+  onSectionChange,
+  availableChapters = [],
+  availableLessons = [],
+  availableSections = [],
 }: ExamInfoFormProps) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -138,6 +158,58 @@ export function ExamInfoForm({
           </button>
         </div>
       </div>
+
+      {/* Hierarchy: Phân tầng hệ thống bài tập */}
+      {onChapterChange && (
+        <div className="space-y-4 md:col-span-2 rounded-2xl border border-[hsl(var(--border))]/60 p-4">
+          <Label className="flex items-center gap-2 text-sm font-semibold">
+            <BookOpen className="h-4 w-4" /> Phân tầng hệ thống bài tập
+          </Label>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[hsl(var(--muted-foreground))]">Chương</Label>
+              <select
+                value={selectedChapterId}
+                onChange={(e) => { onChapterChange(e.target.value); onLessonChange?.(""); onSectionChange?.("") }}
+                disabled={!targetGrade || !subject}
+                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))] disabled:opacity-50"
+              >
+                <option value="">-- Chọn chương --</option>
+                {availableChapters.map((c: any) => <option key={c.id} value={c.id}>{c.title}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[hsl(var(--muted-foreground))]">Bài học</Label>
+              <select
+                value={selectedLessonId}
+                onChange={(e) => { onLessonChange?.(e.target.value); onSectionChange?.("") }}
+                disabled={!selectedChapterId}
+                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))] disabled:opacity-50"
+              >
+                <option value="">-- Chọn bài --</option>
+                {availableLessons.map((l: any) => <option key={l.id} value={l.id}>{l.title}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[hsl(var(--muted-foreground))]">Phần</Label>
+              <select
+                value={selectedSectionId}
+                onChange={(e) => onSectionChange?.(e.target.value)}
+                disabled={!selectedLessonId}
+                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))] disabled:opacity-50"
+              >
+                <option value="">-- Chọn phần --</option>
+                {availableSections.map((s: any) => <option key={s.id} value={s.id}>{s.title}</option>)}
+              </select>
+            </div>
+          </div>
+          {!targetGrade || !subject ? (
+            <p className="text-xs text-amber-500">⚠️ Cần chọn Khối lớp và Môn học để sử dụng phân tầng.</p>
+          ) : (
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Phân tầng giúp gắn đề thi vào chương trình học (tuỳ chọn).</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

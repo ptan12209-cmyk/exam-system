@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Save, CheckCircle2, RefreshCw, AlertCircle, Shield, ShieldCheck, ShieldAlert, Camera, Mic, GraduationCap } from "lucide-react"
+import { ArrowLeft, Save, CheckCircle2, RefreshCw, AlertCircle, Shield, ShieldCheck, ShieldAlert, Camera, Mic, GraduationCap, BookOpen } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
 import { cn } from "@/lib/utils"
@@ -15,6 +15,7 @@ import { TeacherSidebar } from "@/components/TeacherSidebar"
 import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
+import { MAP_SUBJECT_TO_DB } from "@/lib/subjects"
 
 const OPTIONS = ["A", "B", "C", "D"] as const
 
@@ -29,8 +30,42 @@ export default function EditExamPage() {
   const [targetGrade, setTargetGrade] = useState<number | null>(null);
   const [targetClasses, setTargetClasses] = useState<string>("");
   const [assignedTo, setAssignedTo] = useState<"normal" | "x">("normal");
+  const [examSubject, setExamSubject] = useState<string>("");
 
-  useEffect(() => { (async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) { router.push("/login"); return } const { data: profileData } = await supabase.from("profiles").select("full_name").eq("id", user.id).single(); setProfile(profileData); const { data: exam } = await supabase.from("exams").select("*").eq("id", examId).eq("teacher_id", user.id).single(); if (!exam) { const { data: anyExam } = await supabase.from("exams").select("teacher_id, title").eq("id", examId).single(); if (anyExam) setAuthError("Bạn không có quyền chỉnh sửa đề thi này. Đề thi thuộc về giáo viên khác."); else router.push("/teacher/dashboard"); setLoading(false); return } setTitle(exam.title); setDuration(exam.duration); setTargetGrade(exam.target_grade ?? null); setTargetClasses(exam.target_classes ? exam.target_classes.join(", ") : ""); setAssignedTo(exam.assigned_to ?? "normal"); if (exam.mc_answers?.length > 0) { const mc = exam.mc_answers as { question: number; answer: Option }[]; setMcCount(mc.length); const newMc: (Option | null)[] = Array(mc.length).fill(null); mc.forEach((item) => { const idx = item.question - 1; if (idx >= 0 && idx < mc.length) newMc[idx] = item.answer }); setMcAnswers(newMc) } else if (exam.correct_answers) { setMcCount(exam.correct_answers.length); setMcAnswers(exam.correct_answers) } setTfCount(exam.tf_answers?.length || 0); setTfAnswers(exam.tf_answers || []); setSaCount(exam.sa_answers?.length || 0); setSaAnswers(exam.sa_answers || []); setSecurityLevel(exam.security_level ?? 1); setLoading(false) })() }, [examId, router, supabase])
+  // Hierarchy states
+  const [selectedChapterId, setSelectedChapterId] = useState<string>("");
+  const [selectedLessonId, setSelectedLessonId] = useState<string>("");
+  const [selectedSectionId, setSelectedSectionId] = useState<string>("");
+  const [availableChapters, setAvailableChapters] = useState<any[]>([]);
+  const [availableLessons, setAvailableLessons] = useState<any[]>([]);
+  const [availableSections, setAvailableSections] = useState<any[]>([]);
+
+  useEffect(() => { (async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) { router.push("/login"); return } const { data: profileData } = await supabase.from("profiles").select("full_name").eq("id", user.id).single(); setProfile(profileData); const { data: exam } = await supabase.from("exams").select("*").eq("id", examId).eq("teacher_id", user.id).single(); if (!exam) { const { data: anyExam } = await supabase.from("exams").select("teacher_id, title").eq("id", examId).single(); if (anyExam) setAuthError("Bạn không có quyền chỉnh sửa đề thi này. Đề thi thuộc về giáo viên khác."); else router.push("/teacher/dashboard"); setLoading(false); return } setTitle(exam.title); setDuration(exam.duration); setTargetGrade(exam.target_grade ?? null); setTargetClasses(exam.target_classes ? exam.target_classes.join(", ") : ""); setAssignedTo(exam.assigned_to ?? "normal"); setExamSubject(exam.subject ?? ""); setSelectedChapterId(exam.chapter_id ?? ""); setSelectedLessonId(exam.lesson_id ?? ""); setSelectedSectionId(exam.section_id ?? ""); if (exam.mc_answers?.length > 0) { const mc = exam.mc_answers as { question: number; answer: Option }[]; setMcCount(mc.length); const newMc: (Option | null)[] = Array(mc.length).fill(null); mc.forEach((item) => { const idx = item.question - 1; if (idx >= 0 && idx < mc.length) newMc[idx] = item.answer }); setMcAnswers(newMc) } else if (exam.correct_answers) { setMcCount(exam.correct_answers.length); setMcAnswers(exam.correct_answers) } setTfCount(exam.tf_answers?.length || 0); setTfAnswers(exam.tf_answers || []); setSaCount(exam.sa_answers?.length || 0); setSaAnswers(exam.sa_answers || []); setSecurityLevel(exam.security_level ?? 1); setLoading(false) })() }, [examId, router, supabase])
+
+  // Cascade: load chapters when grade+subject available
+  useEffect(() => {
+    if (!targetGrade || !examSubject) { setAvailableChapters([]); return }
+    const dbSubject = MAP_SUBJECT_TO_DB[examSubject] || examSubject
+    fetch(`/api/study/chapters?subject=${dbSubject}&grade=${targetGrade}`)
+      .then(r => r.json()).then(d => { if (d.data) setAvailableChapters(d.data); else setAvailableChapters([]) })
+      .catch(() => setAvailableChapters([]))
+  }, [targetGrade, examSubject])
+
+  // Cascade: load lessons when chapter changes
+  useEffect(() => {
+    if (!selectedChapterId) { setAvailableLessons([]); setAvailableSections([]); return }
+    fetch(`/api/study/lessons?chapter_id=${selectedChapterId}`)
+      .then(r => r.json()).then(d => { if (d.data) setAvailableLessons(d.data); else setAvailableLessons([]) })
+      .catch(() => setAvailableLessons([]))
+  }, [selectedChapterId])
+
+  // Cascade: load sections when lesson changes
+  useEffect(() => {
+    if (!selectedLessonId) { setAvailableSections([]); return }
+    fetch(`/api/study/sections?lesson_id=${selectedLessonId}`)
+      .then(r => r.json()).then(d => { if (d.data) setAvailableSections(d.data); else setAvailableSections([]) })
+      .catch(() => setAvailableSections([]))
+  }, [selectedLessonId])
   const handleMcCountChange = (newCount: number) => { setMcCount(newCount); setMcAnswers(Array.from({ length: newCount }, (_, i) => mcAnswers[i] || null)) }
   const handleTfCountChange = (newCount: number) => { setTfCount(newCount); setTfAnswers(Array.from({ length: newCount }, (_, i) => tfAnswers[i] || { question: mcCount + 1 + i, a: true, b: true, c: true, d: true })) }
   const handleSaCountChange = (newCount: number) => { setSaCount(newCount); setSaAnswers(Array.from({ length: newCount }, (_, i) => saAnswers[i] || { question: mcCount + tfCount + 1 + i, answer: "" })) }
@@ -85,6 +120,9 @@ export default function EditExamPage() {
           target_grade: targetGrade,
           target_classes: targetClasses.trim() ? targetClasses.split(",").map(c => c.trim().toUpperCase()).filter(Boolean) : null,
           assigned_to: assignedTo,
+          chapter_id: selectedChapterId || null,
+          lesson_id: selectedLessonId || null,
+          section_id: selectedSectionId || null,
         })
         .eq("id", examId)
 
@@ -252,6 +290,56 @@ export default function EditExamPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Hierarchy: Phân tầng hệ thống */}
+          <div className="liquid-glass rounded-[2rem] p-6 space-y-5 md:col-span-2">
+            <h3 className="text-base font-semibold tracking-tight flex items-center gap-2">
+              <BookOpen className="h-4 w-4" /> Phân tầng hệ thống bài tập
+            </h3>
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium uppercase text-[hsl(var(--muted-foreground))]">Chương</Label>
+                <select
+                  value={selectedChapterId}
+                  onChange={(e) => { setSelectedChapterId(e.target.value); setSelectedLessonId(""); setSelectedSectionId("") }}
+                  disabled={!targetGrade || !examSubject}
+                  className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-transparent px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))] disabled:opacity-50"
+                >
+                  <option value="">-- Chọn chương --</option>
+                  {availableChapters.map((c: any) => <option key={c.id} value={c.id} className="bg-[hsl(var(--background))]">{c.title}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium uppercase text-[hsl(var(--muted-foreground))]">Bài học</Label>
+                <select
+                  value={selectedLessonId}
+                  onChange={(e) => { setSelectedLessonId(e.target.value); setSelectedSectionId("") }}
+                  disabled={!selectedChapterId}
+                  className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-transparent px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))] disabled:opacity-50"
+                >
+                  <option value="">-- Chọn bài --</option>
+                  {availableLessons.map((l: any) => <option key={l.id} value={l.id} className="bg-[hsl(var(--background))]">{l.title}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium uppercase text-[hsl(var(--muted-foreground))]">Phần</Label>
+                <select
+                  value={selectedSectionId}
+                  onChange={(e) => setSelectedSectionId(e.target.value)}
+                  disabled={!selectedLessonId}
+                  className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-transparent px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))] disabled:opacity-50"
+                >
+                  <option value="">-- Chọn phần --</option>
+                  {availableSections.map((s: any) => <option key={s.id} value={s.id} className="bg-[hsl(var(--background))]">{s.title}</option>)}
+                </select>
+              </div>
+            </div>
+            {!targetGrade || !examSubject ? (
+              <p className="text-xs text-amber-500">⚠️ Cần chọn Khối lớp và đề thi cần có Môn học để sử dụng phân tầng.</p>
+            ) : (
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">Phân tầng giúp gắn đề thi vào chương trình học cụ thể (tuỳ chọn).</p>
+            )}
           </div>
 
           <div className="liquid-glass rounded-[2rem] p-6 space-y-5">

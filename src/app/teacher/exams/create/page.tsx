@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useExamForm } from "@/hooks/useExamForm"
 import { useAnswerForm } from "@/hooks/useAnswerForm"
@@ -18,6 +18,7 @@ import { TeacherBottomNav } from "@/components/BottomNav"
 import { ArrowLeft, GraduationCap, Loader2, Wand2, Eye } from "lucide-react"
 import { StepIndicator, ExamInfoForm, PdfUploader, ScheduleFields, AnswerEntry } from "./_components"
 import type { Option, TFAnswer, SAAnswer } from "@/types/exam"
+import { MAP_SUBJECT_TO_DB } from "@/lib/subjects"
 
 export default function CreateExamPage() {
   const router = useRouter()
@@ -55,6 +56,14 @@ export default function CreateExamPage() {
   const [targetGrade, setTargetGrade] = useState<number | null>(null)
   const [targetClasses, setTargetClasses] = useState<string>("")
 
+  // Hierarchy states
+  const [selectedChapterId, setSelectedChapterId] = useState<string>("")
+  const [selectedLessonId, setSelectedLessonId] = useState<string>("")
+  const [selectedSectionId, setSelectedSectionId] = useState<string>("")
+  const [availableChapters, setAvailableChapters] = useState<any[]>([])
+  const [availableLessons, setAvailableLessons] = useState<any[]>([])
+  const [availableSections, setAvailableSections] = useState<any[]>([])
+
   const {
     correctAnswers, setCorrectAnswers,
     mcAnswers, setMcAnswers,
@@ -71,6 +80,31 @@ export default function CreateExamPage() {
     parseSuccess, setParseSuccess,
     handlePdfUpload,
   } = usePdfUpload(supabase, setError)
+
+  // Cascade: load chapters when grade+subject available
+  useEffect(() => {
+    if (!targetGrade || !subject) { setAvailableChapters([]); return }
+    const dbSubject = MAP_SUBJECT_TO_DB[subject] || subject
+    fetch(`/api/study/chapters?subject=${dbSubject}&grade=${targetGrade}`)
+      .then(r => r.json()).then(d => { if (d.data) setAvailableChapters(d.data); else setAvailableChapters([]) })
+      .catch(() => setAvailableChapters([]))
+  }, [targetGrade, subject])
+
+  // Cascade: load lessons when chapter changes
+  useEffect(() => {
+    if (!selectedChapterId) { setAvailableLessons([]); setAvailableSections([]); return }
+    fetch(`/api/study/lessons?chapter_id=${selectedChapterId}`)
+      .then(r => r.json()).then(d => { if (d.data) setAvailableLessons(d.data); else setAvailableLessons([]) })
+      .catch(() => setAvailableLessons([]))
+  }, [selectedChapterId])
+
+  // Cascade: load sections when lesson changes
+  useEffect(() => {
+    if (!selectedLessonId) { setAvailableSections([]); return }
+    fetch(`/api/study/sections?lesson_id=${selectedLessonId}`)
+      .then(r => r.json()).then(d => { if (d.data) setAvailableSections(d.data); else setAvailableSections([]) })
+      .catch(() => setAvailableSections([]))
+  }, [selectedLessonId])
 
   const handleMcCountChange = (newCount: number) => {
     setMcCount(newCount)
@@ -235,6 +269,9 @@ export default function CreateExamPage() {
           score_visibility_threshold: scoreVisibilityMode === "threshold" ? scoreThreshold : null,
           security_level: securityLevel,
           assigned_to: assignedTo,
+          chapter_id: selectedChapterId || null,
+          lesson_id: selectedLessonId || null,
+          section_id: selectedSectionId || null,
         })
         .select()
         .single()
@@ -326,6 +363,15 @@ export default function CreateExamPage() {
               onTargetClassesChange={setTargetClasses}
               assignedTo={assignedTo}
               onAssignedToChange={setAssignedTo}
+              selectedChapterId={selectedChapterId}
+              onChapterChange={setSelectedChapterId}
+              selectedLessonId={selectedLessonId}
+              onLessonChange={setSelectedLessonId}
+              selectedSectionId={selectedSectionId}
+              onSectionChange={setSelectedSectionId}
+              availableChapters={availableChapters}
+              availableLessons={availableLessons}
+              availableSections={availableSections}
             />
             <div className="mt-6 grid gap-6 md:grid-cols-3">
               <PdfUploader uploadingPdf={uploadingPdf} pdfUrl={pdfUrl} onUpload={handlePdfUpload} />
