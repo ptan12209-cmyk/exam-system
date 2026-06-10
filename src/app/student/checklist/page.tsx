@@ -12,7 +12,7 @@ import {
   Plus, Check, Trash2, ListTodo, Calendar, Flame, Target, 
   TrendingUp, Sparkles, LayoutGrid, TableProperties, CalendarDays, 
   ChevronLeft, ChevronRight, FileText, Type, Heading, List, Quote, 
-  AlertCircle, Save, Loader2, ArrowRightLeft, ArrowRight, Camera
+  AlertCircle, Save, Loader2, ArrowRightLeft, ArrowRight
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
@@ -71,41 +71,13 @@ export default function StudyChecklistPage() {
   // Calendar states
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
-  // AI Camera & Alerting States
-  const [isFaceRegistered, setIsFaceRegistered] = useState(false)
-  const [isCameraActive, setIsCameraActive] = useState(false)
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
-  const [isRegistering, setIsRegistering] = useState(false)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [faceLog, setFaceLog] = useState<any>(null)
-  const [cameraError, setCameraError] = useState<string | null>(null)
+  // Alerting States
   const [showAlertOverlay, setShowAlertOverlay] = useState(false)
   const [alertMessage, setAlertMessage] = useState("")
-  const [surveillanceFps, setSurveillanceFps] = useState(0)
 
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const analyzeBusyRef = useRef(false)
-  const analyzeRafRef = useRef<number | null>(null)
-  const lastAnalyzeTimeRef = useRef(0)
-  const fpsCounterRef = useRef({ count: 0, lastTime: performance.now() })
-
-  // 1. Kiểm tra đăng ký khuôn mặt mẫu gốc, cấu hình lắng nghe active_alert (cả Broadcast và Database)
+  // 1. Cấu hình lắng nghe active_alert (cả Broadcast và Database)
   useEffect(() => {
     let mounted = true
-    const checkReg = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await supabase
-        .from("student_face_registrations")
-        .select("id")
-        .eq("student_id", user.id)
-        .maybeSingle()
-      if (mounted) {
-        setIsFaceRegistered(!!data)
-      }
-    }
-    checkReg()
 
     // Kiểm tra cảnh báo chủ động lưu trong Database (để hiển thị lại khi tải lại trang)
     const checkInitialAlert = async () => {
@@ -135,7 +107,7 @@ export default function StudyChecklistPage() {
       broadcastChannel = supabase
         .channel(`observatory:${user.id}`)
         .on("broadcast", { event: "active_alert" }, (payload: any) => {
-          triggerAlert(payload.payload.message || "Tập trung học đi em trai ơi!")
+          triggerAlert(payload.payload.message || "Tập trung học đi học sinh ơi!")
         })
         .subscribe()
 
@@ -185,47 +157,7 @@ export default function StudyChecklistPage() {
     }
   }, [supabase])
 
-  // 2. Mở / Đóng Camera
-  const startCamera = async () => {
-    setCameraError(null)
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 320, height: 240, facingMode: "user" } 
-      })
-      setCameraStream(stream)
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-      }
-      setIsCameraActive(true)
-    } catch (err: any) {
-      console.error("Lỗi truy cập camera:", err)
-      setCameraError("Không thể truy cập camera. Vui lòng cấp quyền camera trong cài đặt trình duyệt.")
-    }
-  }
-
-  const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop())
-      setCameraStream(null)
-    }
-    setIsCameraActive(false)
-  }
-
-  // Bind camera stream to video element when active (fixes blank video rendering delay)
-  useEffect(() => {
-    if (isCameraActive && cameraStream && videoRef.current) {
-      videoRef.current.srcObject = cameraStream
-    }
-  }, [isCameraActive, cameraStream])
-
-  // Automatically start camera on page load (always, regardless of registration)
-  useEffect(() => {
-    if (!isCameraActive) {
-      startCamera()
-    }
-  }, [])
-
-  // Synchronize study session state with Supabase when camera is active
+  // Synchronize study session status (focusing when page is open, offline when closed)
   useEffect(() => {
     if (!supabase) return
     
@@ -234,7 +166,6 @@ export default function StudyChecklistPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       
-      // Fetch existing focus seconds to prevent resetting progress
       const { data: existing } = await supabase
         .from("study_sessions")
         .select("total_focus_seconds_today")
@@ -253,219 +184,13 @@ export default function StudyChecklistPage() {
       }
     }
 
-    if (isCameraActive) {
-      updateSessionStatus("focusing")
-    } else {
-      updateSessionStatus("offline")
-    }
+    updateSessionStatus("focusing")
 
     return () => {
       active = false
       updateSessionStatus("offline")
     }
-  }, [isCameraActive, supabase])
-
-  // 3. Auto-register face: when camera is active but no face registered,
-  // automatically detect and save the face from webcam
-  const autoRegisterFace = async () => {
-    if (!videoRef.current || !canvasRef.current || isFaceRegistered) return false
-    try {
-      const video = videoRef.current
-      const canvas = canvasRef.current
-      
-      const MAX_WIDTH = 480
-      const MAX_HEIGHT = 480
-      let width = video.videoWidth || 320
-      let height = video.videoHeight || 240
-      
-      if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-        if (width > height) {
-          height = Math.round((height * MAX_WIDTH) / width)
-          width = MAX_WIDTH
-        } else {
-          width = Math.round((width * MAX_HEIGHT) / height)
-          height = MAX_HEIGHT
-        }
-      }
-      
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext("2d")
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-        const base64 = canvas.toDataURL("image/jpeg", 0.8)
-        
-        const res = await fetch("/api/monitor/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image_base64: base64, type: "register" })
-        })
-        
-        let data: any = {}
-        const contentType = res.headers.get("content-type")
-        if (contentType && contentType.includes("application/json")) {
-          data = await res.json()
-        } else {
-          const text = await res.text()
-          data = { error: text || `Server error (${res.status})` }
-        }
-        
-        if (res.ok && data.success) {
-          setIsFaceRegistered(true)
-          setIsRegistering(false)
-          return true // Successfully registered
-        }
-      }
-    } catch (err) {
-      // Silent — will retry on next cycle
-    }
-    return false
-  }
-
-  // Auto-register effect: retry every 2s when camera is active but no face registered
-  useEffect(() => {
-    if (!isCameraActive || isFaceRegistered) return
-    
-    let active = true
-    setIsRegistering(true)
-    
-    const tryRegister = async () => {
-      if (!active) return
-      const success = await autoRegisterFace()
-      if (success || !active) return
-      // Retry after 2 seconds
-      setTimeout(() => {
-        if (active) tryRegister()
-      }, 2000)
-    }
-
-    // Wait 2s for camera to warm up then start trying
-    const warmup = setTimeout(() => {
-      if (active) tryRegister()
-    }, 2000)
-
-    return () => {
-      active = false
-      clearTimeout(warmup)
-      setIsRegistering(false)
-    }
-  }, [isCameraActive, isFaceRegistered])
-
-  // 4. Capture & Phân tích snapshot realtime (10 FPS = 100ms) — High-end Surveillance Mode
-  const captureAndAnalyzeSingle = async () => {
-    if (!videoRef.current || !canvasRef.current || !isFaceRegistered) return
-    try {
-      const video = videoRef.current
-      const canvas = canvasRef.current
-      
-      // Ultra-low resolution for maximum speed (DeepFace only needs 160x160)
-      const MAX_WIDTH = 240
-      const MAX_HEIGHT = 240
-      let width = video.videoWidth || 320
-      let height = video.videoHeight || 240
-      
-      if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-        if (width > height) {
-          height = Math.round((height * MAX_WIDTH) / width)
-          width = MAX_WIDTH
-        } else {
-          width = Math.round((width * MAX_HEIGHT) / height)
-          height = MAX_HEIGHT
-        }
-      }
-      
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext("2d")
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-        const base64 = canvas.toDataURL("image/jpeg", 0.5)
-        
-        const res = await fetch("/api/monitor/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image_base64: base64, type: "analyze" })
-        })
-        
-        let data: any = {}
-        const contentType = res.headers.get("content-type")
-        if (contentType && contentType.includes("application/json")) {
-          data = await res.json()
-        } else {
-          const text = await res.text()
-          data = { error: text || `Lỗi máy chủ (${res.status})` }
-        }
-        
-        if (res.ok && data.success) {
-          setFaceLog(data)
-          setIsAnalyzing(true) // Visual indicator that system is actively scanning
-        }
-
-        // Model migration: if API says face not registered (stale embedding deleted),
-        // trigger auto-re-register with the new model
-        if (!res.ok && data.error && data.error.includes("Chưa đăng ký")) {
-          setIsFaceRegistered(false)
-        }
-
-        // FPS counter
-        fpsCounterRef.current.count++
-        const now = performance.now()
-        const elapsed = now - fpsCounterRef.current.lastTime
-        if (elapsed >= 1000) {
-          setSurveillanceFps(Math.round((fpsCounterRef.current.count * 1000) / elapsed))
-          fpsCounterRef.current.count = 0
-          fpsCounterRef.current.lastTime = now
-        }
-      }
-    } catch (err) {
-      // Silent fail — surveillance must not crash
-    }
-  }
-
-  // 5. High-performance surveillance loop using requestAnimationFrame + busy-flag
-  // This guarantees: (a) no overlapping API calls, (b) maximum throughput, (c) smooth UI
-  useEffect(() => {
-    if (!isCameraActive || !isFaceRegistered) {
-      setSurveillanceFps(0)
-      return
-    }
-
-    let active = true
-    analyzeBusyRef.current = false
-
-    const THROTTLE_MS = 100 // Target: 10 FPS
-
-    const loop = (timestamp: number) => {
-      if (!active) return
-
-      const elapsed = timestamp - lastAnalyzeTimeRef.current
-      if (elapsed >= THROTTLE_MS && !analyzeBusyRef.current) {
-        analyzeBusyRef.current = true
-        lastAnalyzeTimeRef.current = timestamp
-
-        captureAndAnalyzeSingle().finally(() => {
-          analyzeBusyRef.current = false
-        })
-      }
-
-      analyzeRafRef.current = requestAnimationFrame(loop)
-    }
-
-    // Initial delay 1s to let camera warm up
-    const delayTimeout = setTimeout(() => {
-      if (active) {
-        analyzeRafRef.current = requestAnimationFrame(loop)
-      }
-    }, 1000)
-
-    return () => {
-      active = false
-      if (analyzeRafRef.current) cancelAnimationFrame(analyzeRafRef.current)
-      clearTimeout(delayTimeout)
-      analyzeBusyRef.current = false
-      setIsAnalyzing(false)
-    }
-  }, [isCameraActive, isFaceRegistered])
+  }, [supabase])
 
   // Clear global error after 8s
   useEffect(() => {
@@ -1330,162 +1055,9 @@ export default function StudyChecklistPage() {
               ? "fixed inset-0 z-40 bg-[hsl(var(--background))]/95 backdrop-blur-xl overflow-y-auto p-4 pt-6 pb-24 lg:relative lg:inset-auto lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:overflow-visible lg:p-0" 
               : ""
           )}>
-            {/* Premium AI Camera Supervisor Card (Always visible at the top of the sidebar) */}
-            <div className="rounded-[2rem] border border-indigo-500/20 bg-[hsl(var(--card))]/90 p-5 shadow-lg relative overflow-hidden backdrop-blur-md">
-              {/* Laser scan line overlay */}
-              {isCameraActive && (
-                <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent animate-scan z-10 pointer-events-none" style={{
-                  animation: "scan 3s linear infinite",
-                  top: "0%"
-                }} />
-              )}
-              
-              <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/30 pb-3 mb-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
-                  <span className={cn("h-2 w-2 rounded-full", isCameraActive ? "bg-indigo-500 animate-pulse" : "bg-slate-400")} />
-                  AI Cam Supervisor
-                </span>
-                <span className={cn(
-                  "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase border",
-                  isFaceRegistered ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse"
-                )}>
-                  {isFaceRegistered ? "Đã Đăng Ký" : "Chưa Thiết Lập"}
-                </span>
-              </div>
 
-              {!isCameraActive ? (
-                <div className="py-6 text-center space-y-3">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/5 border border-indigo-500/20 text-indigo-400">
-                    <Camera className="h-6 w-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold">Giám sát tự động đang tắt</p>
-                    <p className="text-[10px] text-[hsl(var(--muted-foreground))] leading-normal max-w-[200px] mx-auto">
-                      Bật camera để AI tự động quét và đăng ký khuôn mặt, bắt đầu giám sát ngay.
-                    </p>
-                  </div>
-                  <Button 
-                    onClick={startCamera} 
-                    className="rounded-full py-4 text-xs font-semibold w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/10"
-                  >
-                    Bật Camera Giám Sát
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Live Preview Container */}
-                  <div className="relative rounded-2xl overflow-hidden aspect-video border border-[hsl(var(--border))]/40 bg-black/20 flex items-center justify-center group shadow-inner">
-                    <video 
-                      ref={videoRef} 
-                      autoPlay 
-                      playsInline 
-                      muted 
-                      className="w-full h-full object-cover transform -scale-x-100" 
-                    />
-                    <canvas ref={canvasRef} className="hidden" />
-                    
-                    {/* Bounding box glow overlays */}
-                    {faceLog && faceLog.is_present && faceLog.is_verified && (
-                      <div className="absolute inset-0 border-2 border-emerald-500/40 pointer-events-none rounded-2xl animate-pulse" />
-                    )}
-                    {faceLog && (!faceLog.is_present || !faceLog.is_verified) && (
-                      <div className="absolute inset-0 border-2 border-red-500/60 pointer-events-none rounded-2xl animate-pulse" />
-                    )}
 
-                    {/* Surveillance scan line animation */}
-                    {isAnalyzing && (
-                      <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-                        <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent" style={{ animation: 'scanline 2s linear infinite' }} />
-                      </div>
-                    )}
-
-                    {/* Live REC + FPS Badge */}
-                    {isAnalyzing && (
-                      <div className="absolute top-2 left-2 flex items-center gap-1.5">
-                        <div className="flex items-center gap-1 rounded-md bg-red-600/90 px-1.5 py-0.5 text-[8px] font-black text-white tracking-wider shadow-md">
-                          <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                          REC
-                        </div>
-                        <div className="rounded-md bg-black/60 backdrop-blur-sm px-1.5 py-0.5 text-[8px] font-bold text-emerald-400 tabular-nums">
-                          {surveillanceFps} FPS
-                        </div>
-                      </div>
-                    )}
-
-                    {cameraError && (
-                      <div className="absolute inset-0 bg-red-950/80 p-3 text-center text-[9px] font-semibold text-red-400 flex items-center justify-center">
-                        {cameraError}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* AI Diagnostics details */}
-                  <div className="text-[10px] font-semibold space-y-2 bg-[hsl(var(--background))]/60 p-3 rounded-xl border border-[hsl(var(--border))]/30">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[hsl(var(--muted-foreground))]">Hiện diện:</span>
-                      {faceLog ? (
-                        <span className={cn(
-                          "rounded-full px-2 py-0.5 text-[9px] font-bold border",
-                          faceLog.is_present 
-                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
-                            : "bg-red-500/10 text-red-500 border-red-500/20 animate-pulse"
-                        )}>
-                          {faceLog.is_present ? "🟢 Có mặt" : "🔴 Rời vị trí"}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400">Đang quét...</span>
-                      )}
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <span className="text-[hsl(var(--muted-foreground))]">Danh tính:</span>
-                      {faceLog ? (
-                        <span className={cn(
-                          "rounded-full px-2 py-0.5 text-[9px] font-bold border",
-                          faceLog.is_verified 
-                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
-                            : "bg-red-500/10 text-red-500 border-red-500/20"
-                        )}>
-                          {faceLog.is_verified ? "🟢 Khớp" : "🔴 Sai người"}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400">Đang đối sánh...</span>
-                      )}
-                    </div>
-
-                  </div>
-
-                  <div className="flex gap-2">
-                    {!isFaceRegistered ? (
-                      <div className="w-full flex items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/5 py-3 gap-2">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
-                        <span className="text-[10px] font-bold text-amber-500">
-                          {isRegistering ? "Đang tự quét khuôn mặt..." : "Đang khởi tạo camera..."}
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex-1 flex items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/5 py-2.5 gap-1.5">
-                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-[10px] font-bold text-emerald-500">
-                            Surveillance {surveillanceFps > 0 ? 'Active' : 'Standby'}
-                          </span>
-                        </div>
-                        <Button 
-                          onClick={stopCamera}
-                          variant="outline" 
-                          className="rounded-xl text-[10px] py-4 px-3 border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] font-bold hover:bg-[hsl(var(--muted))]"
-                        >
-                          Tắt Cam
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Below Camera Card: Show Notion Editor or Widgets */}
+            {/* Show Notion Editor or Widgets */}
             {selectedTask ? (
               <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/90 p-4 sm:p-6 shadow-md shadow-[hsl(var(--foreground))]/5 animate-in slide-in-from-bottom-8 lg:slide-in-from-right-8 duration-200 max-w-2xl mx-auto lg:max-w-none">
                 {/* Header and Close controls */}
@@ -1736,7 +1308,7 @@ export default function StudyChecklistPage() {
             )}
           </aside>
         </section>
-        {/* Lớp phủ cảnh báo cưỡng chế từ người anh */}
+        {/* Lớp phủ cảnh báo cưỡng chế từ Giáo viên */}
         {showAlertOverlay && (
           <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-red-950/80 backdrop-blur-xl border border-red-500/20 p-6 text-center animate-in fade-in duration-300">
             {/* Pulsing red spotlight glow */}
@@ -1746,7 +1318,7 @@ export default function StudyChecklistPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/25 text-red-500">
                 <AlertCircle className="h-8 w-8 animate-bounce" />
               </div>
-              <h2 className="text-2xl font-bold tracking-tight text-red-500 mb-2">Cảnh Báo Từ Người Anh!</h2>
+              <h2 className="text-2xl font-bold tracking-tight text-red-500 mb-2">Cảnh Báo Từ Giáo Viên!</h2>
               <p className="text-sm text-[hsl(var(--muted-foreground))] mb-6 leading-relaxed">
                 Hệ thống phát hiện bạn đang mất tập trung hoặc rời khỏi vị trí học tập. Lời nhắn:
               </p>
