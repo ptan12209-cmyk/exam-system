@@ -27,9 +27,12 @@ interface StudentProfile {
 
 interface StudySession {
   student_id: string
-  status: "focusing" | "resting" | "offline"
+  status: "focusing" | "resting" | "offline" | "discord_class" | "discord_afk"
   last_status_change: string
   total_focus_seconds_today: number
+  discord_duration?: number
+  discord_deafened?: boolean
+  discord_last_active?: string
 }
 
 interface StudyTask {
@@ -547,6 +550,12 @@ export default function TeacherMonitorPage() {
     if (session.status === "focusing") {
       return { label: "Đang tập trung học 🎯", color: "bg-emerald-500 animate-pulse", glow: "shadow-emerald-500/50 shadow-lg", bg: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" }
     }
+    if (session.status === "discord_class") {
+      return { label: "Đang học qua Discord 🎧", color: "bg-green-500 animate-pulse", glow: "shadow-green-500/50 shadow-lg", bg: "bg-green-500/10 border-green-500/30 text-green-400" }
+    }
+    if (session.status === "discord_afk") {
+      return { label: "Treo máy/Tắt tiếng Discord 🚫", color: "bg-amber-500 animate-pulse", glow: "shadow-amber-500/30", bg: "bg-amber-500/10 border-amber-500/20 text-amber-500" }
+    }
     return { label: "Đang nghỉ ngơi giải lao ☕", color: "bg-amber-500", glow: "shadow-amber-500/30", bg: "bg-amber-500/10 border-amber-500/30 text-amber-400" }
   }, [session])
 
@@ -674,10 +683,10 @@ export default function TeacherMonitorPage() {
                   </button>
                 </div>
 
-                <div className="grid gap-4 sm:gap-6 md:grid-cols-2 items-center">
+                <div className="grid gap-4 sm:gap-6 md:grid-cols-3 items-stretch">
                   
                   {/* Status Indicator Panel */}
-                  <div className="space-y-4">
+                  <div className="space-y-4 flex flex-col justify-between">
                     <div>
                       <p className="text-xs uppercase font-bold text-[hsl(var(--muted-foreground))] mb-1">Trạng thái hiện tại</p>
                       <div className={cn("inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold backdrop-blur-md", statusInfo.bg)}>
@@ -687,7 +696,7 @@ export default function TeacherMonitorPage() {
                     </div>
 
                     <div>
-                      <p className="text-xs uppercase font-bold text-[hsl(var(--muted-foreground))] mb-1">Thời gian đã học hôm nay</p>
+                      <p className="text-xs uppercase font-bold text-[hsl(var(--muted-foreground))] mb-1">Thời gian tự học hôm nay</p>
                       <p className="text-4xl font-bold tracking-tight bg-gradient-to-r from-[hsl(var(--foreground))] to-[hsl(var(--muted-foreground))] bg-clip-text text-transparent">
                         {formatSeconds(todayFocusSeconds)}
                       </p>
@@ -695,11 +704,13 @@ export default function TeacherMonitorPage() {
                   </div>
 
                   {/* Circular/Linear Progress target tracking */}
-                  <div className="rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/40 p-4 relative overflow-hidden">
-                    <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] mb-2">Mục tiêu học tập hàng ngày</p>
-                    <div className="flex justify-between items-end mb-1">
-                      <span className="text-2xl font-bold">{dailyTargetPercent}%</span>
-                      <span className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">Mục tiêu: 2 giờ</span>
+                  <div className="rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/40 p-4 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] mb-2">Mục tiêu tự học Web (Daily)</p>
+                      <div className="flex justify-between items-end mb-1">
+                        <span className="text-2xl font-bold">{dailyTargetPercent}%</span>
+                        <span className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">Mục tiêu: 2 giờ</span>
+                      </div>
                     </div>
                     <div className="w-full bg-[hsl(var(--border))]/50 h-2 rounded-full overflow-hidden">
                       <div 
@@ -708,6 +719,42 @@ export default function TeacherMonitorPage() {
                       />
                     </div>
                   </div>
+
+                  {/* Discord Presence & Class Target Tracking */}
+                  {(() => {
+                    const DISCORD_TARGET_SECONDS = 130 * 60 // 130 mins
+                    const discordSecs = session?.discord_duration || 0
+                    const discordMins = Math.floor(discordSecs / 60)
+                    const discordPercent = Math.min(Math.round((discordSecs / DISCORD_TARGET_SECONDS) * 100), 100)
+                    
+                    return (
+                      <div className="rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/40 p-4 relative overflow-hidden flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start mb-2">
+                            <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">Ca học Discord (150p)</p>
+                            {session?.discord_deafened && (
+                              <span className="rounded-full bg-red-500/10 border border-red-500/25 px-2 py-0.5 text-[9px] font-bold text-red-500 animate-pulse">
+                                AFK 🚫
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex justify-between items-end mb-1">
+                            <div className="flex flex-col">
+                              <span className="text-2xl font-bold">{discordPercent}%</span>
+                              <span className="text-[9px] text-[hsl(var(--muted-foreground))]">Đã học: {discordMins} / 130 phút</span>
+                            </div>
+                            <span className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">Cần đạt: 130 phút</span>
+                          </div>
+                        </div>
+                        <div className="w-full bg-[hsl(var(--border))]/50 h-2 rounded-full overflow-hidden mb-1">
+                          <div 
+                            className="bg-gradient-to-r from-green-500 to-emerald-400 h-full rounded-full transition-all duration-1000" 
+                            style={{ width: `${discordPercent}%` }} 
+                          />
+                        </div>
+                      </div>
+                    )
+                  })()}
 
                 </div>
               </div>
