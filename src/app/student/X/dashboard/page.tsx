@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Instrument_Serif, JetBrains_Mono, Inter } from "next/font/google"
+
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import {
@@ -32,21 +32,9 @@ import { DailyCheckIn } from "@/components/gamification/DailyCheckIn"
 import { XpBar } from "@/components/gamification/XpBar"
 import { StudentShell } from "@/components/student/StudentShell"
 
-const instrumentSerif = Instrument_Serif({
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal", "italic"],
-})
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-})
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-})
+const instrumentSerif = { className: "font-instrument-serif" }
+const jetbrainsMono = { className: "font-jetbrains-mono" }
+const inter = { className: "font-inter" }
 
 interface Profile {
   id: string

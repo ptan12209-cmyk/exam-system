@@ -1,8 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&family=Inter:wght@100..900&family=JetBrains+Mono:wght@400;700&display=swap');
 @import "../components/ui/dotmatrix.css";
 @import "tailwindcss";
 
 :root {
+  /* Font Family variables */
+  --font-inter: 'Inter', sans-serif;
+  --font-instrument-serif: 'Instrument Serif', serif;
+  --font-jetbrains-mono: 'JetBrains Mono', monospace;
+
   /* Premium Dark palette (Matching Space X Style globally) */
   --background: 248 29% 6%; /* #0B0A13 */
   --foreground: 260 38% 95%; /* #F1EDF9 */
@@ -102,6 +107,18 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.4);
+}
+
+.font-inter {
+  font-family: var(--font-inter);
+}
+
+.font-instrument-serif {
+  font-family: var(--font-instrument-serif);
+}
+
+.font-jetbrains-mono {
+  font-family: var(--font-jetbrains-mono);
 }
 
 .font-serif-italic {

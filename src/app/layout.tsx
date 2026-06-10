@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ToastProvider } from "@/components/ui/toast";
@@ -8,26 +7,7 @@ import { MobileNav } from "@/components/pwa/MobileNav";
 import NextTopLoader from "nextjs-toploader";
 
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin", "vietnamese"],
-  display: "swap",
-});
 
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "ExamHub - Hệ thống thi trắc nghiệm online",
@@ -71,7 +51,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className={`${inter.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} antialiased selection:bg-[hsl(var(--primary))] selection:text-[hsl(var(--primary-foreground))]`}>
+      <body className="antialiased selection:bg-[hsl(var(--primary))] selection:text-[hsl(var(--primary-foreground))]">
         <NextTopLoader 
           color="hsl(var(--foreground))"
           initialPosition={0.08}
