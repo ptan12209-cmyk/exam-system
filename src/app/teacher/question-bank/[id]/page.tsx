@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Plus, Loader2, Edit, Trash, HelpCircle, Check, X, Upload } from "lucide-react"
 import Latex from "react-latex-next"
 import "katex/dist/katex.min.css"
+import { MAP_SUBJECT_TO_DB } from "@/lib/subjects"
 
 interface RouteParams {
     params: Promise<{ id: string }>
@@ -27,6 +28,12 @@ interface Question {
     options: string[] | null
     correct_answer: any
     explanation: string | null
+    chapter_id?: string | null
+    lesson_id?: string | null
+    section_id?: string | null
+    study_chapters?: { title: string } | null
+    study_lessons?: { title: string } | null
+    study_sections?: { title: string } | null
 }
 
 export default function QuestionBankDetailPage({ params }: RouteParams) {
@@ -60,21 +67,111 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
     // AI PDF states
     const [uploadingPdf, setUploadingPdf] = useState(false)
 
+    // Selection states for categorization
+    const [bankSubject, setBankSubject] = useState("")
+    const [selectedGrade, setSelectedGrade] = useState<string>("")
+    const [selectedChapterId, setSelectedChapterId] = useState<string>("")
+    const [selectedLessonId, setSelectedLessonId] = useState<string>("")
+    const [selectedSectionId, setSelectedSectionId] = useState<string>("")
+
+    // Lists for dropdown selectors
+    const [availableChapters, setAvailableChapters] = useState<any[]>([])
+    const [availableLessons, setAvailableLessons] = useState<any[]>([])
+    const [availableSections, setAvailableSections] = useState<any[]>([])
+
     useEffect(() => {
         fetchBankDetails()
         fetchQuestions()
     }, [bankId])
 
+    // Load chapters when Grade or Subject changes
+    useEffect(() => {
+        if (!selectedGrade || !bankSubject) {
+            setAvailableChapters([])
+            setAvailableLessons([])
+            setAvailableSections([])
+            setSelectedChapterId("")
+            setSelectedLessonId("")
+            setSelectedSectionId("")
+            return
+        }
+        const fetchChapters = async () => {
+            const dbSubject = MAP_SUBJECT_TO_DB[bankSubject] || "other"
+            const res = await fetch(`/api/study/chapters?subject=${dbSubject}&grade=${selectedGrade}`)
+            const data = await res.json()
+            if (res.ok && data.data) {
+                setAvailableChapters(data.data)
+            } else {
+                setAvailableChapters([])
+            }
+        }
+        fetchChapters()
+        setSelectedChapterId("")
+        setSelectedLessonId("")
+        setSelectedSectionId("")
+    }, [selectedGrade, bankSubject])
+
+    // Load lessons when Chapter changes
+    useEffect(() => {
+        if (!selectedChapterId) {
+            setAvailableLessons([])
+            setAvailableSections([])
+            setSelectedLessonId("")
+            setSelectedSectionId("")
+            return
+        }
+        const fetchLessons = async () => {
+            const res = await fetch(`/api/study/lessons?chapter_id=${selectedChapterId}`)
+            const data = await res.json()
+            if (res.ok && data.data) {
+                setAvailableLessons(data.data)
+            } else {
+                setAvailableLessons([])
+            }
+        }
+        fetchLessons()
+        setSelectedLessonId("")
+        setSelectedSectionId("")
+    }, [selectedChapterId])
+
+    // Load sections when Lesson changes
+    useEffect(() => {
+        if (!selectedLessonId) {
+            setAvailableSections([])
+            setSelectedSectionId("")
+            return
+        }
+        const fetchSections = async () => {
+            const res = await fetch(`/api/study/sections?lesson_id=${selectedLessonId}`)
+            const data = await res.json()
+            if (res.ok && data.data) {
+                setAvailableSections(data.data)
+            } else {
+                setAvailableSections([])
+            }
+        }
+        fetchSections()
+        setSelectedSectionId("")
+    }, [selectedLessonId])
+
     const fetchBankDetails = async () => {
-        const { data } = await supabase.from("question_banks").select("name").eq("id", bankId).single()
-        if (data) setBankName(data.name)
+        const { data } = await supabase.from("question_banks").select("name, subject").eq("id", bankId).single()
+        if (data) {
+            setBankName(data.name)
+            setBankSubject(data.subject)
+        }
     }
 
     const fetchQuestions = async () => {
         setLoading(true)
         const { data } = await supabase
             .from("questions")
-            .select("*")
+            .select(`
+                *,
+                study_chapters(title),
+                study_lessons(title),
+                study_sections(title)
+            `)
             .eq("bank_id", bankId)
             .order("created_at", { ascending: false })
         
@@ -166,7 +263,10 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
                 content: qContent,
                 options,
                 correct_answer: correctAnswer,
-                explanation: qExplanation
+                explanation: qExplanation,
+                chapter_id: selectedChapterId || null,
+                lesson_id: selectedLessonId || null,
+                section_id: selectedSectionId || null
             })
 
             if (error) throw error
@@ -193,6 +293,10 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
         setQExplanation("")
         setMcOptions(["", "", "", ""])
         setSaCorrect("")
+        setSelectedGrade("")
+        setSelectedChapterId("")
+        setSelectedLessonId("")
+        setSelectedSectionId("")
     }
 
     return (
@@ -251,6 +355,54 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
                                             <SelectItem value="2">2 - Trung bình (Thông hiểu)</SelectItem>
                                             <SelectItem value="3">3 - Khó (Vận dụng)</SelectItem>
                                             <SelectItem value="4">4 - Rất khó (Vận dụng cao)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Phân loại Chương - Bài - Phần */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                                <div className="space-y-2">
+                                    <Label>Khối lớp</Label>
+                                    <Select value={selectedGrade} onValueChange={setSelectedGrade}>
+                                        <SelectTrigger><SelectValue placeholder="Chọn khối" /></SelectTrigger>
+                                        <SelectContent>
+                                            {Array.from({ length: 7 }, (_, i) => i + 6).map((g) => (
+                                                <SelectItem key={g} value={String(g)}>Khối lớp {g}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Chương học</Label>
+                                    <Select value={selectedChapterId} onValueChange={setSelectedChapterId} disabled={!selectedGrade}>
+                                        <SelectTrigger><SelectValue placeholder="Chọn chương" /></SelectTrigger>
+                                        <SelectContent>
+                                            {availableChapters.map((ch) => (
+                                                <SelectItem key={ch.id} value={ch.id}>Chương {ch.order_index}: {ch.title}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Bài học</Label>
+                                    <Select value={selectedLessonId} onValueChange={setSelectedLessonId} disabled={!selectedChapterId}>
+                                        <SelectTrigger><SelectValue placeholder="Chọn bài học" /></SelectTrigger>
+                                        <SelectContent>
+                                            {availableLessons.map((les) => (
+                                                <SelectItem key={les.id} value={les.id}>Bài {les.order_index}: {les.title}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Phần bài tập</Label>
+                                    <Select value={selectedSectionId} onValueChange={setSelectedSectionId} disabled={!selectedLessonId}>
+                                        <SelectTrigger><SelectValue placeholder="Chọn phần" /></SelectTrigger>
+                                        <SelectContent>
+                                            {availableSections.map((sec) => (
+                                                <SelectItem key={sec.id} value={sec.id}>Phần {sec.order_index}: {sec.title}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -382,6 +534,23 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
                                         <Trash className="w-4 h-4" />
                                     </Button>
                                 </div>
+                                {(q.study_chapters?.title || q.study_lessons?.title || q.study_sections?.title) && (
+                                    <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground mt-2 bg-slate-50 dark:bg-slate-800/30 px-2 py-1 rounded border w-fit border-indigo-50/50 dark:border-indigo-900/10">
+                                        {q.study_chapters?.title && <span className="font-medium text-slate-600 dark:text-slate-400">{q.study_chapters.title}</span>}
+                                        {q.study_lessons?.title && (
+                                            <>
+                                                <span className="opacity-40 font-bold">/</span>
+                                                <span className="text-slate-600 dark:text-slate-400">{q.study_lessons.title}</span>
+                                            </>
+                                        )}
+                                        {q.study_sections?.title && (
+                                            <>
+                                                <span className="opacity-40 font-bold">/</span>
+                                                <span className="font-semibold text-indigo-600 dark:text-indigo-400">{q.study_sections.title}</span>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="whitespace-pre-wrap font-medium overflow-x-auto"><Latex>{q.content}</Latex></div>

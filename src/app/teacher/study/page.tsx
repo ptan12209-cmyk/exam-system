@@ -44,6 +44,13 @@ interface Lesson {
   order_index: number
 }
 
+interface Section {
+  id: string
+  lesson_id: string
+  title: string
+  order_index: number
+}
+
 interface Material {
   id: string
   lesson_id: string
@@ -69,6 +76,7 @@ export default function TeacherStudyPage() {
   // Loaded Data
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [lessons, setLessons] = useState<Record<string, Lesson[]>>({})
+  const [sections, setSections] = useState<Record<string, Section[]>>({})
   const [materials, setMaterials] = useState<Record<string, Material[]>>({})
   
   // Collapsed State for UI Tree
@@ -78,11 +86,12 @@ export default function TeacherStudyPage() {
   // Loadings
   const [loadingChapters, setLoadingChapters] = useState(false)
   const [loadingLessons, setLoadingLessons] = useState<Record<string, boolean>>({})
+  const [loadingSections, setLoadingSections] = useState<Record<string, boolean>>({})
   const [loadingMaterials, setLoadingMaterials] = useState<Record<string, boolean>>({})
   
   // Modals / Forms
-  const [activeModal, setActiveModal] = useState<"chapter" | "lesson" | "material" | null>(null)
-  const [editingItem, setEditingItem] = useState<{ type: "chapter" | "lesson" | "material"; id: string } | null>(null)
+  const [activeModal, setActiveModal] = useState<"chapter" | "lesson" | "section" | "material" | null>(null)
+  const [editingItem, setEditingItem] = useState<{ type: "chapter" | "lesson" | "section" | "material"; id: string } | null>(null)
   
   // Form values
   const [chapterTitle, setChapterTitle] = useState("")
@@ -91,6 +100,9 @@ export default function TeacherStudyPage() {
   const [lessonTitle, setLessonTitle] = useState("")
   const [lessonOrder, setLessonOrder] = useState(1)
   const [targetChapterId, setTargetChapterId] = useState("")
+  
+  const [sectionTitle, setSectionTitle] = useState("")
+  const [sectionOrder, setSectionOrder] = useState(1)
   
   const [materialTitle, setMaterialTitle] = useState("")
   const [materialType, setMaterialType] = useState<"video" | "document">("video")
@@ -122,7 +134,6 @@ export default function TeacherStudyPage() {
     }
     checkAuth()
   }, [router, supabase])
-
   // Fetch Chapters
   const fetchChapters = async () => {
     setLoadingChapters(true)
@@ -136,8 +147,9 @@ export default function TeacherStudyPage() {
       const chaptersList: Chapter[] = data.data || []
       setChapters(chaptersList)
       
-      // Clear lessons and materials state for clean load
+      // Clear lessons, sections and materials state for clean load
       setLessons({})
+      setSections({})
       setMaterials({})
     } catch (err) {
       setError(err instanceof Error ? err.message : "Có lỗi xảy ra")
@@ -163,6 +175,22 @@ export default function TeacherStudyPage() {
       console.error(err)
     } finally {
       setLoadingLessons(prev => ({ ...prev, [chapterId]: false }))
+    }
+  }
+
+  // Fetch Sections for a Lesson
+  const fetchSections = async (lessonId: string) => {
+    setLoadingSections(prev => ({ ...prev, [lessonId]: true }))
+    try {
+      const res = await fetch(`/api/study/sections?lesson_id=${lessonId}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Không thể tải phần học")
+      
+      setSections(prev => ({ ...prev, [lessonId]: data.data || [] }))
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingSections(prev => ({ ...prev, [lessonId]: false }))
     }
   }
 
@@ -193,11 +221,15 @@ export default function TeacherStudyPage() {
   const toggleLesson = (lessonId: string) => {
     const isExpanded = !!expandedLessons[lessonId]
     setExpandedLessons(prev => ({ ...prev, [lessonId]: !isExpanded }))
-    if (!isExpanded && (!materials[lessonId] || materials[lessonId].length === 0)) {
-      fetchMaterials(lessonId)
+    if (!isExpanded) {
+      if (!materials[lessonId] || materials[lessonId].length === 0) {
+        fetchMaterials(lessonId)
+      }
+      if (!sections[lessonId] || sections[lessonId].length === 0) {
+        fetchSections(lessonId)
+      }
     }
   }
-
   // Handle Chapter Submissions
   const handleChapterSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -329,7 +361,6 @@ export default function TeacherStudyPage() {
       setSubmitting(false)
     }
   }
-
   // Delete Material
   const handleDeleteMaterial = async (lessonId: string, materialId: string, title: string) => {
     if (!confirm(`Bạn chắc chắn muốn xóa học liệu "${title}"?`)) return
@@ -340,6 +371,54 @@ export default function TeacherStudyPage() {
         throw new Error(data.error || "Không thể xóa học liệu")
       }
       fetchMaterials(lessonId)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Lỗi xảy ra")
+    }
+  }
+
+  // Handle Section Submissions
+  const handleSectionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!sectionTitle.trim()) return
+    setSubmitting(true)
+    setError(null)
+    
+    try {
+      const body = {
+        id: editingItem?.type === "section" ? editingItem.id : undefined,
+        lesson_id: targetLessonId,
+        title: sectionTitle.trim(),
+        order_index: Number(sectionOrder)
+      }
+      
+      const res = await fetch("/api/study/sections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Lỗi xử lý phần học")
+      
+      await fetchSections(targetLessonId)
+      setExpandedLessons(prev => ({ ...prev, [targetLessonId]: true }))
+      closeModal()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // Delete Section
+  const handleDeleteSection = async (lessonId: string, sectionId: string, title: string) => {
+    if (!confirm(`Bạn chắc chắn muốn xóa phần "${title}"?`)) return
+    try {
+      const res = await fetch(`/api/study/sections?id=${sectionId}`, { method: "DELETE" })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Không thể xóa phần học")
+      }
+      fetchSections(lessonId)
     } catch (err) {
       alert(err instanceof Error ? err.message : "Lỗi xảy ra")
     }
@@ -361,6 +440,14 @@ export default function TeacherStudyPage() {
     setActiveModal("lesson")
   }
 
+  const openEditSection = (lessonId: string, section: Section) => {
+    setTargetLessonId(lessonId)
+    setEditingItem({ type: "section", id: section.id })
+    setSectionTitle(section.title)
+    setSectionOrder(section.order_index)
+    setActiveModal("section")
+  }
+
   const openEditMaterial = (lessonId: string, material: Material) => {
     setTargetLessonId(lessonId)
     setEditingItem({ type: "material", id: material.id })
@@ -378,12 +465,13 @@ export default function TeacherStudyPage() {
     setChapterOrder(1)
     setLessonTitle("")
     setLessonOrder(1)
+    setSectionTitle("")
+    setSectionOrder(1)
     setMaterialTitle("")
     setMaterialUrl("")
     setMaterialDesc("")
     setError(null)
   }
-
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push("/login")
@@ -590,6 +678,19 @@ export default function TeacherStudyPage() {
                                         size="sm" 
                                         onClick={() => {
                                           setTargetLessonId(lesson.id)
+                                          setSectionTitle("")
+                                          setSectionOrder((sections[lesson.id]?.length || 0) + 1)
+                                          setActiveModal("section")
+                                        }}
+                                        className="h-8 rounded-lg border border-[hsl(var(--border))]/30 text-[10px] font-bold px-2.5 py-1 hover:bg-[hsl(var(--muted))]"
+                                      >
+                                        <Plus className="mr-0.5 h-3 w-3" /> Phần
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        onClick={() => {
+                                          setTargetLessonId(lesson.id)
                                           setMaterialTitle("")
                                           setMaterialUrl("")
                                           setMaterialDesc("")
@@ -619,79 +720,133 @@ export default function TeacherStudyPage() {
                                     </div>
                                   </div>
 
-                                  {/* Materials under Lesson */}
+                                  {/* Materials & Sections under Lesson */}
                                   <AnimatePresence initial={false}>
                                     {isLessonExpanded && (
                                       <motion.div 
                                         initial={{ height: 0, opacity: 0 }}
                                         animate={{ height: "auto", opacity: 1 }}
                                         exit={{ height: 0, opacity: 0 }}
-                                        className="mt-3 ml-6 pl-4 border-l-2 border-[hsl(var(--border))]/40 space-y-2.5"
+                                        className="mt-3 ml-6 pl-4 border-l-2 border-[hsl(var(--border))]/40 space-y-5"
                                       >
-                                        {isLoadingMaterials ? (
-                                          <div className="flex items-center py-4">
-                                            <Loader2 className="h-4 w-4 animate-spin text-[hsl(var(--foreground))]/50" />
-                                            <span className="ml-2 text-[10px] text-[hsl(var(--muted-foreground))]">Đang tải tài nguyên...</span>
-                                          </div>
-                                        ) : lessonMaterials.length === 0 ? (
-                                          <p className="text-[11px] text-[hsl(var(--muted-foreground))] italic py-2">
-                                            Không có học liệu/bài giảng nào. Hãy nhấn "Tài nguyên" để thêm.
-                                          </p>
-                                        ) : (
-                                          lessonMaterials.map((material) => (
-                                            <div key={material.id} className="flex items-center justify-between gap-3 rounded-xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/30 px-4 py-3 hover:bg-[hsl(var(--background))]/60 transition-colors">
-                                              <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--background))] border border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))]">
-                                                  {material.type === "video" ? (
-                                                    <Video className="h-4 w-4 text-rose-500" />
-                                                  ) : (
-                                                    <FileText className="h-4 w-4 text-emerald-500" />
-                                                  )}
-                                                </div>
-                                                <div className="min-w-0">
-                                                  <h5 className="font-semibold text-xs text-foreground truncate">{material.title}</h5>
-                                                  <p className="text-[10px] text-[hsl(var(--muted-foreground))] truncate mt-0.5 flex items-center gap-1.5">
-                                                    <span>{material.type === "video" ? "Video bài giảng" : "Tài liệu tự học (PDF)"}</span>
-                                                    {material.description && (
-                                                      <>
-                                                        <span className="h-1 w-1 rounded-full bg-[hsl(var(--border))]"></span>
-                                                        <span className="italic">{material.description}</span>
-                                                      </>
-                                                    )}
-                                                  </p>
-                                                </div>
-                                              </div>
-
-                                              <div className="flex items-center gap-1.5 shrink-0">
-                                                <a 
-                                                  href={material.url} 
-                                                  target="_blank" 
-                                                  rel="noreferrer" 
-                                                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-[hsl(var(--border))]/30 text-[hsl(var(--muted-foreground))] hover:text-foreground hover:bg-[hsl(var(--muted))]"
-                                                  title="Xem đường dẫn gốc"
-                                                >
-                                                  <ExternalLink className="h-3.5 w-3.5" />
-                                                </a>
-                                                <Button 
-                                                  variant="ghost" 
-                                                  size="icon" 
-                                                  onClick={() => openEditMaterial(lesson.id, material)}
-                                                  className="h-7 w-7 rounded-lg border border-[hsl(var(--border))]/30 p-1.5 hover:bg-[hsl(var(--muted))]"
-                                                >
-                                                  <Edit3 className="h-3 w-3" />
-                                                </Button>
-                                                <Button 
-                                                  variant="ghost" 
-                                                  size="icon" 
-                                                  onClick={() => handleDeleteMaterial(lesson.id, material.id, material.title)}
-                                                  className="h-7 w-7 rounded-lg border border-red-500/10 text-red-500 hover:text-red-600 hover:bg-red-500/5 p-1.5"
-                                                >
-                                                  <Trash2 className="h-3 w-3" />
-                                                </Button>
-                                              </div>
+                                        {/* Sections list block */}
+                                        <div>
+                                          <span className="text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] flex items-center gap-1 mb-2">
+                                            📂 Các phần bài tập ({sections[lesson.id]?.length || 0})
+                                          </span>
+                                          {loadingSections[lesson.id] ? (
+                                            <div className="flex items-center py-2 pl-2">
+                                              <Loader2 className="h-4 w-4 animate-spin text-[hsl(var(--foreground))]/45" />
+                                              <span className="ml-2 text-[10px] text-[hsl(var(--muted-foreground))]">Đang tải các phần...</span>
                                             </div>
-                                          ))
-                                        )}
+                                          ) : !sections[lesson.id] || sections[lesson.id].length === 0 ? (
+                                            <p className="text-[11px] text-[hsl(var(--muted-foreground))] italic py-1 pl-2">
+                                              Chưa có phần học nào. Hãy nhấn "+ Phần" để tạo phân cấp bài tập.
+                                            </p>
+                                          ) : (
+                                            <div className="grid gap-2 sm:grid-cols-2 pl-2">
+                                              {sections[lesson.id].map((sec) => (
+                                                <div key={sec.id} className="flex items-center justify-between gap-3 rounded-xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/10 px-4 py-2.5 hover:bg-[hsl(var(--background))]/30 transition-all duration-200">
+                                                  <div className="min-w-0">
+                                                    <span className="text-[9px] font-bold text-[hsl(var(--muted-foreground))] uppercase mr-1">Phần {sec.order_index}:</span>
+                                                    <span className="text-xs font-semibold text-foreground truncate">{sec.title}</span>
+                                                  </div>
+                                                  <div className="flex items-center gap-1 shrink-0">
+                                                    <Button 
+                                                      variant="ghost" 
+                                                      size="icon" 
+                                                      onClick={() => openEditSection(lesson.id, sec)}
+                                                      className="h-7 w-7 rounded-lg border border-[hsl(var(--border))]/30 p-1.5 hover:bg-[hsl(var(--muted))]"
+                                                    >
+                                                      <Edit3 className="h-3 w-3" />
+                                                    </Button>
+                                                    <Button 
+                                                      variant="ghost" 
+                                                      size="icon" 
+                                                      onClick={() => handleDeleteSection(lesson.id, sec.id, sec.title)}
+                                                      className="h-7 w-7 rounded-lg border border-red-500/10 text-red-500 hover:text-red-600 hover:bg-red-500/5 p-1.5"
+                                                    >
+                                                      <Trash2 className="h-3 w-3" />
+                                                    </Button>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Materials list block */}
+                                        <div>
+                                          <span className="text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] flex items-center gap-1 mb-2">
+                                            🎥 Tài nguyên học tập (Video/PDF)
+                                          </span>
+                                          {isLoadingMaterials ? (
+                                            <div className="flex items-center py-2 pl-2">
+                                              <Loader2 className="h-4 w-4 animate-spin text-[hsl(var(--foreground))]/50" />
+                                              <span className="ml-2 text-[10px] text-[hsl(var(--muted-foreground))]">Đang tải tài nguyên...</span>
+                                            </div>
+                                          ) : !lessonMaterials || lessonMaterials.length === 0 ? (
+                                            <p className="text-[11px] text-[hsl(var(--muted-foreground))] italic py-1 pl-2">
+                                              Không có học liệu/bài giảng nào. Hãy nhấn "+ Tài nguyên" để thêm.
+                                            </p>
+                                          ) : (
+                                            <div className="grid gap-2 sm:grid-cols-2 pl-2">
+                                              {lessonMaterials.map((material) => (
+                                                <div key={material.id} className="flex items-center justify-between gap-3 rounded-xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/30 px-4 py-3 hover:bg-[hsl(var(--background))]/60 transition-colors">
+                                                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--background))] border border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))]">
+                                                      {material.type === "video" ? (
+                                                        <Video className="h-4 w-4 text-rose-500" />
+                                                      ) : (
+                                                        <FileText className="h-4 w-4 text-emerald-500" />
+                                                      )}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                      <h5 className="font-semibold text-xs text-foreground truncate">{material.title}</h5>
+                                                      <p className="text-[10px] text-[hsl(var(--muted-foreground))] truncate mt-0.5 flex items-center gap-1.5">
+                                                        <span>{material.type === "video" ? "Video" : "PDF"}</span>
+                                                        {material.description && (
+                                                          <>
+                                                            <span className="h-1 w-1 rounded-full bg-[hsl(var(--border))]"></span>
+                                                            <span className="italic truncate">{material.description}</span>
+                                                          </>
+                                                        )}
+                                                      </p>
+                                                    </div>
+                                                  </div>
+
+                                                  <div className="flex items-center gap-1.5 shrink-0">
+                                                    <a 
+                                                      href={material.url} 
+                                                      target="_blank" 
+                                                      rel="noreferrer" 
+                                                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-[hsl(var(--border))]/30 text-[hsl(var(--muted-foreground))] hover:text-foreground hover:bg-[hsl(var(--muted))]"
+                                                      title="Xem đường dẫn gốc"
+                                                    >
+                                                      <ExternalLink className="h-3.5 w-3.5" />
+                                                    </a>
+                                                    <Button 
+                                                      variant="ghost" 
+                                                      size="icon" 
+                                                      onClick={() => openEditMaterial(lesson.id, material)}
+                                                      className="h-7 w-7 rounded-lg border border-[hsl(var(--border))]/30 p-1.5 hover:bg-[hsl(var(--muted))]"
+                                                    >
+                                                      <Edit3 className="h-3 w-3" />
+                                                    </Button>
+                                                    <Button 
+                                                      variant="ghost" 
+                                                      size="icon" 
+                                                      onClick={() => handleDeleteMaterial(lesson.id, material.id, material.title)}
+                                                      className="h-7 w-7 rounded-lg border border-red-500/10 text-red-500 hover:text-red-600 hover:bg-red-500/5 p-1.5"
+                                                    >
+                                                      <Trash2 className="h-3 w-3" />
+                                                    </Button>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
                                       </motion.div>
                                     )}
                                   </AnimatePresence>
@@ -786,6 +941,53 @@ export default function TeacherStudyPage() {
                   type="number" 
                   value={lessonOrder} 
                   onChange={(e) => setLessonOrder(Number(e.target.value))} 
+                  required 
+                  className="rounded-xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))]"
+                />
+              </div>
+              
+              {error && <p className="text-xs text-red-500">{error}</p>}
+              
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={closeModal} className="rounded-full">Hủy</Button>
+                <Button type="submit" disabled={submitting} className="rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90">
+                  {submitting ? "Đang xử lý..." : "Lưu"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Section Modal */}
+      {activeModal === "section" && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/30 pb-4">
+              <h3 className="text-lg font-bold tracking-tight">{editingItem ? "Sửa phần bài tập" : "Thêm phần bài tập mới"}</h3>
+              <button onClick={closeModal} className="text-[hsl(var(--muted-foreground))] hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSectionSubmit} className="mt-4 space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="sec-title" className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Tên phần bài tập</Label>
+                <Input 
+                  id="sec-title" 
+                  value={sectionTitle} 
+                  onChange={(e) => setSectionTitle(e.target.value)} 
+                  placeholder="VD: Phần 1: Các bài tập cơ bản" 
+                  required 
+                  className="rounded-xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="sec-order" className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Số thứ tự sắp xếp</Label>
+                <Input 
+                  id="sec-order" 
+                  type="number" 
+                  value={sectionOrder} 
+                  onChange={(e) => setSectionOrder(Number(e.target.value))} 
                   required 
                   className="rounded-xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))]"
                 />
