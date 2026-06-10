@@ -174,7 +174,7 @@ export default function TeacherMonitorPage() {
 
       if (tasksData) {
         setTasks(
-          tasksData.map((t) => ({
+          tasksData.map((t: Omit<StudyTask, "status"> & { status: string | null }) => ({
             ...t,
             status: (t.status || (t.is_completed ? "done" : "todo")) as StudyTask["status"]
           })) as StudyTask[]
