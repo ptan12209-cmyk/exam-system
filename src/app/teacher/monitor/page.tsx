@@ -110,24 +110,6 @@ export default function TeacherMonitorPage() {
 
 
 
-  // Fetch initial profile and linked students list
-  useEffect(() => {
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push("/login"); return }
-
-      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-      if (!prof) { router.push("/login"); return }
-      if (prof.role !== "teacher" && prof.role !== "parent") { router.push("/student/dashboard"); return }
-      setTeacherProfile(prof)
-
-      await fetchLinkedStudents(user.id)
-      setLoading(false)
-    }
-
-    init()
-  }, [router, supabase, fetchLinkedStudents])
-
   // Fetch linked students
   const fetchLinkedStudents = useCallback(async (userId: string) => {
     const { data: links, error } = await supabase
@@ -151,6 +133,24 @@ export default function TeacherMonitorPage() {
       setSelectedStudent(studentsList[0])
     }
   }, [supabase, selectedStudent])
+
+  // Fetch initial profile and linked students list
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push("/login"); return }
+
+      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+      if (!prof) { router.push("/login"); return }
+      if (prof.role !== "teacher" && prof.role !== "parent") { router.push("/student/dashboard"); return }
+      setTeacherProfile(prof)
+
+      await fetchLinkedStudents(user.id)
+      setLoading(false)
+    }
+
+    init()
+  }, [router, supabase, fetchLinkedStudents])
 
   // Load student detailed data
   const fetchStudentData = useCallback(async (studentId: string) => {
