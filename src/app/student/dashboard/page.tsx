@@ -19,6 +19,7 @@ import {
   ListTodo,
   Timer,
   Video,
+  AlertCircle
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
@@ -155,6 +156,9 @@ export default function StudentDashboard() {
 
   const completedCount = submissions.length
   const bestScore = submissions.length > 0 ? Math.max(...submissions.map((submission) => submission.score)).toFixed(1) : "--"
+  const unsubmittedExams = useMemo(() => {
+    return availableExams.filter(exam => !hasSubmitted(exam.id))
+  }, [availableExams, submissions])
 
   return (
     <StudentShell>
@@ -215,8 +219,14 @@ export default function StudentDashboard() {
           </div>
         </section>
 
-        <section className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StudentStatCard label="Đề thi" value={availableExams.length} icon={FileText} />
+        <section className="mt-10 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <StudentStatCard label="Tổng số đề" value={availableExams.length} icon={FileText} />
+          <StudentStatCard 
+            label="Chưa làm" 
+            value={unsubmittedExams.length} 
+            icon={AlertCircle} 
+            className={cn(unsubmittedExams.length > 0 && "border-red-500/20 bg-red-500/5 text-red-400")}
+          />
           <StudentStatCard label="Hoàn thành" value={completedCount} icon={CheckCircle} />
           <StudentStatCard label="Điểm cao nhất" value={bestScore} icon={Trophy} />
           <StudentStatCard label="XP" value={userXp} icon={Zap} />

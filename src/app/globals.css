@@ -202,6 +202,21 @@ html {
   border-bottom: 1px solid rgba(148, 163, 184, 0.08);
 }
 
+.glass-nav-bottom {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-nav-bottom {
+  background: rgba(11, 10, 19, 0.75);
+  border-top: 1px solid rgba(193, 140, 255, 0.08);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25);
+}
+
+
 .glass-sidebar {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px) saturate(180%);

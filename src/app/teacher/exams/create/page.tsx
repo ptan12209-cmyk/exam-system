@@ -15,10 +15,10 @@ import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { TeacherBottomNav } from "@/components/BottomNav"
-import { ArrowLeft, GraduationCap, Loader2, Wand2, Eye } from "lucide-react"
+import { ArrowLeft, GraduationCap, Loader2, Wand2, Eye, Sparkles, X } from "lucide-react"
 import { StepIndicator, ExamInfoForm, PdfUploader, ScheduleFields, AnswerEntry } from "./_components"
 import type { Option, TFAnswer, SAAnswer } from "@/types/exam"
-import { MAP_SUBJECT_TO_DB } from "@/lib/subjects"
+import { MAP_SUBJECT_TO_DB, MAP_DB_TO_SUBJECT } from "@/lib/subjects"
 
 export default function CreateExamPage() {
   const router = useRouter()
@@ -55,6 +55,73 @@ export default function CreateExamPage() {
   const [createdExamId, setCreatedExamId] = useState<string | null>(null)
   const [targetGrade, setTargetGrade] = useState<number | null>(null)
   const [targetClasses, setTargetClasses] = useState<string>("")
+
+  // Bank import states
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [bankExams, setBankExams] = useState<any[]>([])
+  const [loadingBank, setLoadingBank] = useState(false)
+
+  const fetchBankExams = async () => {
+    setLoadingBank(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from("exams")
+        .select("*")
+        .eq("created_by", user.id)
+        .order("created_at", { ascending: false })
+      if (data) setBankExams(data)
+    } catch (err) {
+      console.error("Error loading bank exams:", err)
+    } finally {
+      setLoadingBank(false)
+    }
+  }
+
+  useEffect(() => {
+    if (showImportModal) {
+      void fetchBankExams()
+    }
+  }, [showImportModal])
+
+  const handleImportFromBank = (bankExam: any) => {
+    const mcCountVal = bankExam.mc_answers?.length || bankExam.correct_answers?.length || 0
+    const tfCountVal = bankExam.tf_answers?.length || 0
+    const saCountVal = bankExam.sa_answers?.length || 0
+
+    setMcCount(mcCountVal)
+    setTfCount(tfCountVal)
+    setSaCount(saCountVal)
+    setEnableTF(tfCountVal > 0)
+    setEnableSA(saCountVal > 0)
+
+    if (bankExam.mc_answers) {
+      const mc = bankExam.mc_answers.map((item: any) => item.answer)
+      setMcAnswers(mc)
+      setCorrectAnswers(mc)
+    } else if (bankExam.correct_answers) {
+      setMcAnswers(bankExam.correct_answers)
+      setCorrectAnswers(bankExam.correct_answers)
+    }
+
+    if (bankExam.tf_answers) {
+      setTfAnswers(bankExam.tf_answers)
+    }
+    if (bankExam.sa_answers) {
+      setSaAnswers(bankExam.sa_answers)
+    }
+
+    if (bankExam.pdf_url) {
+      setPdfUrl(bankExam.pdf_url)
+    }
+
+    if (bankExam.target_grade) setTargetGrade(bankExam.target_grade)
+    if (bankExam.subject) setSubject(MAP_DB_TO_SUBJECT[bankExam.subject] || bankExam.subject)
+
+    setShowImportModal(false)
+    alert(`Đã nhập thành công cấu trúc đề và ${bankExam.total_questions} đáp án từ "${bankExam.title}"!`)
+  }
 
   // Hierarchy states
   const [selectedChapterId, setSelectedChapterId] = useState<string>("")
@@ -451,6 +518,7 @@ export default function CreateExamPage() {
             onSendNotificationChange={setSendNotification}
             securityLevel={securityLevel}
             onSecurityLevelChange={setSecurityLevel}
+            onImportFromBank={() => setShowImportModal(true)}
           />
         )}
 
@@ -465,6 +533,49 @@ export default function CreateExamPage() {
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <><Wand2 className="mr-2 h-4 w-4" /> Lưu & phát hành</>}
           </Button>
         </div>
+
+        {/* Import from Bank Modal */}
+        {showImportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-2xl overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl">
+              <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-5">
+                <h2 className="text-xl font-semibold">Nhập đáp án từ Kho đề thi</h2>
+                <button onClick={() => setShowImportModal(false)} className="rounded-full p-2 hover:bg-[hsl(var(--muted))]/20">
+                  <X className="h-5 w-5 text-[hsl(var(--muted-foreground))]" />
+                </button>
+              </div>
+              <div className="p-5 max-h-[60vh] overflow-y-auto space-y-3">
+                {loadingBank ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+                  </div>
+                ) : bankExams.length === 0 ? (
+                  <p className="text-center text-sm text-[hsl(var(--muted-foreground))] py-12">Bạn chưa có đề thi nào trong kho đề.</p>
+                ) : (
+                  <div className="divide-y divide-[hsl(var(--border))]/40">
+                    {bankExams.map((exam) => (
+                      <div key={exam.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
+                        <div>
+                          <h4 className="font-semibold text-sm">{exam.title}</h4>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                            {exam.total_questions} câu • Môn {MAP_DB_TO_SUBJECT[exam.subject] || exam.subject} • {new Date(exam.created_at).toLocaleDateString("vi-VN")}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => handleImportFromBank(exam)}
+                          size="sm"
+                          className="rounded-full"
+                        >
+                          Chọn nhập
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       <TeacherBottomNav />

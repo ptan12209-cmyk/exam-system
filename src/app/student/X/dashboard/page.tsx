@@ -336,6 +336,7 @@ export default function StudentXDashboard() {
               { href: "/student/ielts", label: "Luyện thi IELTS", icon: GraduationCap },
               { href: "/student/achievements", label: "Kho thành tích", icon: Award },
               { href: "/student/X/timetable", label: "Thời khóa biểu X", icon: Calendar },
+              { href: "/student/X/checklist", label: "Checklist / Mục tiêu", icon: ListTodo },
               { href: "/student/co-study", label: "Phòng Pomodoro", icon: Timer },
               { href: "/live", label: "Lớp học trực tuyến", icon: Video },
             ].map((item) => (

@@ -13,10 +13,15 @@ import { UserMenu } from "@/components/UserMenu"
 import { 
   Eye, Activity, Clock, Plus, Trash2, Calendar, Check, 
   CheckCircle, TrendingUp, User, Mail, UserPlus, Zap,
-  AlertCircle, Loader2, ChevronRight, FileText, CheckCircle2, RefreshCw
+  AlertCircle, Loader2, ChevronRight, FileText, CheckCircle2, RefreshCw,
+  CalendarDays, Save, X, ArrowLeft
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
+import { AnimatedSelect } from "@/components/ui/animated-select"
+import { 
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid 
+} from "recharts"
 
 interface StudentProfile {
   id: string
@@ -66,6 +71,29 @@ interface TeacherProfile {
   role: string
 }
 
+interface DiscordLog {
+  id: string
+  session_date: string
+  joined_at: string
+  left_at: string | null
+  total_active_seconds: number
+  total_afk_seconds: number
+}
+
+interface StudentTimetableEntry {
+  id: string
+  student_id: string
+  assigned_by: string
+  day_of_week: number
+  start_time: string
+  end_time: string
+  subject: string
+  class_name: string | null
+  room: string | null
+  note: string | null
+  color: string
+}
+
 const PRIORITIES = [
   { value: "low", label: "Thấp", color: "bg-slate-500/10 text-slate-500 border-slate-500/20" },
   { value: "medium", label: "Trung bình", color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
@@ -78,6 +106,9 @@ const STATUSES = [
   { value: "review", label: "Chờ duyệt", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
   { value: "done", label: "Đã xong", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" }
 ]
+
+const DAYS = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"]
+const COLORS = ["#6366f1", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ef4444", "#06b6d4"]
 
 export default function TeacherMonitorPage() {
   const router = useRouter()
@@ -108,7 +139,23 @@ export default function TeacherMonitorPage() {
   const [taskLoading, setTaskLoading] = useState(false)
   const [taskError, setTaskError] = useState<string | null>(null)
 
+  // Discord monitoring states
+  const [studentTab, setStudentTab] = useState<"overview" | "discord" | "timetable">("overview")
+  const [discordLogs, setDiscordLogs] = useState<DiscordLog[]>([])
 
+  // Student Timetable states
+  const [studentTimetable, setStudentTimetable] = useState<StudentTimetableEntry[]>([])
+  const [showTtForm, setShowTtForm] = useState(false)
+  const [editingTtId, setEditingTtId] = useState<string | null>(null)
+  const [ttFormDay, setTtFormDay] = useState(1)
+  const [ttFormStart, setTtFormStart] = useState("07:00")
+  const [ttFormEnd, setTtFormEnd] = useState("08:30")
+  const [ttFormSubject, setTtFormSubject] = useState("")
+  const [ttFormClass, setTtFormClass] = useState("")
+  const [ttFormRoom, setTtFormRoom] = useState("")
+  const [ttFormNote, setTtFormNote] = useState("")
+  const [ttFormColor, setTtFormColor] = useState(COLORS[0])
+  const [ttSaving, setTtSaving] = useState(false)
 
   // Fetch linked students
   const fetchLinkedStudents = useCallback(async (userId: string) => {
@@ -192,6 +239,24 @@ export default function TeacherMonitorPage() {
 
       setSubmissions((subsData || []) as Submission[])
 
+      // 4. Fetch Discord logs
+      const { data: discLogs } = await supabase
+        .from("discord_attendance_logs")
+        .select("*")
+        .eq("student_id", studentId)
+        .order("joined_at", { ascending: false })
+
+      setDiscordLogs(discLogs || [])
+
+      // 5. Fetch student timetable
+      const { data: ttData } = await supabase
+        .from("student_timetable_entries")
+        .select("*")
+        .eq("student_id", studentId)
+        .order("day_of_week")
+        .order("start_time")
+
+      setStudentTimetable(ttData || [])
 
     } catch (err) {
       console.error("Error fetching student details:", err)
@@ -228,6 +293,8 @@ export default function TeacherMonitorPage() {
       setSession(null)
       setTasks([])
       setSubmissions([])
+      setDiscordLogs([])
+      setStudentTimetable([])
     }
   }, [selectedStudent, fetchStudentData, supabase])
 
@@ -383,6 +450,140 @@ export default function TeacherMonitorPage() {
     }
   }
 
+  // Student Timetable CRUD & Copy
+  const handleCopyTeacherTimetable = async () => {
+    if (!selectedStudent || !teacherProfile) return
+    if (!confirm(`Bạn có chắc muốn sao chép toàn bộ thời khóa biểu của bạn sang cho học sinh ${selectedStudent.full_name}? Việc này sẽ không xóa các lịch học sinh đã có.`)) return
+    
+    try {
+      const { data: teacherEntries, error: fetchErr } = await supabase
+        .from("timetable_entries")
+        .select("*")
+        .eq("teacher_id", teacherProfile.id)
+        
+      if (fetchErr) throw fetchErr
+      if (!teacherEntries || teacherEntries.length === 0) {
+        alert("Thời khóa biểu của bạn đang trống. Vui lòng thiết lập thời khóa biểu của bạn trước.")
+        return
+      }
+      
+      const payload = teacherEntries.map((entry: any) => ({
+        student_id: selectedStudent.id,
+        assigned_by: teacherProfile.id,
+        day_of_week: entry.day_of_week,
+        start_time: entry.start_time,
+        end_time: entry.end_time,
+        subject: entry.subject,
+        class_name: entry.class_name,
+        room: entry.room,
+        note: entry.note,
+        color: entry.color || '#6366f1'
+      }))
+      
+      const { error: insertErr } = await supabase
+        .from("student_timetable_entries")
+        .insert(payload)
+        
+      if (insertErr) throw insertErr
+      
+      alert(`Đã sao chép thành công ${teacherEntries.length} tiết học!`)
+      fetchStudentData(selectedStudent.id)
+    } catch (err) {
+      console.error("Error copying timetable:", err)
+      alert("Lỗi khi sao chép thời khóa biểu: " + (err instanceof Error ? err.message : "Không rõ lỗi"))
+    }
+  }
+
+  const handleSaveStudentTimetable = async () => {
+    if (!ttFormSubject.trim() || !selectedStudent || !teacherProfile) return
+    setTtSaving(true)
+    try {
+      const payload = {
+        student_id: selectedStudent.id,
+        assigned_by: teacherProfile.id,
+        day_of_week: ttFormDay,
+        start_time: ttFormStart,
+        end_time: ttFormEnd,
+        subject: ttFormSubject.trim(),
+        class_name: ttFormClass.trim() || null,
+        room: ttFormRoom.trim() || null,
+        note: ttFormNote.trim() || null,
+        color: ttFormColor
+      }
+      
+      if (editingTtId) {
+        const { error } = await supabase
+          .from("student_timetable_entries")
+          .update(payload)
+          .eq("id", editingTtId)
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from("student_timetable_entries")
+          .insert(payload)
+        if (error) throw error
+      }
+      
+      setShowTtForm(false)
+      setEditingTtId(null)
+      setTtFormSubject("")
+      setTtFormClass("")
+      setTtFormRoom("")
+      setTtFormNote("")
+      
+      fetchStudentData(selectedStudent.id)
+    } catch (err) {
+      console.error("Error saving student timetable:", err)
+      alert("Lỗi khi lưu thời khóa biểu: " + (err instanceof Error ? err.message : "Không rõ lỗi"))
+    } finally {
+      setTtSaving(false)
+    }
+  }
+
+  const handleDeleteStudentTimetable = async (id: string) => {
+    if (!confirm("Bạn có chắc muốn xóa tiết học này của học sinh?")) return
+    try {
+      const { error } = await supabase
+        .from("student_timetable_entries")
+        .delete()
+        .eq("id", id)
+      if (error) throw error
+      
+      if (selectedStudent) {
+        fetchStudentData(selectedStudent.id)
+      }
+    } catch (err) {
+      console.error("Error deleting student timetable entry:", err)
+      alert("Lỗi khi xóa: " + (err instanceof Error ? err.message : "Không rõ lỗi"))
+    }
+  }
+
+  const resetTtForm = () => {
+    setTtFormDay(1)
+    setTtFormStart("07:00")
+    setTtFormEnd("08:30")
+    setTtFormSubject("")
+    setTtFormClass("")
+    setTtFormRoom("")
+    setTtFormNote("")
+    setTtFormColor(COLORS[0])
+    setEditingTtId(null)
+    setShowTtForm(false)
+  }
+
+  const handleEditStudentTimetable = (entry: StudentTimetableEntry) => {
+    setEditingTtId(entry.id)
+    setTtFormDay(entry.day_of_week)
+    setTtFormStart(entry.start_time.slice(0, 5))
+    setTtFormEnd(entry.end_time.slice(0, 5))
+    setTtFormSubject(entry.subject)
+    setTtFormClass(entry.class_name || "")
+    setTtFormRoom(entry.room || "")
+    setTtFormNote(entry.note || "")
+    setTtFormColor(entry.color)
+    setShowTtForm(true)
+  }
+
   // Time format helper (hh:mm:ss)
   const formatSeconds = (secs: number) => {
     const h = Math.floor(secs / 3600)
@@ -394,6 +595,43 @@ export default function TeacherMonitorPage() {
   // Progress stats computing
   const completedTasksCount = tasks.filter(t => t.is_completed).length
   const completionRate = tasks.length > 0 ? Math.round((completedTasksCount / tasks.length) * 100) : 0
+
+  const processedDiscordLogs = useMemo(() => {
+    const dataMap: Record<string, { dateLabel: string; activeMinutes: number; afkMinutes: number }> = {}
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const dateStr = d.toISOString().split("T")[0]
+      const dateLabel = d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })
+      dataMap[dateStr] = { dateLabel, activeMinutes: 0, afkMinutes: 0 }
+    }
+
+    discordLogs.forEach(log => {
+      const dateStr = log.session_date
+      if (dataMap[dateStr]) {
+        dataMap[dateStr].activeMinutes += Math.round(log.total_active_seconds / 60)
+        dataMap[dateStr].afkMinutes += Math.round(log.total_afk_seconds / 60)
+      }
+    })
+
+    return Object.keys(dataMap).map(key => ({
+      date: dataMap[key].dateLabel,
+      "Học tập (phút)": dataMap[key].activeMinutes,
+      "AFK / Treo máy (phút)": dataMap[key].afkMinutes
+    }))
+  }, [discordLogs])
+
+  const afkWarning = useMemo(() => {
+    let totalActive = 0
+    let totalAfk = 0
+    discordLogs.forEach(log => {
+      totalActive += log.total_active_seconds
+      totalAfk += log.total_afk_seconds
+    })
+    const totalTime = totalActive + totalAfk
+    return totalTime > 0 && (totalAfk / totalTime) > 0.5
+  }, [discordLogs])
   
   // Study session status formatting
   const statusInfo = useMemo(() => {
@@ -458,20 +696,18 @@ export default function TeacherMonitorPage() {
               <p className="text-sm italic text-[hsl(var(--muted-foreground))]">Chưa liên kết tài khoản nào</p>
             ) : (
               <div className="relative">
-                <select 
+                <AnimatedSelect 
                   value={selectedStudent?.id || ""} 
-                  onChange={(e) => {
-                    const st = students.find(s => s.id === e.target.value)
+                  onValueChange={(value) => {
+                    const st = students.find(s => s.id === value)
                     if (st) setSelectedStudent(st)
                   }}
-                  className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] text-sm font-semibold p-3 outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_12px_center] bg-[length:14px] pr-8 bg-no-repeat"
-                >
-                  {students.map((student) => (
-                    <option key={student.id} value={student.id}>
-                      👤 {student.full_name} ({student.class || "Chưa chọn lớp"})
-                    </option>
-                  ))}
-                </select>
+                  options={students.map((student) => ({
+                    value: student.id,
+                    label: `👤 ${student.full_name || "Chưa rõ tên"} (${student.class || "Chưa chọn lớp"})`
+                  }))}
+                  placeholder="Chọn học sinh..."
+                />
               </div>
             )}
           </div>
@@ -509,362 +745,672 @@ export default function TeacherMonitorPage() {
         )}
 
         {selectedStudent && (
-          <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] items-start">
-            
-            {/* Cột trái: Realtime Monitor + Checklist */}
-            <div className="space-y-6">
-              
-              {/* Card 1: Real-time Presence */}
-              <div className={cn(
-                "rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 p-4 sm:p-6 shadow-md transition-all relative overflow-hidden bg-[hsl(var(--card))]",
-                session?.status === "focusing" && "ring-1 ring-emerald-500/25"
-              )}>
-                {/* Visual Glassmorphism highlight */}
-                <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-violet-500/5 blur-3xl pointer-events-none" />
+          <div className="space-y-6">
+            {/* Tabs Selector */}
+            <div className="flex gap-2 border-b border-[hsl(var(--border))]/20 pb-2 mb-6">
+              <button 
+                onClick={() => setStudentTab("overview")} 
+                className={cn(
+                  "px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2", 
+                  studentTab === "overview" ? "border-violet-500 text-violet-500" : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                )}
+              >
+                <Eye className="h-4 w-4" /> Tổng quan
+              </button>
+              <button 
+                onClick={() => setStudentTab("discord")} 
+                className={cn(
+                  "px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2", 
+                  studentTab === "discord" ? "border-violet-500 text-violet-500" : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                )}
+              >
+                <Activity className="h-4 w-4" /> Giám sát Discord
+                {afkWarning && (
+                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                )}
+              </button>
+              <button 
+                onClick={() => setStudentTab("timetable")} 
+                className={cn(
+                  "px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2", 
+                  studentTab === "timetable" ? "border-violet-500 text-violet-500" : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                )}
+              >
+                <Calendar className="h-4 w-4" /> Thời khóa biểu
+              </button>
+            </div>
 
-                <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-6">
-                  <div>
-                    <h3 className="font-bold text-lg">Giám Sát Trạng Thái Live</h3>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Đang kết nối cổng realtime với thiết bị của học sinh</p>
-                  </div>
-                  <button 
-                    onClick={() => fetchStudentData(selectedStudent.id)}
-                    className="p-2 hover:bg-[hsl(var(--muted))]/30 rounded-full text-[hsl(var(--muted-foreground))] transition-all"
-                    title="Đồng bộ thủ công"
-                  >
-                    <RefreshCw className={cn("h-4 w-4", fetchingData && "animate-spin")} />
-                  </button>
-                </div>
-
-                <div className="grid gap-4 sm:gap-6 md:grid-cols-3 items-stretch">
+            {studentTab === "overview" && (
+              <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] items-start">
+                
+                {/* Cột trái: Realtime Monitor + Checklist */}
+                <div className="space-y-6">
                   
-                  {/* Status Indicator Panel */}
-                  <div className="space-y-4 flex flex-col justify-between">
-                    <div>
-                      <p className="text-xs uppercase font-bold text-[hsl(var(--muted-foreground))] mb-1">Trạng thái hiện tại</p>
-                      <div className={cn("inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold backdrop-blur-md", statusInfo.bg)}>
-                        <span className={cn("h-2.5 w-2.5 rounded-full shadow-md", statusInfo.color, statusInfo.glow)} />
-                        {statusInfo.label}
+                  {/* Card 1: Real-time Presence */}
+                  <div className={cn(
+                    "rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 p-4 sm:p-6 shadow-md transition-all relative overflow-hidden bg-[hsl(var(--card))]",
+                    session?.status === "focusing" && "ring-1 ring-emerald-500/25"
+                  )}>
+                    {/* Visual Glassmorphism highlight */}
+                    <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-violet-500/5 blur-3xl pointer-events-none" />
+
+                    <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-6">
+                      <div>
+                        <h3 className="font-bold text-lg">Giám Sát Trạng Thái Live</h3>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))]">Đang kết nối cổng realtime với thiết bị của học sinh</p>
                       </div>
+                      <button 
+                        onClick={() => fetchStudentData(selectedStudent.id)}
+                        className="p-2 hover:bg-[hsl(var(--muted))]/30 rounded-full text-[hsl(var(--muted-foreground))] transition-all"
+                        title="Đồng bộ thủ công"
+                      >
+                        <RefreshCw className={cn("h-4 w-4", fetchingData && "animate-spin")} />
+                      </button>
                     </div>
 
-                    <div>
-                      <p className="text-xs uppercase font-bold text-[hsl(var(--muted-foreground))] mb-1">Thời gian tự học hôm nay</p>
-                      <p className="text-4xl font-bold tracking-tight bg-gradient-to-r from-[hsl(var(--foreground))] to-[hsl(var(--muted-foreground))] bg-clip-text text-transparent">
-                        {formatSeconds(todayFocusSeconds)}
+                    <div className="grid gap-4 sm:gap-6 md:grid-cols-3 items-stretch">
+                      
+                      {/* Status Indicator Panel */}
+                      <div className="space-y-4 flex flex-col justify-between">
+                        <div>
+                          <p className="text-xs uppercase font-bold text-[hsl(var(--muted-foreground))] mb-1">Trạng thái hiện tại</p>
+                          <div className={cn("inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold backdrop-blur-md", statusInfo.bg)}>
+                            <span className={cn("h-2.5 w-2.5 rounded-full shadow-md", statusInfo.color, statusInfo.glow)} />
+                            {statusInfo.label}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-xs uppercase font-bold text-[hsl(var(--muted-foreground))] mb-1">Thời gian tự học hôm nay</p>
+                          <p className="text-4xl font-bold tracking-tight bg-gradient-to-r from-[hsl(var(--foreground))] to-[hsl(var(--muted-foreground))] bg-clip-text text-transparent">
+                            {formatSeconds(todayFocusSeconds)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Circular/Linear Progress target tracking */}
+                      <div className="rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/40 p-4 relative overflow-hidden flex flex-col justify-between">
+                        <div>
+                          <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] mb-2">Mục tiêu tự học Web (Daily)</p>
+                          <div className="flex justify-between items-end mb-1">
+                            <span className="text-2xl font-bold">{dailyTargetPercent}%</span>
+                            <span className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">Mục tiêu: 2 giờ</span>
+                          </div>
+                        </div>
+                        <div className="w-full bg-[hsl(var(--border))]/50 h-2 rounded-full overflow-hidden">
+                          <div 
+                            className="bg-gradient-to-r from-violet-500 to-indigo-500 h-full rounded-full transition-all duration-1000" 
+                            style={{ width: `${dailyTargetPercent}%` }} 
+                          />
+                        </div>
+                      </div>
+
+                      {/* Discord Presence & Class Target Tracking */}
+                      {(() => {
+                        const DISCORD_TARGET_SECONDS = 130 * 60 // 130 mins
+                        const discordSecs = session?.discord_duration || 0
+                        const discordMins = Math.floor(discordSecs / 60)
+                        const discordPercent = Math.min(Math.round((discordSecs / DISCORD_TARGET_SECONDS) * 100), 100)
+                        
+                        return (
+                          <div className="rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/40 p-4 relative overflow-hidden flex flex-col justify-between">
+                            <div>
+                              <div className="flex justify-between items-start mb-2">
+                                <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">Ca học Discord (150p)</p>
+                                {session?.discord_deafened && (
+                                  <span className="rounded-full bg-red-500/10 border border-red-500/25 px-2 py-0.5 text-[9px] font-bold text-red-500 animate-pulse">
+                                    AFK 🚫
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex justify-between items-end mb-1">
+                                <div className="flex flex-col">
+                                  <span className="text-2xl font-bold">{discordPercent}%</span>
+                                  <span className="text-[9px] text-[hsl(var(--muted-foreground))]">Đã học: {discordMins} / 130 phút</span>
+                                </div>
+                                <span className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">Cần đạt: 130 phút</span>
+                              </div>
+                            </div>
+                            <div className="w-full bg-[hsl(var(--border))]/50 h-2 rounded-full overflow-hidden mb-1">
+                              <div 
+                                className="bg-gradient-to-r from-green-500 to-emerald-400 h-full rounded-full transition-all duration-1000" 
+                                style={{ width: `${discordPercent}%` }} 
+                              />
+                            </div>
+                          </div>
+                        )
+                      })()}
+
+                    </div>
+                  </div>
+
+                  {/* Card 2: Checklist Manager */}
+                  <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md">
+                    <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
+                      <div>
+                        <h3 className="font-bold text-lg">Checklist & Planner của học sinh</h3>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))]">Đã hoàn thành {completedTasksCount}/{tasks.length} đầu việc ({completionRate}%)</p>
+                      </div>
+                      <span className="rounded-full bg-[hsl(var(--foreground))]/5 px-3 py-1 text-xs font-bold">{tasks.length} tasks</span>
+                    </div>
+
+                    {/* Direct Task Creator form */}
+                    <form onSubmit={handleAddTask} className="mb-6 p-4 rounded-2xl border border-[hsl(var(--border))]/50 bg-[hsl(var(--background))]/30 space-y-3">
+                      <p className="text-xs font-bold uppercase tracking-wider text-violet-500">Giao thêm mục tiêu học tập mới</p>
+                      
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Tên công việc *</Label>
+                          <Input 
+                            placeholder="VD: Ôn tập đề trắc nghiệm Lý ch.1" 
+                            value={taskTitle}
+                            onChange={(e) => setTaskTitle(e.target.value)}
+                            className="rounded-xl border-[hsl(var(--border))]/50 bg-transparent text-sm"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Môn học</Label>
+                          <Input 
+                            placeholder="VD: Vật lý" 
+                            value={taskSubject}
+                            onChange={(e) => setTaskSubject(e.target.value)}
+                            className="rounded-xl border-[hsl(var(--border))]/50 bg-transparent text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="space-y-1 flex flex-col justify-end">
+                          <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))] mb-1">Độ ưu tiên</Label>
+                          <AnimatedSelect 
+                            value={taskPriority} 
+                            onValueChange={(value) => setTaskPriority(value as "low" | "medium" | "high")}
+                            options={[
+                              { value: "low", label: "Thấp" },
+                              { value: "medium", label: "Trung bình" },
+                              { value: "high", label: "Cao" }
+                            ]}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Thời lượng (phút)</Label>
+                          <Input 
+                            type="number"
+                            min="0"
+                            placeholder="VD: 45"
+                            value={taskDuration}
+                            onChange={(e) => setTaskDuration(e.target.value)}
+                            className="rounded-xl border-[hsl(var(--border))]/50 bg-transparent text-sm"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Hạn chót</Label>
+                          <Input 
+                            type="date" 
+                            value={taskDueDate}
+                            onChange={(e) => setTaskDueDate(e.target.value)}
+                            className="rounded-xl border-[hsl(var(--border))]/50 bg-transparent text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-1">
+                        <Button type="submit" disabled={taskLoading || !taskTitle.trim()} className="w-full rounded-xl py-5 bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90 flex items-center justify-center gap-1.5 text-xs font-semibold shadow-md">
+                          {taskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-4 w-4" /> Thêm vào Checklist của học sinh</>}
+                        </Button>
+                      </div>
+                      {taskError && <p className="text-xs font-semibold text-red-500 flex items-center gap-1.5 justify-center"><AlertCircle className="h-3.5 w-3.5" />{taskError}</p>}
+                    </form>
+
+                    {/* Tasks List */}
+                    <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
+                      {tasks.length === 0 ? (
+                        <div className="py-12 text-center text-sm text-[hsl(var(--muted-foreground))]/50">
+                          Chưa có mục tiêu học tập nào được thêm vào checklist.
+                        </div>
+                      ) : (
+                        tasks.map((task) => {
+                          const priorityBadge = PRIORITIES.find(p => p.value === task.priority)
+                          const statusBadge = STATUSES.find(s => s.value === task.status)
+                          
+                          return (
+                            <div 
+                              key={task.id} 
+                              className={cn(
+                                "group rounded-2xl border border-[hsl(var(--border))]/40 p-4 transition-all hover:border-[hsl(var(--border))]/70 flex items-start justify-between gap-3 bg-[hsl(var(--background))]/20",
+                                task.is_completed && "opacity-60 bg-[hsl(var(--muted))]/5"
+                              )}
+                            >
+                              <div className="flex items-start gap-3 min-w-0">
+                                {/* Checkbox for quick approve */}
+                                <button 
+                                  onClick={() => handleToggleTaskStatus(task)}
+                                  className={cn(
+                                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 mt-0.5 transition-all",
+                                    task.is_completed ? "border-[hsl(var(--foreground))] bg-[hsl(var(--foreground))] text-[hsl(var(--background))]" : "border-[hsl(var(--border))]/60 hover:border-[hsl(var(--foreground))]"
+                                  )}
+                                  title={task.is_completed ? "Đánh dấu chưa xong" : "Duyệt hoàn thành"}
+                                >
+                                  {task.is_completed && <Check className="h-3 w-3" />}
+                                </button>
+                                
+                                <div className="min-w-0">
+                                  <p className={cn("text-sm font-semibold tracking-tight leading-snug break-words", task.is_completed && "line-through text-[hsl(var(--muted-foreground))]/70")}>
+                                    {task.title}
+                                  </p>
+                                  
+                                  <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider">
+                                    {task.subject && (
+                                      <span className="rounded-full bg-violet-500/5 border border-violet-500/25 px-2 py-0.5 text-violet-500">
+                                        {task.subject}
+                                      </span>
+                                    )}
+                                    <span className={cn("rounded-full border px-2 py-0.5", priorityBadge?.color)}>
+                                      Ưu tiên: {priorityBadge?.label}
+                                    </span>
+                                    <span className={cn("rounded-full border px-2 py-0.5", statusBadge?.color)}>
+                                      {statusBadge?.label}
+                                    </span>
+                                    {task.estimated_time !== undefined && task.estimated_time > 0 && (
+                                      <span className="rounded-full bg-indigo-500/5 border border-indigo-500/25 px-2 py-0.5 text-indigo-500 flex items-center gap-0.5">
+                                        ⏱️ {task.estimated_time} phút
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {task.due_date && (
+                                    <p className="mt-2 flex items-center gap-1 text-[10px] text-[hsl(var(--muted-foreground))]">
+                                      <Calendar className="h-3.5 w-3.5" />
+                                      Hạn: {new Date(task.due_date).toLocaleDateString("vi-VN")}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <button 
+                                onClick={() => handleDeleteTask(task.id)}
+                                className="rounded-full p-2 text-rose-500 bg-rose-500/0 hover:bg-rose-500/10 transition-colors opacity-60 sm:opacity-0 sm:group-hover:opacity-100 shrink-0"
+                                title="Xóa đầu việc"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Cột phải: Homework/Exams assigned + Submissions tracking + Timetable */}
+                <div className="space-y-6">
+                  
+                  {/* Card 3: Homework Assigned & Scores Tracker */}
+                  <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md overflow-hidden">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
+                      <div>
+                        <h3 className="font-bold text-lg">Bài Tập Trực Tuyến</h3>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))]">Xem kết quả bài kiểm tra học sinh đã làm</p>
+                      </div>
+                      <Link href="/teacher/exams/create" className="no-print">
+                        <Button size="sm" className="rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90 py-4 px-4 text-xs font-semibold">
+                          <Plus className="mr-1 h-3.5 w-3.5" /> Giao bài mới
+                        </Button>
+                      </Link>
+                    </div>
+
+                    {/* Submissions Tracker Table */}
+                    <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+                      {submissions.length === 0 ? (
+                        <div className="py-12 text-center text-sm text-[hsl(var(--muted-foreground))]/50">
+                          Chưa nộp bài tập kiểm tra nào trên hệ thống.
+                        </div>
+                      ) : (
+                        submissions.map((sub) => {
+                          const scorePercentage = Math.round((sub.score / 10) * 100)
+                          
+                          return (
+                            <div 
+                              key={sub.id} 
+                              className="rounded-2xl border border-[hsl(var(--border))]/40 p-4 transition-all hover:border-[hsl(var(--border))]/70 bg-[hsl(var(--background))]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                            >
+                              <div className="flex items-start gap-3 min-w-0">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/5 border border-violet-500/20 text-violet-500">
+                                  <FileText className="h-5 w-5" strokeWidth={1.5} />
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="text-sm font-semibold tracking-tight truncate">{sub.exam?.title || "Đề thi đã bị xóa"}</h4>
+                                  <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                                    {sub.exam?.subject || "Khác"} • {new Date(sub.submitted_at).toLocaleDateString("vi-VN")} lúc {new Date(sub.submitted_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-3 justify-between sm:justify-end shrink-0">
+                                <div className="text-right">
+                                  <p className="text-base font-bold text-violet-500">{sub.score} / 10</p>
+                                  <p className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">Tỷ lệ: {scorePercentage}%</p>
+                                </div>
+                                
+                                <Link href={`/teacher/exams/${sub.exam_id}/submissions/${sub.id}`}>
+                                  <button className="rounded-full border border-[hsl(var(--border))]/60 p-2 hover:bg-[hsl(var(--muted))] transition-colors">
+                                    <ChevronRight className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                                  </button>
+                                </Link>
+                              </div>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card 4: Timetable Widget Preview */}
+                  <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md">
+                    <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
+                      <div>
+                        <h3 className="font-bold text-lg">Khung Giờ Học Tập</h3>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))]">Lịch trình tự học của học sinh</p>
+                      </div>
+                      <button 
+                        onClick={() => setStudentTab("timetable")}
+                        className="rounded-full border border-[hsl(var(--border))]/70 bg-transparent text-xs font-semibold py-1.5 px-3 hover:bg-[hsl(var(--muted))]/30 transition-all"
+                      >
+                        Thiết lập lịch
+                      </button>
+                    </div>
+                    <div className="rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/20 p-4 text-center">
+                      <Calendar className="mx-auto mb-3 h-8 w-8 text-violet-500/80 animate-bounce" strokeWidth={1.2} />
+                      <p className="text-sm font-semibold tracking-tight mb-1">Mời thiết lập Thời khóa biểu</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] leading-normal max-w-sm mx-auto">
+                        ở Tab Thời khóa biểu riêng để giúp học sinh tự đồng bộ lịch học chuyên sâu hơn.
                       </p>
                     </div>
                   </div>
 
-                  {/* Circular/Linear Progress target tracking */}
-                  <div className="rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/40 p-4 relative overflow-hidden flex flex-col justify-between">
+                </div>
+
+              </section>
+            )}
+
+            {studentTab === "discord" && (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                {/* Discord History Dashboard */}
+                <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[hsl(var(--border))]/20 pb-4 mb-6 gap-4">
                     <div>
-                      <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] mb-2">Mục tiêu tự học Web (Daily)</p>
-                      <div className="flex justify-between items-end mb-1">
-                        <span className="text-2xl font-bold">{dailyTargetPercent}%</span>
-                        <span className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">Mục tiêu: 2 giờ</span>
-                      </div>
-                    </div>
-                    <div className="w-full bg-[hsl(var(--border))]/50 h-2 rounded-full overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-violet-500 to-indigo-500 h-full rounded-full transition-all duration-1000" 
-                        style={{ width: `${dailyTargetPercent}%` }} 
-                      />
+                      <h3 className="font-bold text-lg flex items-center gap-2">
+                        Lịch Sử Hoạt Đạo Discord
+                        {afkWarning && (
+                          <span className="rounded-full bg-red-500/10 border border-red-500/25 px-2.5 py-0.5 text-[10px] font-bold text-red-500 animate-pulse flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> Cảnh báo: Treo máy {`>`} 50%
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">Biểu đồ thống kê thời gian học voice & AFK trong 7 ngày gần nhất</p>
                     </div>
                   </div>
 
-                  {/* Discord Presence & Class Target Tracking */}
-                  {(() => {
-                    const DISCORD_TARGET_SECONDS = 130 * 60 // 130 mins
-                    const discordSecs = session?.discord_duration || 0
-                    const discordMins = Math.floor(discordSecs / 60)
-                    const discordPercent = Math.min(Math.round((discordSecs / DISCORD_TARGET_SECONDS) * 100), 100)
-                    
-                    return (
-                      <div className="rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/40 p-4 relative overflow-hidden flex flex-col justify-between">
+                  <div className="h-80 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={processedDiscordLogs}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" phút" />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: "hsl(var(--card))", 
+                            borderColor: "rgba(255,255,255,0.1)",
+                            borderRadius: "12px",
+                            color: "hsl(var(--foreground))"
+                          }} 
+                        />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
+                        <Bar dataKey="Học tập (phút)" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="AFK / Treo máy (phút)" stackId="a" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Log Table */}
+                <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
+                  <h3 className="font-bold text-lg mb-4">Chi Tiết Các Phiên Học</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-[hsl(var(--border))]/20 text-[hsl(var(--muted-foreground))] font-semibold">
+                          <th className="pb-3">Ngày</th>
+                          <th className="pb-3">Vào phòng</th>
+                          <th className="pb-3">Rời phòng</th>
+                          <th className="pb-3">Thời gian học</th>
+                          <th className="pb-3">Treo máy (AFK)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[hsl(var(--border))]/10">
+                        {discordLogs.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="py-8 text-center text-[hsl(var(--muted-foreground))]/60 italic">
+                              Chưa ghi nhận phiên học nào trên Discord.
+                            </td>
+                          </tr>
+                        ) : (
+                          discordLogs.map((log) => {
+                            const activeMins = Math.floor(log.total_active_seconds / 60)
+                            const activeSecs = log.total_active_seconds % 60
+                            const afkMins = Math.floor(log.total_afk_seconds / 60)
+                            const afkSecs = log.total_afk_seconds % 60
+                            
+                            return (
+                              <tr key={log.id} className="hover:bg-[hsl(var(--muted))]/5 transition-colors">
+                                <td className="py-3 font-medium">
+                                  {new Date(log.session_date).toLocaleDateString("vi-VN", { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' })}
+                                </td>
+                                <td className="py-3 text-[hsl(var(--muted-foreground))]">
+                                  {new Date(log.joined_at).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </td>
+                                <td className="py-3 text-[hsl(var(--muted-foreground))]">
+                                  {log.left_at 
+                                    ? new Date(log.left_at).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                                    : <span className="text-emerald-500 font-semibold animate-pulse">Đang kết nối 🟢</span>
+                                  }
+                                </td>
+                                <td className="py-3 text-emerald-500 font-semibold">
+                                  {activeMins > 0 ? `${activeMins}p ` : ""}{activeSecs}s
+                                </td>
+                                <td className="py-3 text-amber-500">
+                                  {afkMins > 0 ? `${afkMins}p ` : ""}{afkSecs}s
+                                </td>
+                              </tr>
+                            )
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {studentTab === "timetable" && (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                {/* Timetable Header Card */}
+                <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <h3 className="font-bold text-lg">Thời Khóa Biểu Học Sinh</h3>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">Lịch học cố định được thiết lập riêng cho học sinh này</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button 
+                        variant="outline"
+                        onClick={handleCopyTeacherTimetable}
+                        className="rounded-full border-[hsl(var(--border))]/70 text-xs font-semibold py-3 px-4 flex items-center gap-1.5"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" /> Sao chép lịch dạy của tôi
+                      </Button>
+                      <Button 
+                        onClick={() => { resetTtForm(); setShowTtForm(true) }}
+                        className="rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90 text-xs font-semibold py-3 px-4 flex items-center gap-1.5"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Thêm tiết mới
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Add/Edit Student Timetable Entry Dialog Modal */}
+                {showTtForm && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 space-y-4 shadow-xl">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-lg font-bold">{editingTtId ? "Sửa tiết học học sinh" : "Thêm tiết học học sinh"}</h2>
+                        <button onClick={resetTtForm} className="rounded-full p-2 hover:bg-[hsl(var(--muted))]/20 text-[hsl(var(--muted-foreground))]">
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
                         <div>
-                          <div className="flex justify-between items-start mb-2">
-                            <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">Ca học Discord (150p)</p>
-                            {session?.discord_deafened && (
-                              <span className="rounded-full bg-red-500/10 border border-red-500/25 px-2 py-0.5 text-[9px] font-bold text-red-500 animate-pulse">
-                                AFK 🚫
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex justify-between items-end mb-1">
-                            <div className="flex flex-col">
-                              <span className="text-2xl font-bold">{discordPercent}%</span>
-                              <span className="text-[9px] text-[hsl(var(--muted-foreground))]">Đã học: {discordMins} / 130 phút</span>
-                            </div>
-                            <span className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">Cần đạt: 130 phút</span>
-                          </div>
-                        </div>
-                        <div className="w-full bg-[hsl(var(--border))]/50 h-2 rounded-full overflow-hidden mb-1">
-                          <div 
-                            className="bg-gradient-to-r from-green-500 to-emerald-400 h-full rounded-full transition-all duration-1000" 
-                            style={{ width: `${discordPercent}%` }} 
+                          <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Ngày trong tuần</Label>
+                          <AnimatedSelect 
+                            value={String(ttFormDay)} 
+                            onValueChange={(val) => setTtFormDay(Number(val))} 
+                            options={DAYS.map((d, i) => ({ value: String(i), label: d }))}
                           />
                         </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Bắt đầu</Label>
+                            <Input type="time" value={ttFormStart} onChange={(e) => setTtFormStart(e.target.value)} className="mt-1 rounded-xl" />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Kết thúc</Label>
+                            <Input type="time" value={ttFormEnd} onChange={(e) => setTtFormEnd(e.target.value)} className="mt-1 rounded-xl" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Môn học *</Label>
+                          <Input value={ttFormSubject} onChange={(e) => setTtFormSubject(e.target.value)} placeholder="VD: Toán học 12" className="mt-1 rounded-xl" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Lớp học</Label>
+                            <Input value={ttFormClass} onChange={(e) => setTtFormClass(e.target.value)} placeholder="VD: 12A2" className="mt-1 rounded-xl" />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Phòng học</Label>
+                            <Input value={ttFormRoom} onChange={(e) => setTtFormRoom(e.target.value)} placeholder="VD: P.402" className="mt-1 rounded-xl" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Màu hiển thị</Label>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {COLORS.map((c) => (
+                              <button 
+                                key={c} 
+                                type="button" 
+                                onClick={() => setTtFormColor(c)} 
+                                className={cn(
+                                  "h-7 w-7 rounded-full transition-all border border-black/20", 
+                                  ttFormColor === c ? "ring-2 ring-offset-2 ring-violet-500 scale-110" : ""
+                                )} 
+                                style={{ backgroundColor: c }} 
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Ghi chú</Label>
+                          <Input value={ttFormNote} onChange={(e) => setTtFormNote(e.target.value)} placeholder="Nhắc nhở tự học..." className="mt-1 rounded-xl" />
+                        </div>
                       </div>
-                    )
-                  })()}
 
-                </div>
-              </div>
-
-
-
-              {/* Card 2: Checklist Manager */}
-              <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md">
-                <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
-                  <div>
-                    <h3 className="font-bold text-lg">Checklist & Planner của học sinh</h3>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Đã hoàn thành {completedTasksCount}/{tasks.length} đầu việc ({completionRate}%)</p>
-                  </div>
-                  <span className="rounded-full bg-[hsl(var(--foreground))]/5 px-3 py-1 text-xs font-bold">{tasks.length} tasks</span>
-                </div>
-
-                {/* Direct Task Creator form */}
-                <form onSubmit={handleAddTask} className="mb-6 p-4 rounded-2xl border border-[hsl(var(--border))]/50 bg-[hsl(var(--background))]/30 space-y-3">
-                  <p className="text-xs font-bold uppercase tracking-wider text-violet-500">Giao thêm mục tiêu học tập mới</p>
-                  
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Tên công việc *</Label>
-                      <Input 
-                        placeholder="VD: Ôn tập đề trắc nghiệm Lý ch.1" 
-                        value={taskTitle}
-                        onChange={(e) => setTaskTitle(e.target.value)}
-                        className="rounded-xl border-[hsl(var(--border))]/50 bg-transparent text-sm"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Môn học</Label>
-                      <Input 
-                        placeholder="VD: Vật lý" 
-                        value={taskSubject}
-                        onChange={(e) => setTaskSubject(e.target.value)}
-                        className="rounded-xl border-[hsl(var(--border))]/50 bg-transparent text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Độ ưu tiên</Label>
-                      <select 
-                        value={taskPriority} 
-                        onChange={(e) => setTaskPriority(e.target.value as "low" | "medium" | "high")}
-                        className="w-full rounded-xl border border-[hsl(var(--border))]/50 bg-[hsl(var(--background))] text-sm px-3 py-2 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23888888%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[right_10px_center] bg-[length:12px] pr-8 bg-no-repeat"
-                      >
-                        <option value="low">Thấp</option>
-                        <option value="medium">Trung bình</option>
-                        <option value="high">Cao</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Thời lượng (phút)</Label>
-                      <Input 
-                        type="number"
-                        min="0"
-                        placeholder="VD: 45"
-                        value={taskDuration}
-                        onChange={(e) => setTaskDuration(e.target.value)}
-                        className="rounded-xl border-[hsl(var(--border))]/50 bg-transparent text-sm"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Hạn chót</Label>
-                      <Input 
-                        type="date" 
-                        value={taskDueDate}
-                        onChange={(e) => setTaskDueDate(e.target.value)}
-                        className="rounded-xl border-[hsl(var(--border))]/50 bg-transparent text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-1">
-                    <Button type="submit" disabled={taskLoading || !taskTitle.trim()} className="w-full rounded-xl py-5 bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90 flex items-center justify-center gap-1.5 text-xs font-semibold shadow-md">
-                      {taskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-4 w-4" /> Thêm vào Checklist của học sinh</>}
-                    </Button>
-                  </div>
-                  {taskError && <p className="text-xs font-semibold text-red-500 flex items-center gap-1.5 justify-center"><AlertCircle className="h-3.5 w-3.5" />{taskError}</p>}
-                </form>
-
-                {/* Tasks List */}
-                <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
-                  {tasks.length === 0 ? (
-                    <div className="py-12 text-center text-sm text-[hsl(var(--muted-foreground))]/50">
-                      Chưa có mục tiêu học tập nào được thêm vào checklist.
-                    </div>
-                  ) : (
-                    tasks.map((task) => {
-                      const priorityBadge = PRIORITIES.find(p => p.value === task.priority)
-                      const statusBadge = STATUSES.find(s => s.value === task.status)
-                      
-                      return (
-                        <div 
-                          key={task.id} 
-                          className={cn(
-                            "group rounded-2xl border border-[hsl(var(--border))]/40 p-4 transition-all hover:border-[hsl(var(--border))]/70 flex items-start justify-between gap-3 bg-[hsl(var(--background))]/20",
-                            task.is_completed && "opacity-60 bg-[hsl(var(--muted))]/5"
-                          )}
+                      <div className="flex gap-2 pt-2">
+                        <Button 
+                          onClick={handleSaveStudentTimetable} 
+                          disabled={ttSaving || !ttFormSubject.trim()} 
+                          className="flex-1 rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90"
                         >
-                          <div className="flex items-start gap-3 min-w-0">
-                            {/* Checkbox for quick approve */}
-                            <button 
-                              onClick={() => handleToggleTaskStatus(task)}
-                              className={cn(
-                                "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 mt-0.5 transition-all",
-                                task.is_completed ? "border-[hsl(var(--foreground))] bg-[hsl(var(--foreground))] text-[hsl(var(--background))]" : "border-[hsl(var(--border))]/60 hover:border-[hsl(var(--foreground))]"
-                              )}
-                              title={task.is_completed ? "Đánh dấu chưa xong" : "Duyệt hoàn thành"}
-                            >
-                              {task.is_completed && <Check className="h-3 w-3" />}
-                            </button>
-                            
-                            <div className="min-w-0">
-                              <p className={cn("text-sm font-semibold tracking-tight leading-snug break-words", task.is_completed && "line-through text-[hsl(var(--muted-foreground))]/70")}>
-                                {task.title}
-                              </p>
-                              
-                              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider">
-                                {task.subject && (
-                                  <span className="rounded-full bg-violet-500/5 border border-violet-500/25 px-2 py-0.5 text-violet-500">
-                                    {task.subject}
-                                  </span>
-                                )}
-                                <span className={cn("rounded-full border px-2 py-0.5", priorityBadge?.color)}>
-                                  Ưu tiên: {priorityBadge?.label}
-                                </span>
-                                <span className={cn("rounded-full border px-2 py-0.5", statusBadge?.color)}>
-                                  {statusBadge?.label}
-                                </span>
-                                {task.estimated_time !== undefined && task.estimated_time > 0 && (
-                                  <span className="rounded-full bg-indigo-500/5 border border-indigo-500/25 px-2 py-0.5 text-indigo-500 flex items-center gap-0.5">
-                                    ⏱️ {task.estimated_time} phút
-                                  </span>
-                                )}
-                              </div>
+                          {ttSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="mr-2 h-4 w-4" /> {editingTtId ? "Cập nhật" : "Thêm"}</>}
+                        </Button>
+                        <Button variant="outline" onClick={resetTtForm} className="rounded-full flex-1">
+                          Hủy
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                              {task.due_date && (
-                                <p className="mt-2 flex items-center gap-1 text-[10px] text-[hsl(var(--muted-foreground))]">
-                                  <Calendar className="h-3.5 w-3.5" />
-                                  Hạn: {new Date(task.due_date).toLocaleDateString("vi-VN")}
-                                </p>
+                {/* Timetable Grid View */}
+                <section className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden shadow-md">
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[900px]">
+                      <div className="grid grid-cols-7 border-b border-[hsl(var(--border))]/20">
+                        {[1, 2, 3, 4, 5, 6, 0].map((dayIdx) => {
+                          const dayEntries = studentTimetable.filter(e => e.day_of_week === dayIdx)
+                          return (
+                            <div key={dayIdx} className={cn("border-r border-[hsl(var(--border))]/20 px-3 py-4 text-center last:border-r-0", dayIdx === new Date().getDay() ? "bg-[hsl(var(--muted))]/10" : "")}>
+                              <p className="text-sm font-bold">{DAYS[dayIdx]}</p>
+                              <p className="text-xs text-[hsl(var(--muted-foreground))]">{dayEntries.length} tiết</p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div className="grid min-h-[420px] grid-cols-7">
+                        {[1, 2, 3, 4, 5, 6, 0].map((dayIdx) => {
+                          const dayEntries = studentTimetable.filter(e => e.day_of_week === dayIdx)
+                          return (
+                            <div key={dayIdx} className="space-y-2 border-r border-[hsl(var(--border))]/20 p-2 last:border-r-0 bg-[hsl(var(--background))]/10">
+                              {dayEntries.map((entry) => (
+                                <div 
+                                  key={entry.id} 
+                                  className="group relative cursor-pointer rounded-xl p-2.5 text-white transition-all hover:scale-[1.02] shadow-sm hover:shadow" 
+                                  style={{ backgroundColor: entry.color }} 
+                                  onClick={() => handleEditStudentTimetable(entry)}
+                                >
+                                  <p className="text-sm font-bold leading-tight">{entry.subject}</p>
+                                  <p className="mt-1 flex items-center gap-1 text-[11px] opacity-90"><Clock className="h-3 w-3" />{entry.start_time.slice(0, 5)} - {entry.end_time.slice(0, 5)}</p>
+                                  {entry.class_name && <p className="mt-0.5 text-[11px] opacity-80 font-semibold">{entry.class_name}</p>}
+                                  {entry.room && <p className="text-[11px] opacity-70">{entry.room}</p>}
+                                  {entry.note && <p className="text-[10px] italic mt-1 border-t border-white/20 pt-1 opacity-85 truncate" title={entry.note}>{entry.note}</p>}
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteStudentTimetable(entry.id) }} 
+                                    className="absolute right-1.5 top-1.5 rounded-lg bg-black/30 p-1 opacity-0 transition-all group-hover:opacity-100 hover:bg-black/50"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5 text-white" />
+                                  </button>
+                                </div>
+                              ))}
+                              {dayEntries.length === 0 && (
+                                <div className="flex h-full min-h-[120px] items-center justify-center text-[hsl(var(--muted-foreground))]/20">
+                                  <CalendarDays className="h-6 w-6" />
+                                </div>
                               )}
                             </div>
-                          </div>
-
-                          <button 
-                            onClick={() => handleDeleteTask(task.id)}
-                            className="rounded-full p-2 text-rose-500 bg-rose-500/0 hover:bg-rose-500/10 transition-colors opacity-60 sm:opacity-0 sm:group-hover:opacity-100 shrink-0"
-                            title="Xóa đầu việc"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      )
-                    })
-                  )}
-                </div>
-              </div>
-
-            </div>
-
-            {/* Cột phải: Homework/Exams assigned + Submissions tracking + Timetable */}
-            <div className="space-y-6">
-              
-              {/* Card 3: Homework Assigned & Scores Tracker */}
-              <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md overflow-hidden">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
-                  <div>
-                    <h3 className="font-bold text-lg">Bài Tập Trực Tuyến</h3>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Xem kết quả bài kiểm tra học sinh đã làm</p>
-                  </div>
-                  <Link href="/teacher/exams/create" className="no-print">
-                    <Button size="sm" className="rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90 py-4 px-4 text-xs font-semibold">
-                      <Plus className="mr-1 h-3.5 w-3.5" /> Giao bài mới
-                    </Button>
-                  </Link>
-                </div>
-
-                {/* Submissions Tracker Table */}
-                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
-                  {submissions.length === 0 ? (
-                    <div className="py-12 text-center text-sm text-[hsl(var(--muted-foreground))]/50">
-                      Chưa nộp bài tập kiểm tra nào trên hệ thống.
+                          )
+                        })}
+                      </div>
                     </div>
-                  ) : (
-                    submissions.map((sub) => {
-                      const scorePercentage = Math.round((sub.score / 10) * 100)
-                      
-                      return (
-                        <div 
-                          key={sub.id} 
-                          className="rounded-2xl border border-[hsl(var(--border))]/40 p-4 transition-all hover:border-[hsl(var(--border))]/70 bg-[hsl(var(--background))]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                        >
-                          <div className="flex items-start gap-3 min-w-0">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/5 border border-violet-500/20 text-violet-500">
-                              <FileText className="h-5 w-5" strokeWidth={1.5} />
-                            </div>
-                            <div className="min-w-0">
-                              <h4 className="text-sm font-semibold tracking-tight truncate">{sub.exam?.title || "Đề thi đã bị xóa"}</h4>
-                              <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
-                                {sub.exam?.subject || "Khác"} • {new Date(sub.submitted_at).toLocaleDateString("vi-VN")} lúc {new Date(sub.submitted_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3 justify-between sm:justify-end shrink-0">
-                            <div className="text-right">
-                              <p className="text-base font-bold text-violet-500">{sub.score} / 10</p>
-                              <p className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">Tỷ lệ: {scorePercentage}%</p>
-                            </div>
-                            
-                            <Link href={`/teacher/exams/${sub.exam_id}/submissions/${sub.id}`}>
-                              <button className="rounded-full border border-[hsl(var(--border))]/60 p-2 hover:bg-[hsl(var(--muted))] transition-colors">
-                                <ChevronRight className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
-                              </button>
-                            </Link>
-                          </div>
-                        </div>
-                      )
-                    })
-                  )}
-                </div>
-              </div>
-
-              {/* Card 4: Timetable Widget Preview */}
-              <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md">
-                <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
-                  <div>
-                    <h3 className="font-bold text-lg">Khung Giờ Học Tập</h3>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Lịch trình tự học của học sinh</p>
                   </div>
-                  <Link href="/teacher/timetable">
-                    <Button variant="outline" size="sm" className="rounded-full border-[hsl(var(--border))]/70 bg-transparent text-xs font-semibold py-4 px-4">
-                      Thiết lập lịch
-                    </Button>
-                  </Link>
-                </div>
-                <div className="rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/20 p-4 text-center">
-                  <Calendar className="mx-auto mb-3 h-8 w-8 text-violet-500/80 animate-bounce" strokeWidth={1.2} />
-                  <p className="text-sm font-semibold tracking-tight mb-1">Mọi thay đổi trên lịch dạy học của bạn</p>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] leading-normal max-w-sm mx-auto">
-                    sẽ tự động đồng bộ sang mục Lịch học trên thanh PWA Pinned app của học sinh.
-                  </p>
-                </div>
+                </section>
               </div>
+            )}
 
-            </div>
-
-          </section>
+          </div>
         )}
 
       </main>

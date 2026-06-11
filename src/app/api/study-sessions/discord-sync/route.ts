@@ -37,18 +37,51 @@ export async function POST(req: Request) {
 
     const nowIso = new Date().toISOString()
 
-    // 3. Update or Insert the study_sessions row
-    // Note: status is either 'discord_class', 'discord_afk', or 'offline'
+    // Fetch existing study session to check for status changes and AFK alerts
+    const { data: existingSession } = await supabaseAdmin
+      .from("study_sessions")
+      .select("status, last_status_change, active_alert")
+      .eq("student_id", profile.id)
+      .maybeSingle()
+
+    let lastStatusChange = nowIso
+    let activeAlert: string | null = null
+
+    if (existingSession) {
+      if (existingSession.status === status) {
+        lastStatusChange = existingSession.last_status_change
+        activeAlert = existingSession.active_alert
+      } else {
+        // Status changed, reset alert if changing away from afk/offline
+        if (status !== 'discord_afk') {
+          activeAlert = null
+        }
+      }
+    }
+
+    // Auto-alert check if AFK too long (> 10 minutes / 600 seconds)
+    if (status === 'discord_afk') {
+      const afkStartTime = new Date(lastStatusChange).getTime()
+      const elapsedAfkSeconds = Math.floor((Date.now() - afkStartTime) / 1000)
+      if (elapsedAfkSeconds >= 600) {
+        activeAlert = "Bạn đã AFK trong phòng Discord quá 10 phút. Vui lòng bật lại tai nghe để tiếp tục học!"
+      }
+    } else if (status === 'offline') {
+      activeAlert = null
+    }
+
+    // Update study session
     const { error: sessionError } = await supabaseAdmin
       .from("study_sessions")
       .upsert(
         {
           student_id: profile.id,
           status: status,
-          last_status_change: nowIso,
+          last_status_change: lastStatusChange,
           discord_duration: duration_seconds || 0,
           discord_deafened: !!deafened,
-          discord_last_active: nowIso
+          discord_last_active: nowIso,
+          active_alert: activeAlert
         },
         {
           onConflict: "student_id"
@@ -58,6 +91,64 @@ export async function POST(req: Request) {
     if (sessionError) {
       console.error("Error updating study session:", sessionError)
       return NextResponse.json({ error: "Failed to update study session" }, { status: 500 })
+    }
+
+    // 3.5. Manage discord attendance logs
+    const { data: openLog } = await supabaseAdmin
+      .from("discord_attendance_logs")
+      .select("id, joined_at")
+      .eq("student_id", profile.id)
+      .is("left_at", null)
+      .order("joined_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (status !== 'offline') {
+      if (!openLog) {
+        const joinedAtDate = duration_seconds
+          ? new Date(Date.now() - (duration_seconds * 1000))
+          : new Date()
+        
+        await supabaseAdmin
+          .from("discord_attendance_logs")
+          .insert({
+            student_id: profile.id,
+            discord_id: discord_id,
+            joined_at: joinedAtDate.toISOString(),
+            session_date: new Date().toISOString().split('T')[0],
+            total_active_seconds: duration_seconds || 0,
+            total_afk_seconds: 0
+          })
+      } else {
+        const joinedAt = new Date(openLog.joined_at)
+        const elapsedSeconds = Math.max(0, Math.floor((Date.now() - joinedAt.getTime()) / 1000))
+        const activeSeconds = duration_seconds || 0
+        const afkSeconds = Math.max(0, elapsedSeconds - activeSeconds)
+
+        await supabaseAdmin
+          .from("discord_attendance_logs")
+          .update({
+            total_active_seconds: activeSeconds,
+            total_afk_seconds: afkSeconds
+          })
+          .eq("id", openLog.id)
+      }
+    } else {
+      if (openLog) {
+        const joinedAt = new Date(openLog.joined_at)
+        const elapsedSeconds = Math.max(0, Math.floor((Date.now() - joinedAt.getTime()) / 1000))
+        const activeSeconds = duration_seconds || 0
+        const afkSeconds = Math.max(0, elapsedSeconds - activeSeconds)
+
+        await supabaseAdmin
+          .from("discord_attendance_logs")
+          .update({
+            left_at: nowIso,
+            total_active_seconds: activeSeconds,
+            total_afk_seconds: afkSeconds
+          })
+          .eq("id", openLog.id)
+      }
     }
 
     // 4. Auto-complete the ca học task if study duration meets the threshold

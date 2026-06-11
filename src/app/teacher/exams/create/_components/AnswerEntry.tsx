@@ -32,6 +32,7 @@ interface AnswerEntryProps {
   onSendNotificationChange: (checked: boolean) => void;
   securityLevel: number;
   onSecurityLevelChange: (level: number) => void;
+  onImportFromBank?: () => void;
 }
 
 export function AnswerEntry({
@@ -58,6 +59,7 @@ export function AnswerEntry({
   onSendNotificationChange,
   securityLevel,
   onSecurityLevelChange,
+  onImportFromBank,
 }: AnswerEntryProps) {
   const answerPdfRef = useRef<HTMLInputElement>(null);
 
@@ -97,6 +99,15 @@ export function AnswerEntry({
         >
           Tự luận
         </button>
+        {onImportFromBank && (
+          <button
+            type="button"
+            onClick={onImportFromBank}
+            className="rounded-full px-4 py-2 text-sm bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600/25 transition-all font-semibold flex items-center gap-1 cursor-pointer"
+          >
+            <Sparkles className="h-4 w-4" /> Nhập từ Kho đề
+          </button>
+        )}
         <div className="ml-auto flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
           <Clock className="h-4 w-4" />
           {totalQuestions} câu

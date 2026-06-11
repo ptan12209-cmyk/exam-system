@@ -1,9 +1,11 @@
 "use client"
 
-import { LucideIcon, Home, FileText, ListTodo, User, Swords, Eye } from "lucide-react"
+import { LucideIcon, Home, FileText, User, Swords, Eye, CalendarDays } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { useEffect, useState, useMemo } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 interface NavItem {
     href: string
@@ -32,10 +34,10 @@ const studentNavItems: NavItem[] = [
         activePattern: /^\/arena/
     },
     {
-        href: "/student/checklist",
-        label: "Checklist",
-        icon: ListTodo,
-        activePattern: /^\/student\/checklist/
+        href: "/student/timetable",
+        label: "TKB",
+        icon: CalendarDays,
+        activePattern: /^\/student\/timetable/
     },
     {
         href: "/student/profile",
@@ -80,12 +82,76 @@ const teacherNavItems: NavItem[] = [
 
 export function MobileNav() {
     const pathname = usePathname()
+    const supabase = useMemo(() => createClient(), [])
+    const [unsubmittedCount, setUnsubmittedCount] = useState(0)
 
     if (!pathname) return null
 
     // Only show on logged-in areas (student or teacher subpaths, or arena/resources)
     const isStudentArea = pathname.startsWith("/student") || pathname.startsWith("/arena") || pathname.startsWith("/resources")
     const isTeacherArea = pathname.startsWith("/teacher")
+
+    useEffect(() => {
+        let active = true
+        async function getUnsubmittedCount() {
+            try {
+                const { data: { user: authUser } } = await supabase.auth.getUser()
+                if (!authUser || !active) return
+
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("grade, class_suffix, nickname")
+                    .eq("id", authUser.id)
+                    .single()
+
+                if (!active) return
+
+                const isStudentX = profile?.nickname === "X"
+                let examsQuery = supabase
+                    .from("exams")
+                    .select("id, target_grade, target_classes")
+                    .eq("status", "published")
+                    .eq("assigned_to", isStudentX ? "x" : "normal")
+
+                if (profile && profile.grade !== null) {
+                    examsQuery = examsQuery.or(`target_grade.is.null,target_grade.eq.${profile.grade}`)
+                }
+
+                const { data: examsData } = await examsQuery
+
+                if (!active || !examsData) return
+
+                const studentClassSuffix = profile?.class_suffix?.toUpperCase()
+                const visibleExams = examsData.filter((exam: any) => {
+                    if (exam.target_classes && exam.target_classes.length > 0) {
+                        return studentClassSuffix && exam.target_classes.map((c: string) => c.toUpperCase()).includes(studentClassSuffix)
+                    }
+                    return true
+                })
+
+                const { data: subsData } = await supabase
+                    .from("submissions")
+                    .select("exam_id")
+                    .eq("student_id", authUser.id)
+
+                if (!active || !subsData) return
+
+                const submittedIds = new Set(subsData.map((s: any) => s.exam_id))
+                const unsubmitted = visibleExams.filter((exam: any) => !submittedIds.has(exam.id))
+                setUnsubmittedCount(unsubmitted.length)
+            } catch (error) {
+                console.error("Error fetching unsubmitted count:", error)
+            }
+        }
+
+        if (isStudentArea) {
+            getUnsubmittedCount()
+        }
+
+        return () => {
+            active = false
+        }
+    }, [isStudentArea, supabase])
 
     if (!isStudentArea && !isTeacherArea) {
         return null
@@ -99,28 +165,42 @@ export function MobileNav() {
     const items = isTeacherArea ? teacherNavItems : studentNavItems
 
     return (
-        <nav className="glass-nav fixed bottom-0 left-0 right-0 z-50 lg:hidden safe-area-bottom">
-            <div className="flex items-center justify-around h-16 px-2">
+        <nav className="glass-nav-bottom fixed bottom-0 left-0 right-0 z-50 lg:hidden safe-area-bottom">
+            <div className="flex items-center justify-around h-[72px] px-2 pb-1">
                 {items.slice(0, 5).map((item) => {
                     const isActive = item.activePattern 
                         ? item.activePattern.test(pathname) 
                         : pathname === item.href || pathname.startsWith(item.href + "/")
+
+                    const isDeThi = item.label === "Đề thi"
+                    const hasBadge = isDeThi && unsubmittedCount > 0
 
                     return (
                         <Link
                             key={item.href + item.label}
                             href={item.href}
                             className={cn(
-                                "relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-2 py-2 text-[10px] font-medium transition-[transform,color,background-color,box-shadow] duration-200",
+                                "relative flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[11px] tracking-wide font-medium transition-all duration-300 ease-out",
                                 isActive
-                                    ? "bg-[hsl(var(--foreground))] text-[hsl(var(--background))] shadow-lg shadow-black/10"
-                                    : "bg-transparent text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]/40 hover:text-[hsl(var(--foreground))]"
+                                    ? "bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]"
+                                    : "bg-transparent text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]/30 hover:text-[hsl(var(--foreground))]"
                             )}
                         >
-                            <item.icon className={cn("h-5 w-5 transition-transform duration-200", isActive && "scale-110")} strokeWidth={1.2} />
-                            <span className={cn("transition-[font-weight,opacity] duration-200 text-[10px] font-medium", isActive && "font-semibold")}>
+                            <div className="relative">
+                                <item.icon className={cn("h-[22px] w-[22px] transition-transform duration-300", isActive && "scale-110")} strokeWidth={1.5} />
+                                {hasBadge && (
+                                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                                    </span>
+                                )}
+                            </div>
+                            <span className={cn("transition-all duration-300 text-[11px]", isActive ? "font-semibold" : "font-medium")}>
                                 {item.label}
                             </span>
+                            {isActive && (
+                                <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-[hsl(var(--primary))]" />
+                            )}
                         </Link>
                     )
                 })}
@@ -128,3 +208,4 @@ export function MobileNav() {
         </nav>
     )
 }
+
