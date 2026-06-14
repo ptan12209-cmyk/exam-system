@@ -27,18 +27,7 @@ interface NoteBlock {
   content: string
 }
 
-interface StudyTask { 
-  id: string 
-  title: string 
-  description: string | null 
-  subject: string | null 
-  due_date: string | null 
-  is_completed: boolean 
-  completed_at: string | null 
-  priority: "low" | "medium" | "high" 
-  status?: "todo" | "in_progress" | "review" | "done"
-  created_at: string 
-}
+import type { StudyTask } from "@/types"
 
 export default function StudyChecklistPage() {
   const router = useRouter()

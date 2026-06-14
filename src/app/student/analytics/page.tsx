@@ -16,13 +16,7 @@ import { StudentHeader } from "@/components/student/StudentHeader"
 import { Loading } from "@/components/shared/Loading"
 import { Calendar, TrendingUp, Target, BarChart3, FileText } from "lucide-react"
 
-interface Submission {
-  id: string
-  exam_id: string
-  score: number
-  submitted_at: string
-  exam: { id: string; title: string; subject?: string } | null
-}
+import type { Submission } from "@/types"
 
 interface StudentStats {
   xp: number
@@ -79,7 +73,7 @@ export default function StudentAnalyticsPage() {
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login") }
   const progressData = submissions.map((submission) => ({ date: submission.submitted_at, score: submission.score, examTitle: submission.exam?.title }))
   const activityData = generateActivityData(submissions)
-  const strengthData = calculateStrengthBySubject(submissions.map((submission) => ({ score: submission.score, exam: submission.exam ? { subject: submission.exam.subject } : undefined })))
+  const strengthData = calculateStrengthBySubject(submissions.map((submission) => ({ score: submission.score, exam: submission.exam ? { subject: submission.exam.subject || undefined } : undefined })))
 
   if (loading) return <Loading fullPage label="Đang phân tích kết quả..." />
 

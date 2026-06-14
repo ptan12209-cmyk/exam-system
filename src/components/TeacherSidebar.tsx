@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import { 
   BarChart3, 
   BookOpen, 
@@ -24,7 +25,7 @@ import {
 import { cn } from "@/lib/utils"
 
 interface TeacherSidebarProps {
-  onLogout: () => void
+  onLogout?: () => void
   collapsed?: boolean
   setCollapsed?: (collapsed: boolean) => void
 }
@@ -93,10 +94,21 @@ function SidebarLink({
 
 export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setCollapsed: externalSetCollapsed }: TeacherSidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [internalCollapsed, setInternalCollapsed] = useState(false)
   
   const collapsed = externalCollapsed !== undefined ? externalCollapsed : internalCollapsed
   const setCollapsed = externalSetCollapsed !== undefined ? externalSetCollapsed : setInternalCollapsed
+
+  const handleLogout = useCallback(async () => {
+    if (onLogout) {
+      onLogout()
+    } else {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      router.push("/login")
+    }
+  }, [onLogout, router])
 
   return (
     <aside 
@@ -181,7 +193,7 @@ export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setColl
       {/* Footer / Logout */}
       <div className="p-4 pt-4 border-t border-[hsl(var(--border))]/10">
         <button
-          onClick={onLogout}
+          onClick={handleLogout}
           className={cn(
             "group flex w-full items-center rounded-2xl py-3 transition-all duration-300 hover:bg-rose-500/10",
             collapsed ? "justify-center" : "gap-3 px-4"

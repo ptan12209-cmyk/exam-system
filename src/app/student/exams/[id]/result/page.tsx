@@ -16,28 +16,7 @@ import { StudentShell } from "@/components/student/StudentShell"
 import { Trophy, CheckCircle2, XCircle, Home, Medal, Share2, RotateCcw, GraduationCap, Lock } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 
-interface Exam {
-  id: string
-  title: string
-  total_questions: number
-  correct_answers: string[]
-  tf_answers?: { question: number; a: boolean; b: boolean; c: boolean; d: boolean }[]
-  sa_answers?: { question: number; answer: number | string }[]
-  score_visibility_mode?: string
-  score_visibility_threshold?: number
-  max_attempts?: number
-}
-
-interface Submission {
-  id: string
-  student_answers: string[]
-  score: number
-  correct_count: number
-  time_spent: number
-  submitted_at: string
-  tf_student_answers?: { question: number; a: boolean | null; b: boolean | null; c: boolean | null; d: boolean | null }[]
-  sa_student_answers?: { question: number; answer: string }[]
-}
+import type { Exam, Submission } from "@/types"
 
 interface LeaderboardEntry {
   id: string
@@ -163,7 +142,7 @@ export default function ExamResultPage() {
   const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")}`
   const getScoreColor = (score: number) => score >= 8 ? "text-emerald-600 dark:text-emerald-400" : score >= 6.5 ? "text-indigo-600 dark:text-indigo-400" : score >= 5 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
   const getScoreMessage = (score: number) => score >= 8 ? "Làm tốt lắm" : score >= 6.5 ? "Khá tốt" : score >= 5 ? "Đạt yêu cầu" : "Cần cố gắng thêm"
-  const progressPercent = useMemo(() => (exam && submission ? Math.min(100, (submission.correct_count / exam.total_questions) * 100) : 0), [exam, submission])
+  const progressPercent = useMemo(() => (exam && submission ? Math.min(100, ((submission.correct_count ?? 0) / exam.total_questions) * 100) : 0), [exam, submission])
 
   if (loading) return <Loading fullPage label="Đang chấm bài..." />
   if (!exam || !submission) return null
@@ -215,15 +194,15 @@ export default function ExamResultPage() {
               <p className="text-sm text-[hsl(var(--muted-foreground))]">Tổng quan nhanh</p>
               <div className="mt-5 grid grid-cols-3 gap-3 text-center text-sm">
                 <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-3">
-                  <div className="text-2xl font-semibold">{submission.correct_count}</div>
+                  <div className="text-2xl font-semibold">{submission.correct_count ?? 0}</div>
                   <div className="text-[hsl(var(--muted-foreground))]">Đúng</div>
                 </div>
                 <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-3">
-                  <div className="text-2xl font-semibold">{exam.total_questions - submission.correct_count}</div>
+                  <div className="text-2xl font-semibold">{exam.total_questions - (submission.correct_count ?? 0)}</div>
                   <div className="text-[hsl(var(--muted-foreground))]">Sai</div>
                 </div>
                 <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-3">
-                  <div className="text-2xl font-semibold">{formatTime(submission.time_spent)}</div>
+                  <div className="text-2xl font-semibold">{formatTime(submission.time_spent ?? 0)}</div>
                   <div className="text-[hsl(var(--muted-foreground))]">Thời gian</div>
                 </div>
               </div>
@@ -253,11 +232,11 @@ export default function ExamResultPage() {
                       <h3 className="text-lg font-semibold">Chi tiết bài làm</h3>
                     </div>
                     <div className="p-5">
-                      {exam.correct_answers?.length > 0 && (
+                      {(exam.correct_answers?.length ?? 0) > 0 && (
                         <div className="mb-8">
                           <h4 className="mb-4 text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">Trắc nghiệm</h4>
                           <div className="grid grid-cols-5 gap-2 md:grid-cols-8 lg:grid-cols-10">
-                            {exam.correct_answers.map((correct, index) => {
+                            {(exam.correct_answers || []).map((correct, index) => {
                               const studentAnswer = submission.student_answers?.[index]
                               const isCorrect = studentAnswer === correct
                               return (

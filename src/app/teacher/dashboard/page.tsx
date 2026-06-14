@@ -18,45 +18,43 @@ import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
+import { useAuth } from "@/hooks/useAuth"
 
-interface Profile { id: string; role: string; full_name: string | null }
-interface Exam { id: string; title: string; duration: number; total_questions: number; status: "draft" | "published"; created_at: string; submission_count?: number; subject?: string; assigned_to?: "normal" | "x" }
+import type { Profile, Exam } from "@/types"
 
 export default function TeacherDashboard() {
   const router = useRouter()
   const supabase = createClient()
   const { success, error: toastError } = useToast()
-  const [profile, setProfile] = useState<Profile | null>(null)
+  
+  const { user, profile, loading: authLoading, signOut } = useAuth({ requiredRole: "teacher" })
+  
   const [exams, setExams] = useState<Exam[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loadingExams, setLoadingExams] = useState(true)
   const [stats, setStats] = useState({ totalExams: 0, publishedExams: 0, totalSubmissions: 0 })
   const [selectedSubject, setSelectedSubject] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
 
   useEffect(() => {
-    const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return router.push("/login")
-      const { data: profileData } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-      if (!profileData) {
-        await supabase.auth.signOut()
-        return router.push("/login?error=profile_not_found")
-      }
-      if (profileData.role !== "teacher") return router.push("/student/dashboard")
-      setProfile(profileData)
+    if (!user) return
+    
+    const fetchExamsData = async () => {
       const { data: examsData } = await supabase.from("exams").select("*, submissions(count)").eq("teacher_id", user.id).order("created_at", { ascending: false })
       if (examsData) {
         const mapped = examsData.map((e: Record<string, unknown>) => ({ ...e, submission_count: Array.isArray(e.submissions) && e.submissions.length ? (e.submissions[0] as { count: number }).count : 0 })) as Exam[]
         setExams(mapped)
         setStats({ totalExams: mapped.length, publishedExams: mapped.filter((e) => e.status === "published").length, totalSubmissions: mapped.reduce((sum, e) => sum + (e.submission_count || 0), 0) })
       }
-      setLoading(false)
+      setLoadingExams(false)
     }
-    fetchData()
-  }, [router, supabase])
+    
+    fetchExamsData()
+  }, [user, supabase])
 
-  const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login") }
+  const loading = authLoading || loadingExams
+
+  const handleLogout = async () => { await signOut() }
   
   const executeDeleteExam = async () => {
     if (!deleteTarget) return

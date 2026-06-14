@@ -36,32 +36,7 @@ const instrumentSerif = { className: "font-instrument-serif" }
 const jetbrainsMono = { className: "font-jetbrains-mono" }
 const inter = { className: "font-inter" }
 
-interface Profile {
-  id: string
-  role: string
-  full_name: string | null
-  class: string | null
-  grade: number | null
-  nickname: string | null
-}
-
-interface Exam {
-  id: string
-  title: string
-  duration: number
-  total_questions: number
-  status: "draft" | "published"
-  created_at: string
-  subject?: string
-}
-
-interface Submission {
-  id: string
-  exam_id: string
-  score: number
-  submitted_at: string
-  exam?: Exam
-}
+import type { Profile, Exam, Submission } from "@/types"
 
 export default function StudentXDashboard() {
   const router = useRouter()

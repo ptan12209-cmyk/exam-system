@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import type { Exam } from "@/types/exam-page"
+import type { Exam } from "@/types"
 
 interface UseExamsFilterOptions {
   exams: Exam[]

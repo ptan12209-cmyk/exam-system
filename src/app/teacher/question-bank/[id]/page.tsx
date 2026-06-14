@@ -22,21 +22,7 @@ interface RouteParams {
     params: Promise<{ id: string }>
 }
 
-interface Question {
-    id: string
-    question_type: 'mc' | 'tf' | 'sa'
-    difficulty: number
-    content: string
-    options: string[] | null
-    correct_answer: any
-    explanation: string | null
-    chapter_id?: string | null
-    lesson_id?: string | null
-    section_id?: string | null
-    study_chapters?: { title: string } | null
-    study_lessons?: { title: string } | null
-    study_sections?: { title: string } | null
-}
+import type { Question } from "@/types"
 
 export default function QuestionBankDetailPage({ params }: RouteParams) {
     const resolvedParams = use(params)
@@ -570,7 +556,7 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
                                 )}
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="whitespace-pre-wrap font-medium overflow-x-auto"><Latex>{q.content}</Latex></div>
+                                <div className="whitespace-pre-wrap font-medium overflow-x-auto"><Latex>{q.content || ""}</Latex></div>
                                 
                                 {q.question_type === 'mc' && q.options && (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">

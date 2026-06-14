@@ -33,71 +33,39 @@ import { StudentHeader } from "@/components/student/StudentHeader"
 import { StudentShell } from "@/components/student/StudentShell"
 import { StudentStatCard } from "@/components/student/StudentStatCard"
 import { GradeOnboardingModal } from "@/components/student/GradeOnboardingModal"
+import { useAuth } from "@/hooks/useAuth"
 
-interface Profile {
-  id: string
-  role: string
-  full_name: string | null
-  class: string | null
-  grade: number | null
-  class_suffix: string | null
-}
-
-interface Exam {
-  id: string
-  title: string
-  duration: number
-  total_questions: number
-  status: "draft" | "published"
-  created_at: string
-  subject?: string
-}
-
-interface Submission {
-  id: string
-  exam_id: string
-  score: number
-  submitted_at: string
-  exam?: Exam
-}
+import type { Profile, Exam, Submission } from "@/types"
 
 export default function StudentDashboard() {
   const router = useRouter()
   const supabase = createClient()
 
+  const { user, profile: authProfile, loading: authLoading, signOut } = useAuth({ requiredRole: "student" })
   const [profile, setProfile] = useState<Profile | null>(null)
+
+  useEffect(() => {
+    if (authProfile) {
+      setProfile(authProfile as unknown as Profile)
+    }
+  }, [authProfile])
+
   const [availableExams, setAvailableExams] = useState<Exam[]>([])
   const [submissions, setSubmissions] = useState<Submission[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loadingData, setLoadingData] = useState(true)
   const [userXp, setUserXp] = useState(0)
   const [selectedSubject, setSelectedSubject] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
+    if (!user || !profile) return
+
+    if (profile.nickname === "X") {
+      router.push("/student/X/dashboard")
+      return
+    }
+
     const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push("/login")
-        return
-      }
-
-      const { data: profileData } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-      if (!profileData) {
-        await supabase.auth.signOut()
-        router.push("/login?error=profile_not_found")
-        return
-      }
-      if (profileData.role !== "student") {
-        router.push("/teacher/dashboard")
-        return
-      }
-      if (profileData.nickname === "X") {
-        router.push("/student/X/dashboard")
-        return
-      }
-
-      setProfile(profileData)
-
       const { stats } = await getUserStats(user.id)
       setUserXp(stats.xp)
 
@@ -107,13 +75,13 @@ export default function StudentDashboard() {
         .eq("status", "published")
         .eq("assigned_to", "normal")
 
-      if (profileData.grade !== null) {
-        examsQuery = examsQuery.or(`target_grade.is.null,target_grade.eq.${profileData.grade}`)
+      if (profile.grade !== null) {
+        examsQuery = examsQuery.or(`target_grade.is.null,target_grade.eq.${profile.grade}`)
       }
 
       const { data: examsData } = await examsQuery.order("created_at", { ascending: false })
       if (examsData) {
-        const studentClassSuffix = profileData.class_suffix?.toUpperCase()
+        const studentClassSuffix = profile.class_suffix?.toUpperCase()
         const visibleExams = examsData.filter((exam: any) => {
           if (exam.target_classes && exam.target_classes.length > 0) {
             return studentClassSuffix && exam.target_classes.map((c: string) => c.toUpperCase()).includes(studentClassSuffix)
@@ -130,11 +98,11 @@ export default function StudentDashboard() {
         .order("submitted_at", { ascending: false })
       if (submissionsData) setSubmissions(submissionsData)
 
-      setLoading(false)
+      setLoadingData(false)
     }
 
     fetchData()
-  }, [router, supabase])
+  }, [user, profile, router, supabase])
 
   const filteredExams = useMemo(() => {
     return availableExams.filter((exam) => {
@@ -145,9 +113,10 @@ export default function StudentDashboard() {
   }, [availableExams, searchQuery, selectedSubject])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push("/login")
+    await signOut()
   }
+
+  const loading = authLoading || loadingData
 
   const hasSubmitted = (examId: string) => submissions.some((submission) => submission.exam_id === examId)
   const getSubmission = (examId: string) => submissions.find((submission) => submission.exam_id === examId)

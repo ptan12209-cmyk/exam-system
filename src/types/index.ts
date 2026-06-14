@@ -26,6 +26,8 @@ export interface Profile {
     phone: string | null
     xp: number
     level: number
+    email?: string | null
+    nickname?: string | null
     created_at: string
     updated_at: string
 }
@@ -38,29 +40,98 @@ export type ExamStatus = 'draft' | 'published' | 'archived'
 
 export interface Exam {
     id: string
-    teacher_id: string
+    teacher_id?: string
     title: string
     description?: string
     duration: number // in minutes
     total_questions: number
-    status: ExamStatus
+    status?: ExamStatus | string
     pdf_url?: string | null
+    subject?: string
 
-    // Scheduling
+    // Scheduling & assignment
     is_scheduled?: boolean
     start_time?: string | null
     end_time?: string | null
     max_attempts?: number
+    attempts_used?: number
+    assigned_to?: 'normal' | 'x'
+    submission_count?: number
+    security_level?: number
+    score_visibility_mode?: string
+    score_visibility_threshold?: number | null
+
+    // Cascade fields
+    chapter_id?: string | null
+    lesson_id?: string | null
+    section_id?: string | null
 
     // Answer keys (server-only, never sent to client)
-    correct_answers?: string[]
-    mc_answers?: MCAnswer[]
-    tf_answers?: TFAnswer[]
-    sa_answers?: SAAnswer[]
+    correct_answers?: string[] | null
+    mc_answers?: MCAnswer[] | null
+    tf_answers?: TFAnswer[] | null
+    sa_answers?: SAAnswer[] | null
 
-    created_at: string
+    // Question lists (for students)
+    mc_questions?: { question: number }[]
+    tf_questions?: { question: number }[]
+    sa_questions?: { question: number }[]
+
+    created_at?: string
     updated_at?: string
 }
+
+export type QuestionType = 'mc' | 'tf' | 'sa'
+
+export interface Question {
+    id: string
+    question_type?: QuestionType | string
+    content?: string // used in DigitalQuestionViewer
+    question_text?: string // used in exams and arena
+    options?: string[] | null
+    correct_answer?: any
+    explanation?: string | null
+    difficulty?: number
+    chapter_id?: string | null
+    lesson_id?: string | null
+    section_id?: string | null
+    study_chapters?: { title: string } | null
+    study_lessons?: { title: string } | null
+    study_sections?: { title: string } | null
+}
+
+export interface QuestionBank {
+    id: string
+    name: string
+    subject: string
+    description: string
+    created_at: string
+}
+
+export interface ExamInBank {
+    id: string
+    title: string
+    subject: string
+    description: string | null
+    pdf_url: string | null
+    answer_key: string | null
+    total_questions: number
+    created_at: string
+    questions?: Array<{ question: string; options: string[]; answer: string }>
+    target_grade?: number | null
+    chapter_id?: string | null
+    lesson_id?: string | null
+    section_id?: string | null
+    correct_answers?: string[] | null
+    mc_answers?: any[] | null
+    tf_answers?: any[] | null
+    sa_answers?: any[] | null
+    max_attempts?: number
+    security_level?: number
+    score_visibility_mode?: string
+    score_visibility_threshold?: number | null
+}
+
 
 export interface MCAnswer {
     question: number
@@ -103,25 +174,41 @@ export interface SafeExam {
 
 export interface Submission {
     id: string
-    exam_id: string
+    exam_id?: string // make it optional
     student_id: string
     score: number
-    correct_count: number
+    correct_count?: number // make it optional
+    total_questions?: number // added for SubmissionFeed and others
+    student_name?: string // added for SubmissionFeed
     mc_correct?: number
     tf_correct?: number
     sa_correct?: number
-    time_spent: number // in seconds
+    time_spent?: number // make it optional (in seconds)
     submitted_at: string
-    attempt_number: number
-    is_ranked: boolean
+    attempt_number?: number
+    is_ranked?: boolean
     session_id?: string
     cheat_flags?: CheatFlags
+    
+    // Loaded/related models
+    exam?: {
+        title: string
+        subject: string | null
+        total_questions: number
+    }
+    profile?: {
+        full_name: string | null
+    }
+    student?: {
+        full_name: string | null
+        class: string | null
+    }
 
     // Student answers
-    student_answers?: (string | null)[]
-    mc_student_answers?: MCStudentAnswer[]
-    tf_student_answers?: TFStudentAnswer[]
-    sa_student_answers?: SAStudentAnswer[]
+    student_answers?: (string | null)[] | null
+    mc_student_answers?: MCStudentAnswer[] | null
+    tf_student_answers?: TFStudentAnswer[] | null
+    sa_student_answers?: SAStudentAnswer[] | null
 }
 
 export interface MCStudentAnswer {
@@ -166,12 +253,13 @@ export interface ExamSession {
 }
 
 export interface ExamParticipant {
-    exam_id: string
+    exam_id?: string
     user_id: string
     student_name: string
-    status: ParticipantStatus
+    status: ParticipantStatus | string
     started_at: string
     last_active: string
+    progress?: number
 }
 
 // =============================================
@@ -451,5 +539,127 @@ export interface IeltsQuestionInput {
   correct_answer: string
   explanation?: string
 }
+
+// =============================================
+// STUDY & MONITOR TYPES
+// =============================================
+
+export interface StudentProfile {
+    id: string
+    full_name: string | null
+    email: string | null
+    class: string | null
+}
+
+export type StudySessionStatus = 'focusing' | 'resting' | 'offline' | 'discord_class' | 'discord_afk'
+
+export interface StudySession {
+    student_id: string
+    status: StudySessionStatus
+    last_status_change: string
+    total_focus_seconds_today: number
+    discord_duration?: number
+    discord_deafened?: boolean
+    discord_last_active?: string
+}
+
+export interface StudyTask {
+    id: string
+    title: string
+    description?: string | null
+    subject: string | null
+    due_date: string | null
+    is_completed: boolean
+    completed_at?: string | null
+    priority: 'low' | 'medium' | 'high'
+    status?: 'todo' | 'in_progress' | 'review' | 'done'
+    created_at?: string
+    estimated_time?: number
+}
+
+export interface TeacherProfile {
+    id: string
+    full_name: string | null
+    email: string | null
+    role: string
+}
+
+export interface DiscordLog {
+    id: string
+    session_date: string
+    joined_at: string
+    left_at: string | null
+    total_active_seconds: number
+    total_afk_seconds: number
+}
+
+export interface StudentTimetableEntry {
+    id: string
+    student_id: string
+    assigned_by: string
+    day_of_week: number
+    start_time: string
+    end_time: string
+    subject: string
+    class_name: string | null
+    room: string | null
+    note: string | null
+    color: string
+}
+
+// =============================================
+// ARENA TYPES
+// =============================================
+
+export interface ArenaSession {
+    id: string
+    name: string
+    subject: string
+    duration: number
+    description?: string | null
+    total_questions?: number
+    start_time?: string
+    end_time?: string
+    exam_id?: string | null
+    created_at?: string
+    status?: string
+    participant_count?: number
+    exam?: {
+        id: string
+        title: string
+        subject: string
+        total_questions: number
+    } | null
+}
+
+export interface AnswerDetail {
+    question_id: string
+    answer: string | null
+    correct_answer: string
+    is_correct: boolean
+}
+
+export interface ArenaResult {
+    id: string
+    arena_id?: string
+    score: number
+    correct_count?: number
+    total_questions?: number
+    time_spent: number
+    answers?: AnswerDetail[]
+    student_id: string
+    rank?: number | null
+    created_at?: string
+    profiles?: {
+        full_name: string | null
+    }
+    arena_sessions?: {
+        name: string
+        subject: string
+        start_time: string
+        end_time: string
+    }
+}
+
 
 

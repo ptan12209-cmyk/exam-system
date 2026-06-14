@@ -12,14 +12,7 @@ import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { TeacherBottomNav } from "@/components/BottomNav"
 import { Loading } from "@/components/shared/Loading"
 
-interface Participant {
-  user_id: string
-  student_name: string
-  status: "active" | "submitted" | "disconnected"
-  started_at: string
-  last_active: string
-  progress?: number
-}
+import type { ExamParticipant } from "@/types"
 
 interface ExamStats {
   total_participants: number
@@ -36,7 +29,7 @@ export default function ExamMonitorPage() {
   const supabase = createClient()
 
   const [exam, setExam] = useState<{ title: string; duration: number } | null>(null)
-  const [participants, setParticipants] = useState<Participant[]>([])
+  const [participants, setParticipants] = useState<ExamParticipant[]>([])
   const [stats, setStats] = useState<ExamStats>({
     total_participants: 0,
     active_count: 0,
@@ -60,7 +53,7 @@ export default function ExamMonitorPage() {
 
     if (participantData) {
       const now = new Date()
-      const processed = participantData.map((p: Participant) => {
+      const processed = participantData.map((p: ExamParticipant) => {
         const inactiveMs = now.getTime() - new Date(p.last_active).getTime()
         return { ...p, status: p.status === "active" && inactiveMs > 120000 ? "disconnected" : p.status }
       })
@@ -68,9 +61,9 @@ export default function ExamMonitorPage() {
       setParticipants(processed)
       setStats({
         total_participants: processed.length,
-        active_count: processed.filter((p: Participant) => p.status === "active").length,
-        submitted_count: processed.filter((p: Participant) => p.status === "submitted").length,
-        disconnected_count: processed.filter((p: Participant) => p.status === "disconnected").length,
+        active_count: processed.filter((p: ExamParticipant) => p.status === "active").length,
+        submitted_count: processed.filter((p: ExamParticipant) => p.status === "submitted").length,
+        disconnected_count: processed.filter((p: ExamParticipant) => p.status === "disconnected").length,
         avg_progress: 0,
       })
     }

@@ -34,32 +34,7 @@ import {
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
 
-interface ArenaSession {
-  id: string
-  name: string
-  description: string | null
-  exam_id: string | null
-  start_time: string
-  end_time: string
-  duration: number
-  status: string
-  created_at: string
-  participant_count?: number
-  exam?: {
-    id: string
-    title: string
-    subject: string
-    total_questions: number
-  }
-}
-
-interface Exam {
-  id: string
-  title: string
-  subject: string
-  total_questions: number
-  created_at: string
-}
+import type { ArenaSession, Exam } from "@/types"
 
 export default function ArenaAdminPage() {
   const router = useRouter()
@@ -158,8 +133,8 @@ export default function ArenaAdminPage() {
     setName(session.name)
     setDescription(session.description || "")
     setExamId(session.exam_id || "")
-    setStartTime(session.start_time.slice(0, 16))
-    setEndTime(session.end_time.slice(0, 16))
+    setStartTime((session.start_time || "").slice(0, 16))
+    setEndTime((session.end_time || "").slice(0, 16))
     setDuration(session.duration)
     setShowCreate(true)
   }
@@ -214,8 +189,8 @@ export default function ArenaAdminPage() {
 
   const getStatusBadge = (session: ArenaSession) => {
     const now = new Date()
-    const start = new Date(session.start_time)
-    const end = new Date(session.end_time)
+    const start = new Date(session.start_time || "")
+    const end = new Date(session.end_time || "")
 
     if (now < start) {
       return (
@@ -341,7 +316,7 @@ export default function ArenaAdminPage() {
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 opacity-60" />
                       <span>
-                        {new Date(session.start_time).toLocaleDateString("vi-VN", {
+                        {new Date(session.start_time || "").toLocaleDateString("vi-VN", {
                           day: "2-digit",
                           month: "2-digit",
                           hour: "2-digit",

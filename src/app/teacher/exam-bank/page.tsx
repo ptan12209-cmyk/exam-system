@@ -41,29 +41,7 @@ import {
 import { SUBJECTS, MAP_SUBJECT_TO_DB, MAP_DB_TO_SUBJECT } from "@/lib/subjects"
 import { cn } from "@/lib/utils"
 
-interface ExamInBank {
-  id: string
-  title: string
-  subject: string
-  description: string | null
-  pdf_url: string | null
-  answer_key: string | null
-  total_questions: number
-  created_at: string
-  questions?: Array<{ question: string; options: string[]; answer: string }>
-  target_grade?: number | null
-  chapter_id?: string | null
-  lesson_id?: string | null
-  section_id?: string | null
-  correct_answers?: string[] | null
-  mc_answers?: any[] | null
-  tf_answers?: any[] | null
-  sa_answers?: any[] | null
-  max_attempts?: number
-  security_level?: number
-  score_visibility_mode?: string
-  score_visibility_threshold?: number | null
-}
+import type { ExamInBank } from "@/types"
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || "http://localhost:8000"
 

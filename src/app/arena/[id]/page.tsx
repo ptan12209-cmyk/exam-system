@@ -9,8 +9,7 @@ import { Clock, Send, Loader2, Swords, Target, Trophy, AlertTriangle, ChevronLef
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/toast"
 
-interface Question { id: string; question_text: string; options: string[]; correct_answer: number }
-interface ArenaSession { id: string; name: string; subject: string; duration: number; total_questions: number; start_time: string; end_time: string; exam_id?: string }
+import type { Question, ArenaSession } from "@/types"
 
 export default function ArenaBattlePage() {
     const router = useRouter()
@@ -138,9 +137,9 @@ export default function ArenaBattlePage() {
                             <div className="flex items-center gap-4"><div className="px-3 py-1 rounded-xl bg-card border border-border shadow-sm font-bold text-foreground">Câu {currentIndex + 1}</div></div>
                         </div>
                         <div className="p-6 md:p-8">
-                            <div className="text-foreground text-lg leading-relaxed mb-8"><MathRenderer content={currentQuestion.question_text} /></div>
+                            <div className="text-foreground text-lg leading-relaxed mb-8"><MathRenderer content={currentQuestion.question_text || ""} /></div>
                             <div className="grid gap-3">
-                                {currentQuestion.options.map((option, idx) => {
+                                {(currentQuestion.options || []).map((option, idx) => {
                                     const optionLetter = ["A", "B", "C", "D"][idx]; const isSelected = answers[currentQuestion.id] === optionLetter
                                     return (
                                         <button key={idx} onClick={() => handleAnswer(currentQuestion.id, optionLetter)} className={cn("w-full p-4 rounded-xl border-2 text-left transition-all relative group",

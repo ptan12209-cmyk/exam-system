@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
-import type { Exam } from "@/types/exam-page"
+import type { Exam } from "@/types"
 
 /**
  * Hook to fetch all published exams.

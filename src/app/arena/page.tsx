@@ -23,32 +23,7 @@ import {
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 
-interface ArenaSession {
-  id: string
-  name: string
-  description: string | null
-  subject: string
-  start_time: string
-  end_time: string
-  duration: number
-  total_questions: number
-  status: string
-}
-
-interface ArenaResult {
-  arena_id: string
-  score: number
-  rank: number | null
-  time_spent: number
-  created_at: string
-  student_id: string
-  arena_sessions?: {
-    name: string
-    subject: string
-    start_time: string
-    end_time: string
-  }
-}
+import type { ArenaSession, ArenaResult } from "@/types"
 
 // Countdown Timer Component
 function Countdown({ startTime, onFinish }: { startTime: string; onFinish?: () => void }) {
@@ -169,8 +144,8 @@ export default function ArenaPage() {
   const getStatusInfo = (session: ArenaSession) => {
     if (!mounted) return { status: "loading", label: "Đang tải...", color: "bg-slate-400" }
     const now = new Date()
-    const start = new Date(session.start_time)
-    const end = new Date(session.end_time)
+    const start = new Date(session.start_time || "")
+    const end = new Date(session.end_time || "")
     if (now < start) return { status: "upcoming", label: "Sắp diễn ra", color: "bg-amber-500" }
     if (now >= start && now <= end) return { status: "active", label: "Đang mở", color: "bg-emerald-500" }
     return { status: "ended", label: "Đã đóng", color: "bg-[hsl(var(--muted-foreground))]/60" }
@@ -403,7 +378,7 @@ export default function ArenaPage() {
                             >
                               <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                               {statusInfo.status === "upcoming" ? (
-                                <Countdown startTime={session.start_time} />
+                                <Countdown startTime={session.start_time || ""} />
                               ) : (
                                 statusInfo.label
                               )}
@@ -412,11 +387,11 @@ export default function ArenaPage() {
                           <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-[hsl(var(--muted-foreground))]">
                             <span className="flex items-center gap-1.5">
                               <Calendar className="h-4 w-4" />
-                              {new Date(session.start_time).toLocaleDateString("vi-VN", {
+                              {new Date(session.start_time || "").toLocaleDateString("vi-VN", {
                                 day: "2-digit",
                                 month: "2-digit",
                               })}{" "}
-                              {new Date(session.start_time).toLocaleTimeString("vi-VN", {
+                              {new Date(session.start_time || "").toLocaleTimeString("vi-VN", {
                                 hour: "2-digit",
                                 minute: "2-digit",
                               })}
@@ -541,7 +516,7 @@ export default function ArenaPage() {
                           <div>
                             <h4 className="font-semibold text-lg">{item.arena_sessions?.name}</h4>
                             <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                              Thi lúc: {new Date(item.created_at).toLocaleDateString("vi-VN")} - Thời gian làm:{" "}
+                              Thi lúc: {new Date(item.created_at || "").toLocaleDateString("vi-VN")} - Thời gian làm:{" "}
                               {formatSpentTime(item.time_spent)}
                             </p>
                           </div>

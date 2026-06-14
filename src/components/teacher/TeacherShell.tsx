@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 
 interface TeacherShellProps {
   children: React.ReactNode
-  onLogout: () => void
+  onLogout?: () => void
   className?: string
 }
 

@@ -13,13 +13,7 @@ import { SUBJECTS } from "@/lib/subjects"
 import Link from "next/link"
 import { useToast } from "@/components/ui/toast"
 
-interface QuestionBank {
-    id: string
-    name: string
-    subject: string
-    description: string
-    created_at: string
-}
+import type { QuestionBank } from "@/types"
 
 export default function QuestionBankPage() {
     const supabase = createClient()

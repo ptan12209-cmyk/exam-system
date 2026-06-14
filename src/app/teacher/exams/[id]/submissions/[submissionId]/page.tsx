@@ -14,9 +14,7 @@ import { Loading } from "@/components/shared/Loading"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 
-interface Exam { id: string; title: string; total_questions: number; mc_answers: { question: number; answer: string }[] | null; tf_answers: { question: number; a: boolean; b: boolean; c: boolean; d: boolean }[] | null; sa_answers: { question: number; answer: string | number }[] | null; correct_answers: string[] | null }
-interface Submission { id: string; student_id: string; score: number; correct_count: number; time_spent: number; submitted_at: string; student_answers: (string | null)[] | null; mc_student_answers: { question: number; answer: string | null }[] | null; tf_student_answers: { question: number; a: boolean | null; b: boolean | null; c: boolean | null; d: boolean | null }[] | null; sa_student_answers: { question: number; answer: string }[] | null }
-interface Profile { full_name: string | null; email: string | null }
+import type { Exam, Submission, Profile } from "@/types"
 
 export default function SubmissionDetailPage() {
   const router = useRouter()
@@ -119,14 +117,14 @@ export default function SubmissionDetailPage() {
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
                     <Trophy className="h-6 w-6" />
                   </div>
-                  <p className="text-xl font-bold">{submission.correct_count}/{exam.total_questions}</p>
+                  <p className="text-xl font-bold">{submission.correct_count ?? 0}/{exam.total_questions}</p>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[hsl(var(--muted-foreground))]">Câu đúng</p>
                 </div>
                 <div className="text-center">
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-500">
                     <Clock className="h-6 w-6" />
                   </div>
-                  <p className="text-xl font-bold">{formatTime(submission.time_spent)}</p>
+                  <p className="text-xl font-bold">{formatTime(submission.time_spent ?? 0)}</p>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[hsl(var(--muted-foreground))]">Thời gian</p>
                 </div>
                 <div className="text-center">
@@ -151,7 +149,7 @@ export default function SubmissionDetailPage() {
               {(submission.score / 10) >= 0.8 ? "Kết quả xuất sắc!" : (submission.score / 10) >= 0.65 ? "Làm tốt lắm!" : (submission.score / 10) >= 0.5 ? "Đã đạt yêu cầu" : "Cần cố gắng thêm"}
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
-              Học sinh trả lời chính xác {Math.round((submission.correct_count / exam.total_questions) * 100)}% tổng số câu hỏi trong bài thi này.
+              Học sinh trả lời chính xác {Math.round(((submission.correct_count ?? 0) / exam.total_questions) * 100)}% tổng số câu hỏi trong bài thi này.
             </p>
             <Button variant="outline" className="mt-8 w-full rounded-full border-[hsl(var(--border))]/70 bg-transparent text-xs font-semibold uppercase tracking-widest">
               Gửi nhận xét qua Email

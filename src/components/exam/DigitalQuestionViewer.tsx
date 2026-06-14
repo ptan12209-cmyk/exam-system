@@ -5,12 +5,7 @@ import "katex/dist/katex.min.css"
 
 type Option = "A" | "B" | "C" | "D"
 
-interface Question {
-    id: string
-    question_type: 'mc' | 'tf' | 'sa'
-    content: string
-    options?: string[]
-}
+import type { Question } from "@/types"
 
 interface DigitalQuestionViewerProps {
     questions: Question[]
@@ -49,7 +44,7 @@ export function DigitalQuestionViewer({
                                     </div>
                                 </div>
                                 <div className="flex-1 space-y-4">
-                                    <div className="text-base font-medium whitespace-pre-wrap"><Latex>{q.content}</Latex></div>
+                                    <div className="text-base font-medium whitespace-pre-wrap"><Latex>{q.content || ""}</Latex></div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                                         {q.options && q.options.map((opt, i) => {
                                             const letter = ["A", "B", "C", "D"][i] as Option
@@ -92,7 +87,7 @@ export function DigitalQuestionViewer({
                                     </div>
                                 </div>
                                 <div className="flex-1 space-y-4">
-                                    <div className="text-base font-medium whitespace-pre-wrap"><Latex>{q.content}</Latex></div>
+                                    <div className="text-base font-medium whitespace-pre-wrap"><Latex>{q.content || ""}</Latex></div>
                                     <div className="space-y-2 mt-4 border rounded-lg overflow-hidden">
                                         {(['a','b','c','d'] as const).map((k) => (
                                             <div key={k} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border-b last:border-0 bg-slate-50 dark:bg-slate-800/50 gap-3">
@@ -135,7 +130,7 @@ export function DigitalQuestionViewer({
                                     </div>
                                 </div>
                                 <div className="flex-1 space-y-4">
-                                    <div className="text-base font-medium whitespace-pre-wrap"><Latex>{q.content}</Latex></div>
+                                    <div className="text-base font-medium whitespace-pre-wrap"><Latex>{q.content || ""}</Latex></div>
                                     <div className="mt-4">
                                         <input 
                                             type="text"

@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import {
     User,
     BarChart3,
@@ -18,14 +19,25 @@ import { TitleBadge } from "@/components/gamification/TitleSelector"
 interface UserMenuProps {
     userName: string
     userClass?: string
-    onLogout: () => void
+    onLogout?: () => void
     role?: "student" | "teacher"
 }
 
 export function UserMenu({ userName, userClass, onLogout, role = "student" }: UserMenuProps) {
+    const router = useRouter()
     const [isOpen, setIsOpen] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
     const [equippedTitle, setEquippedTitle] = useState<{ display_text: string; color: string } | null>(null)
+
+    const handleLogout = useCallback(async () => {
+        if (onLogout) {
+            onLogout()
+        } else {
+            const supabase = createClient()
+            await supabase.auth.signOut()
+            router.push("/login")
+        }
+    }, [onLogout, router])
 
     useEffect(() => {
         if (role !== "student") return
@@ -144,7 +156,7 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                         <button
                             onClick={() => {
                                 setIsOpen(false)
-                                onLogout()
+                                handleLogout()
                             }}
                             className="flex items-center gap-3 px-3 py-2.5 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all duration-150 w-full group"
                         >

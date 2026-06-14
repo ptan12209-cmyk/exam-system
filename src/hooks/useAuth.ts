@@ -30,6 +30,8 @@ export interface Profile {
   grade: number | null
   /** Specific class suffix (e.g. A1, B2), null if not set. */
   class_suffix: string | null
+  /** Nickname, if available. */
+  nickname?: string | null
 }
 
 interface UseAuthOptions {
@@ -74,7 +76,7 @@ export function useAuth(options?: UseAuthOptions) {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("id, role, full_name, class, grade, class_suffix")
+        .select("id, role, full_name, class, grade, class_suffix, nickname")
         .eq("id", authUser.id)
         .single()
 

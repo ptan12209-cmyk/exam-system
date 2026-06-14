@@ -19,10 +19,7 @@ import { DotmSquare1 } from "@/components/ui/dotm-square-1"
 import { useToast } from "@/components/ui/toast"
 
 type Option = "A" | "B" | "C" | "D"
-type TFStudentAnswer = { question: number; a: boolean | null; b: boolean | null; c: boolean | null; d: boolean | null }
-type SAStudentAnswer = { question: number; answer: string }
-
-interface Exam { id: string; title: string; duration: number; total_questions: number; pdf_url: string | null; mc_questions?: { question: number }[]; tf_questions?: { question: number }[]; sa_questions?: { question: number }[]; security_level?: number }
+import type { Exam, TFStudentAnswer, SAStudentAnswer } from "@/types"
 interface ExistingSession { id: string; is_ranked: boolean; session_number: number; tab_switch_count?: number; created_at?: string; started_at?: string }
 const OPTIONS: Option[] = ["A", "B", "C", "D"]
 

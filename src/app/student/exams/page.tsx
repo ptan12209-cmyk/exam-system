@@ -26,33 +26,7 @@ import { StudentShell } from "@/components/student/StudentShell"
 import { StudentHeader } from "@/components/student/StudentHeader"
 import { AnimatedSelect } from "@/components/ui/animated-select"
 
-interface Exam {
-  id: string
-  title: string
-  description?: string
-  duration: number
-  total_questions: number
-  status: string
-  subject?: string
-  created_at: string
-  is_scheduled?: boolean
-  start_time?: string
-  end_time?: string
-  chapter_id?: string | null
-  lesson_id?: string | null
-  section_id?: string | null
-}
-
-interface Question {
-  id: string
-  question_text: string
-  options: string[]
-}
-
-interface Submission {
-  exam_id: string
-  score: number
-}
+import type { Exam, Question, Submission } from "@/types"
 
 export default function StudentExamsPage() {
   const router = useRouter()
@@ -137,8 +111,10 @@ export default function StudentExamsPage() {
       if (subsData) {
         const subMap = new Map<string, number>()
         subsData.forEach((s: Submission) => {
-          const existing = subMap.get(s.exam_id)
-          if (!existing || s.score > existing) subMap.set(s.exam_id, s.score)
+          if (s.exam_id) {
+            const existing = subMap.get(s.exam_id)
+            if (!existing || s.score > existing) subMap.set(s.exam_id, s.score)
+          }
         })
         setSubmissions(subMap)
       }
@@ -494,7 +470,7 @@ export default function StudentExamsPage() {
                           </span>
                           <span className="flex items-center gap-1.5">
                             <Calendar className="h-3.5 w-3.5" />
-                            {new Date(exam.created_at).toLocaleDateString("vi-VN")}
+                            {new Date(exam.created_at || "").toLocaleDateString("vi-VN")}
                           </span>
                         </div>
                       </div>
@@ -570,7 +546,7 @@ export default function StudentExamsPage() {
                         <div key={q.id} className="pb-4 border-b border-[hsl(var(--border))]/20 last:border-b-0">
                           <p className="text-sm font-medium">Câu {idx + 1}: {q.question_text}</p>
                           <div className="mt-2 grid grid-cols-2 gap-2">
-                            {q.options.map((opt, oIdx) => (
+                            {(q.options || []).map((opt, oIdx) => (
                               <div key={oIdx} className="text-xs text-[hsl(var(--muted-foreground))] p-2 rounded-lg bg-[hsl(var(--card))]/40 border border-[hsl(var(--border))]/20">
                                 {["A", "B", "C", "D"][oIdx]}. {opt.replace(/^[A-D]\.\s*/, "")}
                               </div>
@@ -580,16 +556,18 @@ export default function StudentExamsPage() {
                       ))
                     ) : (
                       <div className="space-y-4">
-                        <div>
-                          <p className="text-sm font-medium">Câu {currentPreviewIndex + 1}: {previewQuestions[currentPreviewIndex].question_text}</p>
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            {previewQuestions[currentPreviewIndex].options.map((opt, oIdx) => (
-                              <div key={oIdx} className="text-xs text-[hsl(var(--muted-foreground))] p-2 rounded-lg bg-[hsl(var(--card))]/40 border border-[hsl(var(--border))]/20">
-                                {["A", "B", "C", "D"][oIdx]}. {opt.replace(/^[A-D]\.\s*/, "")}
-                              </div>
-                            ))}
+                        {previewQuestions[currentPreviewIndex] && (
+                          <div>
+                            <p className="text-sm font-medium">Câu {currentPreviewIndex + 1}: {previewQuestions[currentPreviewIndex].question_text}</p>
+                            <div className="mt-3 grid grid-cols-2 gap-2">
+                              {(previewQuestions[currentPreviewIndex].options || []).map((opt, oIdx) => (
+                                <div key={oIdx} className="text-xs text-[hsl(var(--muted-foreground))] p-2 rounded-lg bg-[hsl(var(--card))]/40 border border-[hsl(var(--border))]/20">
+                                  {["A", "B", "C", "D"][oIdx]}. {opt.replace(/^[A-D]\.\s*/, "")}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         <div className="flex items-center justify-between pt-2">
                           <Button size="sm" variant="outline" disabled={currentPreviewIndex === 0} onClick={() => setCurrentPreviewIndex(prev => prev - 1)}>Trước</Button>

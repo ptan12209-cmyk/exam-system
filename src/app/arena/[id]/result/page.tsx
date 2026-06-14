@@ -21,41 +21,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface Question {
-  id: string
-  question_text: string
-  options: string[]
-  correct_answer: number
-  explanation?: string | null
-}
-
-interface AnswerDetail {
-  question_id: string
-  answer: string | null
-  correct_answer: string
-  is_correct: boolean
-}
-
-interface ArenaResult {
-  id: string
-  score: number
-  correct_count: number
-  total_questions: number
-  time_spent: number
-  answers: AnswerDetail[]
-  student_id: string
-  profiles?: {
-    full_name: string | null
-  }
-}
-
-interface ArenaSession {
-  id: string
-  name: string
-  subject: string
-  duration: number
-  exam_id: string
-}
+import type { Question, AnswerDetail, ArenaResult, ArenaSession } from "@/types"
 
 export default function ArenaResultPage() {
   const params = useParams()
@@ -237,14 +203,14 @@ export default function ArenaResultPage() {
                 Độ chính xác
               </p>
               <h2 className="text-4xl font-bold mt-2">
-                {myResult.correct_count} <span className="text-lg font-normal text-muted-foreground">/ {myResult.total_questions} câu</span>
+                {myResult.correct_count ?? 0} <span className="text-lg font-normal text-muted-foreground">/ {myResult.total_questions ?? 0} câu</span>
               </h2>
             </div>
             <div className="mt-4 space-y-1 text-sm text-[hsl(var(--muted-foreground))]">
               <div className="flex justify-between">
                 <span>Tỉ lệ:</span>
                 <span className="font-semibold text-[hsl(var(--foreground))]">
-                  {Math.round((myResult.correct_count / myResult.total_questions) * 100)}%
+                  {Math.round(((myResult.correct_count ?? 0) / (myResult.total_questions ?? 1)) * 100)}%
                 </span>
               </div>
               <div className="flex justify-between">
@@ -325,7 +291,7 @@ export default function ArenaResultPage() {
             <div className="space-y-3">
               {questions.map((q, index) => {
                 // Find student's answer details for this question
-                const ansDetail = myResult.answers.find((a) => a.question_id === q.id)
+                const ansDetail = (myResult.answers || []).find((a) => a.question_id === q.id)
                 const userAnswer = ansDetail?.answer || "Chưa trả lời"
                 const correctAnswerLetter = ["A", "B", "C", "D"][q.correct_answer] || "A"
                 const isCorrect = ansDetail?.is_correct || false
@@ -373,12 +339,12 @@ export default function ArenaResultPage() {
                       <div className="px-4 pb-5 pt-1 border-t border-[hsl(var(--border))]/20 space-y-4">
                         {/* Question Text */}
                         <div className="text-sm text-[hsl(var(--foreground))] bg-[hsl(var(--card))]/35 p-3.5 rounded-xl border border-[hsl(var(--border))]/30">
-                          <MathRenderer content={q.question_text} />
+                          <MathRenderer content={q.question_text || ""} />
                         </div>
 
                         {/* Options Review */}
                         <div className="grid gap-2">
-                          {q.options.map((option, oIdx) => {
+                          {(q.options || []).map((option, oIdx) => {
                             const optionLetter = ["A", "B", "C", "D"][oIdx]
                             const isSelectedOption = userAnswer === optionLetter
                             const isCorrectOption = correctAnswerLetter === optionLetter
