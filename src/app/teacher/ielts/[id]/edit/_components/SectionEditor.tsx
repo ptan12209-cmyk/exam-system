@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Plus, Trash2, Edit, Save, X, Play, Music, AlignLeft, Image } from 'lucide-react'
 import { IeltsTest, IeltsSection, IeltsSkill } from '@/types'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface SectionEditorProps {
   test: IeltsTest
@@ -24,6 +25,7 @@ export function SectionEditor({
   const [isAdding, setIsAdding] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newOrderIndex, setNewOrderIndex] = useState(1)
+  const [deleteSection, setDeleteSection] = useState<IeltsSection | null>(null)
 
   // Điền dữ liệu mặc định cho các phần thi mới dựa vào skill
   const handleCreate = async (e: React.FormEvent) => {
@@ -165,11 +167,7 @@ export function SectionEditor({
                   Thiết lập nội dung
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm(`Bạn có chắc chắn muốn xóa phần "${sec.title}" cùng toàn bộ câu hỏi bên trong?`)) {
-                      onDeleteSection(sec.id)
-                    }
-                  }}
+                  onClick={() => setDeleteSection(sec)}
                   className="p-2 rounded-full text-muted-foreground hover:text-red-400 hover:bg-[hsl(var(--muted))]/20 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                 >
                   <Trash2 className="h-4 w-4 text-red-500" />
@@ -179,6 +177,20 @@ export function SectionEditor({
           ))}
         </div>
       )}
+      <ConfirmDialog
+        isOpen={!!deleteSection}
+        onClose={() => setDeleteSection(null)}
+        onConfirm={async () => {
+          if (deleteSection) {
+            await onDeleteSection(deleteSection.id)
+          }
+        }}
+        title="Xóa phần thi"
+        description={`Bạn có chắc chắn muốn xóa phần "${deleteSection?.title || ""}" cùng toàn bộ câu hỏi bên trong?`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        variant="danger"
+      />
     </div>
   )
 }

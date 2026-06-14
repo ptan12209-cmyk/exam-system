@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Search, Edit2, Trash2, Clock, Eye, FileText, ChevronRight } from 'lucide-react'
 import { IeltsTest, IeltsSkill, IeltsTestStatus } from '@/types'
 import { QUESTION_TYPE_LABELS } from '@/lib/ielts'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface TestListProps {
   tests: IeltsTest[]
@@ -15,12 +16,11 @@ export function TestList({ tests, onDelete }: TestListProps) {
   const [search, setSearch] = useState('')
   const [filterSkill, setFilterSkill] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [deleteTest, setDeleteTest] = useState<IeltsTest | null>(null)
 
   // Xác nhận xóa
   const handleDeleteConfirm = (test: IeltsTest) => {
-    if (confirm(`Bạn có chắc chắn muốn xóa bài thi "${test.title}"? Thao tác này sẽ xóa tất cả phần thi, câu hỏi và điểm số liên quan.`)) {
-      onDelete(test.id)
-    }
+    setDeleteTest(test)
   }
 
   // Filter
@@ -173,6 +173,20 @@ export function TestList({ tests, onDelete }: TestListProps) {
           </div>
         )}
       </div>
+      <ConfirmDialog
+        isOpen={!!deleteTest}
+        onClose={() => setDeleteTest(null)}
+        onConfirm={() => {
+          if (deleteTest) {
+            onDelete(deleteTest.id)
+          }
+        }}
+        title="Xóa đề thi IELTS"
+        description={`Bạn có chắc chắn muốn xóa bài thi "${deleteTest?.title || ""}"? Thao tác này sẽ xóa tất cả phần thi, câu hỏi và điểm số liên quan.`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        variant="danger"
+      />
     </div>
   )
 }

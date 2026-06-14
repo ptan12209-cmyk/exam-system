@@ -19,6 +19,8 @@ import {
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
 import { AnimatedSelect } from "@/components/ui/animated-select"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { useToast } from "@/components/ui/toast"
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid 
 } from "recharts"
@@ -113,6 +115,7 @@ const COLORS = ["#6366f1", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6"
 export default function TeacherMonitorPage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
+  const { success, error: toastError, warning } = useToast()
 
   // State
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null)
@@ -123,6 +126,14 @@ export default function TeacherMonitorPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchingData, setFetchingData] = useState(false)
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean
+    title: string
+    description: string
+    onConfirm: () => void | Promise<void>
+    variant?: "danger" | "warning" | "info" | "success"
+    confirmText?: string
+  } | null>(null)
 
   // Link form state
   const [linkingEmail, setLinkingEmail] = useState("")
@@ -432,66 +443,80 @@ export default function TeacherMonitorPage() {
     }
   }
 
-  // Delete a Task
-  const handleDeleteTask = async (taskId: string) => {
-    if (!confirm("Bạn có chắc muốn xóa đầu việc này khỏi checklist của học sinh?")) return
+  // Delete a Task Trigger
+  const handleDeleteTask = (taskId: string) => {
+    setConfirmState({
+      isOpen: true,
+      title: "Xóa đầu việc?",
+      description: "Bạn có chắc muốn xóa đầu việc này khỏi checklist của học sinh?",
+      confirmText: "Xóa",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase
+            .from("study_tasks")
+            .delete()
+            .eq("id", taskId)
 
-    try {
-      const { error } = await supabase
-        .from("study_tasks")
-        .delete()
-        .eq("id", taskId)
+          if (error) throw error
 
-      if (error) throw error
-
-      setTasks(prev => prev.filter(t => t.id !== taskId))
-    } catch (err) {
-      console.error("Delete task error:", err)
-    }
+          setTasks(prev => prev.filter(t => t.id !== taskId))
+        } catch (err) {
+          console.error("Delete task error:", err)
+        }
+      }
+    })
   }
 
   // Student Timetable CRUD & Copy
-  const handleCopyTeacherTimetable = async () => {
+  const handleCopyTeacherTimetable = () => {
     if (!selectedStudent || !teacherProfile) return
-    if (!confirm(`Bạn có chắc muốn sao chép toàn bộ thời khóa biểu của bạn sang cho học sinh ${selectedStudent.full_name}? Việc này sẽ không xóa các lịch học sinh đã có.`)) return
-    
-    try {
-      const { data: teacherEntries, error: fetchErr } = await supabase
-        .from("timetable_entries")
-        .select("*")
-        .eq("teacher_id", teacherProfile.id)
-        
-      if (fetchErr) throw fetchErr
-      if (!teacherEntries || teacherEntries.length === 0) {
-        alert("Thời khóa biểu của bạn đang trống. Vui lòng thiết lập thời khóa biểu của bạn trước.")
-        return
+    setConfirmState({
+      isOpen: true,
+      title: "Sao chép thời khóa biểu?",
+      description: `Bạn có chắc muốn sao chép toàn bộ thời khóa biểu của bạn sang cho học sinh ${selectedStudent.full_name}? Việc này sẽ không xóa các lịch học sinh đã có.`,
+      confirmText: "Sao chép",
+      variant: "info",
+      onConfirm: async () => {
+        try {
+          const { data: teacherEntries, error: fetchErr } = await supabase
+            .from("timetable_entries")
+            .select("*")
+            .eq("teacher_id", teacherProfile.id)
+            
+          if (fetchErr) throw fetchErr
+          if (!teacherEntries || teacherEntries.length === 0) {
+            warning("Thời khóa biểu của bạn đang trống. Vui lòng thiết lập thời khóa biểu của bạn trước.")
+            return
+          }
+          
+          const payload = teacherEntries.map((entry: any) => ({
+            student_id: selectedStudent.id,
+            assigned_by: teacherProfile.id,
+            day_of_week: entry.day_of_week,
+            start_time: entry.start_time,
+            end_time: entry.end_time,
+            subject: entry.subject,
+            class_name: entry.class_name,
+            room: entry.room,
+            note: entry.note,
+            color: entry.color || '#6366f1'
+          }))
+          
+          const { error: insertErr } = await supabase
+            .from("student_timetable_entries")
+            .insert(payload)
+            
+          if (insertErr) throw insertErr
+          
+          success(`Đã sao chép thành công ${teacherEntries.length} tiết học!`)
+          fetchStudentData(selectedStudent.id)
+        } catch (err) {
+          console.error("Error copying timetable:", err)
+          toastError("Lỗi khi sao chép thời khóa biểu: " + (err instanceof Error ? err.message : "Không rõ lỗi"))
+        }
       }
-      
-      const payload = teacherEntries.map((entry: any) => ({
-        student_id: selectedStudent.id,
-        assigned_by: teacherProfile.id,
-        day_of_week: entry.day_of_week,
-        start_time: entry.start_time,
-        end_time: entry.end_time,
-        subject: entry.subject,
-        class_name: entry.class_name,
-        room: entry.room,
-        note: entry.note,
-        color: entry.color || '#6366f1'
-      }))
-      
-      const { error: insertErr } = await supabase
-        .from("student_timetable_entries")
-        .insert(payload)
-        
-      if (insertErr) throw insertErr
-      
-      alert(`Đã sao chép thành công ${teacherEntries.length} tiết học!`)
-      fetchStudentData(selectedStudent.id)
-    } catch (err) {
-      console.error("Error copying timetable:", err)
-      alert("Lỗi khi sao chép thời khóa biểu: " + (err instanceof Error ? err.message : "Không rõ lỗi"))
-    }
+    })
   }
 
   const handleSaveStudentTimetable = async () => {
@@ -524,6 +549,7 @@ export default function TeacherMonitorPage() {
         if (error) throw error
       }
       
+      success("Đã lưu thời khóa biểu học sinh thành công!")
       setShowTtForm(false)
       setEditingTtId(null)
       setTtFormSubject("")
@@ -534,28 +560,37 @@ export default function TeacherMonitorPage() {
       fetchStudentData(selectedStudent.id)
     } catch (err) {
       console.error("Error saving student timetable:", err)
-      alert("Lỗi khi lưu thời khóa biểu: " + (err instanceof Error ? err.message : "Không rõ lỗi"))
+      toastError("Lỗi khi lưu thời khóa biểu: " + (err instanceof Error ? err.message : "Không rõ lỗi"))
     } finally {
       setTtSaving(false)
     }
   }
 
-  const handleDeleteStudentTimetable = async (id: string) => {
-    if (!confirm("Bạn có chắc muốn xóa tiết học này của học sinh?")) return
-    try {
-      const { error } = await supabase
-        .from("student_timetable_entries")
-        .delete()
-        .eq("id", id)
-      if (error) throw error
-      
-      if (selectedStudent) {
-        fetchStudentData(selectedStudent.id)
+  const handleDeleteStudentTimetable = (id: string) => {
+    setConfirmState({
+      isOpen: true,
+      title: "Xóa tiết học?",
+      description: "Bạn có chắc muốn xóa tiết học này của học sinh?",
+      confirmText: "Xóa",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase
+            .from("student_timetable_entries")
+            .delete()
+            .eq("id", id)
+          if (error) throw error
+          
+          success("Đã xóa tiết học thành công!")
+          if (selectedStudent) {
+            fetchStudentData(selectedStudent.id)
+          }
+        } catch (err) {
+          console.error("Error deleting student timetable entry:", err)
+          toastError("Lỗi khi xóa: " + (err instanceof Error ? err.message : "Không rõ lỗi"))
+        }
       }
-    } catch (err) {
-      console.error("Error deleting student timetable entry:", err)
-      alert("Lỗi khi xóa: " + (err instanceof Error ? err.message : "Không rõ lỗi"))
-    }
+    })
   }
 
   const resetTtForm = () => {
@@ -1414,6 +1449,18 @@ export default function TeacherMonitorPage() {
         )}
 
       </main>
+
+      {confirmState && (
+        <ConfirmDialog
+          isOpen={confirmState.isOpen}
+          onClose={() => setConfirmState(prev => prev ? { ...prev, isOpen: false } : null)}
+          onConfirm={confirmState.onConfirm}
+          title={confirmState.title}
+          description={confirmState.description}
+          confirmText={confirmState.confirmText}
+          variant={confirmState.variant}
+        />
+      )}
     </TeacherShell>
   )
 }

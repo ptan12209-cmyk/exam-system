@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Plus, Edit2, Trash2, HelpCircle, ListFilter, AlertCircle, ClipboardList } from 'lucide-react'
 import { IeltsTest, IeltsSection, IeltsQuestion } from '@/types'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { QUESTION_TYPE_LABELS } from '@/lib/ielts'
 import { QuestionForm } from './QuestionForm'
 import { BulkImportModal } from './BulkImportModal'
@@ -29,6 +30,7 @@ export function QuestionEditor({
   const [editingQuestion, setEditingQuestion] = useState<IeltsQuestion | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [isBulkAdding, setIsBulkAdding] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; qNum: number } | null>(null)
 
   const currentSection = sections.find(s => s.id === selectedSectionId)
   const questions = currentSection?.questions || []
@@ -51,9 +53,7 @@ export function QuestionEditor({
   }
 
   const handleDelete = async (qId: string, qNum: number) => {
-    if (confirm(`Bạn có chắc muốn xóa câu hỏi số ${qNum}?`)) {
-      await onDeleteQuestion(qId)
-    }
+    setDeleteTarget({ id: qId, qNum })
   }
 
   if (sections.length === 0) {
@@ -215,6 +215,20 @@ export function QuestionEditor({
           onSave={onAddQuestion}
         />
       )}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (deleteTarget) {
+            await onDeleteQuestion(deleteTarget.id)
+          }
+        }}
+        title="Xóa câu hỏi"
+        description={`Bạn có chắc chắn muốn xóa câu hỏi số ${deleteTarget?.qNum || ""}?`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        variant="danger"
+      />
     </div>
   )
 }

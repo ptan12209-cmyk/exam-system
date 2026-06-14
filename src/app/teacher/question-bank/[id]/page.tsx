@@ -15,6 +15,8 @@ import { ArrowLeft, Plus, Loader2, Edit, Trash, HelpCircle, Check, X, Upload } f
 import Latex from "react-latex-next"
 import "katex/dist/katex.min.css"
 import { MAP_SUBJECT_TO_DB } from "@/lib/subjects"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { useToast } from "@/components/ui/toast"
 
 interface RouteParams {
     params: Promise<{ id: string }>
@@ -42,6 +44,8 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
     const router = useRouter()
     const supabase = createClient()
     
+    const { success, error: toastError, warning } = useToast()
+    const [deleteQuestionId, setDeleteQuestionId] = useState<string | null>(null)
     const [bankName, setBankName] = useState("Đang tải...")
     const [questions, setQuestions] = useState<Question[]>([])
     const [loading, setLoading] = useState(true)
@@ -203,7 +207,7 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
             const extractedQuestions = result.questions || []
 
             if (extractedQuestions.length === 0) {
-                alert("Không tìm thấy câu hỏi nào trong file PDF!")
+                warning("Không tìm thấy câu hỏi nào trong file PDF!")
                 return
             }
 
@@ -225,11 +229,11 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
             const { error } = await supabase.from("questions").insert(insertData)
             if (error) throw error
 
-            alert(`Đã thêm thành công ${extractedQuestions.length} câu hỏi từ PDF!`)
+            success(`Đã thêm thành công ${extractedQuestions.length} câu hỏi từ PDF!`)
             fetchQuestions()
         } catch (error) {
             console.error(error)
-            alert("Có lỗi xảy ra khi đọc file PDF bằng AI.")
+            toastError("Có lỗi xảy ra khi đọc file PDF bằng AI.")
         } finally {
             setUploadingPdf(false)
             e.target.value = "" // reset
@@ -237,7 +241,7 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
     }
 
     const handleSaveQuestion = async () => {
-        if (!qContent.trim()) return alert("Vui lòng nhập nội dung câu hỏi")
+        if (!qContent.trim()) return warning("Vui lòng nhập nội dung câu hỏi")
         
         setSaving(true)
         try {
@@ -248,13 +252,13 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
             let correctAnswer = null
 
             if (qType === 'mc') {
-                if (mcOptions.some(o => !o.trim())) return alert("Vui lòng nhập đủ 4 đáp án")
+                if (mcOptions.some(o => !o.trim())) return warning("Vui lòng nhập đủ 4 đáp án")
                 options = mcOptions
                 correctAnswer = mcCorrect
             } else if (qType === 'tf') {
                 correctAnswer = tfCorrect
             } else if (qType === 'sa') {
-                if (!saCorrect.trim()) return alert("Vui lòng nhập đáp án tự luận")
+                if (!saCorrect.trim()) return warning("Vui lòng nhập đáp án tự luận")
                 correctAnswer = saCorrect
             }
 
@@ -279,16 +283,26 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
             fetchQuestions()
         } catch (error) {
             console.error(error)
-            alert("Lỗi lưu câu hỏi")
+            toastError("Lỗi lưu câu hỏi")
         } finally {
             setSaving(false)
         }
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Bạn có chắc muốn xoá câu hỏi này?")) return
-        const { error } = await supabase.from("questions").delete().eq("id", id)
-        if (!error) fetchQuestions()
+        setDeleteQuestionId(id)
+    }
+
+    const confirmDelete = async () => {
+        if (!deleteQuestionId) return
+        const { error: err } = await supabase.from("questions").delete().eq("id", deleteQuestionId)
+        if (!err) {
+            success("Đã xóa câu hỏi thành công!")
+            fetchQuestions()
+        } else {
+            toastError("Lỗi khi xóa câu hỏi: " + err.message)
+        }
+        setDeleteQuestionId(null)
     }
 
     const resetForm = () => {
@@ -596,6 +610,16 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
                     ))}
                 </div>
             )}
+            <ConfirmDialog
+                isOpen={!!deleteQuestionId}
+                onClose={() => setDeleteQuestionId(null)}
+                onConfirm={confirmDelete}
+                title="Xóa câu hỏi"
+                description="Bạn có chắc chắn muốn xóa câu hỏi này khỏi ngân hàng câu hỏi?"
+                confirmText="Xóa"
+                cancelText="Hủy"
+                variant="danger"
+            />
         </div>
     )
 }

@@ -14,6 +14,7 @@ import { ArrowLeft, Plus, Trash2, Calendar, Clock, X, Save, GraduationCap } from
 import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
 import { cn } from "@/lib/utils"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 interface TimetableEntry {
   id: string
@@ -46,6 +47,7 @@ export default function TeacherTimetablePage() {
   const [formRoom, setFormRoom] = useState("")
   const [formNote, setFormNote] = useState("")
   const [formColor, setFormColor] = useState(COLORS[0])
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   const fetchEntries = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -60,7 +62,11 @@ export default function TeacherTimetablePage() {
   const resetForm = () => { setFormDay(1); setFormStart("07:00"); setFormEnd("08:30"); setFormSubject(""); setFormClass(""); setFormRoom(""); setFormNote(""); setFormColor(COLORS[0]); setEditingId(null); setShowForm(false) }
   const handleEdit = (entry: TimetableEntry) => { setEditingId(entry.id); setFormDay(entry.day_of_week); setFormStart(entry.start_time.slice(0, 5)); setFormEnd(entry.end_time.slice(0, 5)); setFormSubject(entry.subject); setFormClass(entry.class_name || ""); setFormRoom(entry.room || ""); setFormNote(entry.note || ""); setFormColor(entry.color); setShowForm(true) }
   const handleSave = async () => { if (!formSubject.trim()) return; const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const payload = { teacher_id: user.id, day_of_week: formDay, start_time: formStart, end_time: formEnd, subject: formSubject.trim(), class_name: formClass.trim() || null, room: formRoom.trim() || null, note: formNote.trim() || null, color: formColor }; if (editingId) await supabase.from("timetable_entries").update(payload).eq("id", editingId); else await supabase.from("timetable_entries").insert(payload); resetForm(); fetchEntries() }
-  const handleDelete = async (id: string) => { if (!confirm("Xóa tiết học này?")) return; await supabase.from("timetable_entries").delete().eq("id", id); fetchEntries() }
+  const executeDelete = async () => {
+    if (!deleteTarget) return
+    await supabase.from("timetable_entries").delete().eq("id", deleteTarget)
+    fetchEntries()
+  }
   const entriesByDay = useMemo(() => { const map: Record<number, TimetableEntry[]> = {}; for (let i = 0; i < 7; i++) map[i] = []; entries.forEach((e) => map[e.day_of_week]?.push(e)); return map }, [entries])
 
   if (loading) return <Loading fullPage label="Đang tải thời khóa biểu..." />
@@ -84,13 +90,24 @@ export default function TeacherTimetablePage() {
                 {[1, 2, 3, 4, 5, 6, 0].map((dayIdx) => <div key={dayIdx} className={cn("border-r border-[hsl(var(--border))]/30 px-3 py-3 text-center last:border-r-0", dayIdx === new Date().getDay() ? "bg-[hsl(var(--muted))]/20" : "")}><p className="text-sm font-semibold">{DAYS[dayIdx]}</p><p className="text-xs text-[hsl(var(--muted-foreground))]">{entriesByDay[dayIdx].length} tiết</p></div>)}
               </div>
               <div className="grid min-h-[420px] grid-cols-7">
-                {[1, 2, 3, 4, 5, 6, 0].map((dayIdx) => <div key={dayIdx} className="space-y-2 border-r border-[hsl(var(--border))]/30 p-2 last:border-r-0">{entriesByDay[dayIdx].map((entry) => <div key={entry.id} className="group relative cursor-pointer rounded-xl p-2.5 text-white" style={{ backgroundColor: entry.color }} onClick={() => handleEdit(entry)}><p className="text-sm font-semibold leading-tight">{entry.subject}</p><p className="mt-1 flex items-center gap-1 opacity-90"><Clock className="h-3 w-3" />{entry.start_time.slice(0, 5)} - {entry.end_time.slice(0, 5)}</p>{entry.class_name && <p className="mt-0.5 opacity-80">{entry.class_name}</p>}{entry.room && <p className="opacity-70">{entry.room}</p>}<button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="absolute right-1 top-1 rounded-lg bg-black/20 p-1 opacity-0 transition-all group-hover:opacity-100"><Trash2 className="h-3 w-3" /></button></div>)}{entriesByDay[dayIdx].length === 0 && <div className="flex h-full items-center justify-center text-[hsl(var(--muted-foreground))]/30"><Calendar className="h-6 w-6" /></div>}</div>)}
+                {[1, 2, 3, 4, 5, 6, 0].map((dayIdx) => <div key={dayIdx} className="space-y-2 border-r border-[hsl(var(--border))]/30 p-2 last:border-r-0">{entriesByDay[dayIdx].map((entry) => <div key={entry.id} className="group relative cursor-pointer rounded-xl p-2.5 text-white" style={{ backgroundColor: entry.color }} onClick={() => handleEdit(entry)}><p className="text-sm font-semibold leading-tight">{entry.subject}</p><p className="mt-1 flex items-center gap-1 opacity-90"><Clock className="h-3 w-3" />{entry.start_time.slice(0, 5)} - {entry.end_time.slice(0, 5)}</p>{entry.class_name && <p className="mt-0.5 opacity-80">{entry.class_name}</p>}{entry.room && <p className="opacity-70">{entry.room}</p>}<button onClick={(e) => { e.stopPropagation(); setDeleteTarget(entry.id) }} className="absolute right-1 top-1 rounded-lg bg-black/20 p-1 opacity-0 transition-all group-hover:opacity-100"><Trash2 className="h-3 w-3" /></button></div>)}{entriesByDay[dayIdx].length === 0 && <div className="flex h-full items-center justify-center text-[hsl(var(--muted-foreground))]/30"><Calendar className="h-6 w-6" /></div>}</div>)}
               </div>
             </div>
           </div>
         </section>
       </main>
       <TeacherBottomNav />
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={executeDelete}
+        title="Xóa tiết học?"
+        description="Bạn có chắc muốn xóa tiết học này khỏi thời khóa biểu dạy của bạn?"
+        confirmText="Xóa"
+        cancelText="Hủy"
+        variant="danger"
+      />
     </TeacherShell>
   )
 }

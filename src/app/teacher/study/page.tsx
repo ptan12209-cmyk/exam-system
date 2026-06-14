@@ -26,6 +26,8 @@ import {
   BookOpen,
   X
 } from "lucide-react"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { useToast } from "@/components/ui/toast"
 import { SUBJECTS, getSubjectInfo, MAP_SUBJECT_TO_DB, MAP_DB_TO_SUBJECT } from "@/lib/subjects"
 import { AnimatePresence, motion } from "framer-motion"
 
@@ -65,9 +67,16 @@ interface Material {
 export default function TeacherStudyPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { success, error: toastError } = useToast()
 
   // Authentication
   const [profile, setProfile] = useState<{ full_name: string | null } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: "chapter" | "lesson" | "section" | "material"
+    id: string
+    parentId?: string
+    title: string
+  } | null>(null)
   
   // Selection States
   const [selectedSubject, setSelectedSubject] = useState("toan")
@@ -264,19 +273,9 @@ export default function TeacherStudyPage() {
     }
   }
 
-  // Delete Chapter
-  const handleDeleteChapter = async (chapterId: string, title: string) => {
-    if (!confirm(`Bạn chắc chắn muốn xóa chương "${title}"? Tất cả bài học và tài liệu con sẽ bị xóa hoàn toàn.`)) return
-    try {
-      const res = await fetch(`/api/study/chapters?id=${chapterId}`, { method: "DELETE" })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Không thể xóa chương học")
-      }
-      fetchChapters()
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Lỗi xảy ra")
-    }
+  // Delete Chapter Trigger
+  const handleDeleteChapter = (chapterId: string, title: string) => {
+    setDeleteTarget({ type: "chapter", id: chapterId, title })
   }
 
   // Handle Lesson Submissions
@@ -312,19 +311,9 @@ export default function TeacherStudyPage() {
     }
   }
 
-  // Delete Lesson
-  const handleDeleteLesson = async (chapterId: string, lessonId: string, title: string) => {
-    if (!confirm(`Bạn chắc chắn muốn xóa bài học "${title}"?`)) return
-    try {
-      const res = await fetch(`/api/study/lessons?id=${lessonId}`, { method: "DELETE" })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Không thể xóa bài học")
-      }
-      fetchLessons(chapterId)
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Lỗi xảy ra")
-    }
+  // Delete Lesson Trigger
+  const handleDeleteLesson = (chapterId: string, lessonId: string, title: string) => {
+    setDeleteTarget({ type: "lesson", id: lessonId, parentId: chapterId, title })
   }
 
   // Handle Material Submissions
@@ -361,19 +350,9 @@ export default function TeacherStudyPage() {
       setSubmitting(false)
     }
   }
-  // Delete Material
-  const handleDeleteMaterial = async (lessonId: string, materialId: string, title: string) => {
-    if (!confirm(`Bạn chắc chắn muốn xóa học liệu "${title}"?`)) return
-    try {
-      const res = await fetch(`/api/study/materials?id=${materialId}`, { method: "DELETE" })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Không thể xóa học liệu")
-      }
-      fetchMaterials(lessonId)
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Lỗi xảy ra")
-    }
+  // Delete Material Trigger
+  const handleDeleteMaterial = (lessonId: string, materialId: string, title: string) => {
+    setDeleteTarget({ type: "material", id: materialId, parentId: lessonId, title })
   }
 
   // Handle Section Submissions
@@ -409,18 +388,48 @@ export default function TeacherStudyPage() {
     }
   }
 
-  // Delete Section
-  const handleDeleteSection = async (lessonId: string, sectionId: string, title: string) => {
-    if (!confirm(`Bạn chắc chắn muốn xóa phần "${title}"?`)) return
+  // Delete Section Trigger
+  const handleDeleteSection = (lessonId: string, sectionId: string, title: string) => {
+    setDeleteTarget({ type: "section", id: sectionId, parentId: lessonId, title })
+  }
+
+  // executeDelete function for ConfirmDialog
+  const executeDelete = async () => {
+    if (!deleteTarget) return
+    const { type, id, parentId, title } = deleteTarget
     try {
-      const res = await fetch(`/api/study/sections?id=${sectionId}`, { method: "DELETE" })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Không thể xóa phần học")
+      if (type === "chapter") {
+        const res = await fetch(`/api/study/chapters?id=${id}`, { method: "DELETE" })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || "Không thể xóa chương học")
+        }
+        fetchChapters()
+      } else if (type === "lesson") {
+        const res = await fetch(`/api/study/lessons?id=${id}`, { method: "DELETE" })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || "Không thể xóa bài học")
+        }
+        if (parentId) fetchLessons(parentId)
+      } else if (type === "material") {
+        const res = await fetch(`/api/study/materials?id=${id}`, { method: "DELETE" })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || "Không thể xóa học liệu")
+        }
+        if (parentId) fetchMaterials(parentId)
+      } else if (type === "section") {
+        const res = await fetch(`/api/study/sections?id=${id}`, { method: "DELETE" })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || "Không thể xóa phần học")
+        }
+        if (parentId) fetchSections(parentId)
       }
-      fetchSections(lessonId)
+      success("Xóa thành công!")
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Lỗi xảy ra")
+      toastError(err instanceof Error ? err.message : "Lỗi xảy ra")
     }
   }
 
@@ -1093,6 +1102,28 @@ export default function TeacherStudyPage() {
       )}
 
       <TeacherBottomNav />
+      
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={executeDelete}
+        title={`Xóa ${
+          deleteTarget?.type === "chapter" ? "chương" :
+          deleteTarget?.type === "lesson" ? "bài học" :
+          deleteTarget?.type === "section" ? "phần học" : "học liệu"
+        }?`}
+        description={
+          deleteTarget?.type === "chapter"
+            ? `Bạn chắc chắn muốn xóa chương "${deleteTarget?.title}"? Tất cả bài học và tài liệu con bên trong sẽ bị xóa hoàn toàn và không thể khôi phục.`
+            : `Bạn chắc chắn muốn xóa ${
+                deleteTarget?.type === "lesson" ? "bài học" :
+                deleteTarget?.type === "section" ? "phần học" : "học liệu"
+              } "${deleteTarget?.title}"?`
+        }
+        confirmText="Xóa vĩnh viễn"
+        cancelText="Hủy"
+        variant="danger"
+      />
     </TeacherShell>
   )
 }

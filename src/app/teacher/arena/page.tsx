@@ -14,6 +14,8 @@ import { TeacherBottomNav } from "@/components/BottomNav"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { AnimatedSelect } from "@/components/ui/animated-select"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { useToast } from "@/components/ui/toast"
 import {
   Plus,
   Swords,
@@ -62,6 +64,7 @@ interface Exam {
 export default function ArenaAdminPage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
+  const { success, error: toastError, warning } = useToast()
   const [sessions, setSessions] = useState<ArenaSession[]>([])
   const [exams, setExams] = useState<Exam[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,6 +78,7 @@ export default function ArenaAdminPage() {
   const [endTime, setEndTime] = useState("")
   const [duration, setDuration] = useState(60)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   const fetchData = async () => {
     try {
@@ -163,7 +167,7 @@ export default function ArenaAdminPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name || !examId || !startTime || !endTime) {
-      return alert("Vui lòng nhập đầy đủ thông tin và chọn đề thi")
+      return warning("Vui lòng nhập đầy đủ thông tin và chọn đề thi")
     }
 
     setSaving(true)
@@ -189,20 +193,22 @@ export default function ArenaAdminPage() {
       const { error } = await query
       if (error) throw error
 
+      success("Đã lưu đợt thi Arena thành công!")
       await fetchData()
       setShowCreate(false)
       resetForm()
     } catch (err) {
-      alert("Lỗi: " + (err as Error).message)
+      toastError("Lỗi: " + (err as Error).message)
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Xóa đợt thi này? Tất cả kết quả sẽ bị xóa.")) return
-    const { error } = await supabase.from("arena_sessions").delete().eq("id", id)
-    if (error) return alert("Lỗi xóa: " + error.message)
+  const executeDelete = async () => {
+    if (!deleteTarget) return
+    const { error } = await supabase.from("arena_sessions").delete().eq("id", deleteTarget)
+    if (error) return toastError("Lỗi xóa: " + error.message)
+    success("Đã xóa đợt thi Arena thành công!")
     await fetchData()
   }
 
@@ -368,7 +374,7 @@ export default function ArenaAdminPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDelete(session.id)}
+                      onClick={() => setDeleteTarget(session.id)}
                       className="flex-1 rounded-full text-red-500 hover:text-red-600 dark:hover:text-red-400"
                     >
                       Xóa
@@ -521,6 +527,17 @@ export default function ArenaAdminPage() {
         )}
       </main>
       <TeacherBottomNav />
+      
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={executeDelete}
+        title="Xóa đợt thi Arena?"
+        description="Bạn có chắc chắn muốn xóa đợt thi đấu này? Tất cả kết quả và dữ liệu bảng xếp hạng liên quan sẽ bị xóa vĩnh viễn."
+        confirmText="Xóa vĩnh viễn"
+        cancelText="Hủy"
+        variant="danger"
+      />
     </TeacherShell>
   )
 }

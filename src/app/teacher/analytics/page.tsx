@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/toast"
 import { ScoreDistributionChart, generateScoreDistribution } from "@/components/analytics/ScoreDistributionChart"
 import { QuestionAnalysisTable, analyzeQuestions } from "@/components/analytics/QuestionAnalysisTable"
 import { exportAnalyticsToExcel } from "@/lib/excel-export"
@@ -24,6 +25,7 @@ interface Submission { id: string; exam_id: string; score: number; student_answe
 export default function TeacherAnalyticsPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { success, error: toastError } = useToast()
   const [loading, setLoading] = useState(true)
   const [exams, setExams] = useState<Exam[]>([])
   const [selectedExamId, setSelectedExamId] = useState<string>("")
@@ -74,7 +76,25 @@ export default function TeacherAnalyticsPage() {
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login") }
   const selectedExam = exams.find((e) => e.id === selectedExamId)
-  const handleExportExcel = () => { if (selectedExam && submissions.length > 0) exportAnalyticsToExcel({ examTitle: selectedExam.title, submissions: submissions.map((s) => ({ studentName: s.student?.full_name || "Ẩn danh", className: s.student?.class || "-", score: s.score, submittedAt: s.submitted_at })), stats }) }
+  const handleExportExcel = async () => {
+    if (selectedExam && submissions.length > 0) {
+      try {
+        await exportAnalyticsToExcel({
+          examTitle: selectedExam.title,
+          submissions: submissions.map((s) => ({
+            studentName: s.student?.full_name || "Ẩn danh",
+            className: s.student?.class || "-",
+            score: s.score,
+            submittedAt: s.submitted_at
+          })),
+          stats
+        })
+        success("Xuất Excel thành công!")
+      } catch (err: any) {
+        toastError(err.message || "Không thể xuất Excel.")
+      }
+    }
+  }
 
   if (loading) return <Loading fullPage label="Đang phân tích dữ liệu..." />
 

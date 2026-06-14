@@ -16,6 +16,8 @@ import { TeacherBottomNav } from "@/components/BottomNav"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { AnimatedSelect } from "@/components/ui/animated-select"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { useToast } from "@/components/ui/toast"
 import {
   AlertTriangle,
   Calendar,
@@ -71,6 +73,7 @@ export default function ExamBankPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const answerPdfRef = useRef<HTMLInputElement>(null)
 
+  const { success, error: toastError, warning } = useToast()
   const [fullName, setFullName] = useState("")
   const [exams, setExams] = useState<ExamInBank[]>([])
   const [loading, setLoading] = useState(true)
@@ -89,6 +92,7 @@ export default function ExamBankPage() {
   const [totalQuestions, setTotalQuestions] = useState(30)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [previewExam, setPreviewExam] = useState<ExamInBank | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
 
   // Publish target states
   const [publishingExam, setPublishingExam] = useState<ExamInBank | null>(null)
@@ -235,7 +239,7 @@ export default function ExamBankPage() {
   }
 
   const handleAIScan = async () => {
-    if (!answerPdfFile) return alert("Vui lòng chọn file PDF đáp án")
+    if (!answerPdfFile) return warning("Vui lòng chọn file PDF đáp án")
     setScanning(true)
     setScanResult(null)
     try {
@@ -250,7 +254,7 @@ export default function ExamBankPage() {
         setTotalQuestions(data.multiple_choice.length)
       }
     } catch (err) {
-      alert("Lỗi quét AI: " + (err as Error).message + "\n\nĐảm bảo Python worker đang chạy!")
+      toastError("Lỗi quét AI: " + (err as Error).message + "\n\nĐảm bảo Python worker đang chạy!")
     } finally {
       setScanning(false)
     }
@@ -283,7 +287,7 @@ export default function ExamBankPage() {
       const { data: urlData } = supabase.storage.from("exams").getPublicUrl(fileName)
       setPdfUrl(urlData.publicUrl)
     } catch (err) {
-      alert("Lỗi upload PDF: " + (err as Error).message)
+      toastError("Lỗi upload PDF: " + (err as Error).message)
     } finally {
       setUploadingPdf(false)
     }
@@ -300,7 +304,7 @@ export default function ExamBankPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title) return alert("Vui lòng nhập tên đề thi")
+    if (!title) return warning("Vui lòng nhập tên đề thi")
     setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -332,15 +336,15 @@ export default function ExamBankPage() {
       setShowCreate(false)
       resetForm()
     } catch (err) {
-      alert("Lỗi: " + (err as Error).message)
+      toastError("Lỗi: " + (err as Error).message)
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    const examToDelete = exams.find((e) => e.id === id)
-    if (!confirm(`Xóa đề thi "${examToDelete?.title}"?`)) return
+  const executeDelete = async () => {
+    if (!deleteTarget) return
+    const id = deleteTarget.id
     try {
       const { data: submissions } = await supabase.from("submissions").select("student_id").eq("exam_id", id)
       if (submissions?.length) {
@@ -348,7 +352,7 @@ export default function ExamBankPage() {
           user_id: studentId,
           type: "exam_deleted",
           title: "Đề thi đã bị xóa",
-          message: `Đề thi "${examToDelete?.title}" đã bị giáo viên xóa khỏi hệ thống.`,
+          message: `Đề thi "${deleteTarget.title}" đã bị giáo viên xóa khỏi hệ thống.`,
           is_read: false,
         }))
         await supabase.from("notifications").insert(notifications)
@@ -361,7 +365,7 @@ export default function ExamBankPage() {
       if (error) throw error
       await fetchExams()
     } catch (err) {
-      alert("Lỗi xóa: " + (err as Error).message)
+      toastError("Lỗi xóa: " + (err as Error).message)
     }
   }
 
@@ -443,7 +447,7 @@ export default function ExamBankPage() {
         if (questionsError) throw questionsError
       }
 
-      alert("Đăng tải đề thi thành công!")
+      success("Đăng tải đề thi thành công!")
       setPublishingExam(null)
       // Reset publish states
       setPublishGrade("all")
@@ -454,7 +458,7 @@ export default function ExamBankPage() {
       setPublishEndTime("")
       await fetchExams()
     } catch (err) {
-      alert("Lỗi đăng tải: " + (err as Error).message)
+      toastError("Lỗi đăng tải: " + (err as Error).message)
     } finally {
       setSaving(false)
     }
@@ -667,7 +671,7 @@ export default function ExamBankPage() {
                     <Button variant="outline" size="sm" onClick={() => setPreviewExam(exam)} className="flex-1 rounded-full"><Eye className="mr-1 h-4 w-4" /> Preview</Button>
                     <Button variant="outline" size="sm" onClick={() => setPublishingExam(exam)} className="flex-1 rounded-full text-emerald-600 hover:text-emerald-700 dark:hover:text-emerald-400"><Share2 className="mr-1 h-4 w-4" /> Publish</Button>
                     <Button variant="outline" size="sm" onClick={() => handleEdit(exam)} className="rounded-full"><Edit className="h-4 w-4" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(exam.id)} className="rounded-full text-red-500 hover:text-red-600 dark:hover:text-red-400"><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="sm" onClick={() => setDeleteTarget({ id: exam.id, title: exam.title })} className="rounded-full text-red-500 hover:text-red-600 dark:hover:text-red-400"><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </div>
               </article>
@@ -964,6 +968,17 @@ export default function ExamBankPage() {
         )}
       </main>
       <TeacherBottomNav />
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={executeDelete}
+        title="Xóa đề thi?"
+        description={`Bạn có chắc chắn muốn xóa đề thi "${deleteTarget?.title}"? Tất cả bài nộp, câu hỏi và dữ liệu liên quan sẽ bị xóa vĩnh viễn.`}
+        confirmText="Xóa vĩnh viễn"
+        cancelText="Hủy"
+        variant="danger"
+      />
     </TeacherShell>
   )
 }

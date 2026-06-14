@@ -242,6 +242,6 @@ export const exportAnalyticsToExcel = async (data: AnalyticsExportData): Promise
         XLSX.writeFile(workbook, `phan-tich-${data.examTitle.replace(/[^a-zA-Z0-9]/g, "_")}.xlsx`);
     } catch {
         console.log("xlsx library not available");
-        alert("Không thể xuất Excel. Vui lòng thử lại sau.");
+        throw new Error("Không thể xuất Excel. Vui lòng thử lại sau.");
     }
 };

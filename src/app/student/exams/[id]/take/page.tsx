@@ -16,6 +16,7 @@ import { StudentShell } from "@/components/student/StudentShell"
 import { AlertTriangle, Clock, FileText, Send, ArrowLeft, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
+import { useToast } from "@/components/ui/toast"
 
 type Option = "A" | "B" | "C" | "D"
 type TFStudentAnswer = { question: number; a: boolean | null; b: boolean | null; c: boolean | null; d: boolean | null }
@@ -27,6 +28,7 @@ const OPTIONS: Option[] = ["A", "B", "C", "D"]
 
 export default function TakeExamPage() {
   const router = useRouter(); const params = useParams(); const examId = params.id as string; const supabase = useMemo(() => createClient(), []); const isSubmittingRef = useRef(false)
+  const { success, error: toastError } = useToast()
   const [exam, setExam] = useState<Exam | null>(null); const [userId, setUserId] = useState<string | null>(null); const [studentAnswers, setStudentAnswers] = useState<(Option | null)[]>([]); const [tfStudentAnswers, setTfStudentAnswers] = useState<TFStudentAnswer[]>([]); const [saStudentAnswers, setSaStudentAnswers] = useState<SAStudentAnswer[]>([]); const [timeLeft, setTimeLeft] = useState(0); const [loading, setLoading] = useState(true); const [submitting, setSubmitting] = useState(false); const [showConfirm, setShowConfirm] = useState(false); const [examStarted, setExamStarted] = useState(false); const [antiCheatEnabled, setAntiCheatEnabled] = useState(true); const [sessionId, setSessionId] = useState<string | null>(null); const [isRanked, setIsRanked] = useState(true); const [activeTab, setActiveTab] = useState<"mc" | "tf" | "sa">("mc"); const [tabSwitchCount, setTabSwitchCount] = useState(0); const [showSessionChoice, setShowSessionChoice] = useState(false); const [existingSession, setExistingSession] = useState<ExistingSession | null>(null); const isRestoredRef = useRef(false)
   const [activeMcIndex, setActiveMcIndex] = useState(0)
   const [activeTfIndex, setActiveTfIndex] = useState(0)
@@ -157,7 +159,7 @@ export default function TakeExamPage() {
     })()
   }, [examId, localStorageKey, router, supabase])
 
-  const handleSubmit = useCallback(async (autoSubmit = false) => { if (submitting || !exam) return; setSubmitting(true); try { const timeSpent = Math.max(1, Math.floor((exam.duration * 60) - timeLeft)); const response = await fetch("/api/exams/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ exam_id: examId, mc_answers: studentAnswers, tf_answers: tfStudentAnswers, sa_answers: saStudentAnswers, session_id: sessionId, time_spent: timeSpent, cheat_flags: { tab_switches: tabSwitchCount, auto_submit: autoSubmit } }) }); if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Submission failed"); localStorage.removeItem(localStorageKey); router.push(`/student/exams/${examId}/result`) } catch (error) { alert("Lỗi nộp bài: " + (error instanceof Error ? error.message : "Unknown error")); setSubmitting(false) } }, [exam, examId, studentAnswers, tfStudentAnswers, saStudentAnswers, sessionId, tabSwitchCount, submitting, localStorageKey, router, timeLeft])
+  const handleSubmit = useCallback(async (autoSubmit = false) => { if (submitting || !exam) return; setSubmitting(true); try { const timeSpent = Math.max(1, Math.floor((exam.duration * 60) - timeLeft)); const response = await fetch("/api/exams/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ exam_id: examId, mc_answers: studentAnswers, tf_answers: tfStudentAnswers, sa_answers: saStudentAnswers, session_id: sessionId, time_spent: timeSpent, cheat_flags: { tab_switches: tabSwitchCount, auto_submit: autoSubmit } }) }); if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Submission failed"); localStorage.removeItem(localStorageKey); router.push(`/student/exams/${examId}/result`) } catch (error) { toastError("Lỗi nộp bài: " + (error instanceof Error ? error.message : "Unknown error")); setSubmitting(false) } }, [exam, examId, studentAnswers, tfStudentAnswers, saStudentAnswers, sessionId, tabSwitchCount, submitting, localStorageKey, router, timeLeft])
   useEffect(() => { if (timeLeft <= 0 || loading) return; const timer = setInterval(() => setTimeLeft((prev) => { if (prev <= 1) { clearInterval(timer); if (!isSubmittingRef.current) { isSubmittingRef.current = true; handleSubmit(true) } return 0 } return prev - 1 }), 1000); return () => clearInterval(timer) }, [timeLeft, loading, handleSubmit])
   useEffect(() => { if (isRestoredRef.current && (studentAnswers.length || tfStudentAnswers.length || saStudentAnswers.length)) localStorage.setItem(localStorageKey, JSON.stringify({ mc: studentAnswers, tf: tfStudentAnswers, sa: saStudentAnswers })) }, [studentAnswers, tfStudentAnswers, saStudentAnswers, localStorageKey])
   useEffect(() => {

@@ -12,6 +12,7 @@ import { TeacherSidebar } from "@/components/TeacherSidebar"
 import { TeacherBottomNav } from "@/components/BottomNav"
 import { ArrowLeft, Save, Loader2, Plus, CheckCircle2, HelpCircle, GraduationCap } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/components/ui/toast"
 import { MAP_SUBJECT_TO_DB } from "@/lib/subjects"
 
 const SUBJECTS = [
@@ -28,6 +29,7 @@ const GRADES = [6, 7, 8, 9, 10, 11, 12]
 export default function CreateQuestionPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { success, error: toastError, warning } = useToast()
   const [saving, setSaving] = useState(false)
   const [subject, setSubject] = useState("math")
   const [difficulty, setDifficulty] = useState(2)
@@ -120,8 +122,8 @@ export default function CreateQuestionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!content.trim()) return alert("Vui lòng nhập nội dung câu hỏi")
-    if (options.some((o) => !o.trim())) return alert("Vui lòng nhập đầy đủ 4 đáp án")
+    if (!content.trim()) return warning("Vui lòng nhập nội dung câu hỏi")
+    if (options.some((o) => !o.trim())) return warning("Vui lòng nhập đầy đủ 4 đáp án")
     setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -142,9 +144,10 @@ export default function CreateQuestionPage() {
         section_id: selectedSectionId || null
       })
       if (error) throw error
+      success("Đã tạo câu hỏi thành công!")
       router.push("/teacher/exam-bank")
     } catch (err) {
-      alert("Lỗi: " + (err as Error).message)
+      toastError("Lỗi: " + (err as Error).message)
     } finally {
       setSaving(false)
     }

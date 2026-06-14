@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Database, Plus, Search, Loader2, BookOpen, Clock, Settings, FolderOpen } from "lucide-react"
 import { SUBJECTS } from "@/lib/subjects"
 import Link from "next/link"
+import { useToast } from "@/components/ui/toast"
 
 interface QuestionBank {
     id: string
@@ -22,6 +23,7 @@ interface QuestionBank {
 
 export default function QuestionBankPage() {
     const supabase = createClient()
+    const { success, error: toastError } = useToast()
     const [banks, setBanks] = useState<QuestionBank[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
@@ -82,12 +84,13 @@ export default function QuestionBankPage() {
             if (error) throw error
 
             setBanks([data, ...banks])
+            success("Tạo ngân hàng câu hỏi thành công!")
             setIsOpen(false)
             setNewBankName("")
             setNewBankDesc("")
         } catch (error) {
             console.error("Failed to create bank:", error)
-            alert("Lỗi tạo ngân hàng câu hỏi")
+            toastError("Lỗi tạo ngân hàng câu hỏi")
         } finally {
             setCreating(false)
         }

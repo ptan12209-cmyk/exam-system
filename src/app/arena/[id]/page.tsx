@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { MathRenderer } from "@/components/ui/math-renderer"
 import { Clock, Send, Loader2, Swords, Target, Trophy, AlertTriangle, ChevronLeft, ChevronRight, CheckCircle2, Flag } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/components/ui/toast"
 
 interface Question { id: string; question_text: string; options: string[]; correct_answer: number }
 interface ArenaSession { id: string; name: string; subject: string; duration: number; total_questions: number; start_time: string; end_time: string; exam_id?: string }
@@ -16,6 +17,7 @@ export default function ArenaBattlePage() {
     const params = useParams()
     const arenaId = params.id as string
     const supabase = createClient()
+    const { success, error: toastError, warning } = useToast()
     const [arena, setArena] = useState<ArenaSession | null>(null)
     const [questions, setQuestions] = useState<Question[]>([])
     const [answers, setAnswers] = useState<Record<string, string>>({})
@@ -26,6 +28,7 @@ export default function ArenaBattlePage() {
     const [startTime] = useState(Date.now())
     const [userId, setUserId] = useState<string | null>(null)
     const [alreadySubmitted, setAlreadySubmitted] = useState(false)
+    const [showConfirm, setShowConfirm] = useState(false)
 
     useEffect(() => { fetchArenaAndQuestions() }, [arenaId])
 
@@ -38,7 +41,7 @@ export default function ArenaBattlePage() {
         const { data: arenaData, error: arenaError } = await supabase.from("arena_sessions").select("*").eq("id", arenaId).single()
         if (arenaError || !arenaData) { router.push("/arena"); return }
         const now = new Date(); const start = new Date(arenaData.start_time); const end = new Date(arenaData.end_time)
-        if (now < start || now > end) { alert("Đợt thi này chưa mở hoặc đã kết thúc"); router.push("/arena"); return }
+        if (now < start || now > end) { warning("Đợt thi này chưa mở hoặc đã kết thúc"); router.push("/arena"); return }
         setArena(arenaData); setTimeLeft(arenaData.duration * 60)
         if (!arenaData.exam_id) { setLoading(false); return }
         const { data: questionsData } = await supabase.from("questions").select("id, question_text, options, correct_answer").eq("exam_id", arenaData.exam_id).order("order_index")
@@ -61,7 +64,7 @@ export default function ArenaBattlePage() {
 
     const handleSubmit = useCallback(async (autoSubmit = false) => {
         if (submitting || !arena || !userId) return
-        if (!autoSubmit && !confirm("Bạn chắc chắn muốn nộp bài?")) return
+        if (!autoSubmit && !showConfirm) { setShowConfirm(true); return }
         setSubmitting(true)
         try {
             let correct = 0
@@ -74,8 +77,8 @@ export default function ArenaBattlePage() {
             const { error } = await supabase.from("arena_results").insert({ arena_id: arenaId, student_id: userId, score, correct_count: correct, total_questions: questions.length, time_spent: timeSpent, answers: answerDetails, question_ids: questions.map(q => q.id) })
             if (error) throw error
             router.push(`/arena/${arenaId}/result`)
-        } catch (err) { console.error("Submit error:", err); alert("Lỗi nộp bài: " + (err as Error).message); setSubmitting(false) }
-    }, [arena, userId, questions, answers, startTime, arenaId, router, submitting, supabase])
+        } catch (err) { console.error("Submit error:", err); toastError("Lỗi nộp bài: " + (err as Error).message); setSubmitting(false); setShowConfirm(false) }
+    }, [arena, userId, questions, answers, startTime, arenaId, router, submitting, supabase, showConfirm])
 
     const formatTime = (seconds: number) => { const mins = Math.floor(seconds / 60); const secs = seconds % 60; return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}` }
     const answeredCount = Object.keys(answers).length
@@ -192,6 +195,24 @@ export default function ArenaBattlePage() {
             <div className="md:hidden fixed bottom-6 right-6 z-50">
                 <Button onClick={() => handleSubmit(false)} disabled={submitting} size="icon" className="h-14 w-14 rounded-full bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/30"><Send className="w-6 h-6 ml-1" /></Button>
             </div>
+
+            {showConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in-0 duration-200">
+                    <div className="w-full max-w-sm rounded-[2rem] border border-amber-500/20 bg-[hsl(var(--card))]/90 backdrop-blur-md p-6 text-center shadow-[0_0_50px_-12px_rgba(245,158,11,0.25)] transition-all duration-200 animate-in zoom-in-95">
+                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-amber-500/20 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.15)] transition-all duration-300 hover:rotate-12">
+                            <Swords className="h-8 w-8 text-amber-500" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-white">Nộp bài đấu trường?</h3>
+                        <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Bạn đã làm {answeredCount}/{questions.length} câu.</p>
+                        <div className="mt-6 grid grid-cols-2 gap-3">
+                            <Button variant="outline" onClick={() => setShowConfirm(false)} className="rounded-full border-[hsl(var(--border))]/70 bg-transparent text-white hover:bg-[hsl(var(--muted))]/20 transition-all duration-200 active:scale-95">Làm tiếp</Button>
+                            <Button onClick={() => handleSubmit(false)} disabled={submitting} className="rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-all duration-200 active:scale-95">
+                                {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Nộp bài
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

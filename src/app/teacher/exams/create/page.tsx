@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useExamForm } from "@/hooks/useExamForm"
 import { useAnswerForm } from "@/hooks/useAnswerForm"
+import { useToast } from "@/components/ui/toast"
 import { usePdfUpload } from "@/hooks/usePdfUpload"
 import { createClient } from "@/lib/supabase/client"
 import { parseAnswerKey } from "@/lib/exam-utils"
@@ -23,6 +24,7 @@ import { MAP_SUBJECT_TO_DB, MAP_DB_TO_SUBJECT } from "@/lib/subjects"
 export default function CreateExamPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { success } = useToast()
 
   const [fullName] = useState("")
 
@@ -120,7 +122,7 @@ export default function CreateExamPage() {
     if (bankExam.subject) setSubject(MAP_DB_TO_SUBJECT[bankExam.subject] || bankExam.subject)
 
     setShowImportModal(false)
-    alert(`Đã nhập thành công cấu trúc đề và ${bankExam.total_questions} đáp án từ "${bankExam.title}"!`)
+    success(`Đã nhập thành công cấu trúc đề và ${bankExam.total_questions} đáp án từ "${bankExam.title}"!`)
   }
 
   // Hierarchy states

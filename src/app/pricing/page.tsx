@@ -6,6 +6,7 @@ import { ArrowRight, Building2, Check, Crown, Loader2, Sparkles, Star, Zap } fro
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { useToast } from "@/components/ui/toast"
 
 interface Plan {
   id: string
@@ -30,6 +31,7 @@ interface Subscription {
 }
 
 export default function PricingPage() {
+  const { success, error: toastError } = useToast()
   const [plans, setPlans] = useState<Plan[]>([])
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null)
   const [loading, setLoading] = useState(true)
@@ -64,15 +66,15 @@ export default function PricingPage() {
       const data = await res.json()
 
       if (data.free) {
-        alert("Đã kích hoạt gói miễn phí!")
+        success("Đã kích hoạt gói miễn phí!")
         await fetch("/api/subscriptions")
       } else if (data.paymentUrl) {
         window.location.href = data.paymentUrl
       } else {
-        alert(data.error || "Có lỗi xảy ra")
+        toastError(data.error || "Có lỗi xảy ra")
       }
     } catch {
-      alert("Không thể xử lý thanh toán")
+      toastError("Không thể xử lý thanh toán")
     } finally {
       setProcessing(null)
     }

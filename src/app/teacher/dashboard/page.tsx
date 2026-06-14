@@ -16,6 +16,8 @@ import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { BarChart3, BookOpen, FileText, Users, Clock, Plus, Trash2, Eye } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { useToast } from "@/components/ui/toast"
 
 interface Profile { id: string; role: string; full_name: string | null }
 interface Exam { id: string; title: string; duration: number; total_questions: number; status: "draft" | "published"; created_at: string; submission_count?: number; subject?: string; assigned_to?: "normal" | "x" }
@@ -23,12 +25,14 @@ interface Exam { id: string; title: string; duration: number; total_questions: n
 export default function TeacherDashboard() {
   const router = useRouter()
   const supabase = createClient()
+  const { success, error: toastError } = useToast()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [exams, setExams] = useState<Exam[]>([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ totalExams: 0, publishedExams: 0, totalSubmissions: 0 })
   const [selectedSubject, setSelectedSubject] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,18 +58,16 @@ export default function TeacherDashboard() {
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login") }
   
-  const handleDeleteExam = async (examId: string, title: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa đề thi "${title}"? Tất cả bài nộp và dữ liệu liên quan sẽ bị xóa vĩnh viễn.`)) {
-      return
-    }
+  const executeDeleteExam = async () => {
+    if (!deleteTarget) return
 
     try {
-      const { error } = await supabase.from("exams").delete().eq("id", examId)
+      const { error } = await supabase.from("exams").delete().eq("id", deleteTarget.id)
       if (error) throw error
 
-      setExams((prev) => prev.filter((e) => e.id !== examId))
+      setExams((prev) => prev.filter((e) => e.id !== deleteTarget.id))
       setStats((prev) => {
-        const deletedExam = exams.find((e) => e.id === examId)
+        const deletedExam = exams.find((e) => e.id === deleteTarget.id)
         const isPublished = deletedExam?.status === "published"
         const subCount = deletedExam?.submission_count || 0
         return {
@@ -74,10 +76,10 @@ export default function TeacherDashboard() {
           totalSubmissions: prev.totalSubmissions - subCount
         }
       })
-      alert("Xóa đề thi thành công.")
+      success("Xóa đề thi thành công!")
     } catch (err: any) {
       console.error("Failed to delete exam:", err)
-      alert(`Xóa đề thi thất bại: ${err.message}`)
+      toastError(`Xóa đề thi thất bại: ${err.message}`)
     }
   }
 
@@ -208,7 +210,7 @@ export default function TeacherDashboard() {
                         variant="outline"
                         size="sm"
                         className="rounded-full border-red-500/30 hover:border-red-500 hover:bg-red-500/10 text-red-500 bg-transparent flex items-center gap-1.5 transition-colors"
-                        onClick={() => handleDeleteExam(exam.id, exam.title)}
+                        onClick={() => setDeleteTarget({ id: exam.id, title: exam.title })}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         Xóa
@@ -223,6 +225,17 @@ export default function TeacherDashboard() {
       </main>
 
       <TeacherBottomNav />
+      
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={executeDeleteExam}
+        title="Xóa đề thi?"
+        description={`Bạn có chắc chắn muốn xóa đề thi "${deleteTarget?.title}"? Tất cả bài nộp và dữ liệu liên quan sẽ bị xóa vĩnh viễn.`}
+        confirmText="Xóa vĩnh viễn"
+        cancelText="Hủy"
+        variant="danger"
+      />
     </TeacherShell>
   )
 }

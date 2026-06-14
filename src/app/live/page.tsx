@@ -11,6 +11,7 @@ import { StudentHeader } from "@/components/student/StudentHeader"
 import { cn } from "@/lib/utils"
 import { ArrowLeft, BookOpen, Calendar, Clock, Edit, GraduationCap, MessageCircle, Plus, Save, Settings, Trash2, User, Video, Youtube, X } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 declare global {
   interface Window {
@@ -47,6 +48,7 @@ export default function LiveRoomPage() {
   const [showEditor, setShowEditor] = useState(false)
   const [showLiveSettings, setShowLiveSettings] = useState(false)
   const [editItem, setEditItem] = useState<ScheduleItem | null>(null)
+  const [deleteItemId, setDeleteItemId] = useState<string | null>(null)
   const [formDay, setFormDay] = useState("")
   const [formTime, setFormTime] = useState("")
   const [formTopic, setFormTopic] = useState("")
@@ -222,9 +224,7 @@ export default function LiveRoomPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Xóa lịch này?")) return
-    await supabase.from("live_schedule").delete().eq("id", id)
-    await fetchSchedule()
+    setDeleteItemId(id)
   }
 
   const canEdit = user?.role === "teacher" || user?.email === "ptan12209@gmail.com"
@@ -544,6 +544,21 @@ export default function LiveRoomPage() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        isOpen={!!deleteItemId}
+        onClose={() => setDeleteItemId(null)}
+        onConfirm={async () => {
+          if (deleteItemId) {
+            await supabase.from("live_schedule").delete().eq("id", deleteItemId)
+            await fetchSchedule()
+          }
+        }}
+        title="Xóa lịch học"
+        description="Bạn có chắc chắn muốn xóa lịch học này?"
+        confirmText="Xóa"
+        cancelText="Hủy"
+        variant="danger"
+      />
     </div>
   )
 }

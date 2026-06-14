@@ -11,6 +11,7 @@ import { ArrowLeft, Save, CheckCircle2, RefreshCw, AlertCircle, Shield, ShieldCh
 import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
 import { cn } from "@/lib/utils"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { TeacherSidebar } from "@/components/TeacherSidebar"
 import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { NotificationBell } from "@/components/NotificationBell"
@@ -26,6 +27,7 @@ type SAAnswer = { question: number; answer: number | string }
 export default function EditExamPage() {
   const router = useRouter(); const params = useParams(); const examId = params.id as string; const supabase = createClient()
   const [loading, setLoading] = useState(true); const [authError, setAuthError] = useState<string | null>(null); const [saving, setSaving] = useState(false); const [regrading, setRegrading] = useState(false); const [error, setError] = useState<string | null>(null); const [success, setSuccess] = useState<string | null>(null); const [profile, setProfile] = useState<{ full_name: string | null } | null>(null)
+  const [showRegradeConfirm, setShowRegradeConfirm] = useState(false)
   const [title, setTitle] = useState(""); const [duration, setDuration] = useState(15); const [mcCount, setMcCount] = useState(12); const [tfCount, setTfCount] = useState(4); const [saCount, setSaCount] = useState(6); const [mcAnswers, setMcAnswers] = useState<(Option | null)[]>([]); const [tfAnswers, setTfAnswers] = useState<TFAnswer[]>([]); const [saAnswers, setSaAnswers] = useState<SAAnswer[]>([]); const [answerTab, setAnswerTab] = useState<"mc" | "tf" | "sa">("mc"); const [securityLevel, setSecurityLevel] = useState(1)
   const [targetGrade, setTargetGrade] = useState<number | null>(null);
   const [targetClasses, setTargetClasses] = useState<string>("");
@@ -135,25 +137,107 @@ export default function EditExamPage() {
       setSaving(false)
     }
   }
-  const handleRegrade = async () => { if (!confirm("Chấm lại điểm tất cả bài nộp? Hành động này sẽ tính lại điểm dựa trên đáp án hiện tại.")) return; setRegrading(true); setError(null); setSuccess(null); try { const mcAnswerObjects = mcAnswers.map((ans, i) => ({ question: i + 1, answer: ans })).filter((a) => a.answer !== null); const finalTfAnswers = tfAnswers.map((tf, i) => ({ ...tf, question: mcCount + 1 + i })); const finalSaAnswers = saAnswers.map((sa, i) => ({ ...sa, question: mcCount + tfCount + 1 + i })); await supabase.from("exams").update({ correct_answers: mcAnswers, mc_answers: mcAnswerObjects, tf_answers: tfCount > 0 ? finalTfAnswers : [], sa_answers: saCount > 0 ? finalSaAnswers : [] }).eq("id", examId); const { data: submissions } = await supabase.from("submissions").select("id, answers, tf_answers, sa_answers").eq("exam_id", examId); if (!submissions?.length) { setSuccess("Không có bài nộp nào để chấm lại."); setRegrading(false); return } let updatedCount = 0; for (const sub of submissions) { let correctCount = 0; const totalQuestions = mcCount + tfCount + saCount; if (sub.answers && mcAnswers.length > 0) { const studentMc = sub.answers as string[]; for (let i = 0; i < mcAnswers.length; i++) if (mcAnswers[i] && studentMc[i]?.toUpperCase() === mcAnswers[i]) correctCount++ } if (sub.tf_answers && finalTfAnswers.length > 0) {
-        const studentTf = sub.tf_answers as TFAnswer[];
-        for (const correct of finalTfAnswers) {
-          const student = studentTf.find((t) => t.question === correct.question);
-          if (student) {
-            let subCorrect = 0;
-            if (student.a === correct.a) subCorrect++;
-            if (student.b === correct.b) subCorrect++;
-            if (student.c === correct.c) subCorrect++;
-            if (student.d === correct.d) subCorrect++;
-            let tfScore = 0;
-            if (subCorrect === 1) tfScore = 0.1;
-            else if (subCorrect === 2) tfScore = 0.25;
-            else if (subCorrect === 3) tfScore = 0.5;
-            else if (subCorrect === 4) tfScore = 1.0;
-            correctCount += tfScore;
+  const handleRegrade = async () => {
+    setRegrading(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const mcAnswerObjects = mcAnswers
+        .map((ans, i) => ({ question: i + 1, answer: ans }))
+        .filter((a) => a.answer !== null)
+      const finalTfAnswers = tfAnswers.map((tf, i) => ({
+        ...tf,
+        question: mcCount + 1 + i,
+      }))
+      const finalSaAnswers = saAnswers.map((sa, i) => ({
+        ...sa,
+        question: mcCount + tfCount + 1 + i,
+      }))
+
+      await supabase
+        .from("exams")
+        .update({
+          correct_answers: mcAnswers,
+          mc_answers: mcAnswerObjects,
+          tf_answers: tfCount > 0 ? finalTfAnswers : [],
+          sa_answers: saCount > 0 ? finalSaAnswers : [],
+        })
+        .eq("id", examId)
+
+      const { data: submissions } = await supabase
+        .from("submissions")
+        .select("id, answers, tf_answers, sa_answers")
+        .eq("exam_id", examId)
+
+      if (!submissions?.length) {
+        setSuccess("Không có bài nộp nào để chấm lại.")
+        setRegrading(false)
+        return
+      }
+
+      let updatedCount = 0
+      for (const sub of submissions) {
+        let correctCount = 0
+        const totalQuestions = mcCount + tfCount + saCount
+
+        if (sub.answers && mcAnswers.length > 0) {
+          const studentMc = sub.answers as string[]
+          for (let i = 0; i < mcAnswers.length; i++) {
+            if (mcAnswers[i] && studentMc[i]?.toUpperCase() === mcAnswers[i]) {
+              correctCount++
+            }
           }
         }
-      } if (sub.sa_answers && finalSaAnswers.length > 0) { const studentSa = sub.sa_answers as SAAnswer[]; for (const correct of finalSaAnswers) { const student = studentSa.find((s) => s.question === correct.question); if (student) { const correctVal = correct.answer?.toString().trim().toLowerCase(); const studentVal = student.answer?.toString().trim().toLowerCase(); if (correctVal && studentVal && correctVal === studentVal) correctCount++ } } } const score = totalQuestions > 0 ? (correctCount / totalQuestions) * 10 : 0; await supabase.from("submissions").update({ score, correct_count: Math.round(correctCount * 100) / 100 }).eq("id", sub.id); updatedCount++ } setSuccess(`✅ Đã chấm lại ${updatedCount} bài nộp thành công!`) } catch (err) { setError("Lỗi chấm lại: " + (err as Error).message) } finally { setRegrading(false) } }
+
+        if (sub.tf_answers && finalTfAnswers.length > 0) {
+          const studentTf = sub.tf_answers as TFAnswer[]
+          for (const correct of finalTfAnswers) {
+            const student = studentTf.find((t) => t.question === correct.question)
+            if (student) {
+              let subCorrect = 0
+              if (student.a === correct.a) subCorrect++
+              if (student.b === correct.b) subCorrect++
+              if (student.c === correct.c) subCorrect++
+              if (student.d === correct.d) subCorrect++
+              let tfScore = 0
+              if (subCorrect === 1) tfScore = 0.1
+              else if (subCorrect === 2) tfScore = 0.25
+              else if (subCorrect === 3) tfScore = 0.5
+              else if (subCorrect === 4) tfScore = 1.0
+              correctCount += tfScore
+            }
+          }
+        }
+
+        if (sub.sa_answers && finalSaAnswers.length > 0) {
+          const studentSa = sub.sa_answers as SAAnswer[]
+          for (const correct of finalSaAnswers) {
+            const student = studentSa.find((s) => s.question === correct.question)
+            if (student) {
+              const correctVal = correct.answer?.toString().trim().toLowerCase()
+              const studentVal = student.answer?.toString().trim().toLowerCase()
+              if (correctVal && studentVal && correctVal === studentVal) {
+                correctCount++
+              }
+            }
+          }
+        }
+
+        const score = totalQuestions > 0 ? (correctCount / totalQuestions) * 10 : 0
+        await supabase
+          .from("submissions")
+          .update({ score, correct_count: Math.round(correctCount * 100) / 100 })
+          .eq("id", sub.id)
+        updatedCount++
+      }
+
+      setSuccess(`✅ Đã chấm lại ${updatedCount} bài nộp thành công!`)
+    } catch (err) {
+      setError("Lỗi chấm lại: " + (err as Error).message)
+    } finally {
+      setRegrading(false)
+    }
+  }
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login") }
 
@@ -204,7 +288,7 @@ export default function EditExamPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button onClick={handleRegrade} disabled={regrading} variant="outline" className="rounded-full border-[hsl(var(--border))]/70 bg-transparent transition-transform active:scale-95">
+            <Button onClick={() => setShowRegradeConfirm(true)} disabled={regrading} variant="outline" className="rounded-full border-[hsl(var(--border))]/70 bg-transparent transition-transform active:scale-95">
               {regrading ? <DotmSquare1 size={16} dotSize={2} className="mr-2" /> : <RefreshCw className="mr-2 h-4 w-4" />}
               Chấm lại bài nộp
             </Button>
@@ -525,6 +609,16 @@ export default function EditExamPage() {
           </div>
         </div>
       </main>
+      <ConfirmDialog
+        isOpen={showRegradeConfirm}
+        onClose={() => setShowRegradeConfirm(false)}
+        onConfirm={handleRegrade}
+        title="Chấm lại tất cả bài nộp"
+        description="Hành động này sẽ tính lại điểm tất cả bài nộp hiện có dựa trên đáp án mới được cập nhật. Thầy có chắc chắn muốn thực hiện?"
+        confirmText="Chấm lại"
+        cancelText="Hủy"
+        variant="warning"
+      />
     </TeacherShell>
   )
 }
