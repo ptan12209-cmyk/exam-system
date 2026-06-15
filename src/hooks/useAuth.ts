@@ -82,10 +82,16 @@ export function useAuth(options?: UseAuthOptions) {
 
       if (cancelled) return
 
+      if (!profileData) {
+        await supabase.auth.signOut()
+        router.push("/login?error=profile_not_found")
+        return
+      }
+
       setUser({ id: authUser.id, email: authUser.email })
       setProfile(profileData as Profile | null)
 
-      if (options?.requiredRole && profileData?.role !== options.requiredRole) {
+      if (options?.requiredRole && profileData.role !== options.requiredRole) {
         router.push("/login")
         return
       }

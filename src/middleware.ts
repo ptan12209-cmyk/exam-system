@@ -65,8 +65,14 @@ export async function middleware(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
+    if (!profile) {
+      // If there is no profile record, DO NOT redirect them to the dashboard.
+      // Let them access `/login` to sign out or sign in with another account.
+      return supabaseResponse
+    }
+
     const dashboardUrl = request.nextUrl.clone()
-    dashboardUrl.pathname = profile?.role === 'teacher'
+    dashboardUrl.pathname = profile.role === 'teacher'
       ? '/teacher/dashboard'
       : '/student/dashboard'
     return NextResponse.redirect(dashboardUrl)
