@@ -121,13 +121,14 @@ export default function StudentDashboard() {
   const hasSubmitted = (examId: string) => submissions.some((submission) => submission.exam_id === examId)
   const getSubmission = (examId: string) => submissions.find((submission) => submission.exam_id === examId)
 
+  const unsubmittedExams = useMemo(() => {
+    return availableExams.filter(exam => !hasSubmitted(exam.id))
+  }, [availableExams, submissions])
+
   if (loading) return <Loading fullPage label="Đang tải dữ liệu học tập..." />
 
   const completedCount = submissions.length
   const bestScore = submissions.length > 0 ? Math.max(...submissions.map((submission) => submission.score)).toFixed(1) : "--"
-  const unsubmittedExams = useMemo(() => {
-    return availableExams.filter(exam => !hasSubmitted(exam.id))
-  }, [availableExams, submissions])
 
   return (
     <StudentShell>
