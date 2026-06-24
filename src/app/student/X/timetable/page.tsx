@@ -11,17 +11,20 @@ import {
   Clock,
   Zap,
   Coffee,
-  CheckCircle2,
   ArrowLeft,
   X,
   Check,
-  AlertCircle,
-  HelpCircle,
-  Lock
+  Edit2,
+  RotateCcw,
+  Sparkles
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
 import { StudentShell } from "@/components/student/StudentShell"
+
+import { DEFAULT_TIMETABLE_SLOTS, TimetableSlot } from "./_components/constants"
+import { EditSlotModal } from "./_components/EditSlotModal"
+import { ConfirmResetModal } from "./_components/ConfirmResetModal"
 
 const instrumentSerif = { className: "font-instrument-serif" }
 const jetbrainsMono = { className: "font-jetbrains-mono" }
@@ -34,50 +37,6 @@ interface Profile {
   nickname: string | null
 }
 
-interface TimetableSlot {
-  id: string
-  subject: string
-  type: string
-  time: string
-  color: string
-}
-
-// Cấu hình danh sách 24 ca học chi tiết
-const TIMETABLE_SLOTS: { [key: string]: { [key: string]: TimetableSlot } } = {
-  sang: {
-    t2: { id: "mon-sang", subject: "Toán", type: "Lý Thuyết", time: "08:00 - 10:30", color: "toan" },
-    t3: { id: "tue-sang", subject: "Sinh Học", type: "Lý Thuyết", time: "08:00 - 10:30", color: "sinh" },
-    t4: { id: "wed-sang", subject: "Toán", type: "Bài Tập 1", time: "08:00 - 10:30", color: "toan" },
-    t5: { id: "thu-sang", subject: "Sinh Học", type: "Bài Tập 1", time: "08:00 - 10:30", color: "sinh" },
-    t6: { id: "fri-sang", subject: "Toán", type: "Bài Tập 2", time: "08:00 - 10:30", color: "toan" },
-    t7: { id: "sat-sang", subject: "Sinh Học", type: "Bài Tập 2", time: "08:00 - 10:30", color: "sinh" },
-  },
-  chieu1: {
-    t2: { id: "mon-chieu1", subject: "Vật Lý", type: "Lý Thuyết", time: "14:00 - 16:30", color: "ly" },
-    t3: { id: "tue-chieu1", subject: "Ngữ Văn", type: "Lý Thuyết", time: "14:00 - 16:30", color: "van" },
-    t4: { id: "wed-chieu1", subject: "Vật Lý", type: "Bài Tập 1", time: "14:00 - 16:30", color: "ly" },
-    t5: { id: "thu-chieu1", subject: "Ngữ Văn", type: "Bài Tập 1", time: "14:00 - 16:30", color: "van" },
-    t6: { id: "fri-chieu1", subject: "Vật Lý", type: "Bài Tập 2", time: "14:00 - 16:30", color: "ly" },
-    t7: { id: "sat-chieu1", subject: "Ngữ Văn", type: "Bài Tập 2", time: "14:00 - 16:30", color: "van" },
-  },
-  chieu2: {
-    t2: { id: "mon-chieu2", subject: "Hóa Học", type: "Lý Thuyết", time: "16:45 - 19:15", color: "hoa" },
-    t3: { id: "tue-chieu2", subject: "Tiếng Anh", type: "Lý Thuyết", time: "16:45 - 19:15", color: "anh" },
-    t4: { id: "wed-chieu2", subject: "Hóa Học", type: "Bài Tập 1", time: "16:45 - 19:15", color: "hoa" },
-    t5: { id: "thu-chieu2", subject: "Tiếng Anh", type: "Bài Tập 1", time: "16:45 - 19:15", color: "anh" },
-    t6: { id: "fri-chieu2", subject: "Hóa Học", type: "Bài Tập 2", time: "16:45 - 19:15", color: "hoa" },
-    t7: { id: "sat-chieu2", subject: "Tiếng Anh", type: "Bài Tập 2", time: "16:45 - 19:15", color: "anh" },
-  },
-  toi: {
-    t2: { id: "mon-toi", subject: "V-ACT (1)", type: "Tư Duy Logic", time: "20:00 - 22:30", color: "vact" },
-    t3: { id: "tue-toi", subject: "V-ACT (2)", type: "Phân Tích Số Liệu", time: "20:00 - 22:30", color: "vact" },
-    t4: { id: "wed-toi", subject: "V-ACT (3)", type: "Tiếng Anh V-ACT", time: "20:00 - 22:30", color: "vact" },
-    t5: { id: "thu-toi", subject: "V-ACT (4)", type: "Tiếng Việt V-ACT", time: "20:00 - 22:30", color: "vact" },
-    t6: { id: "fri-toi", subject: "V-ACT (5)", type: "Thực Chiến TDLG", time: "20:00 - 22:30", color: "vact" },
-    t7: { id: "sat-toi", subject: "V-ACT (6)", type: "Thực Chiến PTSL", time: "20:00 - 22:30", color: "vact" },
-  }
-}
-
 export default function TimetablePage() {
   const router = useRouter()
   const supabase = createClient()
@@ -85,9 +44,18 @@ export default function TimetablePage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   
-  // Trạng thái lưu danh sách ID các ca học đã hoàn thành
+  // Trạng thái lưu thời khóa biểu hiện tại (tùy chỉnh hoặc mặc định)
+  const [slots, setSlots] = useState<{ [key: string]: { [key: string]: TimetableSlot } }>(DEFAULT_TIMETABLE_SLOTS)
+  // Chế độ tùy chỉnh/chỉnh sửa
+  const [isEditMode, setIsEditMode] = useState(false)
+  // Ca học đang được chọn chỉnh sửa
+  const [editingSlot, setEditingSlot] = useState<TimetableSlot | null>(null)
+  // Hiện modal xác nhận khôi phục mặc định
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+
+  // Trạng thái lưu danh sách ID các ca học đã hoàn thành trong tuần
   const [completedSlots, setCompletedSlots] = useState<string[]>([])
-  // Ca học đang được chọn để mở Modal xác nhận
+  // Ca học đang được chọn để mở Modal xác nhận hoàn thành
   const [selectedSlot, setSelectedSlot] = useState<TimetableSlot | null>(null)
   // Mốc Thứ 2 của tuần hiện tại (YYYY-MM-DD)
   const [currentWeekMonday, setCurrentWeekMonday] = useState("")
@@ -95,15 +63,9 @@ export default function TimetablePage() {
   // Hàm tính toán ngày Thứ 2 đầu tuần hiện tại theo giờ Việt Nam (UTC+7)
   const getVietnamMonday = () => {
     const now = new Date()
-    // Chuyển đổi timestamp sang múi giờ Việt Nam (UTC+7) bằng cách cộng thêm 7 tiếng
     const vnTime = new Date(now.getTime() + (7 * 60 * 60 * 1000))
-    
-    // getUTCDay() trả về 0 (Chủ Nhật) đến 6 (Thứ 7) của vnTime
     const day = vnTime.getUTCDay()
-    // Nếu là Chủ Nhật (0), quay về Thứ 2 bằng cách trừ đi 6 ngày.
-    // Nếu là các ngày từ Thứ 2 đến Thứ 7 (1-6), trừ (day - 1) ngày.
     const diff = vnTime.getUTCDate() - day + (day === 0 ? -6 : 1)
-    
     const monday = new Date(vnTime)
     monday.setUTCDate(diff)
     
@@ -142,7 +104,7 @@ export default function TimetablePage() {
 
       setProfile(profileData)
 
-      // 2. Tính toán tuần và xử lý tự động reset thời khóa biểu
+      // 2. Tính toán tuần và xử lý tự động reset trạng thái hoàn thành
       const vnMonday = getVietnamMonday()
       setCurrentWeekMonday(vnMonday)
 
@@ -150,12 +112,11 @@ export default function TimetablePage() {
       let currentCompleted: string[] = []
 
       if (savedWeekStart !== vnMonday) {
-        // Đã bước sang tuần mới hoặc lần đầu sử dụng -> Reset toàn bộ dữ liệu hoàn thành
+        // Tuần mới -> reset hoàn thành
         localStorage.setItem("student_x_timetable_week_start", vnMonday)
         localStorage.setItem("student_x_timetable_completed_slots", JSON.stringify([]))
         setCompletedSlots([])
       } else {
-        // Vẫn trong tuần cũ -> Nạp dữ liệu cũ
         const savedCompleted = localStorage.getItem("student_x_timetable_completed_slots")
         if (savedCompleted) {
           try {
@@ -167,22 +128,59 @@ export default function TimetablePage() {
         }
       }
 
+      // 3. Load thời khóa biểu tùy chỉnh nếu có
+      const savedCustomSlots = localStorage.getItem("student_x_custom_timetable_slots")
+      if (savedCustomSlots) {
+        try {
+          const parsed = JSON.parse(savedCustomSlots)
+          setSlots(parsed)
+        } catch (e) {
+          console.error("Lỗi đọc thời khóa biểu tùy chỉnh:", e)
+        }
+      }
+
       setLoading(false)
     }
 
     initPage()
   }, [router, supabase])
 
-  // Xử lý xác nhận hoàn thành / hủy hoàn thành ca học
+  // Lưu thông tin ca học đã chỉnh sửa
+  const handleSaveSlot = (updatedSlot: TimetableSlot) => {
+    const updatedSlots = { ...slots }
+    let found = false
+    
+    for (const timeKey in updatedSlots) {
+      for (const dayKey in updatedSlots[timeKey]) {
+        if (updatedSlots[timeKey][dayKey].id === updatedSlot.id) {
+          updatedSlots[timeKey][dayKey] = updatedSlot
+          found = true
+          break
+        }
+      }
+      if (found) break
+    }
+
+    setSlots(updatedSlots)
+    localStorage.setItem("student_x_custom_timetable_slots", JSON.stringify(updatedSlots))
+    setEditingSlot(null)
+  }
+
+  // Khôi phục thời khóa biểu về mặc định ban đầu
+  const handleResetTimetable = () => {
+    localStorage.removeItem("student_x_custom_timetable_slots")
+    setSlots(DEFAULT_TIMETABLE_SLOTS)
+    setShowResetConfirm(false)
+  }
+
+  // Xử lý hoàn thành/hủy hoàn thành ca học
   const handleToggleComplete = () => {
     if (!selectedSlot) return
 
     let updatedCompleted: string[]
     if (completedSlots.includes(selectedSlot.id)) {
-      // Nếu đã hoàn thành -> Hủy hoàn thành
       updatedCompleted = completedSlots.filter(id => id !== selectedSlot.id)
     } else {
-      // Nếu chưa hoàn thành -> Xác nhận hoàn thành
       updatedCompleted = [...completedSlots, selectedSlot.id]
     }
 
@@ -193,7 +191,7 @@ export default function TimetablePage() {
 
   // Tính phần trăm hoàn thành tuần
   const completionPercentage = useMemo(() => {
-    const totalSlots = 24 // 6 ngày * 4 ca
+    const totalSlots = 24
     return Math.round((completedSlots.length / totalSlots) * 100)
   }, [completedSlots])
 
@@ -205,14 +203,14 @@ export default function TimetablePage() {
     )
   }
 
-  // Hàm render giao diện từng ô ca học
+  // Render ô ca học
   const renderSlotCell = (slot: TimetableSlot) => {
     const isCompleted = completedSlots.includes(slot.id)
 
     return (
       <button
         key={slot.id}
-        onClick={() => setSelectedSlot(slot)}
+        onClick={() => isEditMode ? setEditingSlot(slot) : setSelectedSlot(slot)}
         className={cn(
           "w-full text-left p-4 rounded-xl border transition-all duration-300 relative overflow-hidden group select-none",
           isCompleted
@@ -220,7 +218,6 @@ export default function TimetablePage() {
             : "bg-[#15131F]/80 border-[#8C87A2]/10 text-[#8C87A2] hover:border-[#8C87A2]/30 hover:bg-[#1C1A2D]"
         )}
       >
-        {/* Glow Effect khi hoàn thành */}
         {isCompleted && (
           <div className="absolute inset-0 bg-[#C18CFF]/5 pointer-events-none" />
         )}
@@ -234,11 +231,15 @@ export default function TimetablePage() {
           )}>
             {slot.type}
           </span>
-          {isCompleted && (
+          {isEditMode ? (
+            <span className="flex h-5 w-5 items-center justify-center rounded-lg bg-[#C18CFF]/15 border border-[#C18CFF]/20 text-[#C18CFF] group-hover:bg-[#C18CFF] group-hover:text-[#0B0A13] transition-all">
+              <Edit2 className="h-3 w-3 stroke-[2.5]" />
+            </span>
+          ) : isCompleted ? (
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#C18CFF] text-[#0B0A13]">
               <Check className="h-3 w-3 stroke-[3]" />
             </span>
-          )}
+          ) : null}
         </div>
 
         <h3 className={cn(
@@ -258,7 +259,7 @@ export default function TimetablePage() {
 
   return (
     <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9] min-h-screen", inter.className)}>
-      {/* Header Điều hướng */}
+      {/* Header */}
       <header className="sticky top-0 z-40 border-b border-[#8C87A2]/10 bg-[#0B0A13]/90 px-4 py-4 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Link
@@ -278,23 +279,66 @@ export default function TimetablePage() {
       {/* Main Content */}
       <main className="mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 lg:px-8">
         
-        {/* Banner tiêu đề */}
+        {/* Banner */}
         <section className="mb-10">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
-              <p className={cn("mb-3 inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/20 bg-[#15131F] px-3.5 py-1.5 text-[9px] uppercase tracking-[0.2em] text-[#8C87A2]", jetbrainsMono.className)}>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#C18CFF] animate-pulse" />
-                Lịch trình thông minh
-              </p>
+              <div className="flex flex-wrap gap-3 items-center mb-3">
+                <p className={cn("inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/20 bg-[#15131F] px-3.5 py-1.5 text-[9px] uppercase tracking-[0.2em] text-[#8C87A2]", jetbrainsMono.className)}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C18CFF] animate-pulse" />
+                  Lịch trình thông minh
+                </p>
+                {isEditMode && (
+                  <p className={cn("inline-flex items-center gap-1.5 rounded-full border border-[#C18CFF]/20 bg-[#C18CFF]/5 px-3 py-1 text-[9px] uppercase tracking-[0.15em] text-[#C18CFF]", jetbrainsMono.className)}>
+                    Chế độ chỉnh sửa
+                  </p>
+                )}
+              </div>
               <h1 className={cn("text-5xl text-[#F1EDF9] font-normal leading-tight md:text-7xl", instrumentSerif.className)}>
                 Thời khóa biểu X
               </h1>
               <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#8C87A2]">
-                Thời khóa biểu tự động làm mới lúc 00:00 Thứ 2 hàng tuần (UTC+7). Bấm vào ca học để cập nhật tiến độ và thắp sáng không gian học tập.
+                Thời khóa biểu tự động làm mới lúc 00:00 Thứ 2 hàng tuần (UTC+7). {isEditMode ? "Chọn bất kỳ ca học nào để bắt đầu tùy chỉnh thông tin học tập." : "Bấm vào ca học để cập nhật tiến độ và thắp sáng không gian học tập."}
               </p>
+              
+              {/* Nút điều khiển chỉnh sửa */}
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Button
+                  onClick={() => setIsEditMode(!isEditMode)}
+                  className={cn(
+                    "px-5 py-2.5 rounded-xl border flex items-center gap-2 font-medium text-xs transition-all duration-300",
+                    isEditMode
+                      ? "bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] border-[#C18CFF]"
+                      : "bg-[#15131F] border-[#8C87A2]/10 hover:border-[#8C87A2]/30 text-[#F1EDF9]"
+                  )}
+                >
+                  {isEditMode ? (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Thoát tùy chỉnh</span>
+                    </>
+                  ) : (
+                    <>
+                      <Edit2 className="h-3.5 w-3.5" />
+                      <span>Tùy chỉnh lịch học</span>
+                    </>
+                  )}
+                </Button>
+                
+                {isEditMode && (
+                  <Button
+                    onClick={() => setShowResetConfirm(true)}
+                    variant="outline"
+                    className="px-5 py-2.5 rounded-xl border border-red-500/20 hover:border-red-500/40 bg-transparent text-red-400 hover:text-red-300 flex items-center gap-2 font-medium text-xs transition-colors"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span>Khôi phục mặc định</span>
+                  </Button>
+                )}
+              </div>
             </div>
 
-            {/* Trạng thái Tiến độ Tuần */}
+            {/* Trạng thái */}
             <div className="bg-[#15131F] border border-[#8C87A2]/10 rounded-2xl p-5 min-w-[280px]">
               <div className="flex justify-between items-center mb-3">
                 <span className="text-xs text-[#8C87A2] uppercase tracking-wider">Tiến độ tuần học</span>
@@ -319,7 +363,7 @@ export default function TimetablePage() {
           </div>
         </section>
 
-        {/* Bảng Thời Khóa Biểu (Lưới) */}
+        {/* Lưới Thời Khóa Biểu */}
         <section className="bg-[#15131F]/50 border border-[#8C87A2]/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left min-w-[1000px]">
@@ -344,14 +388,13 @@ export default function TimetablePage() {
                     <span className="block text-xs font-bold text-[#F1EDF9]/90">Ca Sáng</span>
                     <span className={cn("block mt-1.5 text-[10px] text-[#8C87A2]", jetbrainsMono.className)}>08:00 - 10:30</span>
                   </td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.sang.t2)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.sang.t3)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.sang.t4)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.sang.t5)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.sang.t6)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.sang.t7)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.sang.t2)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.sang.t3)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.sang.t4)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.sang.t5)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.sang.t6)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.sang.t7)}</td>
                   
-                  {/* Ô CHỦ NHẬT (Kéo dài 4 hàng) */}
                   <td rowSpan={4} className="p-4 bg-[#0B0A13]/30 text-center align-middle w-[15%]">
                     <div className="flex flex-col items-center justify-center space-y-4 px-2 py-10">
                       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#C18CFF]/10 border border-[#C18CFF]/25 shadow-[0_0_15px_rgba(193,140,255,0.15)]">
@@ -375,12 +418,12 @@ export default function TimetablePage() {
                     <span className="block text-xs font-bold text-[#F1EDF9]/90">Ca Chiều 1</span>
                     <span className={cn("block mt-1.5 text-[10px] text-[#8C87A2]", jetbrainsMono.className)}>14:00 - 16:30</span>
                   </td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.chieu1.t2)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.chieu1.t3)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.chieu1.t4)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.chieu1.t5)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.chieu1.t6)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.chieu1.t7)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu1.t2)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu1.t3)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu1.t4)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu1.t5)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu1.t6)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu1.t7)}</td>
                 </tr>
 
                 {/* HÀNG 3: CA CHIỀU 2 */}
@@ -389,12 +432,12 @@ export default function TimetablePage() {
                     <span className="block text-xs font-bold text-[#F1EDF9]/90">Ca Chiều 2</span>
                     <span className={cn("block mt-1.5 text-[10px] text-[#8C87A2]", jetbrainsMono.className)}>16:45 - 19:15</span>
                   </td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.chieu2.t2)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.chieu2.t3)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.chieu2.t4)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.chieu2.t5)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.chieu2.t6)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.chieu2.t7)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu2.t2)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu2.t3)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu2.t4)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu2.t5)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu2.t6)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu2.t7)}</td>
                 </tr>
 
                 {/* HÀNG 4: CA TỐI */}
@@ -403,12 +446,12 @@ export default function TimetablePage() {
                     <span className="block text-xs font-bold text-[#F1EDF9]/90">Ca Tối</span>
                     <span className={cn("block mt-1.5 text-[10px] text-[#8C87A2]", jetbrainsMono.className)}>20:00 - 22:30</span>
                   </td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.toi.t2)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.toi.t3)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.toi.t4)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.toi.t5)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.toi.t6)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(TIMETABLE_SLOTS.toi.t7)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.toi.t2)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.toi.t3)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.toi.t4)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.toi.t5)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.toi.t6)}</td>
+                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.toi.t7)}</td>
                 </tr>
               </tbody>
             </table>
@@ -463,7 +506,6 @@ export default function TimetablePage() {
               </div>
             </div>
 
-            {/* Chi tiết ca học */}
             <div className="bg-[#0B0A13] border border-[#8C87A2]/10 rounded-xl p-4 mb-6 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-xs text-[#8C87A2]">Môn học</span>
@@ -479,20 +521,19 @@ export default function TimetablePage() {
               </div>
             </div>
 
-            {/* Nút Hành động */}
             <div className="flex flex-col gap-2.5">
               {completedSlots.includes(selectedSlot.id) ? (
                 <Button
                   onClick={handleToggleComplete}
                   variant="destructive"
-                  className="w-full py-5 rounded-xl bg-red-950/40 text-red-400 border border-red-900/35 hover:bg-red-900/40 font-medium"
+                  className="w-full py-5 rounded-xl bg-red-950/40 text-red-400 border border-red-900/35 hover:bg-red-900/40 font-medium text-xs"
                 >
                   Hủy xác nhận hoàn thành
                 </Button>
               ) : (
                 <Button
                   onClick={handleToggleComplete}
-                  className="w-full py-5 rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold tracking-wide"
+                  className="w-full py-5 rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold tracking-wide text-xs"
                 >
                   Xác nhận đã hoàn thành ca học
                 </Button>
@@ -501,13 +542,30 @@ export default function TimetablePage() {
               <Button
                 onClick={() => setSelectedSlot(null)}
                 variant="outline"
-                className="w-full py-5 rounded-xl border-[#8C87A2]/20 hover:border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent font-medium"
+                className="w-full py-5 rounded-xl border-[#8C87A2]/20 hover:border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent font-medium text-xs"
               >
                 Đóng
               </Button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Tùy chỉnh ca học */}
+      {editingSlot && (
+        <EditSlotModal
+          slot={editingSlot}
+          onClose={() => setEditingSlot(null)}
+          onSave={handleSaveSlot}
+        />
+      )}
+
+      {/* Modal Xác nhận Reset */}
+      {showResetConfirm && (
+        <ConfirmResetModal
+          onClose={() => setShowResetConfirm(false)}
+          onConfirm={handleResetTimetable}
+        />
       )}
     </StudentShell>
   )
