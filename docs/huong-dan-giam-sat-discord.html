@@ -46,7 +46,7 @@
     /* Premium Header */
     header {
       text-align: center;
-      margin-bottom: 3rem;
+      margin-bottom: 2rem;
       position: relative;
     }
 
@@ -97,6 +97,56 @@
       max-width: 600px;
       margin: 0 auto;
       font-style: italic;
+      margin-bottom: 2rem;
+    }
+
+    /* Tab Switcher Styles */
+    .tabs-container {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+
+    .tab-button {
+      background-color: var(--secondary);
+      border: 1px solid var(--card-border);
+      color: var(--muted-fg);
+      padding: 0.85rem 2rem;
+      border-radius: 99px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tab-button:hover {
+      border-color: rgba(193, 140, 255, 0.3);
+      color: var(--fg);
+    }
+
+    .tab-button.active {
+      background-color: var(--primary);
+      border-color: var(--primary);
+      color: var(--bg);
+      box-shadow: 0 0 20px rgba(193, 140, 255, 0.4);
+    }
+
+    .tab-panel {
+      display: none;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     /* Grid Layout */
@@ -294,55 +344,122 @@
       <p class="subtitle">Tài liệu chi tiết hướng dẫn thiết lập, liên kết và vận hành hệ thống giám sát học tập tích hợp thời gian thực.</p>
     </header>
 
-    <div class="sections-grid">
-      
-      <!-- Card Overview -->
-      <section class="card">
-        <div class="card-header">
-          <div class="step-number">00</div>
-          <h2>Cơ Chế Hoạt Động Tổng Quan</h2>
-        </div>
-        <p>Hệ thống tự động hóa quá trình điểm danh học sinh thông qua kênh thoại (Voice Channel) trên Discord, đồng bộ trực tiếp lên <strong>Đài Giám Sát Học Tập</strong> và tự động tích hợp hoàn thành ca học trong thời khóa biểu học tập của học sinh.</p>
-        
-        <div class="flow-chart">
-          <div class="flow-node" style="border-color: var(--primary);">
-            🎧 Học sinh Join Voice Channel Lớp Học (Discord)
-          </div>
-          <div class="flow-arrow">▼</div>
-          <div class="flow-node">
-            🤖 Discord Bot bắt đầu tính thời gian và cập nhật Realtime (30s/lần)
-          </div>
-          <div class="flow-arrow">▼</div>
-          <div class="flow-node" style="border-color: var(--success);">
-            📊 Đài Giám Sát Web hiển thị: "Đang học qua Discord 🎧"
-          </div>
-          <div class="flow-arrow">▼</div>
-          <div class="flow-node">
-            🚫 Chống AFK: Tự động dừng tính thời gian nếu học sinh tắt tai nghe (Deafen)
-          </div>
-          <div class="flow-arrow">▼</div>
-          <div class="flow-node" style="border-color: var(--primary);">
-            ✅ Đạt 130 phút -> Web tự động hoàn thành checklist ca học Discord
-          </div>
-        </div>
-      </section>
+    <!-- Tab Buttons -->
+    <div class="tabs-container">
+      <button id="btn-student" class="tab-button active" onclick="switchTab('student')">
+        👤 Dành Cho Học Sinh
+      </button>
+      <button id="btn-teacher" class="tab-button" onclick="switchTab('teacher')">
+        🎓 Dành Cho Giáo Viên
+      </button>
+    </div>
 
-      <!-- Card Step 1 -->
-      <section class="card">
-        <div class="card-header">
-          <div class="step-number">01</div>
-          <h2>Chạy SQL Database Migration</h2>
-        </div>
-        <p>Để hỗ trợ lưu trữ trạng thái học tập qua Discord của học sinh, thầy cần bổ sung cấu trúc cơ sở dữ liệu trên trang quản trị Supabase của mình.</p>
-        <div class="alert">
-          <div class="alert-icon">⚠️</div>
-          <div class="alert-content">
-            Thầy mở trang quản trị <strong>Supabase Dashboard</strong> -> chọn <strong>SQL Editor</strong> -> tạo một Query mới, sao chép nội dung tệp tin bên dưới và bấm <strong>Run</strong>.
+    <!-- PANEL HỌC SINH -->
+    <div id="panel-student" class="tab-panel active">
+      <div class="sections-grid">
+        
+        <section class="card">
+          <div class="card-header">
+            <div class="step-number">01</div>
+            <h2>Bật Chế Độ Nhà Phát Triển (Developer Mode)</h2>
           </div>
-        </div>
-        <div class="code-container">
-          <div class="code-label">migration-discord-monitor.sql</div>
-          <pre><code>-- Bổ sung trường discord_id vào bảng profiles
+          <p>Để lấy được mã định danh tài khoản cá nhân, bạn cần bật công cụ nhà phát triển được tích hợp sẵn trên ứng dụng Discord:</p>
+          <ol>
+            <li>Mở ứng dụng Discord trên máy tính hoặc điện thoại.</li>
+            <li>Nhấn vào biểu tượng bánh răng <strong>Cài đặt người dùng</strong> (User Settings) ở góc dưới cùng bên trái.</li>
+            <li>Cuộn xuống danh mục bên trái, tìm và chọn mục <strong>Nâng cao</strong> (Advanced) nằm ở phần Cài đặt ứng dụng.</li>
+            <li>Kích hoạt tùy chọn <strong>Chế độ dành cho nhà phát triển</strong> (Developer Mode).</li>
+          </ol>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div class="step-number">02</div>
+            <h2>Sao Chép ID Tài Khoản Discord</h2>
+          </div>
+          <p>Sau khi đã kích hoạt chế độ nhà phát triển, bạn tiến hành lấy mã ID tài khoản của mình:</p>
+          <ol>
+            <li>Nhìn vào avatar hoặc tên tài khoản của bạn (ở góc dưới bên trái hoặc trong danh sách thành viên server).</li>
+            <li>Click chuột phải (hoặc nhấn giữ trên điện thoại) vào tên/avatar của chính mình.</li>
+            <li>Chọn dòng cuối cùng: <strong>Sao chép ID người dùng</strong> (Copy User ID).</li>
+            <li>Bạn sẽ thu được một dãy số dài (Ví dụ: <code>318263590503694336</code>). Đây chính là ID định danh Discord của bạn.</li>
+          </ol>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div class="step-number">03</div>
+            <h2>Liên Kết ID Lên Hệ Thống Web</h2>
+          </div>
+          <p>Bước cuối cùng để hoàn tất việc kết nối tài khoản giúp hệ thống ghi nhận thời gian học voice tự động:</p>
+          <ol>
+            <li>Đăng nhập tài khoản học tập của bạn trên Website ExamHub.</li>
+            <li>Truy cập vào trang <strong>Hồ sơ cá nhân</strong> (Profile) -> nhấn nút <strong>Chỉnh sửa</strong> (Edit).</li>
+            <li>Tìm đến trường nhập <strong>Discord ID</strong> (nằm ngay dưới mục Số điện thoại).</li>
+            <li>Dán dãy số ID đã sao chép ở Bước 2 vào và bấm <strong>Lưu thay đổi</strong>.</li>
+          </ol>
+          <div class="alert">
+            <div class="alert-icon">✨</div>
+            <div class="alert-content">
+              <strong>Hoàn thành!</strong> Giờ đây mỗi khi bạn tham gia học voice trên Discord lớp học, hệ thống sẽ tự động ghi nhận thời gian và tích hoàn thành nhiệm vụ thời khóa biểu cho bạn.
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- PANEL GIÁO VIÊN -->
+    <div id="panel-teacher" class="tab-panel">
+      <div class="sections-grid">
+        
+        <!-- Card Overview -->
+        <section class="card">
+          <div class="card-header">
+            <div class="step-number">00</div>
+            <h2>Cơ Chế Hoạt Động Tổng Quan</h2>
+          </div>
+          <p>Hệ thống tự động hóa quá trình điểm danh học sinh thông qua kênh thoại (Voice Channel) trên Discord, đồng bộ trực tiếp lên <strong>Đài Giám Sát Học Tập</strong> và tự động tích hợp hoàn thành ca học trong thời khóa biểu học tập của học sinh.</p>
+          
+          <div class="flow-chart">
+            <div class="flow-node" style="border-color: var(--primary);">
+              🎧 Học sinh tham gia Kênh thoại Lớp Học (Discord)
+            </div>
+            <div class="flow-arrow">▼</div>
+            <div class="flow-node">
+              🤖 Discord Bot ghi nhận trạng thái và gửi đồng bộ Web API (30s/lần)
+            </div>
+            <div class="flow-arrow">▼</div>
+            <div class="flow-node" style="border-color: var(--success);">
+              📊 Màn hình giám sát của Thầy hiển thị: "Đang học qua Discord 🟢"
+            </div>
+            <div class="flow-arrow">▼</div>
+            <div class="flow-node">
+              🚫 Chống AFK: Tự động cảnh báo và dừng tính giờ nếu học sinh tắt tai nghe (Deafen)
+            </div>
+            <div class="flow-arrow">▼</div>
+            <div class="flow-node" style="border-color: var(--primary);">
+              ✅ Đạt 130 phút -> Web tự động hoàn thành checklist ca học Discord
+            </div>
+          </div>
+        </section>
+
+        <!-- Card Step 1 -->
+        <section class="card">
+          <div class="card-header">
+            <div class="step-number">01</div>
+            <h2>Chạy SQL Database Migration</h2>
+          </div>
+          <p>Thầy cần cấu hình cấu trúc cơ sở dữ liệu trên Supabase SQL Editor để hỗ trợ lưu trữ trạng thái học và lịch sử điểm danh Discord của học sinh.</p>
+          <div class="alert">
+            <div class="alert-icon">💡</div>
+            <div class="alert-content">
+              Mở <strong>Supabase Dashboard</strong> -> <strong>SQL Editor</strong> -> Tạo Query mới, dán đoạn mã bên dưới và nhấn <strong>Run</strong>:
+            </div>
+          </div>
+          <div class="code-container">
+            <div class="code-label">migration-discord-monitor.sql</div>
+            <pre><code>-- Bổ sung trường discord_id vào bảng profiles
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS discord_id TEXT UNIQUE;
 
 -- Điều chỉnh trạng thái hỗ trợ trong study_sessions
@@ -354,86 +471,87 @@ ALTER TABLE public.study_sessions ADD CONSTRAINT study_sessions_status_check
 ALTER TABLE public.study_sessions ADD COLUMN IF NOT EXISTS discord_duration INTEGER DEFAULT 0;
 ALTER TABLE public.study_sessions ADD COLUMN IF NOT EXISTS discord_deafened BOOLEAN DEFAULT false;
 ALTER TABLE public.study_sessions ADD COLUMN IF NOT EXISTS discord_last_active TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());</code></pre>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      <!-- Card Step 2 -->
-      <section class="card">
-        <div class="card-header">
-          <div class="step-number">02</div>
-          <h2>Liên Kết Tài Khoản Discord của Học Sinh</h2>
-        </div>
-        <p>Để hệ thống nhận biết chính xác học sinh nào đang tham gia thoại Discord, thầy cần cập nhật tài khoản định danh Discord của học sinh vào cơ sở dữ liệu.</p>
-        <ol>
-          <li>Bật <strong>Developer Mode</strong> trên cài đặt Discord cá nhân của thầy.</li>
-          <li>Click chuột phải vào tài khoản của học sinh trên Discord -> Chọn <strong>Copy User ID</strong> (Sẽ thu được dãy số có định dạng ví dụ như: <code>392182049182390281</code>).</li>
-          <li>Truy cập vào Supabase table editor -> Mở bảng <code>profiles</code> -> Tìm đúng dòng của học sinh -> Nhập dãy số ID vừa copy vào cột <code>discord_id</code>.</li>
-        </ol>
-      </section>
+        <!-- Card Step 2 -->
+        <section class="card">
+          <div class="card-header">
+            <div class="step-number">02</div>
+            <h2>Liên Kết & Giám Sát Tài Khoản Học Sinh</h2>
+          </div>
+          <p>Sau khi học sinh đã nhập Discord ID trên tài khoản của mình, thầy chỉ cần thực hiện kết nối trên giao diện quản trị để bắt đầu quan sát học sinh đó:</p>
+          <ol>
+            <li>Truy cập vào <strong>Đài Giám Sát Học Tập</strong> trên Web.</li>
+            <li>Tại phần <strong>Kết nối học sinh</strong>, nhập chính xác <strong>Email đăng ký</strong> của học sinh rồi ấn <strong>Kết nối</strong>.</li>
+            <li>Sau khi kết nối thành công, tên học sinh sẽ xuất hiện trong danh sách lựa chọn nhanh.</li>
+            <li>Thầy chuyển sang tab <strong>Giám sát Discord</strong> để theo dõi trực quan biểu đồ thời gian học/treo máy và nhật ký chi tiết các cuộc gọi.</li>
+          </ol>
+        </section>
 
-      <!-- Card Step 3 -->
-      <section class="card">
-        <div class="card-header">
-          <div class="step-number">03</div>
-          <h2>Cấu Hình Biến Môi Trường (Environment Variables)</h2>
-        </div>
-        <p>Để đồng bộ an toàn từ xa, hệ thống Next.js Web và Discord Bot cần cấu hình các thông số bảo mật liên kết:</p>
-        
-        <p><strong>A. Cấu hình trên Vercel Dashboard (Dành cho Web):</strong></p>
-        <ul>
-          <li><strong><code>SUPABASE_SERVICE_ROLE_KEY</code></strong>: Dùng để cập nhật trực tiếp checklist học tập của học sinh mà không bị chặn bởi bộ lọc chính sách bảo mật RLS.</li>
-          <li><strong><code>DISCORD_SYNC_SECRET</code></strong>: Đặt mã token bảo mật bất kỳ (Ví dụ: <code>super_secret_discord_desk_key</code>) dùng để kiểm soát quyền gọi Webhook.</li>
-        </ul>
+        <!-- Card Step 3 -->
+        <section class="card">
+          <div class="card-header">
+            <div class="step-number">03</div>
+            <h2>Cấu Hình Biến Môi Trường (Environment Variables)</h2>
+          </div>
+          <p>Để đảm bảo luồng đồng bộ từ Discord Bot về Web Next.js được an toàn, thầy cần cấu hình các biến môi trường sau:</p>
+          
+          <p><strong>A. Cài đặt trên Vercel Dashboard (Cho Web):</strong></p>
+          <ul>
+            <li><strong><code>SUPABASE_SERVICE_ROLE_KEY</code></strong>: Dùng để cập nhật trực tiếp checklist học tập của học sinh mà không bị chặn bởi bộ lọc chính sách bảo mật RLS.</li>
+            <li><strong><code>DISCORD_SYNC_SECRET</code></strong>: Đặt mã token bảo mật bất kỳ (Ví dụ: <code>discord_sync_secret_token_2026</code>) dùng để kiểm soát quyền gọi Webhook.</li>
+          </ul>
 
-        <p><strong>B. Cấu hình file .env (Dành cho Discord Bot):</strong></p>
-        <p>Tạo một tệp tin <code>.env</code> đặt trong thư mục chạy Bot Discord của thầy:</p>
-        <div class="code-container">
-          <div class="code-label">.env</div>
-          <pre><code>DISCORD_BOT_TOKEN=TOKEN_BOT_DISCORD_CUA_BAN
+          <p><strong>B. Cấu hình file .env (Cho Discord Bot):</strong></p>
+          <p>Tạo một tệp tin <code>.env</code> đặt trong thư mục chạy Bot Discord của thầy:</p>
+          <div class="code-container">
+            <div class="code-label">.env</div>
+            <pre><code>DISCORD_BOT_TOKEN=TOKEN_BOT_DISCORD_CUA_BAN
 CLASS_VOICE_CHANNEL_ID=ID_PHONG_THOAI_LOP_HOC_TREN_DISCORD
 WEB_API_URL=https://examhub.vercel.app/api/study-sessions/discord-sync
-DISCORD_SYNC_SECRET=super_secret_discord_desk_key</code></pre>
-        </div>
-      </section>
+DISCORD_SYNC_SECRET=discord_sync_secret_token_2026</code></pre>
+          </div>
+        </section>
 
-      <!-- Card Step 4 -->
-      <section class="card">
-        <div class="card-header">
-          <div class="step-number">04</div>
-          <h2>Khởi Chạy Discord Bot</h2>
-        </div>
-        <p>Mã nguồn bot Discord đã được viết sẵn tại đường dẫn thư mục: <code>scripts/discord-bot/tracker.js</code>.</p>
-        <p>Để khởi chạy bot:</p>
-        <ol>
-          <li>Di chuyển vào thư mục bot và cài đặt các thư viện cần thiết:
-            <div class="code-container" style="margin-top: 0.5rem;">
-              <pre><code>npm install discord.js axios dotenv</code></pre>
-            </div>
-          </li>
-          <li>Khởi động bot Discord lên để lắng nghe:
-            <div class="code-container" style="margin-top: 0.5rem;">
-              <pre><code>node tracker.js</code></pre>
-            </div>
-          </li>
-        </ol>
-        <p><em>Lưu ý: Thầy có thể triển khai chạy bot này trên máy tính cá nhân trong suốt buổi học hoặc lưu trữ trực tiếp trên máy chủ VPS để hệ thống hoạt động 24/7.</em></p>
-      </section>
+        <!-- Card Step 4 -->
+        <section class="card">
+          <div class="card-header">
+            <div class="step-number">04</div>
+            <h2>Khởi Chạy Discord Bot</h2>
+          </div>
+          <p>Mã nguồn bot Discord đã được chuẩn bị tại: <code>scripts/discord-bot/tracker.js</code>.</p>
+          <p>Các bước khởi chạy bot:</p>
+          <ol>
+            <li>Mở Terminal tại thư mục của dự án và cài đặt dependencies:
+              <div class="code-container" style="margin-top: 0.5rem;">
+                <pre><code>npm install discord.js axios dotenv</code></pre>
+              </div>
+            </li>
+            <li>Khởi động bot để bắt đầu lắng nghe sự kiện thoại:
+              <div class="code-container" style="margin-top: 0.5rem;">
+                <pre><code>node scripts/discord-bot/tracker.js</code></pre>
+              </div>
+            </li>
+          </ol>
+          <p><em>Lưu ý: Để hệ thống hoạt động 24/7 không gián đoạn, thầy nên triển khai chạy Bot này trên các máy chủ VPS (như Render, PM2 hoặc Docker).</em></p>
+        </section>
 
-      <!-- Card Step 5 -->
-      <section class="card">
-        <div class="card-header">
-          <div class="step-number">05</div>
-          <h2>Theo Dõi Trực Quan Trên Đài Giám Sát</h2>
-        </div>
-        <p>Khi các bước cấu hình hoàn tất, thầy chỉ cần truy cập vào <strong>Đài Giám Sát Học Tập</strong> trên Web để xem kết quả:</p>
-        <ul>
-          <li><strong>Theo dõi Realtime</strong>: Trạng thái của học sinh tự động đổi sang <code>Đang học qua Discord 🎧</code> màu xanh khi bắt đầu vào phòng học.</li>
-          <li><strong>Cảnh báo AFK 🚫</strong>: Nếu học sinh tắt tai nghe hoặc tắt tiếng (Mute/Deafen) để treo máy, giao diện lập tức nhấp nháy dòng chữ màu cam <code>Treo máy/Tắt tiếng Discord 🚫</code> và phát âm thanh/hiển thị cảnh báo trực quan cho giáo viên biết.</li>
-          <li><strong>Đo lường thời gian thực tế</strong>: Thanh tiến độ YPT-style sẽ hiển thị rõ ràng số phút học tích lũy (ví dụ: <em>Đã học: 45 / 130 phút</em>).</li>
-          <li><strong>Tự động duyệt Checklist</strong>: Khi số phút vượt ngưỡng 130 phút, một checklist nhiệm vụ trên trang cá nhân của học sinh sẽ tự động được đánh dấu hoàn thành 100% thời lượng bài học.</li>
-        </ul>
-      </section>
+        <!-- Card Step 5 -->
+        <section class="card">
+          <div class="card-header">
+            <div class="step-number">05</div>
+            <h2>Giám Sát Trực Quan Trên Đài Giám Sát</h2>
+          </div>
+          <p>Khi học sinh tham gia học, thầy có thể giám sát toàn bộ tiến trình qua Web:</p>
+          <ul>
+            <li><strong>Trạng thái Realtime 🎧</strong>: Tự động đổi trạng thái sang <code>Đang học qua Discord 🟢</code> màu xanh lá.</li>
+            <li><strong>Phát hiện treo máy (AFK) 🚫</strong>: Nếu học sinh tắt tai nghe (Deafen) quá 10 phút, hệ thống lập tức ghi nhận trạng thái là <code>discord_afk</code>, nhấp nháy đỏ trên Đài Giám Sát của thầy và gửi thông báo nhắc nhở trực tiếp tới học sinh.</li>
+            <li><strong>Thống kê thời lượng</strong>: Hệ thống vẽ biểu đồ cột thể hiện chính xác số phút học thực tế (xanh lá) và số phút treo máy (vàng cam) của từng ngày trong tuần.</li>
+          </ul>
+        </section>
 
+      </div>
     </div>
 
     <footer>
@@ -442,5 +560,20 @@ DISCORD_SYNC_SECRET=super_secret_discord_desk_key</code></pre>
 
   </div>
 
+  <script>
+    function switchTab(role) {
+      // Toggle buttons
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.getElementById('btn-' + role).classList.add('active');
+
+      // Toggle panels
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      document.getElementById('panel-' + role).classList.add('active');
+    }
+  </script>
 </body>
 </html>
