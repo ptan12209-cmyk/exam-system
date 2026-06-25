@@ -165,7 +165,8 @@ export default function TeacherMonitorPage() {
               <DiscordTab 
                 processedDiscordLogs={processedDiscordLogs} 
                 discordLogs={discordLogs} 
-                afkWarning={afkWarning} 
+                afkWarning={afkWarning}
+                studentId={selectedStudent.id}
               />
             )}
             {studentTab === "timetable" && <TimetableTab data={data} />}

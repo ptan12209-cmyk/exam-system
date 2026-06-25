@@ -8,11 +8,12 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
 const REQUIRED_MINUTES = 130 // 2 hours 10 minutes of active voice time is the threshold for a 2.5-hour class
+const STREAK_THRESHOLD_MINUTES = 60 // Cần ít nhất 60 phút học thực chất để tính 1 ngày streak
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { discord_id, status, duration_seconds, deafened, secret_token } = body
+    const { discord_id, status, duration_seconds, deafened, muted_seconds, secret_token } = body
 
     // 1. Authenticate webhook secret
     const expectedToken = process.env.DISCORD_SYNC_SECRET || "discord_sync_secret_token_2026"
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
     // 2. Fetch student profile linked to this discord_id
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name")
+      .select("id, full_name, discord_streak, last_discord_study_date")
       .eq("discord_id", discord_id)
       .single()
 
@@ -103,6 +104,8 @@ export async function POST(req: Request) {
       .limit(1)
       .maybeSingle()
 
+    const mutedSecs = typeof muted_seconds === 'number' ? Math.max(0, muted_seconds) : 0
+
     if (status !== 'offline') {
       if (!openLog) {
         const joinedAtDate = duration_seconds
@@ -117,7 +120,8 @@ export async function POST(req: Request) {
             joined_at: joinedAtDate.toISOString(),
             session_date: new Date().toISOString().split('T')[0],
             total_active_seconds: duration_seconds || 0,
-            total_afk_seconds: 0
+            total_afk_seconds: 0,
+            total_muted_seconds: mutedSecs
           })
       } else {
         const joinedAt = new Date(openLog.joined_at)
@@ -129,11 +133,13 @@ export async function POST(req: Request) {
           .from("discord_attendance_logs")
           .update({
             total_active_seconds: activeSeconds,
-            total_afk_seconds: afkSeconds
+            total_afk_seconds: afkSeconds,
+            total_muted_seconds: mutedSecs
           })
           .eq("id", openLog.id)
       }
     } else {
+      // Kết thúc phiên học (offline) → đóng log và tính streak
       if (openLog) {
         const joinedAt = new Date(openLog.joined_at)
         const elapsedSeconds = Math.max(0, Math.floor((Date.now() - joinedAt.getTime()) / 1000))
@@ -145,10 +151,14 @@ export async function POST(req: Request) {
           .update({
             left_at: nowIso,
             total_active_seconds: activeSeconds,
-            total_afk_seconds: afkSeconds
+            total_afk_seconds: afkSeconds,
+            total_muted_seconds: mutedSecs
           })
           .eq("id", openLog.id)
       }
+
+      // Tính toán streak khi học sinh offline
+      await updateStreak(profile)
     }
 
     // 4. Auto-complete the ca học task if study duration meets the threshold
@@ -209,4 +219,54 @@ export async function POST(req: Request) {
     console.error("Discord sync API error:", error)
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
+}
+
+// Tính toán và cập nhật chuỗi ngày học streak
+async function updateStreak(profile: { id: string; discord_streak: number | null; last_discord_study_date: string | null }) {
+  const todayStr = new Date().toISOString().split('T')[0]
+
+  // Lấy tổng thời gian học thực trong ngày hôm nay
+  const { data: todayLogs } = await supabaseAdmin
+    .from("discord_attendance_logs")
+    .select("total_active_seconds, total_muted_seconds")
+    .eq("student_id", profile.id)
+    .eq("session_date", todayStr)
+
+  if (!todayLogs || todayLogs.length === 0) return
+
+  const totalActiveToday = todayLogs.reduce((sum, log) => sum + (log.total_active_seconds || 0), 0)
+  const totalMutedToday = todayLogs.reduce((sum, log) => sum + (log.total_muted_seconds || 0), 0)
+  const effectiveMinutes = Math.max(0, totalActiveToday - totalMutedToday) / 60
+
+  if (effectiveMinutes < STREAK_THRESHOLD_MINUTES) return
+
+  const currentStreak = profile.discord_streak || 0
+  const lastDate = profile.last_discord_study_date
+
+  let newStreak = 1
+
+  if (lastDate) {
+    if (lastDate === todayStr) {
+      // Đã tính streak cho ngày hôm nay rồi → giữ nguyên
+      return
+    }
+
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
+
+    if (lastDate === yesterdayStr) {
+      // Học liên tiếp → tăng streak
+      newStreak = currentStreak + 1
+    }
+    // Ngược lại (quá 1 ngày) → reset về 1
+  }
+
+  await supabaseAdmin
+    .from("profiles")
+    .update({
+      discord_streak: newStreak,
+      last_discord_study_date: todayStr
+    })
+    .eq("id", profile.id)
 }

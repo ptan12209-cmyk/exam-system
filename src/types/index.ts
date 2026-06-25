@@ -591,6 +591,7 @@ export interface DiscordLog {
     left_at: string | null
     total_active_seconds: number
     total_afk_seconds: number
+    total_muted_seconds: number
 }
 
 export interface StudentTimetableEntry {
