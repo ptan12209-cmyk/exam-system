@@ -197,7 +197,7 @@ export default function TimetablePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
+      <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center">
         <Loading label="Đang đồng bộ thời khóa biểu Dream Engine..." />
       </div>
     )
@@ -214,29 +214,29 @@ export default function TimetablePage() {
         className={cn(
           "w-full text-left p-4 rounded-xl border transition-all duration-300 relative overflow-hidden group select-none",
           isCompleted
-            ? "bg-[#1C1A2E] border-[#C18CFF] shadow-[0_0_15px_rgba(193,140,255,0.25)] text-[#F1EDF9] hover:shadow-[0_0_20px_rgba(193,140,255,0.4)]"
-            : "bg-[#15131F]/80 border-[#8C87A2]/10 text-[#8C87A2] hover:border-[#8C87A2]/30 hover:bg-[#1C1A2D]"
+            ? "bg-[hsl(var(--secondary))] border-[hsl(var(--primary))] shadow-[0_0_15px_hsl(var(--primary)/0.25)] text-[hsl(var(--foreground))] hover:shadow-[0_0_20px_hsl(var(--primary)/0.4)]"
+            : "bg-[hsl(var(--card))]/80 border-[hsl(var(--border))]/30 text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--muted-foreground))]/50 hover:bg-[hsl(var(--secondary))]"
         )}
       >
         {isCompleted && (
-          <div className="absolute inset-0 bg-[#C18CFF]/5 pointer-events-none" />
+          <div className="absolute inset-0 bg-[hsl(var(--primary))]/5 pointer-events-none" />
         )}
 
         <div className="flex items-start justify-between">
           <span className={cn(
             "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded",
             isCompleted
-              ? "bg-[#C18CFF]/20 text-[#C18CFF]"
-              : "bg-[#8C87A2]/10 text-[#8C87A2]"
+              ? "bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))]"
+              : "bg-[hsl(var(--muted-foreground))]/10 text-[hsl(var(--muted-foreground))]"
           )}>
             {slot.type}
           </span>
           {isEditMode ? (
-            <span className="flex h-5 w-5 items-center justify-center rounded-lg bg-[#C18CFF]/15 border border-[#C18CFF]/20 text-[#C18CFF] group-hover:bg-[#C18CFF] group-hover:text-[#0B0A13] transition-all">
+            <span className="flex h-5 w-5 items-center justify-center rounded-lg bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] group-hover:bg-[hsl(var(--primary))] group-hover:text-[hsl(var(--primary-foreground))] transition-all">
               <Edit2 className="h-3 w-3 stroke-[2.5]" />
             </span>
           ) : isCompleted ? (
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#C18CFF] text-[#0B0A13]">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]">
               <Check className="h-3 w-3 stroke-[3]" />
             </span>
           ) : null}
@@ -244,12 +244,12 @@ export default function TimetablePage() {
 
         <h3 className={cn(
           "mt-3 text-lg font-medium leading-none tracking-tight",
-          isCompleted ? "text-[#F1EDF9]" : "text-[#F1EDF9]/70 group-hover:text-[#F1EDF9]"
+          isCompleted ? "text-[hsl(var(--foreground))]" : "text-[hsl(var(--foreground))]/70 group-hover:text-[hsl(var(--foreground))]"
         )}>
           {slot.subject}
         </h3>
 
-        <div className="mt-4 flex items-center gap-1.5 text-[11px] text-[#8C87A2]">
+        <div className="mt-4 flex items-center gap-1.5 text-[11px] text-[hsl(var(--muted-foreground))]">
           <Clock className="h-3 w-3" />
           <span className={jetbrainsMono.className}>{slot.time}</span>
         </div>
@@ -258,19 +258,19 @@ export default function TimetablePage() {
   }
 
   return (
-    <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9] min-h-screen", inter.className)}>
+    <StudentShell className={cn("bg-[hsl(var(--background))] text-[hsl(var(--foreground))] min-h-screen", inter.className)}>
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-[#8C87A2]/10 bg-[#0B0A13]/90 px-4 py-4 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/90 px-4 py-4 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Link
             href="/student/X/dashboard"
-            className="flex items-center gap-2 text-xs text-[#8C87A2] hover:text-[#C18CFF] transition-colors group"
+            className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors group"
           >
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
             <span>Dashboard X</span>
           </Link>
           
-          <div className={cn("text-[10px] font-bold uppercase tracking-[0.25em] text-[#C18CFF] animate-pulse", jetbrainsMono.className)}>
+          <div className={cn("text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--primary))] animate-pulse", jetbrainsMono.className)}>
             Space X Timetable
           </div>
         </div>
@@ -284,20 +284,20 @@ export default function TimetablePage() {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
               <div className="flex flex-wrap gap-3 items-center mb-3">
-                <p className={cn("inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/20 bg-[#15131F] px-3.5 py-1.5 text-[9px] uppercase tracking-[0.2em] text-[#8C87A2]", jetbrainsMono.className)}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#C18CFF] animate-pulse" />
+                <p className={cn("inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/20 bg-[hsl(var(--card))] px-3.5 py-1.5 text-[9px] uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--primary))] animate-pulse" />
                   Lịch trình thông minh
                 </p>
                 {isEditMode && (
-                  <p className={cn("inline-flex items-center gap-1.5 rounded-full border border-[#C18CFF]/20 bg-[#C18CFF]/5 px-3 py-1 text-[9px] uppercase tracking-[0.15em] text-[#C18CFF]", jetbrainsMono.className)}>
+                  <p className={cn("inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--primary))]/20 bg-[hsl(var(--primary))]/5 px-3 py-1 text-[9px] uppercase tracking-[0.15em] text-[hsl(var(--primary))]", jetbrainsMono.className)}>
                     Chế độ chỉnh sửa
                   </p>
                 )}
               </div>
-              <h1 className={cn("text-5xl text-[#F1EDF9] font-normal leading-tight md:text-7xl", instrumentSerif.className)}>
+              <h1 className={cn("text-5xl text-[hsl(var(--foreground))] font-normal leading-tight md:text-7xl", instrumentSerif.className)}>
                 Thời khóa biểu X
               </h1>
-              <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#8C87A2]">
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
                 Thời khóa biểu tự động làm mới lúc 00:00 Thứ 2 hàng tuần (UTC+7). {isEditMode ? "Chọn bất kỳ ca học nào để bắt đầu tùy chỉnh thông tin học tập." : "Bấm vào ca học để cập nhật tiến độ và thắp sáng không gian học tập."}
               </p>
               
@@ -308,8 +308,8 @@ export default function TimetablePage() {
                   className={cn(
                     "px-5 py-2.5 rounded-xl border flex items-center gap-2 font-medium text-xs transition-all duration-300",
                     isEditMode
-                      ? "bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] border-[#C18CFF]"
-                      : "bg-[#15131F] border-[#8C87A2]/10 hover:border-[#8C87A2]/30 text-[#F1EDF9]"
+                      ? "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]"
+                      : "bg-[hsl(var(--card))] border border-[hsl(var(--border))]/30 hover:border-[hsl(var(--border))]/50 text-[hsl(var(--foreground))]"
                   )}
                 >
                   {isEditMode ? (
@@ -339,22 +339,22 @@ export default function TimetablePage() {
             </div>
 
             {/* Trạng thái */}
-            <div className="bg-[#15131F] border border-[#8C87A2]/10 rounded-2xl p-5 min-w-[280px]">
+            <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))]/20 rounded-2xl p-5 min-w-[280px]">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-xs text-[#8C87A2] uppercase tracking-wider">Tiến độ tuần học</span>
-                <span className={cn("text-sm font-bold text-[#C18CFF]", jetbrainsMono.className)}>
+                <span className="text-xs text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Tiến độ tuần học</span>
+                <span className={cn("text-sm font-bold text-[hsl(var(--primary))]", jetbrainsMono.className)}>
                   {completedSlots.length} / 24 Ca
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-[#0B0A13] rounded-full overflow-hidden border border-[#8C87A2]/10">
+              <div className="h-1.5 w-full bg-[hsl(var(--background))] rounded-full overflow-hidden border border-[hsl(var(--border))]/20">
                 <div
-                  className="h-full bg-[#C18CFF] rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(193,140,255,0.6)]"
+                  className="h-full bg-[hsl(var(--primary))] rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_hsl(var(--primary)/0.6)]"
                   style={{ width: `${completionPercentage}%` }}
                 />
               </div>
-              <div className="mt-3 flex items-center justify-between text-[10px] text-[#8C87A2]">
+              <div className="mt-3 flex items-center justify-between text-[10px] text-[hsl(var(--muted-foreground))]">
                 <span className="flex items-center gap-1">
-                  <Zap className="h-3 w-3 text-[#C18CFF]" />
+                  <Zap className="h-3 w-3 text-[hsl(var(--primary))]" />
                   Đạt {completionPercentage}%
                 </span>
                 <span className={jetbrainsMono.className}>Tuần: {currentWeekMonday}</span>
@@ -364,47 +364,47 @@ export default function TimetablePage() {
         </section>
 
         {/* Lưới Thời Khóa Biểu */}
-        <section className="bg-[#15131F]/50 border border-[#8C87A2]/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm">
+        <section className="bg-[hsl(var(--card))]/50 border border-[hsl(var(--border))]/20 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left min-w-[1000px]">
               <thead>
-                <tr className="border-b border-[#8C87A2]/10 bg-[#0B0A13]/50">
-                  <th className={cn("p-5 text-xs font-bold uppercase tracking-wider text-[#8C87A2] w-[120px] text-center border-r border-[#8C87A2]/5", jetbrainsMono.className)}>
+                <tr className="border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/50">
+                  <th className={cn("p-5 text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] w-[120px] text-center border-r border-[hsl(var(--border))]/10", jetbrainsMono.className)}>
                     Khung Giờ
                   </th>
-                  <th className="p-5 text-sm font-semibold text-[#F1EDF9] text-center border-r border-[#8C87A2]/5">Thứ 2</th>
-                  <th className="p-5 text-sm font-semibold text-[#F1EDF9] text-center border-r border-[#8C87A2]/5">Thứ 3</th>
-                  <th className="p-5 text-sm font-semibold text-[#F1EDF9] text-center border-r border-[#8C87A2]/5">Thứ 4</th>
-                  <th className="p-5 text-sm font-semibold text-[#F1EDF9] text-center border-r border-[#8C87A2]/5">Thứ 5</th>
-                  <th className="p-5 text-sm font-semibold text-[#F1EDF9] text-center border-r border-[#8C87A2]/5">Thứ 6</th>
-                  <th className="p-5 text-sm font-semibold text-[#F1EDF9] text-center border-r border-[#8C87A2]/5">Thứ 7</th>
-                  <th className="p-5 text-sm font-semibold text-[#F1EDF9] text-center">Chủ Nhật</th>
+                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center border-r border-[hsl(var(--border))]/10">Thứ 2</th>
+                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center border-r border-[hsl(var(--border))]/10">Thứ 3</th>
+                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center border-r border-[hsl(var(--border))]/10">Thứ 4</th>
+                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center border-r border-[hsl(var(--border))]/10">Thứ 5</th>
+                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center border-r border-[hsl(var(--border))]/10">Thứ 6</th>
+                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center border-r border-[hsl(var(--border))]/10">Thứ 7</th>
+                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center">Chủ Nhật</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#8C87A2]/10">
+              <tbody className="divide-y divide-[hsl(var(--border))]/25">
                 {/* HÀNG 1: CA SÁNG */}
                 <tr>
-                  <td className="p-4 text-center border-r border-[#8C87A2]/5 bg-[#0B0A13]/20">
-                    <span className="block text-xs font-bold text-[#F1EDF9]/90">Ca Sáng</span>
-                    <span className={cn("block mt-1.5 text-[10px] text-[#8C87A2]", jetbrainsMono.className)}>08:00 - 10:30</span>
+                  <td className="p-4 text-center border-r border-[hsl(var(--border))]/10 bg-[hsl(var(--background))]/20">
+                    <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca Sáng</span>
+                    <span className={cn("block mt-1.5 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>08:00 - 10:30</span>
                   </td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.sang.t2)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.sang.t3)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.sang.t4)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.sang.t5)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.sang.t6)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.sang.t7)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t2)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t3)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t4)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t5)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t6)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t7)}</td>
                   
-                  <td rowSpan={4} className="p-4 bg-[#0B0A13]/30 text-center align-middle w-[15%]">
+                  <td rowSpan={4} className="p-4 bg-[hsl(var(--background))]/30 text-center align-middle w-[15%]">
                     <div className="flex flex-col items-center justify-center space-y-4 px-2 py-10">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#C18CFF]/10 border border-[#C18CFF]/25 shadow-[0_0_15px_rgba(193,140,255,0.15)]">
-                        <Coffee className="h-6 w-6 text-[#C18CFF]" />
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/25 shadow-[0_0_15px_hsl(var(--primary)/0.15)]">
+                        <Coffee className="h-6 w-6 text-[hsl(var(--primary))]" />
                       </div>
                       <div className="space-y-2">
-                        <h4 className={cn("text-2xl text-[#F1EDF9] font-normal italic", instrumentSerif.className)}>
+                        <h4 className={cn("text-2xl text-[hsl(var(--foreground))] font-normal italic", instrumentSerif.className)}>
                           OFF TRỌN VẸN
                         </h4>
-                        <p className="text-[11px] leading-relaxed text-[#8C87A2]">
+                        <p className="text-[11px] leading-relaxed text-[hsl(var(--muted-foreground))]">
                           Dành riêng để nạp năng lượng, tĩnh dưỡng tinh thần và phục hồi cơ thể chuẩn bị cho một tuần mới rực rỡ.
                         </p>
                       </div>
@@ -414,44 +414,44 @@ export default function TimetablePage() {
 
                 {/* HÀNG 2: CA CHIỀU 1 */}
                 <tr>
-                  <td className="p-4 text-center border-r border-[#8C87A2]/5 bg-[#0B0A13]/20">
-                    <span className="block text-xs font-bold text-[#F1EDF9]/90">Ca Chiều 1</span>
-                    <span className={cn("block mt-1.5 text-[10px] text-[#8C87A2]", jetbrainsMono.className)}>14:00 - 16:30</span>
+                  <td className="p-4 text-center border-r border-[hsl(var(--border))]/10 bg-[hsl(var(--background))]/20">
+                    <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca Chiều 1</span>
+                    <span className={cn("block mt-1.5 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>14:00 - 16:30</span>
                   </td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu1.t2)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu1.t3)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu1.t4)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu1.t5)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu1.t6)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu1.t7)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t2)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t3)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t4)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t5)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t6)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t7)}</td>
                 </tr>
 
                 {/* HÀNG 3: CA CHIỀU 2 */}
                 <tr>
-                  <td className="p-4 text-center border-r border-[#8C87A2]/5 bg-[#0B0A13]/20">
-                    <span className="block text-xs font-bold text-[#F1EDF9]/90">Ca Chiều 2</span>
-                    <span className={cn("block mt-1.5 text-[10px] text-[#8C87A2]", jetbrainsMono.className)}>16:45 - 19:15</span>
+                  <td className="p-4 text-center border-r border-[hsl(var(--border))]/10 bg-[hsl(var(--background))]/20">
+                    <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca Chiều 2</span>
+                    <span className={cn("block mt-1.5 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>16:45 - 19:15</span>
                   </td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu2.t2)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu2.t3)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu2.t4)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu2.t5)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu2.t6)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.chieu2.t7)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t2)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t3)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t4)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t5)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t6)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t7)}</td>
                 </tr>
 
                 {/* HÀNG 4: CA TỐI */}
                 <tr>
-                  <td className="p-4 text-center border-r border-[#8C87A2]/5 bg-[#0B0A13]/20">
-                    <span className="block text-xs font-bold text-[#F1EDF9]/90">Ca Tối</span>
-                    <span className={cn("block mt-1.5 text-[10px] text-[#8C87A2]", jetbrainsMono.className)}>20:00 - 22:30</span>
+                  <td className="p-4 text-center border-r border-[hsl(var(--border))]/10 bg-[hsl(var(--background))]/20">
+                    <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca Tối</span>
+                    <span className={cn("block mt-1.5 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>20:00 - 22:30</span>
                   </td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.toi.t2)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.toi.t3)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.toi.t4)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.toi.t5)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.toi.t6)}</td>
-                  <td className="p-3 border-r border-[#8C87A2]/5">{renderSlotCell(slots.toi.t7)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t2)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t3)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t4)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t5)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t6)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t7)}</td>
                 </tr>
               </tbody>
             </table>
@@ -474,10 +474,10 @@ export default function TimetablePage() {
               desc: "Dành riêng Chủ Nhật để phục hồi sức khỏe tinh thần. Tránh xa các thiết bị điện tử liên quan đến học tập, vận động nhẹ nhàng để sẵn sàng cho chu kỳ mới."
             }
           ].map((item, idx) => (
-            <div key={idx} className="bg-[#15131F] border border-[#8C87A2]/10 rounded-2xl p-6 relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-1 h-full bg-[#C18CFF]/30 group-hover:bg-[#C18CFF] transition-all" />
-              <h3 className="text-sm font-semibold text-[#F1EDF9]">{item.title}</h3>
-              <p className="mt-2 text-xs leading-relaxed text-[#8C87A2]">{item.desc}</p>
+            <div key={idx} className="bg-[hsl(var(--card))] border border-[hsl(var(--border))]/25 rounded-2xl p-6 relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-1 h-full bg-[hsl(var(--primary))]/30 group-hover:bg-[hsl(var(--primary))] transition-all" />
+              <h3 className="text-sm font-semibold text-[hsl(var(--foreground))]">{item.title}</h3>
+              <p className="mt-2 text-xs leading-relaxed text-[hsl(var(--muted-foreground))]">{item.desc}</p>
             </div>
           ))}
         </section>
@@ -485,39 +485,39 @@ export default function TimetablePage() {
 
       {/* Modal Xác nhận hoàn thành */}
       {selectedSlot && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B0A13]/85 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-[#15131F] border border-[#C18CFF]/20 rounded-2xl overflow-hidden shadow-2xl p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[hsl(var(--background))]/85 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md bg-[hsl(var(--card))] border border-[hsl(var(--primary))]/20 rounded-2xl overflow-hidden shadow-2xl p-6 relative">
             <button
               onClick={() => setSelectedSlot(null)}
-              className="absolute top-4 right-4 text-[#8C87A2] hover:text-[#F1EDF9] transition-colors"
+              className="absolute top-4 right-4 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
 
             <div className="flex items-center gap-3 mb-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#C18CFF]/10 border border-[#C18CFF]/20">
-                <Calendar className="h-5 w-5 text-[#C18CFF]" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/20">
+                <Calendar className="h-5 w-5 text-[hsl(var(--primary))]" />
               </div>
               <div>
-                <h3 className={cn("text-2xl text-[#F1EDF9] font-normal", instrumentSerif.className)}>
+                <h3 className={cn("text-2xl text-[hsl(var(--foreground))] font-normal", instrumentSerif.className)}>
                   Cập nhật tiến trình
                 </h3>
-                <p className="text-[10px] text-[#8C87A2] uppercase tracking-wider mt-0.5">Xác nhận ca học</p>
+                <p className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider mt-0.5">Xác nhận ca học</p>
               </div>
             </div>
 
-            <div className="bg-[#0B0A13] border border-[#8C87A2]/10 rounded-xl p-4 mb-6 space-y-3">
+            <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))]/25 rounded-xl p-4 mb-6 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-[#8C87A2]">Môn học</span>
-                <span className="text-sm font-bold text-[#F1EDF9]">{selectedSlot.subject}</span>
+                <span className="text-xs text-[hsl(var(--muted-foreground))]">Môn học</span>
+                <span className="text-sm font-bold text-[hsl(var(--foreground))]">{selectedSlot.subject}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-[#8C87A2]">Hình thức</span>
-                <span className={cn("text-xs font-bold text-[#C18CFF]", jetbrainsMono.className)}>{selectedSlot.type}</span>
+                <span className="text-xs text-[hsl(var(--muted-foreground))]">Hình thức</span>
+                <span className={cn("text-xs font-bold text-[hsl(var(--primary))]", jetbrainsMono.className)}>{selectedSlot.type}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-[#8C87A2]">Thời gian</span>
-                <span className={cn("text-xs text-[#F1EDF9]", jetbrainsMono.className)}>{selectedSlot.time}</span>
+                <span className="text-xs text-[hsl(var(--muted-foreground))]">Thời gian</span>
+                <span className={cn("text-xs text-[hsl(var(--foreground))]", jetbrainsMono.className)}>{selectedSlot.time}</span>
               </div>
             </div>
 
@@ -533,7 +533,7 @@ export default function TimetablePage() {
               ) : (
                 <Button
                   onClick={handleToggleComplete}
-                  className="w-full py-5 rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold tracking-wide text-xs"
+                  className="w-full py-5 rounded-xl bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-[hsl(var(--primary-foreground))] font-semibold tracking-wide text-xs"
                 >
                   Xác nhận đã hoàn thành ca học
                 </Button>
@@ -542,7 +542,7 @@ export default function TimetablePage() {
               <Button
                 onClick={() => setSelectedSlot(null)}
                 variant="outline"
-                className="w-full py-5 rounded-xl border-[#8C87A2]/20 hover:border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent font-medium text-xs"
+                className="w-full py-5 rounded-xl border-[hsl(var(--border))]/40 hover:border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-transparent font-medium text-xs"
               >
                 Đóng
               </Button>

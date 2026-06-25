@@ -69,25 +69,25 @@ export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B0A13]/85 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg bg-[#15131F] border border-[#C18CFF]/20 rounded-2xl overflow-hidden shadow-2xl p-6 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[hsl(var(--background))]/85 backdrop-blur-sm animate-fade-in">
+      <div className="w-full max-w-lg bg-[hsl(var(--card))] border border-[hsl(var(--primary))]/20 rounded-2xl overflow-hidden shadow-2xl p-6 relative">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-[#8C87A2] hover:text-[#F1EDF9] transition-colors"
+          className="absolute top-4 right-4 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Tiêu đề */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#C18CFF]/10 border border-[#C18CFF]/20">
-            <BookOpen className="h-5 w-5 text-[#C18CFF]" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/20">
+            <BookOpen className="h-5 w-5 text-[hsl(var(--primary))]" />
           </div>
           <div>
-            <h3 className="text-2xl text-[#F1EDF9] font-normal italic font-instrument-serif">
+            <h3 className="text-2xl text-[hsl(var(--foreground))] font-normal italic font-instrument-serif">
               Tùy chỉnh ca học
             </h3>
-            <p className="text-[10px] text-[#8C87A2] uppercase tracking-wider mt-0.5">Cấu hình thời khóa biểu</p>
+            <p className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider mt-0.5">Cấu hình thời khóa biểu</p>
           </div>
         </div>
 
@@ -101,7 +101,7 @@ export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
         <div className="space-y-5">
           {/* Môn Học */}
           <div className="space-y-2">
-            <label className="text-xs text-[#8C87A2] font-semibold">Môn học</label>
+            <label className="text-xs text-[hsl(var(--muted-foreground))] font-semibold">Môn học</label>
             <div className="flex flex-col gap-2">
               <select
                 value={isCustomSubject ? "Khác" : subject}
@@ -114,7 +114,7 @@ export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
                     setSubject(val)
                   }
                 }}
-                className="w-full bg-[#0B0A13] border border-[#8C87A2]/10 rounded-xl px-4 py-3 text-sm text-[#F1EDF9] focus:outline-none focus:border-[#C18CFF]/50 transition-colors"
+                className="w-full bg-[hsl(var(--background))] border border-[hsl(var(--border))]/25 rounded-xl px-4 py-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:border-[hsl(var(--primary))]/50 transition-colors"
               >
                 {PRESET_SUBJECTS.map((sub) => (
                   <option key={sub} value={sub}>{sub}</option>
@@ -128,7 +128,7 @@ export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
                   placeholder="Nhập tên môn học tự chọn..."
                   value={customSubject}
                   onChange={(e) => setCustomSubject(e.target.value)}
-                  className="w-full bg-[#0B0A13] border border-[#C18CFF]/30 rounded-xl px-4 py-3 text-sm text-[#F1EDF9] placeholder-[#8C87A2]/50 focus:outline-none focus:border-[#C18CFF] transition-colors"
+                  className="w-full bg-[hsl(var(--background))] border border-[hsl(var(--primary))]/30 rounded-xl px-4 py-3 text-sm text-[hsl(var(--foreground))] placeholder-[hsl(var(--muted-foreground))]/50 focus:outline-none focus:border-[hsl(var(--primary))] transition-colors"
                 />
               )}
             </div>
@@ -136,7 +136,7 @@ export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
 
           {/* Hình thức */}
           <div className="space-y-2">
-            <label className="text-xs text-[#8C87A2] font-semibold">Hình thức học</label>
+            <label className="text-xs text-[hsl(var(--muted-foreground))] font-semibold">Hình thức học</label>
             <div className="flex flex-col gap-2">
               <select
                 value={isCustomType ? "Khác" : type}
@@ -149,7 +149,7 @@ export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
                     setType(val)
                   }
                 }}
-                className="w-full bg-[#0B0A13] border border-[#8C87A2]/10 rounded-xl px-4 py-3 text-sm text-[#F1EDF9] focus:outline-none focus:border-[#C18CFF]/50 transition-colors"
+                className="w-full bg-[hsl(var(--background))] border border-[hsl(var(--border))]/25 rounded-xl px-4 py-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:border-[hsl(var(--primary))]/50 transition-colors"
               >
                 {PRESET_TYPES.map((t) => (
                   <option key={t} value={t}>{t}</option>
@@ -163,7 +163,7 @@ export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
                   placeholder="Nhập hình thức học..."
                   value={customType}
                   onChange={(e) => setCustomType(e.target.value)}
-                  className="w-full bg-[#0B0A13] border border-[#C18CFF]/30 rounded-xl px-4 py-3 text-sm text-[#F1EDF9] placeholder-[#8C87A2]/50 focus:outline-none focus:border-[#C18CFF] transition-colors"
+                  className="w-full bg-[hsl(var(--background))] border border-[hsl(var(--primary))]/30 rounded-xl px-4 py-3 text-sm text-[hsl(var(--foreground))] placeholder-[hsl(var(--muted-foreground))]/50 focus:outline-none focus:border-[hsl(var(--primary))] transition-colors"
                 />
               )}
             </div>
@@ -171,7 +171,7 @@ export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
 
           {/* Thời gian */}
           <div className="space-y-2">
-            <label className="text-xs text-[#8C87A2] font-semibold">Khung giờ</label>
+            <label className="text-xs text-[hsl(var(--muted-foreground))] font-semibold">Khung giờ</label>
             <div className="flex flex-col gap-2">
               <select
                 value={isCustomTime ? "Khác" : time}
@@ -184,7 +184,7 @@ export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
                     setTime(val)
                   }
                 }}
-                className="w-full bg-[#0B0A13] border border-[#8C87A2]/10 rounded-xl px-4 py-3 text-sm text-[#F1EDF9] focus:outline-none focus:border-[#C18CFF]/50 transition-colors"
+                className="w-full bg-[hsl(var(--background))] border border-[hsl(var(--border))]/25 rounded-xl px-4 py-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:border-[hsl(var(--primary))]/50 transition-colors"
               >
                 {PRESET_TIMES.map((t) => (
                   <option key={t} value={t}>{t}</option>
@@ -198,7 +198,7 @@ export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
                   placeholder="Ví dụ: 09:00 - 11:30..."
                   value={customTime}
                   onChange={(e) => setCustomTime(e.target.value)}
-                  className="w-full bg-[#0B0A13] border border-[#C18CFF]/30 rounded-xl px-4 py-3 text-sm text-[#F1EDF9] placeholder-[#8C87A2]/50 focus:outline-none focus:border-[#C18CFF] transition-colors"
+                  className="w-full bg-[hsl(var(--background))] border border-[hsl(var(--primary))]/30 rounded-xl px-4 py-3 text-sm text-[hsl(var(--foreground))] placeholder-[hsl(var(--muted-foreground))]/50 focus:outline-none focus:border-[hsl(var(--primary))] transition-colors"
                 />
               )}
             </div>
@@ -210,13 +210,13 @@ export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
           <Button
             onClick={onClose}
             variant="outline"
-            className="flex-1 py-5 rounded-xl border-[#8C87A2]/20 hover:border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent font-medium"
+            className="flex-1 py-5 rounded-xl border-[hsl(var(--border))]/40 hover:border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-transparent font-medium"
           >
             Hủy
           </Button>
           <Button
             onClick={handleSave}
-            className="flex-1 py-5 rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold tracking-wide"
+            className="flex-1 py-5 rounded-xl bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-[hsl(var(--primary-foreground))] font-semibold tracking-wide"
           >
             Lưu thay đổi
           </Button>

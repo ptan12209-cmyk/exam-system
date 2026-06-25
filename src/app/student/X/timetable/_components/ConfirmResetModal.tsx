@@ -9,11 +9,11 @@ interface ConfirmResetModalProps {
 
 export function ConfirmResetModal({ onClose, onConfirm }: ConfirmResetModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B0A13]/85 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-[#15131F] border border-red-500/20 rounded-2xl overflow-hidden shadow-2xl p-6 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[hsl(var(--background))]/85 backdrop-blur-sm animate-fade-in">
+      <div className="w-full max-w-md bg-[hsl(var(--card))] border border-red-500/20 rounded-2xl overflow-hidden shadow-2xl p-6 relative">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-[#8C87A2] hover:text-[#F1EDF9] transition-colors"
+          className="absolute top-4 right-4 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
@@ -24,14 +24,14 @@ export function ConfirmResetModal({ onClose, onConfirm }: ConfirmResetModalProps
             <AlertCircle className="h-5 w-5 text-red-400" />
           </div>
           <div>
-            <h3 className="text-xl text-[#F1EDF9] font-normal italic font-instrument-serif">
+            <h3 className="text-xl text-[hsl(var(--foreground))] font-normal italic font-instrument-serif">
               Khôi phục mặc định
             </h3>
-            <p className="text-[10px] text-[#8C87A2] uppercase tracking-wider mt-0.5">Xác nhận thao tác</p>
+            <p className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider mt-0.5">Xác nhận thao tác</p>
           </div>
         </div>
 
-        <p className="text-xs leading-relaxed text-[#8C87A2] mb-6">
+        <p className="text-xs leading-relaxed text-[hsl(var(--muted-foreground))] mb-6">
           Bạn có chắc chắn muốn khôi phục lại lịch học mặc định ban đầu không? Mọi thông tin môn học, hình thức học và khung giờ bạn đã tùy chỉnh trước đó sẽ bị xóa bỏ hoàn toàn.
         </p>
 
@@ -40,7 +40,7 @@ export function ConfirmResetModal({ onClose, onConfirm }: ConfirmResetModalProps
           <Button
             onClick={onClose}
             variant="outline"
-            className="flex-1 py-5 rounded-xl border-[#8C87A2]/20 hover:border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent font-medium"
+            className="flex-1 py-5 rounded-xl border-[hsl(var(--border))]/40 hover:border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-transparent font-medium"
           >
             Hủy bỏ
           </Button>
