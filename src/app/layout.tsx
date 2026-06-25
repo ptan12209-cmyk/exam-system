@@ -36,6 +36,9 @@ const themeScript = `
       const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const resolved = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
       document.documentElement.classList.add(resolved);
+      
+      const designTheme = localStorage.getItem('design-theme') || 'dream';
+      document.documentElement.classList.add('theme-' + designTheme);
     } catch (e) {}
   })();
 `;

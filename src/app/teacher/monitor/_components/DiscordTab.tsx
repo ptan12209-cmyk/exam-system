@@ -7,6 +7,7 @@ import {
 } from "recharts"
 import type { DiscordLog, StudySession } from "../_types"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 interface DiscordTabProps {
   processedDiscordLogs: Array<Record<string, string | number>>

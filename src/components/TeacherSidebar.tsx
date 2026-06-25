@@ -23,6 +23,7 @@ import {
   Globe2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 
 interface TeacherSidebarProps {
   onLogout?: () => void
@@ -190,8 +191,14 @@ export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setColl
         </div>
       </nav>
 
+      {/* Theme selection / Settings */}
+      <div className={cn("p-4 border-t border-[hsl(var(--border))]/10 flex", collapsed ? "justify-center" : "justify-between items-center")}>
+        {!collapsed && <span className="text-xs font-semibold text-muted-foreground">Cài đặt giao diện</span>}
+        <ThemeToggle />
+      </div>
+
       {/* Footer / Logout */}
-      <div className="p-4 pt-4 border-t border-[hsl(var(--border))]/10">
+      <div className="p-4 pt-0">
         <button
           onClick={handleLogout}
           className={cn(

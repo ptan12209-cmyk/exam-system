@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&family=Inter:wght@100..900&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&family=Inter:wght@100..900&family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
 @import "../components/ui/dotmatrix.css";
 @import "tailwindcss";
 
@@ -7,6 +7,12 @@
   --font-inter: 'Inter', sans-serif;
   --font-instrument-serif: 'Instrument Serif', serif;
   --font-jetbrains-mono: 'JetBrains Mono', monospace;
+  --font-ibm-plex-sans: 'IBM Plex Sans', sans-serif;
+  --font-plus-jakarta-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-roboto: 'Roboto', sans-serif;
+
+  --font-family-display: var(--font-instrument-serif);
+  --font-family-body: var(--font-inter);
 
   /* Premium Dark palette (Matching Space X Style globally) */
   --background: 248 29% 6%; /* #0B0A13 */
@@ -72,7 +78,7 @@
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-family-body), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -786,20 +792,193 @@ select option {
 }
 
 /* ============================================
-   Dream Engine - Font & Scrollbar Style Override Globally
+   Dynamic Design Themes
    ============================================ */
 
-/* Ép font-family và phong cách Instrument Serif nghệ thuật cho tất cả tiêu đề h1 hệ thống */
-h1, 
-.h1-style {
-  font-family: 'Instrument Serif', serif !important;
+/* 1. Dream Engine (obsidian surface, dream violet, seed amber) */
+.theme-dream, :root:not(.theme-swiss):not(.theme-dol) {
+  --background: 248 29% 6%; /* #0B0A13 */
+  --foreground: 260 38% 95%; /* #F1EDF9 */
+  --card: 250 24% 10%; /* #15131F */
+  --card-foreground: 260 38% 95%;
+  --popover: 250 24% 10%;
+  --popover-foreground: 260 38% 95%;
+  --primary: 268 100% 77%; /* #C18CFF */
+  --primary-foreground: 248 29% 6%; /* #0B0A13 */
+  --secondary: 250 24% 15%; /* #1C1A2D */
+  --secondary-foreground: 260 38% 95%;
+  --muted: 253 11% 58% / 0.15;
+  --muted-foreground: 253 11% 58%; /* #8C87A2 */
+  --accent: 268 100% 77% / 0.15;
+  --accent-foreground: 268 100% 77%;
+  --border: 253 11% 58% / 0.15; /* #8C87A2 mờ */
+  --input: 253 11% 58% / 0.15;
+  --ring: 268 100% 77%;
+  --radius: 0.75rem;
+  
+  /* Font Override */
+  --font-family-display: var(--font-instrument-serif);
+  --font-family-body: var(--font-inter);
+}
+
+.theme-dream h1,
+.theme-dream .h1-style {
   font-weight: 400 !important;
 }
 
-/* Áp dụng hiệu ứng mịn màng cho scrollbar toàn cục */
+/* 2. Swiss Grid (alpine stone background, black text, Helvetica red accent, 0px border-radius) */
+.theme-swiss,
+.theme-swiss.dark {
+  --background: 48 10% 95%; /* #F4F3EF */
+  --foreground: 0 0% 7%; /* #111111 */
+  --card: 0 0% 100%; /* #FFFFFF */
+  --card-foreground: 0 0% 7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 7%;
+  --primary: 0 100% 45%; /* #E60000 (Helvetica Red) */
+  --primary-foreground: 0 0% 100%; /* White */
+  --secondary: 48 10% 90%; /* Alpine Stone Darker */
+  --secondary-foreground: 0 0% 7%;
+  --muted: 0 0% 40% / 0.15;
+  --muted-foreground: 0 0% 40%; /* #666666 */
+  --accent: 0 100% 45% / 0.15;
+  --accent-foreground: 0 100% 45%;
+  --border: 0 0% 7% / 0.15;
+  --input: 0 0% 7% / 0.15;
+  --ring: 0 100% 45%;
+  
+  /* Font Override */
+  --font-family-display: var(--font-ibm-plex-sans);
+  --font-family-body: var(--font-ibm-plex-sans);
+  
+  /* Radius Override for Tailwind */
+  --radius: 0px !important;
+  --radius-xs: 0px !important;
+  --radius-sm: 0px !important;
+  --radius-md: 0px !important;
+  --radius-lg: 0px !important;
+  --radius-xl: 0px !important;
+  --radius-2xl: 0px !important;
+  --radius-3xl: 0px !important;
+}
+
+.theme-swiss h1,
+.theme-swiss .h1-style {
+  font-weight: 300 !important;
+  letter-spacing: -0.04em !important;
+}
+
+/* Force border radius to 0 for Swiss Grid (except avatar and perfect circles) */
+.theme-swiss *:not(.rounded-full):not(svg):not(path) {
+  border-radius: 0px !important;
+}
+
+/* Disable box shadows and gradients for Swiss Grid */
+.theme-swiss .card-elevated,
+.theme-swiss .card-interactive,
+.theme-swiss .glass-card,
+.theme-swiss .shadow-sm,
+.theme-swiss .shadow-md,
+.theme-swiss .shadow-lg,
+.theme-swiss .shadow-xl,
+.theme-swiss .shadow-2xl,
+.theme-swiss .shadow {
+  box-shadow: none !important;
+}
+
+.theme-swiss .gradient-primary {
+  background: hsl(var(--primary)) !important;
+}
+.theme-swiss .gradient-primary-soft {
+  background: hsl(var(--secondary)) !important;
+}
+.theme-swiss .gradient-bg {
+  background: hsl(var(--background)) !important;
+}
+.theme-swiss .gradient-mesh {
+  background: hsl(var(--background)) !important;
+}
+
+/* 3. DOL English (friendly round UI, Slate Navy text, Crimson Brand Red, base font 14px) */
+.theme-dol,
+.theme-dol.dark {
+  --background: 0 0% 100%; /* #FFFFFF */
+  --foreground: 224 22% 18%; /* #242938 (Deep Slate Navy) */
+  --card: 0 0% 100%; /* #FFFFFF */
+  --card-foreground: 224 22% 18%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 224 22% 18%;
+  --primary: 0 61% 54%; /* #d14242 (Crimson Brand Red) */
+  --primary-foreground: 0 0% 100%; /* White */
+  --secondary: 240 6% 96%; /* #f4f4f6 (bg-neutral) */
+  --secondary-foreground: 224 22% 18%;
+  --muted: 228 5% 61% / 0.15;
+  --muted-foreground: 228 5% 61%; /* #95979f */
+  --accent: 206 71% 43%; /* #2074bb (LMS Tech Blue) */
+  --accent-foreground: 206 71% 43%;
+  --border: 210 7% 92%; /* #e9eaeb (border-light) */
+  --input: 210 7% 92%;
+  --ring: 0 61% 54%;
+  
+  /* Font Override */
+  --font-family-display: var(--font-plus-jakarta-sans);
+  --font-family-body: var(--font-inter);
+  
+  /* Radius Override for Tailwind */
+  --radius: 12px !important;
+  --radius-xs: 10px !important;
+  --radius-sm: 10px !important;
+  --radius-md: 12px !important;
+  --radius-lg: 16px !important;
+  --radius-xl: 16px !important;
+  --radius-2xl: 16px !important;
+  --radius-3xl: 16px !important;
+}
+
+.theme-dol h1,
+.theme-dol .h1-style {
+  font-weight: 700 !important;
+  letter-spacing: normal !important;
+}
+
+/* Custom Text Selection for DOL English (#edb3b366 selection bg) */
+.theme-dol ::selection {
+  background-color: rgba(209, 66, 66, 0.4) !important;
+  color: inherit !important;
+}
+
+/* Apply 14px base font density and 1.5715 line height to DOL English body and containers */
+.theme-dol,
+.theme-dol body {
+  font-size: 14px !important;
+  line-height: 1.5715 !important;
+}
+
+/* Align scrollbar colors to DOL style */
+.theme-dol ::-webkit-scrollbar-track {
+  background: #fafafa !important;
+}
+.theme-dol ::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+  border-radius: 16px !important;
+}
+.theme-dol ::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1 !important;
+}
+
+/* ============================================
+   Typography Override
+   ============================================ */
+
+h1, 
+.h1-style {
+  font-family: var(--font-family-display), serif !important;
+}
+
+/* Default scrollbar colors dynamic by primary accent */
 ::-webkit-scrollbar-thumb {
-  background: rgba(193, 140, 255, 0.15) !important;
+  background: hsl(var(--primary) / 0.15) !important;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(193, 140, 255, 0.3) !important;
+  background: hsl(var(--primary) / 0.3) !important;
 }

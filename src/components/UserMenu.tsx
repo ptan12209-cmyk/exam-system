@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { TitleBadge } from "@/components/gamification/TitleSelector"
+import { useTheme } from "@/components/ThemeProvider"
 
 interface UserMenuProps {
     userName: string
@@ -25,6 +26,7 @@ interface UserMenuProps {
 
 export function UserMenu({ userName, userClass, onLogout, role = "student" }: UserMenuProps) {
     const router = useRouter()
+    const { designTheme, setDesignTheme } = useTheme()
     const [isOpen, setIsOpen] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
     const [equippedTitle, setEquippedTitle] = useState<{ display_text: string; color: string } | null>(null)
@@ -149,6 +151,49 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                                 {item.label}
                             </Link>
                         ))}
+                    </div>
+
+                    {/* Theme selector */}
+                    <div className="border-t border-[hsl(var(--border))]/40 py-2.5 px-3.5 space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Giao diện thiết kế</p>
+                        <div className="grid grid-cols-3 gap-1 bg-muted/40 p-0.5 rounded-lg border border-[hsl(var(--border))]/10">
+                            <button
+                                onClick={() => setDesignTheme("dream")}
+                                className={cn(
+                                    "text-[10px] py-1.5 px-0.5 rounded-md transition-all font-semibold text-center truncate",
+                                    designTheme === "dream"
+                                        ? "bg-background text-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                                title="Dream Engine"
+                            >
+                                Dream
+                            </button>
+                            <button
+                                onClick={() => setDesignTheme("swiss")}
+                                className={cn(
+                                    "text-[10px] py-1.5 px-0.5 rounded-md transition-all font-semibold text-center truncate",
+                                    designTheme === "swiss"
+                                        ? "bg-background text-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                                title="Swiss Grid"
+                            >
+                                Swiss
+                            </button>
+                            <button
+                                onClick={() => setDesignTheme("dol")}
+                                className={cn(
+                                    "text-[10px] py-1.5 px-0.5 rounded-md transition-all font-semibold text-center truncate",
+                                    designTheme === "dol"
+                                        ? "bg-background text-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                                title="DOL English"
+                            >
+                                DOL
+                            </button>
+                        </div>
                     </div>
 
                     {/* Logout */}
