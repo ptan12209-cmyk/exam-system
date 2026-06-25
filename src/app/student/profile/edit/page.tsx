@@ -32,7 +32,8 @@ export default function StudentProfileEditPage() {
     class_suffix: "",
     bio: "", 
     phone: "", 
-    avatar_url: "" 
+    avatar_url: "",
+    discord_id: ""
   })
 
   useEffect(() => {
@@ -52,7 +53,8 @@ export default function StudentProfileEditPage() {
           class_suffix: profile.class_suffix || "",
           bio: profile.bio || "", 
           phone: profile.phone || "", 
-          avatar_url: profile.avatar_url || "" 
+          avatar_url: profile.avatar_url || "",
+          discord_id: profile.discord_id || ""
         })
         setOriginalNickname(profile.nickname || "")
       }
@@ -90,6 +92,9 @@ export default function StudentProfileEditPage() {
       }
       
       if (formData.bio && formData.bio.length > 200) throw new Error("Giới thiệu tối đa 200 ký tự")
+      if (formData.discord_id.trim() && !/^\d{17,20}$/.test(formData.discord_id.trim())) {
+        throw new Error("Discord ID không hợp lệ. Vui lòng nhập dãy từ 17-20 chữ số.")
+      }
 
       const fullClassName = (gradeNum && formData.class_suffix.trim()) 
         ? `${gradeNum}${formData.class_suffix.trim().toUpperCase()}` 
@@ -104,6 +109,7 @@ export default function StudentProfileEditPage() {
         bio: formData.bio || null,
         phone: formData.phone || null,
         avatar_url: formData.avatar_url || null,
+        discord_id: formData.discord_id.trim() || null,
       }).eq("id", user.id)
 
       if (updateError) {
@@ -186,6 +192,11 @@ export default function StudentProfileEditPage() {
             <div className="space-y-2">
               <Label htmlFor="phone" className="text-sm font-bold">Số điện thoại</Label>
               <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} placeholder="0123456789" className="rounded-xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))]" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="discord_id" className="text-sm font-bold">Discord ID</Label>
+              <Input id="discord_id" value={formData.discord_id} onChange={(e) => setFormData((prev) => ({ ...prev, discord_id: e.target.value }))} placeholder="Ví dụ: 123456789012345678" className="rounded-xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))]" />
             </div>
           </div>
 
