@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +32,18 @@ export function OverviewTab({ data }: OverviewTabProps) {
     // Actions
     fetchStudentData, setStudentTab,
   } = data
+
+  const [tasksPage, setTasksPage] = useState(1)
+  const [submissionsPage, setSubmissionsPage] = useState(1)
+  const itemsPerPage = 5
+
+  const totalTasksPages = Math.max(1, Math.ceil(tasks.length / itemsPerPage))
+  const activeTasksPage = Math.min(tasksPage, totalTasksPages)
+  const paginatedTasks = tasks.slice((activeTasksPage - 1) * itemsPerPage, activeTasksPage * itemsPerPage)
+
+  const totalSubmissionsPages = Math.max(1, Math.ceil(submissions.length / itemsPerPage))
+  const activeSubmissionsPage = Math.min(submissionsPage, totalSubmissionsPages)
+  const paginatedSubmissions = submissions.slice((activeSubmissionsPage - 1) * itemsPerPage, activeSubmissionsPage * itemsPerPage)
 
   if (!selectedStudent) return null
 
@@ -219,12 +232,12 @@ export function OverviewTab({ data }: OverviewTabProps) {
 
           {/* Tasks List */}
           <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
-            {tasks.length === 0 ? (
+            {paginatedTasks.length === 0 ? (
               <div className="py-12 text-center text-sm text-[hsl(var(--muted-foreground))]/50">
                 Chưa có mục tiêu học tập nào được thêm vào checklist.
               </div>
             ) : (
-              tasks.map((task) => {
+              paginatedTasks.map((task) => {
                 const priorityBadge = PRIORITIES.find(p => p.value === task.priority)
                 const statusBadge = STATUSES.find(s => s.value === task.status)
                 
@@ -293,6 +306,34 @@ export function OverviewTab({ data }: OverviewTabProps) {
               })
             )}
           </div>
+
+          {totalTasksPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-[hsl(var(--border))]/10">
+              <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                Trang {activeTasksPage} / {totalTasksPages}
+              </span>
+              <div className="flex gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setTasksPage(prev => Math.max(1, prev - 1))}
+                  disabled={activeTasksPage === 1}
+                  className="h-8 rounded-lg px-3 text-xs"
+                >
+                  Trước
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setTasksPage(prev => Math.min(totalTasksPages, prev + 1))}
+                  disabled={activeTasksPage === totalTasksPages}
+                  className="h-8 rounded-lg px-3 text-xs"
+                >
+                  Sau
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -314,12 +355,12 @@ export function OverviewTab({ data }: OverviewTabProps) {
           </div>
 
           <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
-            {submissions.length === 0 ? (
+            {paginatedSubmissions.length === 0 ? (
               <div className="py-12 text-center text-sm text-[hsl(var(--muted-foreground))]/50">
                 Chưa nộp bài tập kiểm tra nào trên hệ thống.
               </div>
             ) : (
-              submissions.map((sub) => {
+              paginatedSubmissions.map((sub) => {
                 const scorePercentage = Math.round((sub.score / 10) * 100)
                 
                 return (
@@ -356,6 +397,34 @@ export function OverviewTab({ data }: OverviewTabProps) {
               })
             )}
           </div>
+
+          {totalSubmissionsPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-[hsl(var(--border))]/10">
+              <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                Trang {activeSubmissionsPage} / {totalSubmissionsPages}
+              </span>
+              <div className="flex gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSubmissionsPage(prev => Math.max(1, prev - 1))}
+                  disabled={activeSubmissionsPage === 1}
+                  className="h-8 rounded-lg px-3 text-xs"
+                >
+                  Trước
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSubmissionsPage(prev => Math.min(totalSubmissionsPages, prev + 1))}
+                  disabled={activeSubmissionsPage === totalSubmissionsPages}
+                  className="h-8 rounded-lg px-3 text-xs"
+                >
+                  Sau
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Card 4: Timetable Widget Preview */}

@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { AlertCircle, Bell, Send, Flame, X } from "lucide-react"
+import { AlertCircle, Bell, Send, Flame, X, RefreshCw } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid 
 } from "recharts"
 import type { DiscordLog, StudySession } from "../_types"
+import { Button } from "@/components/ui/button"
 
 interface DiscordTabProps {
   processedDiscordLogs: Array<Record<string, string | number>>
@@ -38,6 +39,77 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
   const [alertMessage, setAlertMessage] = useState("")
   const [alertSending, setAlertSending] = useState(false)
   const [alertResult, setAlertResult] = useState<{ success: boolean; message: string } | null>(null)
+
+  // Bot control state
+  interface BotStatus {
+    online: boolean
+    bot_user?: string
+    uptime?: number
+    ping?: number
+    voice_channel_name?: string
+  }
+
+  const [botStatus, setBotStatus] = useState<BotStatus | null>(null)
+  const [botLoading, setBotLoading] = useState(false)
+  const [moveLoading, setMoveLoading] = useState(false)
+
+  // Fetch bot status
+  const fetchBotStatus = useCallback(async () => {
+    setBotLoading(true)
+    try {
+      const res = await fetch("/api/study-sessions/bot-control", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command: "status" })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setBotStatus(data)
+      } else {
+        setBotStatus({ online: false })
+      }
+    } catch (err) {
+      setBotStatus({ online: false })
+    } finally {
+      setBotLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchBotStatus()
+  }, [fetchBotStatus])
+
+  // Move user to AFK room
+  const handleMoveToAFK = async () => {
+    if (!studentId || moveLoading) return
+    setMoveLoading(true)
+    try {
+      const res = await fetch("/api/study-sessions/bot-control", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command: "move_to_afk", student_id: studentId })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        alert("Đã chuyển học sinh sang phòng AFK thành công!")
+        fetchBotStatus()
+      } else {
+        alert(data.error || "Không thể chuyển học sinh sang phòng AFK")
+      }
+    } catch (err) {
+      alert("Lỗi kết nối khi gửi yêu cầu chuyển phòng")
+    } finally {
+      setMoveLoading(false)
+    }
+  }
+
+  // Discord Logs Pagination
+  const [logsPage, setLogsPage] = useState(1)
+  const logsPerPage = 5
+
+  const totalLogsPages = Math.max(1, Math.ceil(discordLogs.length / logsPerPage))
+  const activeLogsPage = Math.min(logsPage, totalLogsPages)
+  const paginatedLogs = discordLogs.slice((activeLogsPage - 1) * logsPerPage, activeLogsPage * logsPerPage)
 
   // Fetch heatmap data
   const fetchHeatmap = useCallback(async () => {
@@ -153,59 +225,159 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
         </div>
       </div>
 
-      {/* Heatmap Grid */}
-      <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
-        <h3 className="font-bold text-lg mb-1">Biểu Đồ Nhiệt Hoạt Động</h3>
-        <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">Thời gian học qua Discord trong 30 ngày gần nhất (theo ngày trong tuần và khung giờ)</p>
-        {heatmapLoading ? (
-          <div className="py-8 text-center text-[hsl(var(--muted-foreground))]">Đang tải biểu đồ nhiệt...</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr>
-                  <th className="pb-2 text-xs text-[hsl(var(--muted-foreground))] text-left w-28"></th>
-                  {DAYS_LABEL.map(day => (
-                    <th key={day} className="pb-2 text-xs text-[hsl(var(--muted-foreground))] text-center font-semibold">{day}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {SLOTS_LABEL.map((slotLabel, slotIdx) => (
-                  <tr key={slotIdx}>
-                    <td className="py-1 pr-3 text-xs text-[hsl(var(--muted-foreground))] whitespace-nowrap">{slotLabel}</td>
-                    {DAYS_LABEL.map((_, dayIdx) => {
-                      const key = `${dayIdx}-${slotIdx}`
-                      const minutes = heatmap[key] || 0
-                      return (
-                        <td key={key} className="p-1">
-                          <div
-                            className={`h-10 w-full rounded-lg ${getHeatColor(minutes)} flex items-center justify-center transition-colors cursor-default`}
-                            title={`${DAYS_LABEL[dayIdx]} ${slotLabel}: ${minutes} phút`}
-                          >
-                            {minutes > 0 && (
-                              <span className="text-[10px] font-bold text-emerald-200">{minutes}p</span>
-                            )}
-                          </div>
-                        </td>
-                      )
-                    })}
+      {/* Heatmap & Bot Control Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-6">
+        {/* Heatmap Grid */}
+        <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
+          <h3 className="font-bold text-lg mb-1">Biểu Đồ Nhiệt Hoạt Động</h3>
+          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">Thời gian học qua Discord trong 30 ngày gần nhất (theo ngày trong tuần và khung giờ)</p>
+          {heatmapLoading ? (
+            <div className="py-8 text-center text-[hsl(var(--muted-foreground))]">Đang tải biểu đồ nhiệt...</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="pb-2 text-xs text-[hsl(var(--muted-foreground))] text-left w-28"></th>
+                    {DAYS_LABEL.map(day => (
+                      <th key={day} className="pb-2 text-xs text-[hsl(var(--muted-foreground))] text-center font-semibold">{day}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {/* Legend */}
-            <div className="flex items-center gap-3 mt-3 text-[10px] text-[hsl(var(--muted-foreground))]">
-              <span>Ít</span>
-              <div className="h-3 w-5 rounded bg-[hsl(var(--muted))]/20" />
-              <div className="h-3 w-5 rounded bg-emerald-500/25" />
-              <div className="h-3 w-5 rounded bg-emerald-500/40" />
-              <div className="h-3 w-5 rounded bg-emerald-500/60" />
-              <div className="h-3 w-5 rounded bg-emerald-500/85" />
-              <span>Nhiều</span>
+                </thead>
+                <tbody>
+                  {SLOTS_LABEL.map((slotLabel, slotIdx) => (
+                    <tr key={slotIdx}>
+                      <td className="py-1 pr-3 text-xs text-[hsl(var(--muted-foreground))] whitespace-nowrap">{slotLabel}</td>
+                      {DAYS_LABEL.map((_, dayIdx) => {
+                        const key = `${dayIdx}-${slotIdx}`
+                        const minutes = heatmap[key] || 0
+                        return (
+                          <td key={key} className="p-1">
+                            <div
+                              className={`h-10 w-full rounded-lg ${getHeatColor(minutes)} flex items-center justify-center transition-colors cursor-default`}
+                              title={`${DAYS_LABEL[dayIdx]} ${slotLabel}: ${minutes} phút`}
+                            >
+                              {minutes > 0 && (
+                                <span className="text-[10px] font-bold text-emerald-200">{minutes}p</span>
+                              )}
+                            </div>
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {/* Legend */}
+              <div className="flex items-center gap-3 mt-3 text-[10px] text-[hsl(var(--muted-foreground))]">
+                <span>Ít</span>
+                <div className="h-3 w-5 rounded bg-[hsl(var(--muted))]/20" />
+                <div className="h-3 w-5 rounded bg-emerald-500/25" />
+                <div className="h-3 w-5 rounded bg-emerald-500/40" />
+                <div className="h-3 w-5 rounded bg-emerald-500/60" />
+                <div className="h-3 w-5 rounded bg-emerald-500/85" />
+                <span>Nhiều</span>
+              </div>
             </div>
+          )}
+        </div>
+
+        {/* Discord Bot Control Panel */}
+        <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md flex flex-col justify-between min-h-[300px] relative overflow-hidden">
+          <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-violet-500/5 blur-3xl pointer-events-none" />
+          
+          <div>
+            <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-3 mb-4">
+              <div>
+                <h3 className="font-bold text-base flex items-center gap-1.5">
+                  🛡️ Điều khiển Bot
+                </h3>
+                <p className="text-[10px] text-[hsl(var(--muted-foreground))]">Trạng thái kết nối trực tiếp của Bot trên Server</p>
+              </div>
+              <button
+                onClick={fetchBotStatus}
+                disabled={botLoading}
+                className="p-1.5 hover:bg-[hsl(var(--muted))]/30 rounded-lg text-[hsl(var(--muted-foreground))] transition-all"
+                title="Làm mới trạng thái"
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", botLoading && "animate-spin")} />
+              </button>
+            </div>
+
+            {botStatus ? (
+              <div className="space-y-4">
+                {/* Connection Status Badge */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[hsl(var(--muted-foreground))]">Trạng thái Bot:</span>
+                  {botStatus.online ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
+                      🟢 Trực tuyến
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 border border-red-500/25 px-2.5 py-0.5 text-xs font-semibold text-red-400">
+                      🔴 Ngoại tuyến
+                    </span>
+                  )}
+                </div>
+
+                {botStatus.online && (
+                  <div className="space-y-3.5 text-xs">
+                    {/* Bot User info */}
+                    <div className="flex justify-between border-b border-[hsl(var(--border))]/10 pb-2">
+                      <span className="text-[hsl(var(--muted-foreground))]">Tên Bot:</span>
+                      <span className="font-medium">{botStatus.bot_user}</span>
+                    </div>
+                    {/* Ping Latency */}
+                    <div className="flex justify-between border-b border-[hsl(var(--border))]/10 pb-2">
+                      <span className="text-[hsl(var(--muted-foreground))]">Độ trễ (Ping):</span>
+                      <span className="font-semibold text-emerald-400">{botStatus.ping} ms</span>
+                    </div>
+                    {/* Voice Channel */}
+                    <div className="flex justify-between border-b border-[hsl(var(--border))]/10 pb-2">
+                      <span className="text-[hsl(var(--muted-foreground))]">Phòng học Live:</span>
+                      <span className="font-semibold text-violet-400 truncate max-w-[150px]">{botStatus.voice_channel_name}</span>
+                    </div>
+                    {/* Uptime */}
+                    <div className="flex justify-between">
+                      <span className="text-[hsl(var(--muted-foreground))]">Uptime:</span>
+                      <span className="font-medium">
+                        {botStatus.uptime ? `${Math.round(botStatus.uptime / 1000 / 60)} phút` : "Chưa rõ"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="py-6 text-center text-xs text-[hsl(var(--muted-foreground))]/50 italic">
+                Đang kiểm tra kết nối với Bot...
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Teacher Bot Control Actions */}
+          <div className="mt-6 pt-4 border-t border-[hsl(var(--border))]/20">
+            {session && session.status !== "offline" && session.status.startsWith("discord") ? (
+              <div className="space-y-2">
+                <p className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Thao tác nhanh cho học sinh này</p>
+                <button
+                  onClick={handleMoveToAFK}
+                  disabled={moveLoading || botStatus?.online === false}
+                  className="w-full rounded-xl py-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500/20 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold"
+                >
+                  {moveLoading ? (
+                    <span className="h-3.5 w-3.5 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+                  ) : (
+                    <>🔇 Di chuyển sang phòng AFK</>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="text-[10px] text-center text-[hsl(var(--muted-foreground))] italic py-2">
+                Học sinh đang offline, các thao tác điều khiển bot đã bị khóa.
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Discord History Dashboard */}
@@ -266,14 +438,14 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
               </tr>
             </thead>
             <tbody className="divide-y divide-[hsl(var(--border))]/10">
-              {discordLogs.length === 0 ? (
+              {paginatedLogs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-[hsl(var(--muted-foreground))]/60 italic">
                     Chưa ghi nhận phiên học nào trên Discord.
                   </td>
                 </tr>
               ) : (
-                discordLogs.map((log) => {
+                paginatedLogs.map((log) => {
                   const activeMins = Math.floor(log.total_active_seconds / 60)
                   const activeSecs = log.total_active_seconds % 60
                   const afkMins = Math.floor(log.total_afk_seconds / 60)
@@ -334,6 +506,34 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
             </tbody>
           </table>
         </div>
+
+        {totalLogsPages > 1 && (
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-[hsl(var(--border))]/10">
+            <span className="text-xs text-[hsl(var(--muted-foreground))]">
+              Trang {activeLogsPage} / {totalLogsPages}
+            </span>
+            <div className="flex gap-1.5">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setLogsPage(prev => Math.max(1, prev - 1))}
+                disabled={activeLogsPage === 1}
+                className="h-8 rounded-lg px-3 text-xs"
+              >
+                Trước
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setLogsPage(prev => Math.min(totalLogsPages, prev + 1))}
+                disabled={activeLogsPage === totalLogsPages}
+                className="h-8 rounded-lg px-3 text-xs"
+              >
+                Sau
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Alert Modal */}

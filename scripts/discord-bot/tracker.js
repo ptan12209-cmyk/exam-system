@@ -125,6 +125,78 @@ app.post('/api/send-dm', async (req, res) => {
   }
 });
 
+app.post('/api/bot-control', async (req, res) => {
+  const { command, discord_id, secret_token } = req.body;
+
+  if (secret_token !== DISCORD_SYNC_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    if (command === 'status') {
+      const activeMembers = [];
+      const channel = client.channels.cache.get(CLASS_VOICE_CHANNEL_ID);
+      if (channel && channel.isVoiceBased()) {
+        for (const [memberId, member] of channel.members.entries()) {
+          const session = activeSessions.get(memberId);
+          activeMembers.push({
+            username: member.user.username,
+            discord_id: memberId,
+            status: session?.deafened ? 'AFK' : session?.muted ? 'Muted' : 'Studying',
+            joined_at: session?.joinedAt ? new Date(session.joinedAt).toISOString() : null
+          });
+        }
+      }
+
+      return res.json({
+        online: true,
+        bot_user: client.user?.tag || 'Unknown Bot',
+        uptime: client.uptime,
+        ping: client.ws.ping,
+        voice_channel_id: CLASS_VOICE_CHANNEL_ID,
+        voice_channel_name: channel?.name || 'Unknown',
+        active_members: activeMembers
+      });
+    }
+
+    if (command === 'move_to_afk') {
+      if (!discord_id) {
+        return res.status(400).json({ error: 'Missing discord_id' });
+      }
+      if (!AFK_VOICE_CHANNEL_ID) {
+        return res.status(400).json({ error: 'AFK channel not configured' });
+      }
+
+      const channel = client.channels.cache.get(CLASS_VOICE_CHANNEL_ID);
+      if (channel && channel.isVoiceBased()) {
+        const member = channel.members.get(discord_id);
+        if (member) {
+          await member.voice.setChannel(AFK_VOICE_CHANNEL_ID);
+          // Gửi tin nhắn thông báo
+          const embed = new EmbedBuilder()
+            .setColor(0xEF4444)
+            .setTitle('🔇 Bạn đã bị chuyển sang phòng AFK')
+            .setDescription('Giáo viên đã chuyển bạn sang phòng AFK từ bảng điều khiển trên Web.')
+            .setTimestamp()
+            .setFooter({ text: 'ECODEx Learning System' });
+          await member.send({ embeds: [embed] }).catch(() => null);
+
+          return res.json({ success: true, message: `Moved user to AFK channel` });
+        } else {
+          return res.status(404).json({ error: 'Học sinh hiện không ở trong phòng học Discord' });
+        }
+      } else {
+        return res.status(404).json({ error: 'Không tìm thấy phòng học hoặc phòng trống' });
+      }
+    }
+
+    return res.status(400).json({ error: 'Unknown command' });
+  } catch (error) {
+    console.error('[BOT CONTROL ERROR]', error.message);
+    res.status(500).json({ error: 'Failed to execute command: ' + error.message });
+  }
+});
+
 app.listen(BOT_API_PORT, () => {
   console.log(`[EXPRESS] DM API server listening on port ${BOT_API_PORT}`);
 });
