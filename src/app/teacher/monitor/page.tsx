@@ -26,6 +26,7 @@ export default function TeacherMonitorPage() {
   const {
     teacherProfile, students, selectedStudent, setSelectedStudent,
     loading, studentTab, setStudentTab, afkWarning,
+    session,
     // Link form
     linkingEmail, setLinkingEmail, linkingLoading, linkingError, linkingSuccess,
     handleLinkStudent,
