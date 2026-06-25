@@ -40,6 +40,7 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
   const [alertMessage, setAlertMessage] = useState("")
   const [alertSending, setAlertSending] = useState(false)
   const [alertResult, setAlertResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [alertType, setAlertType] = useState<"dm" | "ping">("dm")
 
   // Bot control state
   interface BotStatus {
@@ -90,12 +91,12 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ command: "move_to_afk", student_id: studentId })
       })
-      const data = await res.json()
-      if (res.ok && data.success) {
-        alert("Đã chuyển học sinh sang phòng AFK thành công!")
+      if (res.ok) {
+        alert("Đã chuyển học sinh sang phòng AFK")
         fetchBotStatus()
       } else {
-        alert(data.error || "Không thể chuyển học sinh sang phòng AFK")
+        const data = await res.json()
+        alert(data.error || "Không thể chuyển phòng")
       }
     } catch (err) {
       alert("Lỗi kết nối khi gửi yêu cầu chuyển phòng")
@@ -132,20 +133,24 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
 
   useEffect(() => { fetchHeatmap() }, [fetchHeatmap])
 
-  // Gửi nhắc nhở qua Discord DM
+  // Gửi nhắc nhở qua Discord DM hoặc Ping
   const handleSendAlert = async () => {
     if (!alertMessage.trim() || !studentId) return
     setAlertSending(true)
     setAlertResult(null)
     try {
-      const res = await fetch("/api/study-sessions/send-alert", {
+      const endpoint = alertType === "dm" 
+        ? "/api/study-sessions/send-alert" 
+        : "/api/study-sessions/send-ping"
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ student_id: studentId, message: alertMessage.trim() })
       })
       const data = await res.json()
       if (res.ok) {
-        setAlertResult({ success: true, message: "Đã gửi nhắc nhở thành công!" })
+        setAlertResult({ success: true, message: data.message || "Đã gửi nhắc nhở thành công!" })
         setAlertMessage("")
       } else {
         setAlertResult({ success: false, message: data.error || "Không thể gửi nhắc nhở" })
@@ -549,13 +554,41 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-              Nhập nội dung nhắc nhở. Tin nhắn sẽ được gửi trực tiếp đến Discord của học sinh.
+            <div className="flex flex-col gap-2.5 mb-4 bg-[hsl(var(--background))]/50 border border-[hsl(var(--border))]/20 p-3 rounded-xl">
+              <label className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Phương thức gửi</label>
+              <div className="flex gap-5">
+                <label className="flex items-center gap-2 text-sm cursor-pointer select-none text-[hsl(var(--foreground))]">
+                  <input
+                    type="radio"
+                    name="alertType"
+                    checked={alertType === "dm"}
+                    onChange={() => setAlertType("dm")}
+                    className="accent-violet-500 h-4 w-4"
+                  />
+                  <span>DM riêng tư</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer select-none text-[hsl(var(--foreground))]">
+                  <input
+                    type="radio"
+                    name="alertType"
+                    checked={alertType === "ping"}
+                    onChange={() => setAlertType("ping")}
+                    className="accent-violet-500 h-4 w-4"
+                  />
+                  <span>Ping kênh chat</span>
+                </label>
+              </div>
+            </div>
+
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">
+              {alertType === "dm" 
+                ? "Tin nhắn nhắc nhở sẽ được gửi riêng qua hộp thư trực tiếp (DM) của học sinh."
+                : "Học sinh sẽ được mention-tag công khai ngay trên kênh text lớp học trên Discord."}
             </p>
             <textarea
               value={alertMessage}
               onChange={(e) => setAlertMessage(e.target.value)}
-              placeholder="Ví dụ: Bật mic lên tương tác đi em ơi!"
+              placeholder={alertType === "dm" ? "Ví dụ: Bật mic lên tương tác đi em ơi!" : "Ví dụ: chia sẻ màn hình học tập đi em!"}
               rows={3}
               className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-transparent p-3 text-sm placeholder:text-[hsl(var(--muted-foreground))]/50 focus:outline-none focus:ring-2 focus:ring-violet-500/30 resize-none"
             />

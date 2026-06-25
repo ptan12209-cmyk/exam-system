@@ -12,13 +12,14 @@
 
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const axios = require('axios');
 const express = require('express');
 
 // Configuration
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "YOUR_DISCORD_BOT_TOKEN";
 const CLASS_VOICE_CHANNEL_ID = process.env.CLASS_VOICE_CHANNEL_ID || "YOUR_CLASS_VOICE_CHANNEL_ID";
+const CLASS_TEXT_CHANNEL_ID = process.env.CLASS_TEXT_CHANNEL_ID || "";
 const WEB_API_URL = process.env.WEB_API_URL || "http://localhost:3000/api/study-sessions/discord-sync";
 const DISCORD_SYNC_SECRET = process.env.DISCORD_SYNC_SECRET || "discord_sync_secret_token_2026";
 const BOT_API_PORT = parseInt(process.env.BOT_API_PORT || "8080", 10);
@@ -125,6 +126,50 @@ app.post('/api/send-dm', async (req, res) => {
   }
 });
 
+app.post('/api/send-ping', async (req, res) => {
+  const { discord_id, message, secret_token } = req.body;
+
+  if (secret_token !== DISCORD_SYNC_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  if (!discord_id || !message) {
+    return res.status(400).json({ error: 'Missing discord_id or message' });
+  }
+
+  try {
+    let targetChannel = null;
+    
+    if (CLASS_TEXT_CHANNEL_ID) {
+      targetChannel = client.channels.cache.get(CLASS_TEXT_CHANNEL_ID);
+    }
+
+    if (!targetChannel) {
+      // Fallback: Tìm kênh text trong cùng Server chứa kênh voice học tập
+      const voiceChannel = client.channels.cache.get(CLASS_VOICE_CHANNEL_ID);
+      if (voiceChannel && voiceChannel.guild) {
+        const textChannels = voiceChannel.guild.channels.cache.filter(c => c.type === 0); // 0 = GuildText
+        targetChannel = textChannels.find(c => 
+          c.name.includes('classroom') || 
+          c.name.includes('study') || 
+          c.name.includes('general')
+        ) || textChannels.first();
+      }
+    }
+
+    if (!targetChannel) {
+      return res.status(404).json({ error: 'Không tìm thấy kênh text để ping' });
+    }
+
+    await targetChannel.send(`<@${discord_id}> ${message}`);
+    console.log(`[PING SENT] Pinged user <@${discord_id}> in #${targetChannel.name}: "${message}"`);
+    res.json({ success: true, channel_name: targetChannel.name });
+  } catch (error) {
+    console.error('[PING ERROR]', error.message);
+    res.status(500).json({ error: 'Failed to send ping: ' + error.message });
+  }
+});
+
 app.post('/api/bot-control', async (req, res) => {
   const { command, discord_id, secret_token } = req.body;
 
@@ -209,7 +254,31 @@ const commands = [
     .setDescription('Xem trạng thái học tập hiện tại của bạn trên Discord'),
   new SlashCommandBuilder()
     .setName('streak')
-    .setDescription('Xem chuỗi ngày học liên tiếp của bạn')
+    .setDescription('Xem chuỗi ngày học liên tiếp của bạn'),
+  new SlashCommandBuilder()
+    .setName('alert-dm')
+    .setDescription('Gửi nhắc nhở trực tiếp (DM) đến học sinh qua Bot')
+    .addUserOption(option => 
+      option.setName('student')
+        .setDescription('Học sinh nhận nhắc nhở')
+        .setRequired(true))
+    .addStringOption(option => 
+      option.setName('message')
+        .setDescription('Nội dung tin nhắn nhắc nhở')
+        .setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+  new SlashCommandBuilder()
+    .setName('alert-ping')
+    .setDescription('Ping nhắc nhở học sinh công khai trong kênh chat')
+    .addUserOption(option => 
+      option.setName('student')
+        .setDescription('Học sinh nhận nhắc nhở')
+        .setRequired(true))
+    .addStringOption(option => 
+      option.setName('message')
+        .setDescription('Nội dung tin nhắn nhắc nhở')
+        .setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
 ].map(cmd => cmd.toJSON());
 
 // ──────────────────── Bot Events ────────────────────
@@ -299,6 +368,63 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.reply({ embeds: [embed], ephemeral: true });
     } catch (err) {
       await interaction.reply({ content: '❌ Không thể lấy thông tin streak.', ephemeral: true });
+    }
+  }
+
+  if (interaction.commandName === 'alert-dm') {
+    if (!interaction.memberPermissions.has(PermissionFlagsBits.ModerateMembers)) {
+      await interaction.reply({ content: '❌ Bạn không có quyền thực hiện lệnh này (yêu cầu quyền Moderate Members).', ephemeral: true });
+      return;
+    }
+
+    const studentUser = interaction.options.getUser('student');
+    const messageText = interaction.options.getString('message');
+
+    try {
+      const embed = new EmbedBuilder()
+        .setColor(0x5865F2)
+        .setTitle('📢 Nhắc nhở từ Giáo viên')
+        .setDescription(messageText)
+        .setTimestamp()
+        .setFooter({ text: 'ECODEx Learning System' });
+
+      await studentUser.send({ embeds: [embed] });
+      await interaction.reply({ content: `✅ Đã gửi DM nhắc nhở thành công đến **${studentUser.username}**.`, ephemeral: true });
+      console.log(`[DM SENT] ${interaction.user.username} sent DM to ${studentUser.username}: "${messageText}"`);
+    } catch (error) {
+      await interaction.reply({ content: `❌ Không thể gửi DM: ${error.message}`, ephemeral: true });
+    }
+  }
+
+  if (interaction.commandName === 'alert-ping') {
+    if (!interaction.memberPermissions.has(PermissionFlagsBits.ModerateMembers)) {
+      await interaction.reply({ content: '❌ Bạn không có quyền thực hiện lệnh này (yêu cầu quyền Moderate Members).', ephemeral: true });
+      return;
+    }
+
+    const studentUser = interaction.options.getUser('student');
+    const messageText = interaction.options.getString('message');
+
+    try {
+      let targetChannel = interaction.channel;
+      
+      if (CLASS_TEXT_CHANNEL_ID) {
+        const configuredChannel = client.channels.cache.get(CLASS_TEXT_CHANNEL_ID);
+        if (configuredChannel && configuredChannel.isTextBased()) {
+          targetChannel = configuredChannel;
+        }
+      }
+
+      if (!targetChannel) {
+        await interaction.reply({ content: '❌ Không tìm thấy kênh chat để ping.', ephemeral: true });
+        return;
+      }
+
+      await targetChannel.send(`<@${studentUser.id}> ${messageText}`);
+      await interaction.reply({ content: `✅ Đã ping nhắc nhở thành công học sinh **${studentUser.username}** trong kênh <#${targetChannel.id}>.`, ephemeral: true });
+      console.log(`[PING SENT] ${interaction.user.username} pinged ${studentUser.username} in #${targetChannel.name}: "${messageText}"`);
+    } catch (error) {
+      await interaction.reply({ content: `❌ Không thể gửi tin nhắn ping: ${error.message}`, ephemeral: true });
     }
   }
 });
