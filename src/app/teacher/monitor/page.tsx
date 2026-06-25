@@ -128,36 +128,57 @@ export default function TeacherMonitorPage() {
 
         {selectedStudent && (
           <div className="space-y-6">
-            {/* Tabs Selector */}
-            <div className="flex gap-2 border-b border-[hsl(var(--border))]/20 pb-2 mb-6">
-              <button 
-                onClick={() => setStudentTab("overview")} 
-                className={cn(
-                  "px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2", 
-                  studentTab === "overview" ? "border-violet-500 text-violet-500" : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                )}
-              >
-                <Eye className="h-4 w-4" /> Tổng quan
-              </button>
-              <button 
-                onClick={() => setStudentTab("discord")} 
-                className={cn(
-                  "px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2", 
-                  studentTab === "discord" ? "border-violet-500 text-violet-500" : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                )}
-              >
-                <Activity className="h-4 w-4" /> Giám sát Discord
-                {afkWarning && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />}
-              </button>
-              <button 
-                onClick={() => setStudentTab("timetable")} 
-                className={cn(
-                  "px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2", 
-                  studentTab === "timetable" ? "border-violet-500 text-violet-500" : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                )}
-              >
-                <Calendar className="h-4 w-4" /> Thời khóa biểu
-              </button>
+            {/* Tabs Selector + Quick Switcher */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[hsl(var(--border))]/20 pb-3 mb-6">
+              <div className="flex flex-wrap gap-2">
+                <button 
+                  onClick={() => setStudentTab("overview")} 
+                  className={cn(
+                    "px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2", 
+                    studentTab === "overview" ? "border-violet-500 text-violet-500" : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  )}
+                >
+                  <Eye className="h-4 w-4" /> Tổng quan
+                </button>
+                <button 
+                  onClick={() => setStudentTab("discord")} 
+                  className={cn(
+                    "px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2", 
+                    studentTab === "discord" ? "border-violet-500 text-violet-500" : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  )}
+                >
+                  <Activity className="h-4 w-4" /> Giám sát Discord
+                  {afkWarning && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />}
+                </button>
+                <button 
+                  onClick={() => setStudentTab("timetable")} 
+                  className={cn(
+                    "px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2", 
+                    studentTab === "timetable" ? "border-violet-500 text-violet-500" : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  )}
+                >
+                  <Calendar className="h-4 w-4" /> Thời khóa biểu
+                </button>
+              </div>
+
+              {/* Quick Switcher on Tab Header */}
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <span className="text-xs text-[hsl(var(--muted-foreground))] font-bold uppercase tracking-wider whitespace-nowrap">Chuyển nhanh:</span>
+                <div className="w-full md:w-64">
+                  <AnimatedSelect 
+                    value={selectedStudent?.id || ""} 
+                    onValueChange={(value) => {
+                      const st = students.find(s => s.id === value)
+                      if (st) setSelectedStudent(st)
+                    }}
+                    options={students.map((student) => ({
+                      value: student.id,
+                      label: `${student.full_name || "Chưa rõ tên"} (${student.class || "Chưa chọn lớp"})`
+                    }))}
+                    placeholder="Chọn học sinh..."
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Tab Content */}
