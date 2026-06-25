@@ -31,6 +31,7 @@ import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
 import { DailyCheckIn } from "@/components/gamification/DailyCheckIn"
 import { XpBar } from "@/components/gamification/XpBar"
 import { StudentShell } from "@/components/student/StudentShell"
+import { UserMenu } from "@/components/UserMenu"
 
 const instrumentSerif = { className: "font-instrument-serif" }
 const jetbrainsMono = { className: "font-jetbrains-mono" }
@@ -178,16 +179,12 @@ export default function StudentXDashboard() {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className={cn("text-xs text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>
-              Học viên: {profile?.full_name || "X"}
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center justify-center h-9 w-9 rounded-full border border-[hsl(var(--border))]/30 hover:border-[hsl(var(--primary))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-all"
-              title="Đăng xuất"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
+            <UserMenu
+              userName={profile?.full_name || "X"}
+              userClass="Lớp X"
+              onLogout={handleLogout}
+              role="student"
+            />
           </div>
         </div>
       </header>

@@ -21,6 +21,7 @@ import {
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
 import { StudentShell } from "@/components/student/StudentShell"
+import { UserMenu } from "@/components/UserMenu"
 
 import { DEFAULT_TIMETABLE_SLOTS, TimetableSlot } from "./_components/constants"
 import { EditSlotModal } from "./_components/EditSlotModal"
@@ -173,6 +174,11 @@ export default function TimetablePage() {
     setShowResetConfirm(false)
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
+
   // Xử lý hoàn thành/hủy hoàn thành ca học
   const handleToggleComplete = () => {
     if (!selectedSlot) return
@@ -260,7 +266,7 @@ export default function TimetablePage() {
   return (
     <StudentShell className={cn("bg-[hsl(var(--background))] text-[hsl(var(--foreground))] min-h-screen", inter.className)}>
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/90 px-4 py-4 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/90 px-4 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Link
             href="/student/X/dashboard"
@@ -270,8 +276,16 @@ export default function TimetablePage() {
             <span>Dashboard X</span>
           </Link>
           
-          <div className={cn("text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--primary))] animate-pulse", jetbrainsMono.className)}>
-            Space X Timetable
+          <div className="flex items-center gap-4">
+            <div className={cn("hidden sm:block text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--primary))] animate-pulse", jetbrainsMono.className)}>
+              Space X Timetable
+            </div>
+            <UserMenu
+              userName={profile?.full_name || "X"}
+              userClass="Lớp X"
+              onLogout={handleLogout}
+              role="student"
+            />
           </div>
         </div>
       </header>

@@ -75,5 +75,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 Your code will be review by claude opus 4.8 and codex 5.5
 ## Quy tắc dự án (Project Rules)
-- **ĐỪNG BAO GIỜ TỰ BUILD HOẶC PUSH LÊN GIT**: Tuyệt đối không tự động chạy lệnh build (`npm run build`, `next build`) hay tự động chạy lệnh git push khi không có yêu cầu trực tiếp rõ ràng từ người dùng.
+- **ĐỪNG BAO GIỜ TỰ BUILD**: Tuyệt đối không tự động chạy lệnh build (`npm run build`, `next build`) trừ khi được yêu cầu trực tiếp rõ ràng.
+- **LUÔN LUÔN PUSH LÊN GIT SAU KHI CODE XONG**: Khi hoàn tất việc lập trình và kiểm tra tính chính xác của code, hãy tự động `git add`, `git commit` và `git push` lên Git mà không cần người dùng nhắc nhở.
+
 

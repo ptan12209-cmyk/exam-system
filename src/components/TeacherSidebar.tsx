@@ -194,7 +194,7 @@ export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setColl
       {/* Theme selection / Settings */}
       <div className={cn("p-4 border-t border-[hsl(var(--border))]/10 flex", collapsed ? "justify-center" : "justify-between items-center")}>
         {!collapsed && <span className="text-xs font-semibold text-muted-foreground">Cài đặt giao diện</span>}
-        <ThemeToggle />
+        <ThemeToggle side="top" align="left" />
       </div>
 
       {/* Footer / Logout */}
