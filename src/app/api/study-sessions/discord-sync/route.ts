@@ -13,7 +13,11 @@ const STREAK_THRESHOLD_MINUTES = 60 // Cần ít nhất 60 phút học thực ch
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { discord_id, status, duration_seconds, deafened, muted_seconds, secret_token } = body
+    const { 
+      discord_id, status, duration_seconds, deafened, muted_seconds, 
+      sharing_screen, camera_on, sharing_screen_seconds, camera_seconds,
+      secret_token 
+    } = body
 
     // 1. Authenticate webhook secret
     const expectedToken = process.env.DISCORD_SYNC_SECRET || "discord_sync_secret_token_2026"
@@ -81,6 +85,8 @@ export async function POST(req: Request) {
           last_status_change: lastStatusChange,
           discord_duration: duration_seconds || 0,
           discord_deafened: !!deafened,
+          discord_sharing_screen: !!sharing_screen,
+          discord_camera_on: !!camera_on,
           discord_last_active: nowIso,
           active_alert: activeAlert
         },
@@ -105,6 +111,8 @@ export async function POST(req: Request) {
       .maybeSingle()
 
     const mutedSecs = typeof muted_seconds === 'number' ? Math.max(0, muted_seconds) : 0
+    const screenSecs = typeof sharing_screen_seconds === 'number' ? Math.max(0, sharing_screen_seconds) : 0
+    const cameraSecs = typeof camera_seconds === 'number' ? Math.max(0, camera_seconds) : 0
 
     if (status !== 'offline') {
       if (!openLog) {
@@ -121,7 +129,9 @@ export async function POST(req: Request) {
             session_date: new Date().toISOString().split('T')[0],
             total_active_seconds: duration_seconds || 0,
             total_afk_seconds: 0,
-            total_muted_seconds: mutedSecs
+            total_muted_seconds: mutedSecs,
+            total_sharing_screen_seconds: screenSecs,
+            total_camera_seconds: cameraSecs
           })
       } else {
         const joinedAt = new Date(openLog.joined_at)
@@ -134,7 +144,9 @@ export async function POST(req: Request) {
           .update({
             total_active_seconds: activeSeconds,
             total_afk_seconds: afkSeconds,
-            total_muted_seconds: mutedSecs
+            total_muted_seconds: mutedSecs,
+            total_sharing_screen_seconds: screenSecs,
+            total_camera_seconds: cameraSecs
           })
           .eq("id", openLog.id)
       }
@@ -152,7 +164,9 @@ export async function POST(req: Request) {
             left_at: nowIso,
             total_active_seconds: activeSeconds,
             total_afk_seconds: afkSeconds,
-            total_muted_seconds: mutedSecs
+            total_muted_seconds: mutedSecs,
+            total_sharing_screen_seconds: screenSecs,
+            total_camera_seconds: cameraSecs
           })
           .eq("id", openLog.id)
       }

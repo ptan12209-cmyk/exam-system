@@ -561,6 +561,8 @@ export interface StudySession {
     discord_duration?: number
     discord_deafened?: boolean
     discord_last_active?: string
+    discord_sharing_screen?: boolean
+    discord_camera_on?: boolean
 }
 
 export interface StudyTask {
@@ -592,6 +594,8 @@ export interface DiscordLog {
     total_active_seconds: number
     total_afk_seconds: number
     total_muted_seconds: number
+    total_sharing_screen_seconds: number
+    total_camera_seconds: number
 }
 
 export interface StudentTimetableEntry {

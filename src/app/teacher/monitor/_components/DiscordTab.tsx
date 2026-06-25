@@ -5,13 +5,14 @@ import { AlertCircle, Bell, Send, Flame, X } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid 
 } from "recharts"
-import type { DiscordLog } from "../_types"
+import type { DiscordLog, StudySession } from "../_types"
 
 interface DiscordTabProps {
   processedDiscordLogs: Array<Record<string, string | number>>
   discordLogs: DiscordLog[]
   afkWarning: boolean
   studentId?: string
+  session?: StudySession | null
 }
 
 const DAYS_LABEL = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"]
@@ -26,7 +27,7 @@ function getHeatColor(minutes: number): string {
   return "bg-emerald-500/85"
 }
 
-export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, studentId }: DiscordTabProps) {
+export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, studentId, session }: DiscordTabProps) {
   // Heatmap state
   const [heatmap, setHeatmap] = useState<Record<string, number>>({})
   const [streak, setStreak] = useState(0)
@@ -86,7 +87,7 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Streak + Alert Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Streak Card */}
         <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-md flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500/10 border border-orange-500/20">
@@ -97,7 +98,47 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
             <p className="text-3xl font-bold text-orange-500">{streak} <span className="text-sm font-normal text-[hsl(var(--muted-foreground))]">ngày liên tiếp</span></p>
           </div>
         </div>
-        {/* Send Alert Button */}
+
+        {/* Real-time Interaction Card */}
+        <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-md flex flex-col justify-center gap-3">
+          <p className="text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-bold">Giám sát Real-time</p>
+          <div className="flex flex-wrap gap-2">
+            {session && session.status !== "offline" && session.status.startsWith("discord") ? (
+              <>
+                {session.discord_sharing_screen ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-3 py-1 text-xs font-semibold text-emerald-400">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    🖥️ Đang share màn hình
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 border border-red-500/25 px-3 py-1 text-xs font-semibold text-red-400 animate-pulse">
+                    <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                    ⚠️ Chưa share màn hình
+                  </span>
+                )}
+
+                {session.discord_camera_on ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-3 py-1 text-xs font-semibold text-emerald-400">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    📷 Đang bật camera
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-500/10 border border-slate-500/25 px-3 py-1 text-xs font-semibold text-slate-400">
+                    <span className="h-2 w-2 rounded-full bg-slate-500" />
+                    📷 Tắt camera
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-500/10 border border-slate-500/25 px-3 py-1 text-xs font-semibold text-slate-400">
+                <span className="h-2 w-2 rounded-full bg-slate-500" />
+                Học sinh đang ngoại tuyến
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Send Alert Card */}
         <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-md flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-bold">Nhắc nhở qua Discord</p>
@@ -220,12 +261,14 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
                 <th className="pb-3">Rời phòng</th>
                 <th className="pb-3">Thời gian học</th>
                 <th className="pb-3">Treo máy (AFK)</th>
+                <th className="pb-3">Screen Share</th>
+                <th className="pb-3">Camera</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[hsl(var(--border))]/10">
               {discordLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-[hsl(var(--muted-foreground))]/60 italic">
+                  <td colSpan={7} className="py-8 text-center text-[hsl(var(--muted-foreground))]/60 italic">
                     Chưa ghi nhận phiên học nào trên Discord.
                   </td>
                 </tr>
@@ -235,6 +278,22 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
                   const activeSecs = log.total_active_seconds % 60
                   const afkMins = Math.floor(log.total_afk_seconds / 60)
                   const afkSecs = log.total_afk_seconds % 60
+
+                  // Calculate screen share details
+                  const shareSecs = log.total_sharing_screen_seconds || 0
+                  const shareMins = Math.floor(shareSecs / 60)
+                  const shareSecRemaining = shareSecs % 60
+                  const sharePercent = log.total_active_seconds > 0 
+                    ? Math.min(100, Math.round((shareSecs / log.total_active_seconds) * 100)) 
+                    : 0
+
+                  // Calculate camera details
+                  const camSecs = log.total_camera_seconds || 0
+                  const camMins = Math.floor(camSecs / 60)
+                  const camSecRemaining = camSecs % 60
+                  const camPercent = log.total_active_seconds > 0 
+                    ? Math.min(100, Math.round((camSecs / log.total_active_seconds) * 100)) 
+                    : 0
                   
                   return (
                     <tr key={log.id} className="hover:bg-[hsl(var(--muted))]/5 transition-colors">
@@ -255,6 +314,18 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
                       </td>
                       <td className="py-3 text-amber-500">
                         {afkMins > 0 ? `${afkMins}p ` : ""}{afkSecs}s
+                      </td>
+                      <td className="py-3 text-violet-400 font-medium">
+                        {shareMins > 0 ? `${shareMins}p ` : ""}{shareSecRemaining}s
+                        <span className="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-400">
+                          {sharePercent}%
+                        </span>
+                      </td>
+                      <td className="py-3 text-blue-400 font-medium">
+                        {camMins > 0 ? `${camMins}p ` : ""}{camSecRemaining}s
+                        <span className="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">
+                          {camPercent}%
+                        </span>
                       </td>
                     </tr>
                   )
