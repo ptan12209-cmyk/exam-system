@@ -103,3 +103,30 @@ API Target URL: http://localhost:3000/api/study-sessions/discord-sync
 ```
 
 Khi có học sinh tham gia/rời kênh thoại, bot sẽ ghi nhận log real-time và gửi yêu cầu đồng bộ hóa về trang web để cập nhật trực tiếp tiến độ học tập trên **Đài Giám Sát** của Giáo viên/Phụ huynh.
+
+---
+
+## 👩‍🏫 PHẦN 4: Hướng Dẫn Giáo Viên / Phụ Huynh Giám Sát Trên Website
+
+Sau khi bot đã được chạy và học sinh đã điền Discord ID, giáo viên có thể bắt đầu giám sát tiến trình học tập của học sinh trực tiếp trên giao diện web:
+
+### Bước 1: Liên kết tài khoản học sinh cần giám sát
+1. Đăng nhập với tài khoản có vai trò **Giáo viên** (Teacher) hoặc **Phụ huynh** (Parent).
+2. Truy cập vào trang **Đài Giám Sát** (`/teacher/monitor`).
+3. Nếu chưa liên kết học sinh nào:
+   - Hệ thống sẽ hiển thị một form để kết nối.
+   - Nhập chính xác email đăng ký tài khoản của học sinh và nhấn **Kết nối**.
+4. Nếu đã có tài khoản liên kết, bạn sẽ thấy tên học sinh hiển thị trong hộp chọn (dropdown) **Học sinh đang quan sát** ở góc trên bên phải.
+
+### Bước 2: Theo dõi hoạt động học tập qua Discord
+1. Chọn học sinh cần theo dõi trên thanh dropdown.
+2. Nhấp vào tab **Giám sát Discord**.
+3. Tại đây, bạn sẽ thấy 2 phần dữ liệu trực quan:
+   - **Biểu đồ hoạt động Discord (Stacked Bar Chart)**: Thống kê tổng số phút học tập voice (màu xanh lá) và số phút treo máy/AFK (màu cam) của học sinh trong 7 ngày gần nhất.
+   - **Chi tiết các phiên học**: Bảng danh sách ghi nhận chi tiết thời gian chính xác học sinh tham gia phòng thoại (`Vào phòng`), rời phòng thoại (`Rời phòng`), cũng như tổng thời gian học và thời gian treo máy của từng ngày.
+
+### Bước 3: Trạng thái kết nối Real-time & Cảnh báo AFK
+*   **Kết nối trực tiếp**: Nếu học sinh hiện đang ở trong kênh thoại Discord học tập, tại cột **Rời phòng** sẽ hiển thị nhãn trạng thái động nhấp nháy: `Đang kết nối 🟢`.
+*   **Cảnh báo Treo máy quá 50%**: Nếu tổng thời gian học sinh tắt tai nghe (Deafened) hoặc không phát âm thanh vượt quá 50% tổng lượng thời gian tham gia lớp học, một nhãn cảnh báo đỏ `Cảnh báo: Treo máy > 50%` sẽ xuất hiện tự động để giáo viên nhanh chóng nắm bắt.
+*   **Cảnh báo AFK quá 10 phút**: Trong trường hợp học sinh tắt tai nghe liên tục trong kênh thoại trên 10 phút, hệ thống sẽ tự động phát một cảnh báo đỏ nổi bật `active_alert` trên giao diện web của học sinh yêu cầu học sinh bật lại tai nghe để tập trung học.
+
