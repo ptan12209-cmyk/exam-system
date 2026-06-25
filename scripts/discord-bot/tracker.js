@@ -22,7 +22,7 @@ const CLASS_VOICE_CHANNEL_ID = process.env.CLASS_VOICE_CHANNEL_ID || "YOUR_CLASS
 const CLASS_TEXT_CHANNEL_ID = process.env.CLASS_TEXT_CHANNEL_ID || "";
 const WEB_API_URL = process.env.WEB_API_URL || "http://localhost:3000/api/study-sessions/discord-sync";
 const DISCORD_SYNC_SECRET = process.env.DISCORD_SYNC_SECRET || "discord_sync_secret_token_2026";
-const BOT_API_PORT = parseInt(process.env.BOT_API_PORT || "8080", 10);
+const BOT_API_PORT = parseInt(process.env.BOT_API_PORT || process.env.PORT || "8080", 10);
 
 const AFK_VOICE_CHANNEL_ID = process.env.AFK_VOICE_CHANNEL_ID || "";
 const AFK_DEAFEN_TIMEOUT_SECONDS = parseInt(process.env.AFK_DEAFEN_TIMEOUT_SECONDS || "600", 10);
