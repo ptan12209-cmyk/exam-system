@@ -42,7 +42,6 @@ const MANAGE_ITEMS = [
   { href: "/teacher/study", label: "Quản lý bài học", icon: BookOpen },
   { href: "/teacher/exam-bank", label: "Ngân hàng đề", icon: Database },
   { href: "/teacher/arena", label: "Đấu trường", icon: Swords },
-  { href: "/teacher/ielts", label: "Luyện thi IELTS", icon: Globe2 },
   { href: "/teacher/analytics", label: "Thống kê chi tiết", icon: PieChart },
 ]
 

@@ -206,17 +206,38 @@ export default function StudentDashboard() {
           {[
             { href: "/resources", label: "Thư viện tài liệu", icon: BookOpen },
             { href: "/arena", label: "Đấu trường", icon: Swords },
-            { href: "/student/ielts", label: "Luyện thi IELTS", icon: GraduationCap },
+            { href: "https://theieltsdictionary.com/", label: "IELTS", icon: GraduationCap, isExternal: true },
             { href: "/student/achievements", label: "Thành tích", icon: Award },
             { href: "/student/checklist", label: "Checklist / Planner", icon: ListTodo },
             { href: "/student/co-study", label: "Phòng Pomodoro YPT", icon: Timer },
             { href: "/live", label: "Lớp học trực tuyến", icon: Video },
-          ].map((item) => (
-            <Link key={item.href} href={item.href} className="liquid-glass rounded-[2rem] p-5 transition-transform hover:-translate-y-0.5 shadow-sm">
-              <item.icon className="mb-4 h-5 w-5 text-[hsl(var(--muted-foreground))]" strokeWidth={1.2} />
-              <p className="text-sm font-medium">{item.label}</p>
-            </Link>
-          ))}
+          ].map((item) => {
+            const content = (
+              <>
+                <item.icon className="mb-4 h-5 w-5 text-[hsl(var(--muted-foreground))]" strokeWidth={1.2} />
+                <p className="text-sm font-medium">{item.label}</p>
+              </>
+            )
+            return item.isExternal ? (
+              <a 
+                key={item.href} 
+                href={item.href} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="liquid-glass rounded-[2rem] p-5 transition-transform hover:-translate-y-0.5 shadow-sm block"
+              >
+                {content}
+              </a>
+            ) : (
+              <Link 
+                key={item.href} 
+                href={item.href} 
+                className="liquid-glass rounded-[2rem] p-5 transition-transform hover:-translate-y-0.5 shadow-sm"
+              >
+                {content}
+              </Link>
+            )
+          })}
         </section>
 
         <section className="mt-10 overflow-hidden rounded-[2rem] liquid-glass shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">

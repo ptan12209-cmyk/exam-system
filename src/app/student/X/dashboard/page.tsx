@@ -305,21 +305,42 @@ export default function StudentXDashboard() {
             {[
               { href: "/resources", label: "Thư viện tài liệu", icon: BookOpen },
               { href: "/arena", label: "Đấu trường", icon: Swords },
-              { href: "/student/ielts", label: "Luyện thi IELTS", icon: GraduationCap },
+              { href: "https://theieltsdictionary.com/", label: "IELTS", icon: GraduationCap, isExternal: true },
               { href: "/student/achievements", label: "Kho thành tích", icon: Award },
               { href: "/student/X/timetable", label: "Thời khóa biểu X", icon: Calendar },
               { href: "/student/X/checklist", label: "Checklist / Mục tiêu", icon: ListTodo },
               { href: "/student/co-study", label: "Phòng Pomodoro", icon: Timer },
               { href: "/live", label: "Lớp học trực tuyến", icon: Video },
-            ].map((item) => (
-              <Link key={item.href} href={item.href} className="bg-[hsl(var(--card))] border border-[hsl(var(--border))]/20 rounded-2xl p-5 hover:border-[hsl(var(--primary))] transition-all group duration-200">
-                <item.icon className="mb-4 h-6 w-6 text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--primary))] transition-colors" strokeWidth={1.5} />
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-[hsl(var(--foreground))]">{item.label}</p>
-                  <ChevronRight className="h-4 w-4 text-[hsl(var(--muted-foreground))] opacity-0 group-hover:opacity-100 group-hover:text-[hsl(var(--primary))] transition-all" />
-                </div>
-              </Link>
-            ))}
+            ].map((item) => {
+              const content = (
+                <>
+                  <item.icon className="mb-4 h-6 w-6 text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--primary))] transition-colors" strokeWidth={1.5} />
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-[hsl(var(--foreground))]">{item.label}</p>
+                    <ChevronRight className="h-4 w-4 text-[hsl(var(--muted-foreground))] opacity-0 group-hover:opacity-100 group-hover:text-[hsl(var(--primary))] transition-all" />
+                  </div>
+                </>
+              )
+              return item.isExternal ? (
+                <a 
+                  key={item.href} 
+                  href={item.href} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="bg-[hsl(var(--card))] border border-[hsl(var(--border))]/20 rounded-2xl p-5 hover:border-[hsl(var(--primary))] transition-all group duration-200 block"
+                >
+                  {content}
+                </a>
+              ) : (
+                <Link 
+                  key={item.href} 
+                  href={item.href} 
+                  className="bg-[hsl(var(--card))] border border-[hsl(var(--border))]/20 rounded-2xl p-5 hover:border-[hsl(var(--primary))] transition-all group duration-200"
+                >
+                  {content}
+                </Link>
+              )
+            })}
           </div>
         </section>
 
