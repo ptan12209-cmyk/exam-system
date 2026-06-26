@@ -36,6 +36,38 @@ export default function TeacherDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
 
+  // Real-time Discord Study monitoring state
+  interface ActiveMember {
+    username: string
+    discord_id: string
+    status: string
+    joined_at: string | null
+  }
+  const [discordStatus, setDiscordStatus] = useState<{ online: boolean; active_members?: ActiveMember[] } | null>(null)
+  
+  useEffect(() => {
+    if (!user) return
+    const fetchDiscordStatus = async () => {
+      try {
+        const res = await fetch("/api/study-sessions/bot-control", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ command: "status" })
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setDiscordStatus(data)
+        }
+      } catch (err) {
+        console.error("Failed to fetch discord status:", err)
+      }
+    }
+    
+    fetchDiscordStatus()
+    const interval = setInterval(fetchDiscordStatus, 60000)
+    return () => clearInterval(interval)
+  }, [user])
+
   useEffect(() => {
     if (!user) return
     
@@ -117,13 +149,60 @@ export default function TeacherDashboard() {
             </p>
           </div>
 
-          <div className="liquid-glass rounded-[2rem] p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">Tổng quan nhanh</p>
-            <div className="mt-5 grid grid-cols-3 gap-3 text-center text-sm">
-              <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-3"><div className="text-2xl font-semibold">{stats.totalExams}</div><div className="text-[hsl(var(--muted-foreground))]">Đề thi</div></div>
-              <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-3"><div className="text-2xl font-semibold">{stats.publishedExams}</div><div className="text-[hsl(var(--muted-foreground))]">Đã phát hành</div></div>
-              <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-3"><div className="text-2xl font-semibold">{stats.totalSubmissions}</div><div className="text-[hsl(var(--muted-foreground))]">Lượt nộp</div></div>
+          <div className="space-y-4 w-full">
+            {/* Quick Stats Card */}
+            <div className="liquid-glass rounded-[2rem] p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Tổng quan nhanh</p>
+              <div className="mt-5 grid grid-cols-3 gap-3 text-center text-sm">
+                <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-3"><div className="text-2xl font-semibold">{stats.totalExams}</div><div className="text-[hsl(var(--muted-foreground))]">Đề thi</div></div>
+                <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-3"><div className="text-2xl font-semibold">{stats.publishedExams}</div><div className="text-[hsl(var(--muted-foreground))]">Đã phát hành</div></div>
+                <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-3"><div className="text-2xl font-semibold">{stats.totalSubmissions}</div><div className="text-[hsl(var(--muted-foreground))]">Lượt nộp</div></div>
+              </div>
             </div>
+
+            {/* Real-time Discord Active Members Widget */}
+            {discordStatus && discordStatus.online && (
+              <div className="liquid-glass rounded-[2rem] p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)] border border-violet-500/10">
+                <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/30 pb-2 mb-3">
+                  <p className="text-sm font-semibold flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Đài Giám Sát Discord
+                  </p>
+                  <span className="text-[10px] uppercase font-bold text-violet-500 bg-violet-500/10 px-2 py-0.5 rounded-full">
+                    Real-time
+                  </span>
+                </div>
+                
+                {discordStatus.active_members && discordStatus.active_members.length > 0 ? (
+                  <div className="space-y-3 max-h-[160px] overflow-y-auto pr-1">
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      Hiện tại có **{discordStatus.active_members.length}** học sinh đang trong phòng học:
+                    </p>
+                    <div className="grid gap-2">
+                      {discordStatus.active_members.map((member) => (
+                        <div key={member.discord_id} className="flex items-center justify-between text-xs p-2 rounded-xl bg-[hsl(var(--muted))]/10 border border-[hsl(var(--border))]/20">
+                          <span className="font-medium flex items-center gap-1.5">
+                            👤 {member.username}
+                          </span>
+                          <span className={cn(
+                            "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase",
+                            member.status === "AFK" ? "bg-amber-500/10 text-amber-500" :
+                            member.status === "Muted" ? "bg-slate-500/10 text-slate-450" :
+                            "bg-emerald-500/10 text-emerald-500"
+                          )}>
+                            {member.status === "AFK" ? "Treo máy" : member.status === "Muted" ? "Tắt mic" : "Đang học"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] italic text-center py-4">
+                    Hiện chưa có học sinh nào trong phòng học Discord.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </section>
 

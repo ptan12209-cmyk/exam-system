@@ -54,6 +54,32 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
   const [botStatus, setBotStatus] = useState<BotStatus | null>(null)
   const [botLoading, setBotLoading] = useState(false)
   const [moveLoading, setMoveLoading] = useState(false)
+  const [startClassLoading, setStartClassLoading] = useState(false)
+
+  // Gửi lệnh bắt đầu buổi học chung đến Bot
+  const handleStartClass = async () => {
+    if (startClassLoading) return
+    if (!confirm("Bạn có muốn gửi thông báo bắt đầu buổi học chung trên Discord Server không? Bot sẽ gửi tin nhắn tag @everyone.")) return
+    
+    setStartClassLoading(true)
+    try {
+      const res = await fetch("/api/study-sessions/bot-control", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command: "start_class" })
+      })
+      if (res.ok) {
+        alert("Đã gửi thông báo bắt đầu buổi học chung lên Discord!")
+      } else {
+        const data = await res.json()
+        alert(data.error || "Không thể gửi thông báo bắt đầu học")
+      }
+    } catch (err) {
+      alert("Lỗi kết nối khi gửi yêu cầu bắt đầu học")
+    } finally {
+      setStartClassLoading(false)
+    }
+  }
 
   // Fetch bot status
   const fetchBotStatus = useCallback(async () => {
@@ -379,9 +405,21 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
               </div>
             ) : (
               <div className="text-[10px] text-center text-[hsl(var(--muted-foreground))] italic py-2">
-                Học sinh đang offline, các thao tác điều khiển bot đã bị khóa.
+                Học sinh đang offline, thao tác điều khiển nhanh đã bị khóa.
               </div>
             )}
+
+            <button
+              onClick={handleStartClass}
+              disabled={startClassLoading || botStatus?.online === false}
+              className="mt-3 w-full rounded-xl py-2.5 bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold shadow-sm"
+            >
+              {startClassLoading ? (
+                <span className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>📢 Bắt đầu buổi học chung</>
+              )}
+            </button>
           </div>
         </div>
       </div>

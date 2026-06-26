@@ -12,7 +12,7 @@
 
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const axios = require('axios');
 const express = require('express');
 
@@ -27,6 +27,8 @@ const BOT_API_PORT = parseInt(process.env.BOT_API_PORT || process.env.PORT || "8
 const AFK_VOICE_CHANNEL_ID = process.env.AFK_VOICE_CHANNEL_ID || "";
 const AFK_DEAFEN_TIMEOUT_SECONDS = parseInt(process.env.AFK_DEAFEN_TIMEOUT_SECONDS || "600", 10);
 const AFK_MUTE_TIMEOUT_SECONDS = parseInt(process.env.AFK_MUTE_TIMEOUT_SECONDS || "1800", 10);
+const AFK_SCREENSHARE_TIMEOUT_SECONDS = parseInt(process.env.AFK_SCREENSHARE_TIMEOUT_SECONDS || "600", 10);
+const CHECKIN_INTERVAL_SECONDS = parseInt(process.env.CHECKIN_INTERVAL_SECONDS || "2700", 10);
 
 const client = new Client({
   intents: [
@@ -36,8 +38,9 @@ const client = new Client({
 });
 
 // Map to store active study sessions:
-// userId -> { joinedAt, durationOffset, lastSyncedAt, deafened, deafenedSince, muted, mutedSince, mutedDuration, sharingScreen, sharingScreenSince, sharingScreenDuration, cameraOn, cameraSince, cameraDuration, screenShareReminderSent, joinTime }
+// userId -> { joinedAt, durationOffset, lastSyncedAt, deafened, deafenedSince, muted, mutedSince, mutedDuration, sharingScreen, sharingScreenSince, sharingScreenDuration, cameraOn, cameraSince, cameraDuration, screenShareReminderSent, joinTime, noScreenshareSince, lastCheckinTime }
 const activeSessions = new Map();
+const activeCheckins = new Map();
 
 // Helper to send sync update to Next.js API
 async function syncSession(userId, status, durationSeconds, deafened, mutedSeconds, sharingScreen, cameraOn, sharingScreenSeconds, cameraSeconds) {
@@ -233,6 +236,29 @@ app.post('/api/bot-control', async (req, res) => {
       } else {
         return res.status(404).json({ error: 'Không tìm thấy phòng học hoặc phòng trống' });
       }
+    } // Closes move_to_afk block
+
+    if (command === 'start_class') {
+      if (!CLASS_TEXT_CHANNEL_ID) {
+        return res.status(400).json({ error: 'Chưa cấu hình CLASS_TEXT_CHANNEL_ID trong Bot' });
+      }
+      const channel = client.channels.cache.get(CLASS_TEXT_CHANNEL_ID);
+      if (!channel) {
+        return res.status(404).json({ error: 'Không tìm thấy kênh text để thông báo' });
+      }
+
+      const voiceChannel = client.channels.cache.get(CLASS_VOICE_CHANNEL_ID);
+      const voiceChannelLink = voiceChannel ? `discord://discordapp.com/channels/${voiceChannel.guild.id}/${CLASS_VOICE_CHANNEL_ID}` : '';
+
+      const embed = new EmbedBuilder()
+        .setColor(0x10B981)
+        .setTitle('📢 THÔNG BÁO: BẮT ĐẦU BUỔI HỌC CHUNG!')
+        .setDescription(`Giáo viên đã bắt đầu buổi học chung. Các em hãy tham gia phòng học ngay nhé!\n\n🎙️ **Kênh Voice**: <#${CLASS_VOICE_CHANNEL_ID}>\n🔗 **Link tham gia nhanh**: [Bấm vào đây để vào phòng](${voiceChannelLink || 'https://discord.com'})`)
+        .setTimestamp()
+        .setFooter({ text: 'ECODEx Learning System' });
+
+      await channel.send({ content: '@everyone 📢 Buổi học chung đã bắt đầu!', embeds: [embed] });
+      return res.json({ success: true, message: 'Đã gửi thông báo bắt đầu buổi học chung thành công' });
     }
 
     return res.status(400).json({ error: 'Unknown command' });
@@ -255,6 +281,9 @@ const commands = [
   new SlashCommandBuilder()
     .setName('streak')
     .setDescription('Xem chuỗi ngày học liên tiếp của bạn'),
+  new SlashCommandBuilder()
+    .setName('topstudy')
+    .setDescription('Xem bảng xếp hạng học tập chăm chỉ trong tuần'),
   new SlashCommandBuilder()
     .setName('alert-dm')
     .setDescription('Gửi nhắc nhở trực tiếp (DM) đến học sinh qua Bot')
@@ -371,6 +400,52 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 
+  if (interaction.commandName === 'topstudy') {
+    try {
+      await interaction.deferReply(); // Hoạt động lâu cần defer
+
+      const baseUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'http://localhost:3000';
+      const resp = await axios.get(`${baseUrl}/api/study-sessions/top-weekly`, {
+        headers: {
+          'Authorization': `Bearer ${DISCORD_SYNC_SECRET}`
+        }
+      }).catch(err => {
+        console.error('[TOPSTUDY FETCH ERROR]', err.message);
+        return null;
+      });
+
+      const topList = resp?.data?.top_list || [];
+
+      if (!topList || topList.length === 0) {
+        await interaction.editReply('📭 Chưa ghi nhận thời gian tự học nào của học sinh trong tuần này.');
+        return;
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(0xF59E0B)
+        .setTitle('🏆 BẢNG XẾP HẠNG HỌC TẬP CHĂM CHỈ (TUẦN NÀY)')
+        .setDescription('Tổng hợp thời gian tự học hợp lệ của học sinh trên Discord tính từ Thứ 2 đầu tuần.')
+        .setTimestamp()
+        .setFooter({ text: 'ECODEx Learning System' });
+
+      const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+      let descriptionText = '';
+
+      topList.forEach((item, index) => {
+        const medal = medals[index] || '👤';
+        const hours = (item.total_seconds / 3600).toFixed(1);
+        descriptionText += `${medal} **${item.full_name}** (${item.class || 'Chưa rõ lớp'}): **${hours} giờ** học\n`;
+      });
+
+      embed.setDescription(descriptionText || 'Chưa có dữ liệu.');
+
+      await interaction.editReply({ embeds: [embed] });
+    } catch (error) {
+      console.error('[TOPSTUDY ERROR]', error.message);
+      await interaction.editReply('❌ Không thể lấy bảng xếp hạng tuần lúc này. Vui lòng thử lại sau.');
+    }
+  }
+
   if (interaction.commandName === 'alert-dm') {
     if (!interaction.memberPermissions.has(PermissionFlagsBits.ModerateMembers)) {
       await interaction.reply({ content: '❌ Bạn không có quyền thực hiện lệnh này (yêu cầu quyền Moderate Members).', ephemeral: true });
@@ -457,7 +532,9 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
       cameraSince: isCameraOn ? Date.now() : null,
       cameraDuration: 0,
       screenShareReminderSent: isSharingScreen, // Nếu đã share ngay từ đầu thì không nhắc
-      joinTime: Date.now()
+      joinTime: Date.now(),
+      noScreenshareSince: isSharingScreen ? null : Date.now(),
+      lastCheckinTime: Date.now()
     });
 
     const status = isDeafened ? 'discord_afk' : 'discord_class';
@@ -489,6 +566,14 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
       }
 
       const finalMuted = getMutedDuration(session);
+      
+      // Clear any pending checkins
+      const checkin = activeCheckins.get(userId);
+      if (checkin) {
+        clearTimeout(checkin.timeoutId);
+        activeCheckins.delete(userId);
+      }
+
       activeSessions.delete(userId);
 
       // Sync offline state and final duration
@@ -548,11 +633,13 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
       if (isSharingScreen) {
         session.sharingScreenSince = Date.now();
         session.screenShareReminderSent = true; // Đã share màn hình thì không nhắc nhở nữa
+        session.noScreenshareSince = null;
       } else {
         if (session.sharingScreenSince) {
           session.sharingScreenDuration += Math.floor((Date.now() - session.sharingScreenSince) / 1000);
           session.sharingScreenSince = null;
         }
+        session.noScreenshareSince = Date.now();
       }
       session.sharingScreen = isSharingScreen;
 
@@ -632,7 +719,68 @@ setInterval(async () => {
       }
     }
 
-    // 3. Kiểm tra Tự động chuyển phòng AFK do quá hạn Deafen/Mute
+    // 2.5. Điểm danh ngẫu nhiên (Random Check-in / Captcha)
+    if (!session.deafened && !activeCheckins.has(userId)) {
+      const timeSinceLastCheckin = now - (session.lastCheckinTime || session.joinTime);
+      if (timeSinceLastCheckin >= CHECKIN_INTERVAL_SECONDS * 1000) {
+        try {
+          const userObj = await client.users.fetch(userId);
+          if (userObj) {
+            const confirmBtn = new ButtonBuilder()
+              .setCustomId(`checkin_confirm_${userId}`)
+              .setLabel('Xác nhận tôi vẫn đang học 🙋‍♂️')
+              .setStyle(ButtonStyle.Success);
+              
+            const row = new ActionRowBuilder().addComponents(confirmBtn);
+            
+            const embed = new EmbedBuilder()
+              .setColor(0x3B82F6)
+              .setTitle('🎯 Điểm danh ngẫu nhiên (Random Check-in)')
+              .setDescription('Hệ thống kiểm tra sự tập trung của học sinh. Vui lòng click vào nút bên dưới trong vòng **3 phút** để xác nhận bạn vẫn đang học tập.')
+              .setTimestamp()
+              .setFooter({ text: 'ECODEx Learning System' });
+
+            const dmMessage = await userObj.send({ embeds: [embed], components: [row] });
+            
+            const timeoutId = setTimeout(async () => {
+              activeCheckins.delete(userId);
+              
+              const expiredEmbed = new EmbedBuilder()
+                .setColor(0xEF4444)
+                .setTitle('❌ Điểm danh thất bại')
+                .setDescription('Bạn đã không xác nhận điểm danh đúng hạn (3 phút). Bạn đã bị chuyển sang phòng AFK.')
+                .setTimestamp()
+                .setFooter({ text: 'ECODEx Learning System' });
+              
+              await dmMessage.edit({ embeds: [expiredEmbed], components: [] }).catch(() => null);
+              
+              const voiceChannel = client.channels.cache.get(CLASS_VOICE_CHANNEL_ID);
+              if (voiceChannel && voiceChannel.isVoiceBased()) {
+                const member = voiceChannel.members.get(userId);
+                if (member && AFK_VOICE_CHANNEL_ID) {
+                  await member.voice.setChannel(AFK_VOICE_CHANNEL_ID).catch(() => null);
+                  console.log(`[AUTO-AFK] Moved ${member.user.username} to AFK due to check-in timeout.`);
+                }
+              }
+            }, 180000); // 3 minutes
+
+            activeCheckins.set(userId, {
+              messageId: dmMessage.id,
+              timeoutId: timeoutId,
+              triggeredAt: now
+            });
+            
+            session.lastCheckinTime = now;
+            console.log(`[CHECKIN TRIGGERED] Sent check-in request to student ${userObj.username}`);
+          }
+        } catch (e) {
+          console.error(`[CHECKIN TRIGGER ERROR] Failed to send check-in to user ${userId}:`, e.message);
+          session.lastCheckinTime = now; // reset to avoid infinite retries
+        }
+      }
+    }
+
+    // 3. Kiểm tra Tự động chuyển phòng AFK do quá hạn Deafen/Mute/Screenshare
     let shouldMove = false;
     let reason = "";
 
@@ -649,6 +797,14 @@ setInterval(async () => {
       if (elapsedMute >= AFK_MUTE_TIMEOUT_SECONDS) {
         shouldMove = true;
         reason = `tắt tiếng mic quá ${Math.round(AFK_MUTE_TIMEOUT_SECONDS / 60)} phút`;
+      }
+    }
+
+    if (!shouldMove && !session.sharingScreen && session.noScreenshareSince) {
+      const elapsedNoScreenshare = Math.floor((now - session.noScreenshareSince) / 1000);
+      if (elapsedNoScreenshare >= AFK_SCREENSHARE_TIMEOUT_SECONDS) {
+        shouldMove = true;
+        reason = `không chia sẻ màn hình quá ${Math.round(AFK_SCREENSHARE_TIMEOUT_SECONDS / 60)} phút`;
       }
     }
 
@@ -677,5 +833,51 @@ setInterval(async () => {
     }
   }
 }, 30000);
+
+// Xử lý button interactions (xác nhận điểm danh)
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isButton()) return;
+
+  const customId = interaction.customId;
+  if (customId.startsWith('checkin_confirm_')) {
+    const userId = customId.replace('checkin_confirm_', '');
+
+    // Bảo mật: chỉ cho phép chính chủ nhân click nút
+    if (interaction.user.id !== userId) {
+      await interaction.reply({ content: '❌ Bạn không phải là người nhận điểm danh này.', ephemeral: true });
+      return;
+    }
+
+    const checkin = activeCheckins.get(userId);
+    if (!checkin) {
+      await interaction.reply({ content: '❌ Yêu cầu điểm danh này đã hết hạn hoặc không tồn tại.', ephemeral: true });
+      return;
+    }
+
+    // Xóa timeout điểm danh
+    clearTimeout(checkin.timeoutId);
+    activeCheckins.delete(userId);
+
+    // Chỉnh sửa tin nhắn gốc thành màu xanh xác nhận thành công
+    const successEmbed = new EmbedBuilder()
+      .setColor(0x10B981)
+      .setTitle('✅ Xác nhận thành công')
+      .setDescription('Cảm ơn bạn đã xác nhận! Chúc bạn học tập tốt và tập trung nhé! 💪')
+      .setTimestamp()
+      .setFooter({ text: 'ECODEx Learning System' });
+
+    try {
+      await interaction.update({ embeds: [successEmbed], components: [] });
+      
+      const session = activeSessions.get(userId);
+      if (session) {
+        session.lastCheckinTime = Date.now();
+      }
+      console.log(`[CHECKIN CONFIRMED] User ${interaction.user.username} successfully confirmed attention check.`);
+    } catch (e) {
+      console.error(`[CHECKIN CONFIRM ERROR] Failed to update button message for ${userId}:`, e.message);
+    }
+  }
+});
 
 client.login(DISCORD_BOT_TOKEN);
