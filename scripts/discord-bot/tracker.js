@@ -407,8 +407,16 @@ client.once('ready', async () => {
   // Đăng ký slash commands
   try {
     const rest = new REST({ version: '10' }).setToken(DISCORD_BOT_TOKEN);
+    
+    // Đăng ký toàn cầu (mất tối đa 1 tiếng để hiển thị)
     await rest.put(Routes.applicationCommands(client.user.id), { body: commands });
-    console.log('[COMMANDS] Registered Discord Bot slash commands.');
+    console.log('[COMMANDS] Registered Discord Bot slash commands globally.');
+    
+    // Đăng ký lập tức cho tất cả các Server (Guild) hiện tại Bot đang tham gia
+    for (const guild of client.guilds.cache.values()) {
+      await rest.put(Routes.applicationGuildCommands(client.user.id, guild.id), { body: commands }).catch(() => null);
+      console.log(`[COMMANDS] Registered Discord Bot slash commands instantly for guild: ${guild.name} (${guild.id})`);
+    }
   } catch (err) {
     console.error('[COMMANDS ERROR]', err.message);
   }
