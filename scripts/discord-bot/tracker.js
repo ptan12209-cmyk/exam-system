@@ -15,6 +15,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const axios = require('axios');
 const express = require('express');
+const { createClient } = require('@supabase/supabase-js');
 
 // Configuration
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "YOUR_DISCORD_BOT_TOKEN";
@@ -32,10 +33,19 @@ const CHECKIN_INTERVAL_SECONDS = parseInt(process.env.CHECKIN_INTERVAL_SECONDS |
 const AFK_REJOIN_COOLDOWN_SECONDS = parseInt(process.env.AFK_REJOIN_COOLDOWN_SECONDS || "300", 10);
 const TEACHER_LOG_CHANNEL_ID = process.env.TEACHER_LOG_CHANNEL_ID || "";
 
+const ANNOUNCE_CHANNEL_ID = process.env.ANNOUNCE_CHANNEL_ID || "";
+const ARENA_CHANNEL_ID = process.env.ARENA_CHANNEL_ID || "";
+const LIVE_CHANNEL_ID = process.env.LIVE_CHANNEL_ID || "";
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const supabase = (SUPABASE_URL && SUPABASE_KEY) ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildVoiceStates
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildMembers
   ]
 });
 
@@ -335,7 +345,54 @@ const commands = [
       option.setName('message')
         .setDescription('Nội dung tin nhắn nhắc nhở')
         .setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+  new SlashCommandBuilder()
+    .setName('lienket')
+    .setDescription('Liên kết tài khoản Discord của bạn với tài khoản ExamHub'),
+  new SlashCommandBuilder()
+    .setName('diemdanh')
+    .setDescription('Điểm danh nhận thưởng XP hàng ngày'),
+  new SlashCommandBuilder()
+    .setName('baocao')
+    .setDescription('Xem báo cáo chuyên cần phòng học hôm nay')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+  new SlashCommandBuilder()
+    .setName('arena')
+    .setDescription('Tạo phòng thi đấu Arena trên Discord')
+    .addStringOption(option => 
+      option.setName('ten_de')
+        .setDescription('Từ khóa tên đề thi cần tìm')
+        .setRequired(true))
+    .addRoleOption(option => 
+      option.setName('tag_lop')
+        .setDescription('Tag role lớp học để ping thông báo')
+        .setRequired(false))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+  new SlashCommandBuilder()
+    .setName('thongke')
+    .setDescription('Xem thống kê học tập và thi cử của cả lớp')
+    .addStringOption(option => 
+      option.setName('ten_de')
+        .setDescription('Xem điểm cụ thể của một đề thi')
+        .setRequired(false))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+  new SlashCommandBuilder()
+    .setName('xeploai')
+    .setDescription('Xem bảng xếp hạng XP học tập cao nhất toàn Server'),
+  new SlashCommandBuilder()
+    .setName('hocsinh')
+    .setDescription('Xem profile chi tiết một học sinh')
+    .addUserOption(option => 
+      option.setName('student')
+        .setDescription('Học sinh cần xem profile')
+        .setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+  new SlashCommandBuilder()
+    .setName('thi')
+    .setDescription('Xem danh sách đề thi đang mở trên ExamHub'),
+  new SlashCommandBuilder()
+    .setName('xp')
+    .setDescription('Xem cấp độ, điểm kinh nghiệm và tiến trình học tập của bạn')
 ].map(cmd => cmd.toJSON());
 
 // ──────────────────── Bot Events ────────────────────
@@ -351,9 +408,17 @@ client.once('ready', async () => {
   try {
     const rest = new REST({ version: '10' }).setToken(DISCORD_BOT_TOKEN);
     await rest.put(Routes.applicationCommands(client.user.id), { body: commands });
-    console.log('[COMMANDS] Registered /status and /streak slash commands.');
+    console.log('[COMMANDS] Registered Discord Bot slash commands.');
   } catch (err) {
     console.error('[COMMANDS ERROR]', err.message);
+  }
+
+  // Khởi chạy các listener Realtime kết nối database
+  if (supabase) {
+    setupRealtimeSubscriptions();
+    console.log('[SUPABASE] Connected to Realtime Database.');
+  } else {
+    console.warn('[SUPABASE] Warning: Supabase client is not configured.');
   }
 });
 
@@ -396,13 +461,11 @@ client.on('interactionCreate', async (interaction) => {
 
   if (interaction.commandName === 'streak') {
     try {
-      // Gọi API heatmap để lấy streak (tái sử dụng endpoint)
       const baseUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'http://localhost:3000';
       const resp = await axios.get(`${baseUrl}/api/study-sessions/discord-heatmap`, {
         params: { student_id: userId }
       }).catch(() => null);
 
-      // Fallback: hiển thị từ local session
       const session = activeSessions.get(userId);
       let streakValue = resp?.data?.streak || 0;
 
@@ -430,7 +493,7 @@ client.on('interactionCreate', async (interaction) => {
 
   if (interaction.commandName === 'topstudy') {
     try {
-      await interaction.deferReply(); // Hoạt động lâu cần defer
+      await interaction.deferReply();
 
       const baseUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'http://localhost:3000';
       const resp = await axios.get(`${baseUrl}/api/study-sessions/top-weekly`, {
@@ -529,6 +592,453 @@ client.on('interactionCreate', async (interaction) => {
     } catch (error) {
       await interaction.reply({ content: `❌ Không thể gửi tin nhắn ping: ${error.message}`, ephemeral: true });
     }
+  }
+
+  if (interaction.commandName === 'lienket') {
+    await interaction.deferReply({ ephemeral: true });
+    const discordUsername = interaction.user.username;
+    
+    if (!supabase) {
+      return await interaction.followup.send({ content: '❌ Kết nối cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
+    }
+    
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('discord_id', userId)
+      .maybeSingle();
+      
+    if (existingProfile) {
+      const embed = new EmbedBuilder()
+        .setColor(0x10B981)
+        .setTitle('✅ Đã liên kết rồi!')
+        .setDescription(`Tài khoản Discord này đã liên kết với học sinh **${existingProfile.full_name}** trên ExamHub.`)
+        .setTimestamp();
+      return await interaction.followup.send({ embeds: [embed], ephemeral: true });
+    }
+    
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let token = '';
+    for (let i = 0; i < 8; i++) {
+      token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const { error: insertError } = await supabase
+      .from('discord_link_tokens')
+      .insert({
+        token: token,
+        discord_id: userId,
+        discord_username: discordUsername,
+        expires_at: expiresAt
+      });
+      
+    if (insertError) {
+      console.error('Failed to create link token:', insertError);
+      return await interaction.followup.send({ content: '❌ Lỗi hệ thống khi tạo mã xác thực. Vui lòng thử lại sau.', ephemeral: true });
+    }
+    
+    const baseUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'https://luyende.id.vn';
+    const embed = new EmbedBuilder()
+      .setColor(0x7C3AED)
+      .setTitle('🔗 LIÊN KẾT TÀI KHOẢN EXAMHUB')
+      .setDescription('Vui lòng làm theo hướng dẫn dưới đây để hoàn tất liên kết tài khoản:')
+      .addFields(
+        { name: 'Mã xác thực của bạn (nhấp để copy)', value: `\`\`\`${token}\`\`\``, inline: false },
+        { name: 'Các bước tiếp theo', value: `1. Vào trang web ExamHub: [Bấm vào đây](${baseUrl}/settings/discord)\n2. Nhập mã xác thực ở trên\n3. Nhấn **Xác nhận liên kết**`, inline: false }
+      )
+      .setFooter({ text: '⚠️ Mã xác thực sẽ hết hạn sau 10 phút.' })
+      .setTimestamp();
+      
+    await interaction.followup.send({ embeds: [embed], ephemeral: true });
+  }
+
+  if (interaction.commandName === 'diemdanh') {
+    await interaction.deferReply({ ephemeral: true });
+    const baseUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'http://localhost:3000';
+    
+    try {
+      const response = await axios.post(`${baseUrl}/api/discord/daily-checkin`, {
+        discord_id: userId,
+        secret_token: DISCORD_SYNC_SECRET
+      });
+      
+      const result = response.data;
+      
+      if (result.already_checked) {
+        const embed = new EmbedBuilder()
+          .setColor(0xF59E0B)
+          .setTitle('✅ Bạn đã điểm danh hôm nay!')
+          .setDescription(`Bạn đã nhận phần thưởng điểm danh hàng ngày rồi.\nStreak hiện tại: 🔥 **${result.streak} ngày**`)
+          .setTimestamp()
+          .setFooter({ text: 'ECODEx Learning System' });
+        return await interaction.followup.send({ embeds: [embed], ephemeral: true });
+      }
+      
+      const level = result.level || 1;
+      const xp = result.xp || 0;
+      const nextLevelXp = result.next_level_xp || 100;
+      const prevLevelXp = Math.pow(level - 1, 2) * 100;
+      const percent = Math.min(Math.max(((xp - prevLevelXp) / (nextLevelXp - prevLevelXp)) * 100, 0), 100);
+      
+      const barFilled = Math.round(percent / 10);
+      const bar = '█'.repeat(barFilled) + '░'.repeat(Math.max(10 - barFilled, 0));
+      
+      const embed = new EmbedBuilder()
+        .setColor(0x10B981)
+        .setTitle('🎉 ĐIỂM DANH THÀNH CÔNG!')
+        .setDescription(`Cảm ơn bạn đã tự giác điểm danh hôm nay!`)
+        .addFields(
+          { name: 'XP nhận được', value: `**+${result.xp_earned} XP**`, inline: true },
+          { name: 'Chuỗi ngày (Streak)', value: `🔥 **${result.streak} ngày**`, inline: true }
+        );
+        
+      if (result.newAchievements && result.newAchievements.length > 0) {
+        embed.addFields({ name: '🏆 Thành tựu mới mở khóa', value: result.newAchievements.map(a => `• **${a}**`).join('\n') + `\n(Thưởng thêm **+${result.achievementXp} XP**!)`, inline: false });
+      }
+      
+      embed.addFields(
+        { name: `Cấp độ hiện tại: Level ${level}`, value: `\`${bar}\` ${Math.round(percent)}%\nXP: **${xp} / ${nextLevelXp}**`, inline: false }
+      )
+      .setTimestamp()
+      .setFooter({ text: 'ECODEx Gamification System' });
+      
+      await interaction.followup.send({ embeds: [embed], ephemeral: true });
+    } catch (err) {
+      console.error('Checkin command error:', err.response?.data || err.message);
+      const errMsg = err.response?.data?.error || 'Có lỗi xảy ra khi thực hiện điểm danh. Bạn đã liên kết tài khoản chưa?';
+      await interaction.followup.send({ content: `❌ ${errMsg}`, ephemeral: true });
+    }
+  }
+
+  if (interaction.commandName === 'baocao') {
+    if (!interaction.memberPermissions.has(PermissionFlagsBits.ModerateMembers)) {
+      return await interaction.reply({ content: '❌ Bạn không có quyền thực hiện lệnh này.', ephemeral: true });
+    }
+    
+    await interaction.deferReply();
+    const baseUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'http://localhost:3000';
+    
+    try {
+      const response = await axios.get(`${baseUrl}/api/discord/report`, {
+        params: { secret_token: DISCORD_SYNC_SECRET }
+      });
+      
+      const report = response.data;
+      const dateFormatted = new Date(report.date).toLocaleDateString('vi-VN');
+      
+      const embed = new EmbedBuilder()
+        .setColor(0x6366F1)
+        .setTitle(`📋 BÁO CÁO CHUYÊN CẦN DISCORD — HÔM NAY (${dateFormatted})`)
+        .addFields(
+          { name: '👥 Học sinh tham gia', value: `**${report.active_students_count}**`, inline: true },
+          { name: '⏱️ Học trung bình', value: `**${report.avg_duration_minutes} phút/phiên**`, inline: true },
+          { name: '📝 Tổng số ca học', value: `**${report.total_sessions} ca**`, inline: true }
+        );
+        
+      const students = report.students || [];
+      if (students.length === 0) {
+        embed.setDescription('📭 Chưa ghi nhận phiên tự học nào hôm nay.');
+      } else {
+        const listLines = students.map(s => {
+          const activeH = (s.active_seconds / 3600).toFixed(1);
+          const afkM = Math.round(s.afk_seconds / 60);
+          const alertMarker = s.afk_violations > 0 ? '⚠️' : '✅';
+          return `${alertMarker} **${s.full_name}**: **${activeH} giờ** học thực chất ${s.afk_violations > 0 ? `(AFK ${afkM}p)` : ''}`;
+        });
+        
+        embed.setDescription(listLines.join('\n'));
+      }
+      
+      await interaction.followup.send({ embeds: [embed] });
+    } catch (err) {
+      console.error('Report command error:', err.response?.data || err.message);
+      await interaction.followup.send({ content: '❌ Không thể tải báo cáo từ máy chủ.', ephemeral: true });
+    }
+  }
+
+  if (interaction.commandName === 'arena') {
+    if (!interaction.memberPermissions.has(PermissionFlagsBits.ModerateMembers)) {
+      return await interaction.reply({ content: '❌ Bạn không có quyền thực hiện lệnh này.', ephemeral: true });
+    }
+    
+    await interaction.deferReply();
+    const ten_de = interaction.options.getString('ten_de');
+    const tag_lop = interaction.options.getRole('tag_lop');
+    
+    if (!supabase) {
+      return await interaction.followup.send({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.' });
+    }
+    
+    // Search exams in Supabase
+    const { data: exams, error: searchErr } = await supabase
+      .from('exams')
+      .select('id, title, duration, total_questions, subject')
+      .ilike('title', `%${ten_de}%`)
+      .limit(5);
+      
+    if (searchErr || !exams || exams.length === 0) {
+      return await interaction.followup.send({ content: `❌ Không tìm thấy đề thi nào chứa từ khóa **${ten_de}**` });
+    }
+    
+    if (exams.length === 1) {
+      // Create arena session directly
+      await executeCreateArena(interaction, exams[0], tag_lop);
+    } else {
+      // Let teacher select which exam
+      const options = exams.map(e => ({
+        label: e.title.substring(0, 100),
+        description: `Môn: ${e.subject || 'Chung'} · ${e.total_questions} câu · ${e.duration}p`,
+        value: `arena_create_${e.id}_${tag_lop ? tag_lop.id : 'none'}`
+      }));
+      
+      const selectMenu = {
+        type: 3, // StringSelect
+        custom_id: `arena_select_menu_${interaction.user.id}`,
+        placeholder: 'Chọn đề thi muốn tổ chức Arena...',
+        options: options
+      };
+      
+      const actionRow = new ActionRowBuilder().addComponents(selectMenu);
+      await interaction.followup.send({ content: '📝 Tìm thấy nhiều đề thi khớp. Vui lòng chọn đề bên dưới:', components: [actionRow] });
+    }
+  }
+
+  if (interaction.commandName === 'thongke') {
+    if (!interaction.memberPermissions.has(PermissionFlagsBits.ModerateMembers)) {
+      return await interaction.reply({ content: '❌ Bạn không có quyền thực hiện lệnh này.', ephemeral: true });
+    }
+    
+    await interaction.deferReply({ ephemeral: true });
+    const ten_de = interaction.options.getString('ten_de');
+    
+    if (!supabase) {
+      return await interaction.followup.send({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
+    }
+    
+    // Query statistics of exams and submissions
+    const { data: submissions, error: subError } = await supabase
+      .from('submissions')
+      .select('score, time_spent, student_id, exam:exams(title)');
+      
+    if (subError || !submissions || submissions.length === 0) {
+      return await interaction.followup.send({ content: '📭 Chưa ghi nhận bài nộp nào trên hệ thống.', ephemeral: true });
+    }
+    
+    let filteredSubmissions = submissions;
+    if (ten_de) {
+      filteredSubmissions = submissions.filter(s => s.exam?.title?.toLowerCase().includes(ten_de.toLowerCase()));
+      if (filteredSubmissions.length === 0) {
+        return await interaction.followup.send({ content: `📭 Không tìm thấy kết quả làm bài của đề thi có chứa từ khóa **${ten_de}**.`, ephemeral: true });
+      }
+    }
+    
+    // Process stats
+    const totalSubmissions = filteredSubmissions.length;
+    const scores = filteredSubmissions.map(s => Number(s.score) || 0);
+    const avgScore = scores.reduce((sum, s) => sum + s, 0) / totalSubmissions;
+    const maxScore = Math.max(...scores);
+    const minScore = Math.min(...scores);
+    const avgTimeSpent = filteredSubmissions.reduce((sum, s) => sum + (s.time_spent || 0), 0) / totalSubmissions;
+    
+    const embed = new EmbedBuilder()
+      .setColor(0x6366F1)
+      .setTitle(`📊 Thống Kê Lớp Học ${ten_de ? `(${ten_de})` : ''}`)
+      .addFields(
+        { name: '📝 Tổng bài nộp', value: `${totalSubmissions} bài`, inline: true },
+        { name: '🎯 Điểm trung bình', value: `${avgScore.toFixed(1)}/10`, inline: true },
+        { name: '⏱️ Thời gian TB', value: `${Math.round(avgTimeSpent / 60)} phút`, inline: true },
+        { name: '🏆 Điểm cao nhất', value: `${maxScore.toFixed(1)}/10`, inline: true },
+        { name: '📉 Điểm thấp nhất', value: `${minScore.toFixed(1)}/10`, inline: true }
+      )
+      .setTimestamp()
+      .setFooter({ text: 'ECODEx Statistical Engine' });
+      
+    await interaction.followup.send({ embeds: [embed], ephemeral: true });
+  }
+
+  if (interaction.commandName === 'xeploai') {
+    await interaction.deferReply();
+    
+    if (!supabase) {
+      return await interaction.followup.send({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.' });
+    }
+    
+    const { data: leaderboard, error: leadError } = await supabase
+      .from('student_stats')
+      .select('xp, level, profile:profiles(full_name)')
+      .order('xp', { ascending: false })
+      .limit(10);
+      
+    if (leadError || !leaderboard || leaderboard.length === 0) {
+      return await interaction.followup.send({ content: '📭 Chưa có dữ liệu bảng xếp hạng XP.' });
+    }
+    
+    const embed = new EmbedBuilder()
+      .setColor(0xF59E0B)
+      .setTitle('🏆 BẢNG XẾP HẠNG XP HỌC TẬP')
+      .setDescription('Danh sách học sinh tích lũy nhiều XP nhất từ học tập và thi cử.')
+      .setTimestamp()
+      .setFooter({ text: 'ECODEx Gamification System' });
+      
+    const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+    let desc = '';
+    
+    leaderboard.forEach((item, index) => {
+      const profile = Array.isArray(item.profile) ? item.profile[0] : item.profile;
+      const name = profile?.full_name || 'Học sinh';
+      const medal = medals[index] || '👤';
+      desc += `${medal} **${index + 1}.** ${name} — Level **${item.level}** · **${(item.xp || 0).toLocaleString()}** XP\n`;
+    });
+    
+    embed.setDescription(desc || 'Không có dữ liệu.');
+    await interaction.followup.send({ embeds: [embed] });
+  }
+
+  if (interaction.commandName === 'hocsinh') {
+    if (!interaction.memberPermissions.has(PermissionFlagsBits.ModerateMembers)) {
+      return await interaction.reply({ content: '❌ Bạn không có quyền thực hiện lệnh này.', ephemeral: true });
+    }
+    
+    await interaction.deferReply({ ephemeral: true });
+    const targetMember = interaction.options.getMember('student');
+    
+    if (!supabase) {
+      return await interaction.followup.send({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
+    }
+    
+    const { data: profile, error: pErr } = await supabase
+      .from('profiles')
+      .select('id, full_name, class, discord_username')
+      .eq('discord_id', targetMember.id)
+      .maybeSingle();
+      
+    if (pErr || !profile) {
+      return await interaction.followup.send({ content: `❌ Học sinh **${targetMember.user.username}** chưa liên kết tài khoản ExamHub.`, ephemeral: true });
+    }
+    
+    const { data: stats } = await supabase
+      .from('student_stats')
+      .select('xp, level, streak_days, exams_completed, perfect_scores')
+      .eq('user_id', profile.id)
+      .maybeSingle();
+      
+    const { data: logs } = await supabase
+      .from('discord_attendance_logs')
+      .select('total_active_seconds, total_afk_seconds')
+      .eq('student_id', profile.id);
+      
+    let totalActiveSecs = 0;
+    let totalAfkSecs = 0;
+    if (logs) {
+      logs.forEach(l => {
+        totalActiveSecs += l.total_active_seconds || 0;
+        totalAfkSecs += l.total_afk_seconds || 0;
+      });
+    }
+    
+    const examhubUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'https://luyende.id.vn';
+    
+    const embed = new EmbedBuilder()
+      .setColor(0x6366F1)
+      .setTitle(`👤 Hồ sơ: ${profile.full_name}`)
+      .setDescription(`Lớp: **${profile.class || 'Chưa rõ'}** · Discord: @${profile.discord_username || targetMember.user.username}`)
+      .setThumbnail(targetMember.user.displayAvatarURL())
+      .addFields(
+        { name: '⭐ Level', value: `**Level ${stats?.level || 1}**`, inline: true },
+        { name: '✨ Tổng XP', value: `**${(stats?.xp || 0).toLocaleString()} XP**`, inline: true },
+        { name: '🔥 Streak', value: `**${stats?.streak_days || 0} ngày**`, inline: true },
+        { name: '📝 Đề đã làm', value: `**${stats?.exams_completed || 0} đề**`, inline: true },
+        { name: '💯 Điểm 10', value: `**${stats?.perfect_scores || 0} lần**`, inline: true },
+        { name: '⏱️ Học Voice', value: `**${(totalActiveSecs / 3600).toFixed(1)}h** (AFK: ${Math.round(totalAfkSecs / 60)}p)`, inline: true },
+        { name: '🔗 Xem chi tiết', value: `[Trang cá nhân](${examhubUrl}/student/profile/${profile.id})`, inline: false }
+      )
+      .setTimestamp();
+      
+    await interaction.followup.send({ embeds: [embed], ephemeral: true });
+  }
+
+  if (interaction.commandName === 'thi') {
+    await interaction.deferReply({ ephemeral: true });
+    
+    if (!supabase) {
+      return await interaction.followup.send({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
+    }
+    
+    const { data: exams, error: exErr } = await supabase
+      .from('exams')
+      .select('id, title, duration, total_questions, subject')
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(5);
+      
+    if (exErr || !exams || exams.length === 0) {
+      return await interaction.followup.send({ content: '📭 Hiện chưa có đề thi nào đang mở.', ephemeral: true });
+    }
+    
+    const examhubUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'https://luyende.id.vn';
+    const embed = new EmbedBuilder()
+      .setColor(0x6366F1)
+      .setTitle('📝 ĐỀ THI ĐANG MỞ TRÊN EXAMHUB')
+      .setDescription('Nhấn vào tiêu đề đề thi dưới đây để làm bài:')
+      .setTimestamp();
+      
+    exams.forEach(e => {
+      embed.addFields({
+        name: `📝 ${e.title}`,
+        value: `Môn: **${e.subject || 'Chung'}** · ${e.total_questions || 0} câu · ${e.duration || 60} phút\n🔗 [Vào làm bài thi ngay tại đây](${examhubUrl}/student/exams/${e.id})`,
+        inline: false
+      });
+    });
+    
+    await interaction.followup.send({ embeds: [embed], ephemeral: true });
+  }
+
+  if (interaction.commandName === 'xp') {
+    await interaction.deferReply({ ephemeral: true });
+    
+    if (!supabase) {
+      return await interaction.followup.send({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
+    }
+    
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .eq('discord_id', userId)
+      .maybeSingle();
+      
+    if (!profile) {
+      return await interaction.followup.send({ content: '❌ Bạn chưa liên kết tài khoản! Sử dụng lệnh **/lienket** nhé.', ephemeral: true });
+    }
+    
+    const { data: stats } = await supabase
+      .from('student_stats')
+      .select('xp, level')
+      .eq('user_id', profile.id)
+      .maybeSingle();
+      
+    const level = stats?.level || 1;
+    const xp = stats?.xp || 0;
+    const nextLevelXp = Math.pow(level, 2) * 100;
+    const prevLevelXp = Math.pow(level - 1, 2) * 100;
+    const percent = Math.min(Math.max(((xp - prevLevelXp) / (nextLevelXp - prevLevelXp)) * 100, 0), 100);
+    
+    const barFilled = Math.round(percent / 10);
+    const bar = '█'.repeat(barFilled) + '░'.repeat(Math.max(10 - barFilled, 0));
+    
+    const embed = new EmbedBuilder()
+      .setColor(0xF59E0B)
+      .setTitle(`⭐ Cấp độ học tập: ${profile.full_name}`)
+      .setDescription(`Cấp độ hiện tại: **Level ${level}**`)
+      .addFields(
+        { name: 'Kinh nghiệm (XP)', value: `**${xp.toLocaleString()} XP**`, inline: true },
+        { name: 'Cần thêm lên cấp', value: `**${(nextLevelXp - xp).toLocaleString()} XP**`, inline: true },
+        { name: `Tiến độ lên Level ${level + 1}`, value: `\`${bar}\` ${Math.round(percent)}%`, inline: false }
+      )
+      .setTimestamp()
+      .setFooter({ text: 'ECODEx Gamification System' });
+      
+    await interaction.followup.send({ embeds: [embed], ephemeral: true });
   }
 });
 
@@ -1043,7 +1553,6 @@ client.on('interactionCreate', async (interaction) => {
   if (customId.startsWith('checkin_confirm_')) {
     const userId = customId.replace('checkin_confirm_', '');
 
-    // Bảo mật: chỉ cho phép chính chủ nhân click nút
     if (interaction.user.id !== userId) {
       await interaction.reply({ content: '❌ Bạn không phải là người nhận điểm danh này.', ephemeral: true });
       return;
@@ -1055,11 +1564,9 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
-    // Xóa timeout điểm danh
     clearTimeout(checkin.timeoutId);
     activeCheckins.delete(userId);
 
-    // Chỉnh sửa tin nhắn gốc thành màu xanh xác nhận thành công
     const successEmbed = new EmbedBuilder()
       .setColor(0x10B981)
       .setTitle('✅ Xác nhận thành công')
@@ -1080,5 +1587,360 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 });
+
+// Xử lý String Select Menu (chọn đề thi làm Arena)
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isStringSelectMenu()) return;
+  
+  if (interaction.customId.startsWith('arena_select_menu_')) {
+    const selectMenuAuthorId = interaction.customId.replace('arena_select_menu_', '');
+    if (interaction.user.id !== selectMenuAuthorId) {
+      return await interaction.reply({ content: '❌ Bạn không phải là người gọi lệnh này.', ephemeral: true });
+    }
+    
+    await interaction.deferUpdate();
+    const selectedValue = interaction.values[0]; // arena_create_{examId}_{tagLopId}
+    const parts = selectedValue.replace('arena_create_', '').split('_');
+    const examId = parts[0];
+    const tagLopId = parts[1];
+    
+    const tagLop = tagLopId !== 'none' ? interaction.guild.roles.cache.get(tagLopId) : null;
+    
+    if (!supabase) {
+      return await interaction.editReply({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', components: [] });
+    }
+    
+    const { data: exam } = await supabase
+      .from('exams')
+      .select('id, title, duration, total_questions, subject')
+      .eq('id', examId)
+      .single();
+      
+    if (!exam) {
+      return await interaction.editReply({ content: '❌ Đề thi đã chọn không tồn tại.', components: [] });
+    }
+    
+    await executeCreateArena(interaction, exam, tagLop);
+  }
+});
+
+// Helper: Tạo phòng Arena trong DB và phát thông báo
+async function executeCreateArena(interactionOrSelect, exam, tagLop, teacherProfileId = null) {
+  const authorId = interactionOrSelect.user.id;
+  
+  let profileId = teacherProfileId;
+  if (!profileId) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('discord_id', authorId)
+      .maybeSingle();
+      
+    if (!profile) {
+      const msg = '❌ Bạn chưa liên kết tài khoản ExamHub. Vui lòng chạy lệnh **/lienket** trước.';
+      if (interactionOrSelect.isRepliable()) {
+        await interactionOrSelect.followup.send({ content: msg });
+      }
+      return;
+    }
+    profileId = profile.id;
+  }
+  
+  const start = new Date();
+  const end = new Date(Date.now() + 24 * 60 * 60 * 1000); // Đóng sau 24 giờ
+  
+  const { data: session, error: insertError } = await supabase
+    .from('arena_sessions')
+    .insert({
+      name: `Đấu trường Arena: ${exam.title}`,
+      description: `Đấu trường được mở trực tiếp từ Discord bởi Giáo viên`,
+      exam_id: exam.id,
+      subject: exam.subject || 'other',
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
+      duration: exam.duration || 60,
+      status: 'active',
+      created_by: profileId
+    })
+    .select()
+    .single();
+    
+  if (insertError) {
+    console.error('Error inserting arena session:', insertError);
+    const msg = '❌ Lỗi hệ thống khi tạo đợt Arena trong cơ sở dữ liệu.';
+    if (interactionOrSelect.isRepliable()) {
+      await interactionOrSelect.followup.send({ content: msg });
+    }
+    return;
+  }
+  
+  const examhubUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'https://luyende.id.vn';
+  const sessionUrl = `${examhubUrl}/arena/${session.id}`;
+  const mention = tagLop ? `<@&${tagLop.id}>` : '@everyone';
+  
+  const embed = new EmbedBuilder()
+    .setColor(0xEF4444)
+    .setTitle('⚔️ ĐẤU TRƯỜNG ARENA ĐÃ MỞ!')
+    .setDescription(`**${exam.title}**\nPhòng thi đấu Arena đã được kích hoạt thành công bởi Giáo viên!`)
+    .setURL(sessionUrl)
+    .addFields(
+      { name: '🎯 Tham gia thi đấu', value: `[Nhấn vào đây để vào phòng thi](${sessionUrl})`, inline: false },
+      { name: '❓ Số câu hỏi', value: `${exam.total_questions || 0} câu`, inline: true },
+      { name: '⏱️ Thời gian làm bài', value: `${exam.duration || 60} phút`, inline: true }
+    )
+    .setTimestamp()
+    .setFooter({ text: '⚡ Thi đấu realtime — ai làm nhanh và đúng nhiều nhất sẽ thắng!' });
+    
+  const arenaChannelId = process.env.ARENA_CHANNEL_ID || CLASS_TEXT_CHANNEL_ID;
+  let announceSent = false;
+  
+  if (arenaChannelId) {
+    const channel = client.channels.cache.get(arenaChannelId);
+    if (channel && channel.isTextBased()) {
+      await channel.send({ content: `${mention} ⚔️ Đấu trường Arena mới đang mở!`, embeds: [embed] }).catch(() => null);
+      announceSent = true;
+    }
+  }
+  
+  const replyMsg = `✅ Đã tạo đấu trường **${exam.title}** thành công! ${announceSent ? 'Đã gửi thông báo đến kênh Arena.' : 'Chưa cấu hình kênh thông báo Arena.'}`;
+  
+  if (interactionOrSelect.isRepliable()) {
+    if (interactionOrSelect.deferred || interactionOrSelect.replied) {
+      await interactionOrSelect.editReply({ content: replyMsg, components: [] });
+    } else {
+      await interactionOrSelect.reply({ content: replyMsg });
+    }
+  }
+}
+
+// Helper: Cấu hình listener realtime Supabase
+function setupRealtimeSubscriptions() {
+  // 1. Listen to exams table (published)
+  supabase.channel('exams-published')
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'exams',
+      filter: 'status=eq.published'
+    }, async (payload) => {
+      const exam = payload.new;
+      const announceChannelId = process.env.ANNOUNCE_CHANNEL_ID || CLASS_TEXT_CHANNEL_ID;
+      if (!announceChannelId) return;
+      
+      const channel = client.channels.cache.get(announceChannelId);
+      if (!channel || !channel.isTextBased()) return;
+      
+      const examhubUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'https://luyende.id.vn';
+      
+      const embed = new EmbedBuilder()
+        .setColor(0x6366F1)
+        .setTitle('📝 Đề Thi Mới Vừa Được Mở!')
+        .setDescription(`**${exam.title}**`)
+        .setURL(`${examhubUrl}/student/exams/${exam.id}`)
+        .addFields(
+          { name: '📚 Môn học', value: exam.subject || 'Chung', inline: true },
+          { name: '⏱️ Thời gian', value: `${exam.duration || 60} phút`, inline: true },
+          { name: '❓ Số câu', value: `${exam.total_questions || 0} câu`, inline: true }
+        )
+        .setTimestamp()
+        .setFooter({ text: 'ECODEx Learning System' });
+        
+      if (exam.is_scheduled && exam.start_time) {
+        const timestamp = Math.floor(new Date(exam.start_time).getTime() / 1000);
+        embed.addFields({ name: '🕐 Bắt đầu lúc', value: `<t:${timestamp}:F> (<t:${timestamp}:R>)`, inline: false });
+      }
+      
+      await channel.send({ content: '@everyone 📝 Có đề thi mới được phát hành!', embeds: [embed] }).catch(() => null);
+    })
+    .subscribe();
+
+  // 2. Listen to arena_sessions table (new sessions)
+  supabase.channel('arena-new')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'arena_sessions'
+    }, async (payload) => {
+      const session = payload.new;
+      
+      // Tránh lặp thông báo nếu phiên được tạo bởi chính lệnh bot /arena (vì lệnh bot đã tự announce)
+      if (session.description && session.description.includes('Discord')) return;
+
+      const arenaChannelId = process.env.ARENA_CHANNEL_ID || CLASS_TEXT_CHANNEL_ID;
+      if (!arenaChannelId) return;
+      
+      const channel = client.channels.cache.get(arenaChannelId);
+      if (!channel || !channel.isTextBased()) return;
+      
+      const examhubUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'https://luyende.id.vn';
+      const sessionUrl = `${examhubUrl}/arena/${session.id}`;
+      
+      const embed = new EmbedBuilder()
+        .setColor(0xEF4444)
+        .setTitle('⚔️ ĐẤU TRƯỜNG ARENA ĐÃ MỞ!')
+        .setDescription(`**${session.name || 'Đợt thi đấu mới'}**\nHọc sinh hãy nhấn vào đường link dưới đây để tham gia phòng thi đấu!`)
+        .setURL(sessionUrl)
+        .addFields(
+          { name: '🚪 Tham gia', value: `[Bấm vào đây để vào phòng thi đấu](${sessionUrl})`, inline: false }
+        )
+        .setTimestamp()
+        .setFooter({ text: '⚡ Thi đấu realtime — ai làm nhanh và đúng nhiều nhất sẽ thắng!' });
+        
+      await channel.send({ content: '@everyone ⚔️ Một phòng Arena đấu trường mới vừa được tạo trên website!', embeds: [embed] }).catch(() => null);
+    })
+    .subscribe();
+
+  // 3. Listen to notifications table (broadcast)
+  supabase.channel('notifications-broadcast')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'notifications',
+      filter: 'type=eq.discord_broadcast'
+    }, async (payload) => {
+      const notif = payload.new;
+      const announceChannelId = process.env.ANNOUNCE_CHANNEL_ID || CLASS_TEXT_CHANNEL_ID;
+      if (!announceChannelId) return;
+      
+      const channel = client.channels.cache.get(announceChannelId);
+      if (!channel || !channel.isTextBased()) return;
+      
+      const embed = new EmbedBuilder()
+        .setColor(0xF59E0B)
+        .setTitle(`📢 ${notif.title}`)
+        .setDescription(notif.message || '')
+        .setTimestamp()
+        .setFooter({ text: 'Thông báo hệ thống ECODEx' });
+        
+      await channel.send({ embeds: [embed] }).catch(() => null);
+    })
+    .subscribe();
+
+  // 4. Role Sync: Listen to level changes in student_stats
+  supabase.channel('level-sync')
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'student_stats'
+    }, async (payload) => {
+      const oldLevel = payload.old.level || 0;
+      const newLevel = payload.new.level || 0;
+      const userId = payload.new.user_id;
+      
+      if (newLevel <= oldLevel) return;
+      
+      // Fetch profile to get discord_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('discord_id, full_name')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (!profile || !profile.discord_id) return;
+      
+      await syncUserLevelRoles(profile.discord_id, newLevel, profile.full_name);
+    })
+    .subscribe();
+
+  // 5. YouTube Live Announcer: Listen to live_config table
+  supabase.channel('live-announce')
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'live_config'
+    }, async (payload) => {
+      const oldLive = payload.old.is_live;
+      const newLive = payload.new.is_live;
+      
+      if (newLive && !oldLive) {
+        const liveConfig = payload.new;
+        const liveChannelId = process.env.LIVE_CHANNEL_ID || CLASS_TEXT_CHANNEL_ID;
+        if (!liveChannelId) return;
+        
+        const channel = client.channels.cache.get(liveChannelId);
+        if (!channel || !channel.isTextBased()) return;
+        
+        const youtubeUrl = `https://youtube.com/watch?v=${liveConfig.youtube_video_id}`;
+        const embed = new EmbedBuilder()
+          .setColor(0xEF4444)
+          .setTitle('📺 BẮT ĐẦU BUỔI LIVE CLASS TRỰC TIẾP!')
+          .setDescription(`**${liveConfig.title || 'Buổi học Live trực tuyến'}**`)
+          .setURL(youtubeUrl)
+          .addFields(
+            { name: '🔴 Xem trực tiếp', value: `[Xem YouTube Live ngay tại đây](${youtubeUrl})`, inline: true }
+          )
+          .setThumbnail(`https://img.youtube.com/vi/${liveConfig.youtube_video_id}/maxresdefault.jpg`)
+          .setTimestamp()
+          .setFooter({ text: 'ECODEx Live Streaming' });
+          
+        await channel.send({ content: '@everyone 📺 Buổi học trực tiếp Live Class đã bắt đầu!', embeds: [embed] }).catch(() => null);
+      }
+    })
+    .subscribe();
+}
+
+// Helper: Đồng bộ hóa Level -> Discord Role
+async function syncUserLevelRoles(discordId, level, studentName) {
+  const levelRoleMap = {
+    1: process.env.ROLE_LEVEL_1,
+    5: process.env.ROLE_LEVEL_5,
+    10: process.env.ROLE_LEVEL_10,
+    15: process.env.ROLE_LEVEL_15,
+    20: process.env.ROLE_LEVEL_20
+  };
+  
+  for (const guild of client.guilds.cache.values()) {
+    try {
+      const member = await guild.members.fetch(discordId).catch(() => null);
+      if (!member) continue;
+      
+      let newRoleId = null;
+      const sortedThresholds = Object.keys(levelRoleMap).map(Number).sort((a,b) => b-a);
+      for (const threshold of sortedThresholds) {
+        if (level >= threshold && levelRoleMap[threshold]) {
+          newRoleId = levelRoleMap[threshold];
+          break;
+        }
+      }
+      
+      if (!newRoleId) continue;
+      
+      const newRole = guild.roles.cache.get(newRoleId);
+      if (!newRole) continue;
+      
+      const rolesToRemove = [];
+      for (const roleId of Object.values(levelRoleMap)) {
+        if (roleId && roleId !== newRoleId && member.roles.cache.has(roleId)) {
+          rolesToRemove.push(roleId);
+        }
+      }
+      
+      if (rolesToRemove.length > 0) {
+        await member.roles.remove(rolesToRemove).catch(e => console.error(`[ROLE ERROR] Failed to remove roles:`, e.message));
+      }
+      
+      if (!member.roles.cache.has(newRoleId)) {
+        await member.roles.add(newRoleId).catch(e => console.error(`[ROLE ERROR] Failed to add role:`, e.message));
+        
+        const announceChannelId = process.env.ANNOUNCE_CHANNEL_ID || CLASS_TEXT_CHANNEL_ID;
+        if (announceChannelId) {
+          const announceChannel = guild.channels.cache.get(announceChannelId);
+          if (announceChannel && announceChannel.isTextBased()) {
+            const embed = new EmbedBuilder()
+              .setColor(0xF59E0B)
+              .setTitle('🎉 LÊN CẤP ĐỘ MỚI!')
+              .setDescription(`Chúc mừng học sinh **${studentName}** (<@${discordId}>) đã đạt **Level ${level}** trên hệ thống!\nHạng danh hiệu mới: **${newRole.name}** 🏆`)
+              .setTimestamp()
+              .setFooter({ text: 'ECODEx Gamification System' });
+              
+            await announceChannel.send({ embeds: [embed] }).catch(() => null);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`[ROLE SYNC ERROR]`, err.message);
+    }
+  }
+}
 
 client.login(DISCORD_BOT_TOKEN);

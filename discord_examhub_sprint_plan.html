@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord Bot × ExamHub - Sprint Master Plan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --bg-card: rgba(17, 24, 39, 0.7);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-purple: #8b5cf6;
+      --accent-purple-glow: rgba(139, 92, 246, 0.15);
+      --accent-green: #10b981;
+      --accent-green-glow: rgba(16, 185, 129, 0.15);
+      --accent-red: #ef4444;
+      --accent-red-glow: rgba(239, 68, 68, 0.15);
+      --accent-orange: #f59e0b;
+      --accent-orange-glow: rgba(245, 158, 11, 0.15);
+      --accent-blue: #3b82f6;
+      --accent-blue-glow: rgba(59, 130, 246, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      padding: 40px 20px;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header Styling */
+    header {
+      background: linear-gradient(135deg, #1e1b4b 0%, #1e293b 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 32px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .header-tag {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: inline-block;
+    }
+
+    .header-title {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      background: linear-gradient(to right, #ffffff, #c7d2fe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-summary-grid {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .summary-badge {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(10px);
+    }
+
+    .summary-badge strong {
+      color: #fff;
+    }
+
+    .summary-badge.total-days {
+      background: rgba(139, 92, 246, 0.15);
+      border-color: rgba(139, 92, 246, 0.3);
+      font-weight: 700;
+    }
+
+    /* Tabs Styling */
+    .sprint-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .sprint-tabs {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .sprint-tabs button:last-child {
+        grid-column: span 2;
+      }
+    }
+
+    .tab-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-family: inherit;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .tab-btn:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      color: #fff;
+    }
+
+    .tab-btn.active {
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .tab-btn.active[data-sprint="1"] { border-color: var(--accent-purple); background: var(--accent-purple-glow); }
+    .tab-btn.active[data-sprint="2"] { border-color: var(--accent-green); background: var(--accent-green-glow); }
+    .tab-btn.active[data-sprint="3"] { border-color: var(--accent-red); background: var(--accent-red-glow); }
+    .tab-btn.active[data-sprint="4"] { border-color: var(--accent-orange); background: var(--accent-orange-glow); }
+    .tab-btn.active[data-sprint="5"] { border-color: var(--accent-blue); background: var(--accent-blue-glow); }
+
+    .tab-btn-icon {
+      font-size: 22px;
+    }
+
+    .tab-btn-title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .tab-btn-days {
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 8px;
+      border-radius: 8px;
+    }
+
+    /* Content Area */
+    .sprint-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      backdrop-filter: blur(15px);
+      animation: tabFadeIn 0.4s ease-out;
+    }
+
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Panel Header */
+    .panel-header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .panel-icon-wrapper {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+
+    .panel-title-wrapper h2 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .panel-title-wrapper p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .panel-goal {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      padding: 16px 20px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .panel-goal strong {
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    /* Panel Tasks Body */
+    .panel-body {
+      padding: 32px;
+    }
+
+    .task-group {
+      margin-bottom: 24px;
+    }
+
+    .task-group-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      margin-bottom: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Accordion Item */
+    .task-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .task-item:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .task-trigger {
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 16px 20px;
+      color: inherit;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      text-align: left;
+    }
+
+    .task-info-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .task-arrow {
+      color: var(--text-muted);
+      transition: transform 0.25s ease;
+      font-size: 12px;
+    }
+
+    .task-item.expanded .task-arrow {
+      transform: rotate(90deg);
+    }
+
+    .task-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .task-detail {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .task-lang-tag {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+    }
+
+    .task-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-top: 1px solid transparent;
+    }
+
+    .task-item.expanded .task-content {
+      max-height: 2000px; /* high enough for code */
+      border-top-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .code-container {
+      padding: 20px;
+      background: #040711;
+      position: relative;
+    }
+
+    .code-container pre {
+      margin: 0;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      color: #e2e8f0;
+      overflow-x: auto;
+      line-height: 1.7;
+      white-space: pre;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s ease;
+      z-index: 5;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .copy-btn.copied {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+    }
+
+    /* Footer Nav */
+    .bottom-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      gap: 12px;
+    }
+
+    .nav-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      border-color: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .nav-indicator {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="header-tag">Discord Bot × ExamHub — Sprint Master Plan</span>
+      <h1 class="header-title"> Kế Hoạch Tích Hợp Toàn Diện</h1>
+      <div class="header-summary-grid">
+        <div class="summary-badge">S1 <strong>Foundation</strong> (2d)</div>
+        <div class="summary-badge">S2 <strong>XP Engine</strong> (3d)</div>
+        <div class="summary-badge">S3 <strong>Realtime</strong> (3d)</div>
+        <div class="summary-badge">S4 <strong>Commands</strong> (4d)</div>
+        <div class="summary-badge">S5 <strong>Polish</strong> (2d)</div>
+        <div class="summary-badge total-days">⏱️ Tổng cộng: ~14 ngày</div>
+      </div>
+    </header>
+
+    <!-- Sprint Tabs -->
+    <div class="sprint-tabs">
+      <button class="tab-btn active" data-sprint="1" onclick="selectSprint(1)">
+        <span class="tab-btn-icon">🔗</span>
+        <span class="tab-btn-title">Sprint 1</span>
+        <span class="tab-btn-days">2 ngày</span>
+      </button>
+      <button class="tab-btn" data-sprint="2" onclick="selectSprint(2)">
+        <span class="tab-btn-icon">⭐</span>
+        <span class="tab-btn-title">Sprint 2</span>
+        <span class="tab-btn-days">3 ngày</span>
+      </button>
+      <button class="tab-btn" data-sprint="3" onclick="selectSprint(3)">
+        <span class="tab-btn-icon">📡</span>
+        <span class="tab-btn-title">Sprint 3</span>
+        <span class="tab-btn-days">3 ngày</span>
+      </button>
+      <button class="tab-btn" data-sprint="4" onclick="selectSprint(4)">
+        <span class="tab-btn-icon">🎮</span>
+        <span class="tab-btn-title">Sprint 4</span>
+        <span class="tab-btn-days">4 ngày</span>
+      </button>
+      <button class="tab-btn" data-sprint="5" onclick="selectSprint(5)">
+        <span class="tab-btn-icon">✨</span>
+        <span class="tab-btn-title">Sprint 5</span>
+        <span class="tab-btn-days">2 ngày</span>
+      </button>
+    </div>
+
+    <!-- Sprint Content Panel -->
+    <div class="sprint-panel" id="sprint-panel">
+      <!-- Generated by JavaScript -->
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigateSprint(-1)">← Sprint trước</button>
+      <div class="nav-indicator" id="nav-indicator">1 / 5</div>
+      <button class="nav-btn" id="next-btn" onclick="navigateSprint(1)">Sprint tiếp →</button>
+    </div>
+  </div>
+
+  <script>
+    // Sprint plan data extracted from discord_examhub_sprint_plan.jsx
+    const SPRINTS = [
+      {
+        id: 1,
+        title: "Foundation",
+        subtitle: "DB + Account Linking",
+        days: "2 ngày",
+        color: "#7C3AED",
+        bgLight: "rgba(124, 58, 237, 0.1)",
+        border: "#A78BFA",
+        icon: "🔗",
+        goal: "Xây nền tảng liên kết Discord ID ↔ ExamHub account. Không có sprint này, mọi tính năng sau đều không thể hoạt động.",
+        tasks: [
+          {
+            group: "🗄️ Database Migration",
+            items: [
+              {
+                name: "Thêm cột discord_id vào bảng profiles",
+                detail: "ALTER TABLE + index",
+                lang: "sql",
+                code: `-- migration-discord-integration.sql
+ALTER TABLE profiles 
+  ADD COLUMN discord_id VARCHAR(20) UNIQUE,
+  ADD COLUMN discord_username VARCHAR(100),
+  ADD COLUMN discord_linked_at TIMESTAMPTZ;
+
+CREATE INDEX idx_profiles_discord_id 
+  ON profiles(discord_id);
+
+-- Bảng lưu token xác thực tạm thời (expire 10 phút)
+CREATE TABLE discord_link_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  token VARCHAR(8) UNIQUE NOT NULL,
+  discord_id VARCHAR(20) NOT NULL,
+  discord_username VARCHAR(100),
+  expires_at TIMESTAMPTZ NOT NULL 
+    DEFAULT (NOW() + INTERVAL '10 minutes'),
+  used BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Tự xóa token cũ mỗi giờ (pg_cron hoặc trigger)
+CREATE OR REPLACE FUNCTION cleanup_expired_tokens()
+RETURNS void AS $$
+  DELETE FROM discord_link_tokens 
+  WHERE expires_at < NOW() OR used = TRUE;
+$$ LANGUAGE SQL;`
+              },
+              {
+                name: "Thêm bảng voice_sessions để log thời gian học",
+                detail: "Dùng cho Sprint 2 XP sync",
+                lang: "sql",
+                code: `-- Bảng ghi nhận phiên học trên Discord Voice
+CREATE TABLE discord_voice_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  discord_id VARCHAR(20) NOT NULL,
+  profile_id UUID REFERENCES profiles(id),
+  channel_id VARCHAR(20) NOT NULL,
+  channel_name VARCHAR(100),
+  joined_at TIMESTAMPTZ NOT NULL,
+  left_at TIMESTAMPTZ,
+  duration_minutes INTEGER,  -- tính khi rời kênh
+  xp_awarded INTEGER DEFAULT 0,
+  afk_violations INTEGER DEFAULT 0,
+  status VARCHAR(20) DEFAULT 'active',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_voice_sessions_discord 
+  ON discord_voice_sessions(discord_id, status);`
+              }
+            ]
+          },
+          {
+            group: "🤖 Bot: Slash Command /lienket",
+            items: [
+              {
+                name: "Cấu trúc thư mục bot",
+                detail: "Tổ chức project bot",
+                lang: "bash",
+                code: `discord-bot/
+├── main.py                 # Entry point
+├── config.py               # Env vars
+├── requirements.txt
+├── cogs/
+│   ├── __init__.py
+│   ├── account_linker.py   # Sprint 1: /lienket
+│   ├── voice_tracker.py    # Sprint 2: XP sync
+│   ├── notifications.py    # Sprint 3: Realtime
+│   ├── arena_bridge.py     # Sprint 4: Arena
+│   ├── teacher_commands.py # Sprint 4: GV tools
+│   └── role_sync.py        # Sprint 5: Roles
+├── services/
+│   ├── supabase_client.py  # Supabase REST wrapper
+│   ├── examhub_api.py      # Next.js API wrapper
+│   └── xp_calculator.py   # Sprint 2
+└── utils/
+    ├── embeds.py           # Discord Embed builder
+    └── token_generator.py  # Tạo token 8 ký tự`
+              },
+              {
+                name: "Lệnh /lienket — flow xác thực 2 bước",
+                detail: "Bot tạo token → user nhập trên web → web xác nhận",
+                lang: "python",
+                code: `# cogs/account_linker.py
+import discord
+from discord import app_commands
+from discord.ext import commands
+from services.supabase_client import SupabaseClient
+from utils.token_generator import generate_token
+import os
+
+class AccountLinker(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.sb = SupabaseClient()
+
+    @app_commands.command(
+        name="lienket",
+        description="Liên kết tài khoản Discord với ExamHub"
+    )
+    async def lienket(self, interaction: discord.Interaction):
+        discord_id = str(interaction.user.id)
+        
+        # Kiểm tra đã link chưa
+        existing = await self.sb.get_profile_by_discord(discord_id)
+        if existing:
+            embed = discord.Embed(
+                title="✅ Đã liên kết rồi!",
+                description=f"Tài khoản của bạn đã được liên kết với **{existing['full_name']}**",
+                color=0x10B981
+            )
+            return await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        # Tạo token 8 ký tự
+        token = generate_token()
+        
+        # Lưu token vào Supabase (expire 10 phút)
+        await self.sb.create_link_token({
+            "token": token,
+            "discord_id": discord_id,
+            "discord_username": str(interaction.user)
+        })
+        
+        web_url = os.getenv("EXAMHUB_URL")
+        embed = discord.Embed(
+            title="🔗 Liên Kết Tài Khoản ExamHub",
+            color=0x7C3AED
+        )
+        embed.add_field(
+            name="Mã xác thực của bạn",
+            value=f"Local token: {token}",
+            inline=False
+        )
+        embed.add_field(
+            name="Bước tiếp theo",
+            value=f"1. Vào [ExamHub]({web_url}/settings/discord)\\n"
+                  f"2. Nhập mã **{token}**\\n"
+                  f"3. Nhấn **Xác nhận liên kết**",
+            inline=False
+        )
+        embed.set_footer(text="⚠️ Mã hết hạn sau 10 phút")
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)`
+              },
+              {
+                name: "Next.js API: POST /api/discord/link-account",
+                detail: "Web nhận token → xác thực → lưu discord_id",
+                lang: "typescript",
+                code: `// src/app/api/discord/link-account/route.ts
+import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
+
+export async function POST(req: Request) {
+  const supabase = createClient()
+  const { token } = await req.json()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Tìm token hợp lệ
+  const { data: linkToken } = await supabase
+    .from('discord_link_tokens')
+    .select('*')
+    .eq('token', token.toUpperCase())
+    .eq('used', false)
+    .gt('expires_at', new Date().toISOString())
+    .single()
+
+  if (!linkToken) {
+    return NextResponse.json({ error: 'Token không hợp lệ hoặc đã hết hạn' }, { status: 400 })
+  }
+
+  // Cập nhật profile với discord_id
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      discord_id: linkToken.discord_id,
+      discord_username: linkToken.discord_username,
+      discord_linked_at: new Date().toISOString()
+    })
+    .eq('id', user.id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Đánh dấu token đã dùng
+  await supabase
+    .from('discord_link_tokens')
+    .update({ used: true })
+    .eq('id', linkToken.id)
+
+  return NextResponse.json({ success: true, discord_id: linkToken.discord_id })
+}`
+              }
+            ]
+          },
+          {
+            group: "✅ Acceptance Criteria",
+            items: [
+              {
+                name: "Checklist Sprint 1",
+                detail: "Các tiêu chuẩn để nghiệm thu Sprint 1",
+                lang: "markdown",
+                code: `✅ Migration chạy thành công, cột discord_id tồn tại
+✅ /lienket trả về embed + token trong DM (ephemeral)
+✅ Token expire sau đúng 10 phút
+✅ Web /settings/discord hiển thị form nhập token
+✅ Sau khi nhập token hợp lệ → profiles.discord_id được cập nhật
+✅ /lienket lần 2 → thông báo "đã liên kết rồi"
+✅ Token đã dùng không thể dùng lại`
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 2,
+        title: "XP Engine",
+        subtitle: "Voice Time → XP + Check-in",
+        days: "3 ngày",
+        color: "#059669",
+        bgLight: "rgba(5, 150, 105, 0.1)",
+        border: "#34D399",
+        icon: "⭐",
+        goal: "Biến thời gian học thật trên Discord Voice thành XP trên ExamHub. Học sinh càng học nhiều → rank càng cao → vừa chống AFK vừa tạo động lực thực sự.",
+        tasks: [
+          {
+            group: "⏱️ Voice Time Tracker",
+            items: [
+              {
+                name: "Module theo dõi voice session real-time",
+                detail: "Track join/leave + tính XP",
+                lang: "python",
+                code: `# cogs/voice_tracker.py
+import discord
+from discord.ext import commands, tasks
+from datetime import datetime, timezone
+from services.supabase_client import SupabaseClient
+from services.xp_calculator import XPCalculator
+import asyncio
+
+# Config
+XP_PER_MINUTE = 2          # 1 phút học = 2 XP
+SYNC_INTERVAL_MINUTES = 5  # Sync XP lên web mỗi 5 phút
+AFK_THRESHOLD_MINUTES = 30 # Sút AFK sau 30 phút mute
+STUDY_CHANNEL_PREFIX = "📚" # Kênh học phải có prefix này
+
+class VoiceTracker(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.sb = SupabaseClient()
+        self.xp_calc = XPCalculator()
+        # {discord_id: {"joined": datetime, "mute_since": datetime|None}}
+        self.active_sessions: dict = {}
+        self.sync_xp_loop.start()
+
+    def is_study_channel(self, channel: discord.VoiceChannel) -> bool:
+        return channel.name.startswith(STUDY_CHANNEL_PREFIX)
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        discord_id = str(member.id)
+
+        # === JOINED study channel ===
+        if after.channel and self.is_study_channel(after.channel):
+            if discord_id not in self.active_sessions:
+                self.active_sessions[discord_id] = {
+                    "joined": datetime.now(timezone.utc),
+                    "channel": after.channel.name,
+                    "channel_id": str(after.channel.id),
+                    "mute_since": datetime.now(timezone.utc) if after.self_mute else None,
+                    "afk_violations": 0,
+                    "xp_banked": 0,
+                }
+                # Log session start vào DB
+                await self.sb.start_voice_session(discord_id, after.channel)
+
+        # === LEFT study channel ===
+        elif before.channel and self.is_study_channel(before.channel):
+            if discord_id in self.active_sessions:
+                session = self.active_sessions.pop(discord_id)
+                await self._finalize_session(member, session)
+
+        # === MIC STATE CHANGED (trong study channel) ===
+        if (after.channel and self.is_study_channel(after.channel)
+                and discord_id in self.active_sessions):
+            session = self.active_sessions[discord_id]
+            if after.self_mute and session["mute_since"] is None:
+                session["mute_since"] = datetime.now(timezone.utc)
+            elif not after.self_mute:
+                session["mute_since"] = None
+
+    async def _finalize_session(self, member, session):
+        """Tính toán và award XP khi session kết thúc"""
+        duration = (datetime.now(timezone.utc) - session["joined"]).seconds // 60
+        xp = self.xp_calc.calculate(duration, session["afk_violations"])
+        
+        # Cộng XP tích lũy trong session
+        xp += session.get("xp_banked", 0)
+        
+        if xp > 0:
+            profile = await self.sb.get_profile_by_discord(str(member.id))
+            if profile:
+                await self.sb.add_xp(profile["id"], xp)
+        
+        # Cập nhật session record trong DB
+        await self.sb.end_voice_session(str(member.id), duration, xp)
+
+    @tasks.loop(minutes=SYNC_INTERVAL_MINUTES)
+    async def sync_xp_loop(self):
+        """Mỗi 5 phút: tính XP tạm → cộng vào web, chặn AFK"""
+        now = datetime.now(timezone.utc)
+        
+        for discord_id, session in self.active_sessions.items():
+            mute_since = session.get("mute_since")
+            if mute_since:
+                mute_duration = (now - mute_since).seconds // 60
+                # Cảnh báo lần 1 (10 phút)
+                if mute_duration == 10:
+                    await self._warn_mute(discord_id, "lần 1", remaining=20)
+                # Cảnh báo lần 2 (20 phút)  
+                elif mute_duration == 20:
+                    await self._warn_mute(discord_id, "lần 2", remaining=10)
+                # Sút AFK (30 phút)
+                elif mute_duration >= 30:
+                    await self._move_to_afk(discord_id, session)
+                    session["afk_violations"] += 1
+                    continue
+            
+            # Tính XP tạm (5 phút = 10 XP nếu không bị mute)
+            if not mute_since:
+                interim_xp = XP_PER_MINUTE * SYNC_INTERVAL_MINUTES
+                session["xp_banked"] = session.get("xp_banked", 0) + interim_xp
+                
+                # Sync lên web mỗi 5 phút
+                profile = await self.sb.get_profile_by_discord(discord_id)
+                if profile:
+                    await self.sb.add_xp(profile["id"], interim_xp)
+                    session["xp_banked"] = 0  # Reset sau khi sync`
+              },
+              {
+                name: "XP Calculator Service",
+                detail: "Công thức tính XP có penalty AFK",
+                lang: "python",
+                code: `# services/xp_calculator.py
+class XPCalculator:
+    XP_PER_MINUTE = 2
+    AFK_PENALTY = 0.5  # Mỗi lần vi phạm giảm 50% XP
+    MAX_SESSION_MINUTES = 180  # Tối đa 3 tiếng/session
+    BONUS_THRESHOLDS = {
+        60: 10,   # Học 1 tiếng: +10 XP bonus
+        90: 20,   # Học 1.5 tiếng: +20 XP bonus  
+        120: 40,  # Học 2 tiếng: +40 XP bonus
+    }
+
+    def calculate(self, duration_minutes: int, afk_violations: int) -> int:
+        effective_minutes = min(duration_minutes, self.MAX_SESSION_MINUTES)
+        
+        # Base XP
+        base_xp = effective_minutes * self.XP_PER_MINUTE
+        
+        # AFK penalty
+        penalty_multiplier = (1 - self.AFK_PENALTY) ** afk_violations
+        penalized_xp = int(base_xp * penalty_multiplier)
+        
+        # Bonus XP
+        bonus = 0
+        for threshold, bonus_xp in self.BONUS_THRESHOLDS.items():
+            if effective_minutes >= threshold:
+                bonus = bonus_xp
+        
+        total = penalized_xp + bonus
+        return max(0, total)`
+              }
+            ]
+          },
+          {
+            group: "📅 Daily Check-in Bridge",
+            items: [
+              {
+                name: "Lệnh /diemdanh — trigger web check-in",
+                detail: "Gọi ExamHub API từ Discord",
+                lang: "python",
+                code: `# Trong cogs/voice_tracker.py hoặc file riêng
+@app_commands.command(
+    name="diemdanh",
+    description="Điểm danh hàng ngày để nhận bonus XP"
+)
+async def diemdanh(self, interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    discord_id = str(interaction.user.id)
+    profile = await self.sb.get_profile_by_discord(discord_id)
+    
+    if not profile:
+        return await interaction.followup.send(
+            "❌ Bạn chưa liên kết tài khoản! Dùng **/lienket** trước nhé.",
+            ephemeral=True
+        )
+    
+    api = ExamHubAPI()
+    result = await api.daily_checkin(profile["id"])
+    
+    if result.get("already_checked"):
+        embed = discord.Embed(
+            title="✅ Đã điểm danh rồi!",
+            description=f"Bạn đã điểm danh hôm nay.\\nStreak hiện tại: 🔥 **{result['streak']} ngày**",
+            color=0xF59E0B
+        )
+    else:
+        embed = discord.Embed(
+            title="🎉 Điểm danh thành công!",
+            color=0x10B981
+        )
+        embed.add_field(name="XP nhận được", value=f"**+{result['xp_earned']} XP**")
+        embed.add_field(name="Streak", value=f"🔥 **{result['streak']} ngày**")
+        embed.add_field(
+            name="Cấp độ hiện tại",
+            value=f"Level **{result['level']}** — {result['xp']}/{result['next_level_xp']} XP",
+            inline=False
+        )
+    
+    await interaction.followup.send(embed=embed, ephemeral=True)`
+              }
+            ]
+          },
+          {
+            group: "📊 Session Report — Báo Cáo Sau Buổi Học",
+            items: [
+              {
+                name: "Lệnh /baocao — tổng kết buổi học",
+                detail: "GV gọi để tổng kết, hoặc auto sau khi đóng kênh",
+                lang: "python",
+                code: `@app_commands.command(
+    name="baocao",
+    description="[GV] Xem báo cáo buổi học hôm nay"
+)
+@app_commands.checks.has_permissions(manage_channels=True)
+async def baocao(self, interaction: discord.Interaction):
+    await interaction.response.defer()
+    today_sessions = await self.sb.get_today_sessions(guild_id=str(interaction.guild.id))
+    
+    on_time = [s for s in today_sessions if s["afk_violations"] == 0]
+    violators = [s for s in today_sessions if s["afk_violations"] > 0]
+    avg_duration = sum(s["duration_minutes"] for s in today_sessions) / len(today_sessions) if today_sessions else 0
+    
+    embed = discord.Embed(
+        title=f"📋 Báo Cáo Buổi Học — {datetime.now().strftime('%d/%m/%Y')}",
+        color=0x6366F1
+    )
+    embed.add_field(name="✅ Học đầy đủ", value=str(len(on_time)), inline=True)
+    embed.add_field(name="⚠️ Vi phạm AFK", value=str(len(violators)), inline=True)
+    embed.add_field(name="⏱️ Thời gian TB", value=f"{avg_duration:.0f} phút", inline=True)
+    
+    if violators:
+        violator_list = "\\n".join(f"• <@{v['discord_id']}> — {v['afk_violations']} lần vi phạm" for v in violators[:5])
+        embed.add_field(name="🚫 Danh sách vi phạm", value=violator_list, inline=False)
+    
+    await interaction.followup.send(embed=embed)`
+              }
+            ]
+          },
+          {
+            group: "✅ Acceptance Criteria",
+            items: [
+              {
+                name: "Checklist Sprint 2",
+                detail: "Các tiêu chuẩn nghiệm thu Sprint 2",
+                lang: "markdown",
+                code: `✅ Vào kênh học (prefix 📚) → session được tạo trong DB
+✅ Rời kênh → XP được cộng đúng công thức
+✅ Mute 10 phút → nhận warning DM lần 1
+✅ Mute 20 phút → nhận warning lần 2 (ping công khai)
+✅ Mute 30 phút → bị move sang AFK channel
+✅ /diemdanh → cộng XP trên web + hiển thị streak
+✅ Dùng /diemdanh lần 2 trong ngày → báo đã điểm danh
+✅ XP trên Discord Voice khớp với XP trên web ExamHub
+✅ /baocao → hiển thị đúng thống kê buổi học`
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 3,
+        title: "Realtime Bridge",
+        subtitle: "Supabase → Discord Notifications",
+        days: "3 ngày",
+        color: "#DC2626",
+        bgLight: "rgba(220, 38, 38, 0.1)",
+        border: "#FCA5A5",
+        icon: "📡",
+        goal: "Mọi sự kiện quan trọng trên web (đề mới, arena, live class) phải tự động xuất hiện trên Discord mà GV không cần làm gì thêm. Đây là trục thông báo trung tâm.",
+        tasks: [
+          {
+            group: "🔌 Supabase Realtime Subscriber",
+            items: [
+              {
+                name: "Kết nối Supabase Realtime từ bot",
+                detail: "Subscribe 3 tables: exams, arena_sessions, notifications",
+                lang: "python",
+                code: `# cogs/notifications.py
+import discord
+from discord.ext import commands
+from supabase import create_client, Client
+import os
+
+class NotificationBridge(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.sb: Client = create_client(
+            os.getenv("SUPABASE_URL"),
+            os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        )
+        self.ANNOUNCE_CHANNEL_ID = int(os.getenv("ANNOUNCE_CHANNEL_ID"))
+        self.ARENA_CHANNEL_ID = int(os.getenv("ARENA_CHANNEL_ID"))
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await self._subscribe_all()
+
+    async def _subscribe_all(self):
+        # 1. Exam mới được tạo (status = published)
+        self.sb.realtime.channel("exams-published") \\
+            .on("postgres_changes", event="UPDATE", schema="public", table="exams", filter="status=eq.published", callback=self._on_exam_published).subscribe()
+
+        # 2. Arena session mới
+        self.sb.realtime.channel("arena-new") \\
+            .on("postgres_changes", event="INSERT", schema="public", table="arena_sessions", callback=self._on_arena_created).subscribe()
+
+        # 3. Notification từ GV (type = discord_broadcast)
+        self.sb.realtime.channel("notifications-broadcast") \\
+            .on("postgres_changes", event="INSERT", schema="public", table="notifications", filter="type=eq.discord_broadcast", callback=self._on_broadcast_notification).subscribe()`
+              },
+              {
+                name: "Handlers cho từng loại event",
+                detail: "Exam published, Arena created, Live started",
+                lang: "python",
+                code: `    async def _on_exam_published(self, payload):
+        exam = payload["new"]
+        channel = self.bot.get_channel(self.ANNOUNCE_CHANNEL_ID)
+        if not channel: return
+            
+        embed = discord.Embed(
+            title="📝 Đề Thi Mới Vừa Được Mở!",
+            description=f"**{exam['title']}**",
+            color=0x6366F1,
+            url=f"{os.getenv('EXAMHUB_URL')}/student/exams/{exam['id']}"
+        )
+        embed.add_field(name="📚 Môn học", value=exam.get("subject", "Chung"), inline=True)
+        embed.add_field(name="⏱️ Thời gian", value=f"{exam['duration']} phút", inline=True)
+        
+        await channel.send(content="@everyone", embed=embed)
+
+    async def _on_arena_created(self, payload):
+        session = payload["new"]
+        channel = self.bot.get_channel(self.ARENA_CHANNEL_ID)
+        if not channel: return
+        
+        embed = discord.Embed(
+            title="⚔️ Đấu Trường Đang Mở!",
+            description="Một phòng thi đấu mới vừa được tạo. Tham gia ngay!",
+            color=0xEF4444,
+            url=f"{os.getenv('EXAMHUB_URL')}/arena/{session['id']}"
+        )
+        await channel.send(content="@everyone", embed=embed)`
+              }
+            ]
+          },
+          {
+            group: "🌐 Next.js: Webhook Endpoint cho Bot",
+            items: [
+              {
+                name: "API route nhận webhook từ bot",
+                detail: "Bot gọi web API để đồng bộ ngược lại",
+                lang: "typescript",
+                code: `// src/app/api/discord/webhook/route.ts
+import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
+import crypto from 'crypto'
+
+function verifyBotSignature(body: string, signature: string): boolean {
+  const expected = crypto.createHmac('sha256', process.env.BOT_WEBHOOK_SECRET!).update(body).digest('hex')
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+}
+
+export async function POST(req: Request) {
+  const body = await req.text()
+  const signature = req.headers.get('X-Bot-Signature') ?? ''
+  if (!verifyBotSignature(body, signature)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  
+  const { event, data } = JSON.parse(body)
+  const supabase = createClient()
+  
+  if (event === 'voice_session_end') {
+    await supabase.from('discord_voice_sessions').update({
+      left_at: new Date().toISOString(),
+      duration_minutes: data.duration_minutes,
+      xp_awarded: data.xp_awarded,
+      status: 'completed'
+    }).eq('discord_id', data.discord_id).eq('status', 'active')
+  }
+  return NextResponse.json({ success: true })
+}`
+              }
+            ]
+          },
+          {
+            group: "✅ Acceptance Criteria",
+            items: [
+              {
+                name: "Checklist Sprint 3",
+                detail: "Các tiêu chuẩn nghiệm thu Sprint 3",
+                lang: "markdown",
+                code: `✅ GV publish đề thi → trong 5 giây xuất hiện embed trên Discord
+✅ Đề có lịch thi → embed hiển thị đúng thời gian bắt đầu
+✅ Arena mới tạo → Discord alert ngay lập tức có link vào phòng
+✅ GV gửi thông báo từ web dashboard → xuất hiện trên Discord channel
+✅ AFK violation → bot gửi alert về web → GV thấy trong dashboard
+✅ Không có event nào bị mất khi bot restart (graceful reconnect)`
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 4,
+        title: "Command Center",
+        subtitle: "Arena Bridge + Teacher Commands",
+        days: "4 ngày",
+        color: "#D97706",
+        bgLight: "rgba(217, 119, 6, 0.1)",
+        border: "#FCD34D",
+        icon: "🎮",
+        goal: "Giáo viên có thể quản lý toàn bộ ExamHub ngay từ Discord mà không cần mở trình duyệt. Học sinh có thể xem XP, rank, danh sách đề thi từ Discord.",
+        tasks: [
+          {
+            group: "⚔️ Arena Bridge — Tạo Phòng Đấu Từ Discord",
+            items: [
+              {
+                name: "Lệnh /arena — GV tạo phòng từ Discord",
+                detail: "Tạo arena_session trên web + thông báo học sinh",
+                lang: "python",
+                code: `# cogs/arena_bridge.py
+@app_commands.command(
+    name="arena",
+    description="[GV] Tạo phòng đấu trường cho học sinh"
+)
+async def arena(self, interaction: discord.Interaction, ten_de: str, tag_lop: discord.Role = None):
+    await interaction.response.defer()
+    exams = await self.sb.search_exams(ten_de, limit=5)
+    if not exams:
+        return await interaction.followup.send("❌ Không tìm thấy đề thi nào.")
+    
+    exam = exams[0] # Cho đơn giản lấy đề đầu
+    teacher = await self.sb.get_profile_by_discord(str(interaction.user.id))
+    
+    api = ExamHubAPI()
+    session = await api.create_arena_session(exam_id=exam["id"], host_id=teacher["id"])
+    session_url = f"{os.getenv('EXAMHUB_URL')}/arena/{session['id']}"
+    
+    embed = discord.Embed(
+        title="⚔️ ĐẤU TRƯỜNG ĐÃ MỞ!",
+        description=f"**{exam['title']}**\\nGiáo viên **{teacher['full_name']}** vừa mở một phòng đấu!",
+        color=0xEF4444,
+        url=session_url
+    )
+    await interaction.followup.send(embed=embed)`
+              }
+            ]
+          },
+          {
+            group: "📊 Teacher Dashboard Commands",
+            items: [
+              {
+                name: "/thongke — Thống kê lớp học",
+                detail: "Pull data từ Supabase submissions",
+                lang: "python",
+                code: `@app_commands.command(name="thongke", description="[GV] Xem thống kê lớp học")
+async def thongke(self, interaction: discord.Interaction, ten_de: str = None):
+    await interaction.response.defer(ephemeral=True)
+    stats = await self.sb.get_class_stats(guild_id=str(interaction.guild.id), exam_keyword=ten_de)
+    
+    embed = discord.Embed(title="📊 Thống Kê Lớp Học", color=0x6366F1)
+    embed.add_field(name="📝 Tổng bài nộp", value=str(stats["total_submissions"]))
+    embed.add_field(name="🎯 Điểm trung bình", value=f"{stats['avg_score']:.1f}/10")
+    await interaction.followup.send(embed=embed, ephemeral=True)`
+              },
+              {
+                name: "/xeploai và /thongbao",
+                detail: "Leaderboard & Broadcast",
+                lang: "python",
+                code: `@app_commands.command(name="xeploai", description="Xem bảng xếp hạng XP toàn server")
+async def xeploai(self, interaction: discord.Interaction):
+    await interaction.response.defer()
+    top10 = await self.sb.get_leaderboard(guild_id=str(interaction.guild.id), limit=10)
+    
+    embed = discord.Embed(title="🏆 Bảng Xếp Hạng XP", color=0xF59E0B)
+    lines = [f"**{i+1}.** {s['full_name']} — Level {s['level']} · {s['xp']:,} XP" for i, s in enumerate(top10)]
+    embed.description = "\\n".join(lines)
+    await interaction.followup.send(embed=embed)`
+              }
+            ]
+          },
+          {
+            group: "✅ Acceptance Criteria",
+            items: [
+              {
+                name: "Checklist Sprint 4",
+                detail: "Các tiêu chuẩn nghiệm thu Sprint 4",
+                lang: "markdown",
+                code: `✅ /arena "Toán Giải Tích" → tạo arena_session trên Supabase → announce
+✅ /thongke → hiển thị đúng số liệu từ bảng submissions
+✅ /xeploai → top 10 XP từ profiles, đúng thứ tự
+✅ /thongbao → xuất hiện trên web notifications VÀ Discord channel
+✅ /hocsinh @user → hiển thị đầy đủ stats + link profile web
+✅ /thi → danh sách đề đang mở, link đúng
+✅ /xp → thanh tiến độ đúng, XP đồng bộ với web`
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 5,
+        title: "Polish",
+        subtitle: "Role Sync + Live Announcer",
+        days: "2 ngày",
+        color: "#0284C7",
+        bgLight: "rgba(2, 132, 199, 0.1)",
+        border: "#7DD3FC",
+        icon: "✨",
+        goal: "Hoàn thiện hệ thống: Discord Role tự động phản ánh Level trên web, YouTube Live được announce tự động, và toàn bộ bot được tối ưu hóa.",
+        tasks: [
+          {
+            group: "🎖️ Role Sync — Level Web → Discord Role",
+            items: [
+              {
+                name: "Cog Role Sync — Subscribe Supabase Realtime",
+                detail: "Khi XP update trên web → bot tự cập nhật Role Discord",
+                lang: "python",
+                code: `# cogs/role_sync.py
+class RoleSync(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.sb = SupabaseClient()
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.sb.realtime.channel("profiles-level-up") \\
+            .on("postgres_changes", event="UPDATE", schema="public", table="profiles", callback=self._on_level_change).subscribe()
+
+    async def _on_level_change(self, payload):
+        old_level = payload["old"].get("level", 0)
+        new_level = payload["new"].get("level", 0)
+        discord_id = payload["new"].get("discord_id")
+        
+        if new_level > old_level and discord_id:
+            await self._sync_roles(discord_id, new_level, payload["new"]["full_name"])`
+              }
+            ]
+          },
+          {
+            group: "📺 YouTube Live Announcer",
+            items: [
+              {
+                name: "Auto-check lịch live và announce",
+                detail: "Kiểm tra mỗi 5 phút, announce khi live bắt đầu",
+                lang: "python",
+                code: `# cogs/role_sync.py
+@tasks.loop(minutes=5)
+async def check_live_loop(self):
+    upcoming = await self.sb.get_upcoming_live_sessions(minutes_ahead=10)
+    for live in upcoming:
+        channel = self.bot.get_channel(int(os.getenv("LIVE_CHANNEL_ID")))
+        youtube_url = f"https://youtube.com/watch?v={live['youtube_id']}"
+        
+        embed = discord.Embed(title="📺 LIVE CLASS SẮP BẮT ĐẦU!", description=live['title'], color=0xEF4444, url=youtube_url)
+        await channel.send(content="@everyone", embed=embed)`
+              }
+            ]
+          },
+          {
+            group: "✅ Acceptance Criteria",
+            items: [
+              {
+                name: "Checklist Sprint 5 + Final",
+                detail: "Các tiêu chuẩn nghiệm thu Sprint 5",
+                lang: "markdown",
+                code: `✅ Level up trên web → Discord Role thay đổi tự động < 10s
+✅ /syncroles → đồng bộ đúng toàn bộ server trong 1 lần
+✅ Announce lên cấp kèm tên học sinh trong channel chung
+✅ YouTube Live schedule trong DB → bot announce trước 10 phút
+✅ Không announce trùng cùng một live session
+✅ Bot restart không bị announce lại các event cũ`
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    let currentActiveSprint = 1;
+
+    function selectSprint(sprintId) {
+      currentActiveSprint = sprintId;
+      
+      // Update tabs UI
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.querySelector(`.tab-btn[data-sprint="${sprintId}"]`).classList.add('active');
+      
+      // Render Content Panel
+      const sprint = SPRINTS.find(s => s.id === sprintId);
+      const panel = document.getElementById('sprint-panel');
+      
+      // Build tasks HTML
+      let tasksHtml = '';
+      sprint.tasks.forEach((group, gIdx) => {
+        let itemsHtml = '';
+        group.items.forEach((item, iIdx) => {
+          const uniqueId = `code-${sprintId}-${gIdx}-${iIdx}`;
+          
+          // Escape code content for HTML
+          const escapedCode = item.code
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+            
+          itemsHtml += `
+            <div class="task-item" id="task-item-${uniqueId}">
+              <button class="task-trigger" onclick="toggleTask('${uniqueId}')">
+                <div class="task-info-left">
+                  <span class="task-arrow">▶</span>
+                  <div>
+                    <div class="task-name">${item.name}</div>
+                    ${item.detail ? `<div class="task-detail">${item.detail}</div>` : ''}
+                  </div>
+                </div>
+                <span class="task-lang-tag">${item.lang}</span>
+              </button>
+              <div class="task-content" id="content-${uniqueId}">
+                <div class="code-container">
+                  <button class="copy-btn" onclick="copyCode(this, '${uniqueId}')">Sao chép</button>
+                  <pre><code class="language-${item.lang}" id="raw-${uniqueId}">${escapedCode}</code></pre>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+
+        tasksHtml += `
+          <div class="task-group">
+            <h3 class="task-group-title">${group.group}</h3>
+            ${itemsHtml}
+          </div>
+        `;
+      });
+
+      panel.innerHTML = `
+        <div class="panel-header" style="background: ${sprint.bgLight}">
+          <div class="panel-meta">
+            <div class="panel-icon-wrapper" style="background: ${sprint.color}">
+              ${sprint.icon}
+            </div>
+            <div class="panel-title-wrapper">
+              <h2 style="color: ${sprint.color}">Sprint ${sprint.id}: ${sprint.title}</h2>
+              <p>${sprint.subtitle} · <strong>Thời gian: ${sprint.days}</strong></p>
+            </div>
+          </div>
+          <div class="panel-goal" style="border-color: ${sprint.color}30">
+            <strong style="color: ${sprint.color}">🎯 Mục tiêu:</strong>
+            ${sprint.goal}
+          </div>
+        </div>
+        <div class="panel-body">
+          ${tasksHtml}
+        </div>
+      `;
+
+      // Update footer indicator
+      document.getElementById('nav-indicator').textContent = `${sprintId} / ${SPRINTS.length}`;
+      
+      // Update buttons disabled status
+      document.getElementById('prev-btn').disabled = sprintId === 1;
+      document.getElementById('next-btn').disabled = sprintId === SPRINTS.length;
+    }
+
+    function toggleTask(id) {
+      const taskItem = document.getElementById(`task-item-${id}`);
+      const content = document.getElementById(`content-${id}`);
+      
+      if (taskItem.classList.contains('expanded')) {
+        taskItem.classList.remove('expanded');
+        content.style.maxHeight = '0';
+      } else {
+        taskItem.classList.add('expanded');
+        content.style.maxHeight = content.scrollHeight + 'px';
+      }
+    }
+
+    function copyCode(btn, id) {
+      const codeElement = document.getElementById(`raw-${id}`);
+      // Unescape text for clipboard
+      const textArea = document.createElement('textarea');
+      textArea.value = codeElement.textContent;
+      document.body.appendChild(textArea);
+      textArea.select();
+      
+      try {
+        document.execCommand('copy');
+        btn.textContent = '✓ Đã chép';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Sao chép';
+          btn.classList.remove('copied');
+        }, 2000);
+      } catch (err) {
+        console.error('Không thể sao chép code', err);
+      }
+      
+      document.body.removeChild(textArea);
+    }
+
+    function navigateSprint(direction) {
+      const target = currentActiveSprint + direction;
+      if (target >= 1 && target <= SPRINTS.length) {
+        selectSprint(target);
+      }
+    }
+
+    // Initialize first sprint on load
+    window.addEventListener('DOMContentLoaded', () => {
+      selectSprint(1);
+    });
+  </script>
+</body>
+</html>
