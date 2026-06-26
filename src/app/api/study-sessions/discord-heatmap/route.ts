@@ -36,8 +36,11 @@ export async function GET(req: NextRequest) {
 
     for (const log of logs || []) {
       const date = new Date(log.joined_at)
-      const dayOfWeek = date.getDay() // 0-6
-      const hour = date.getHours()
+      // Cộng 7 giờ để đồng bộ múi giờ Việt Nam (UTC+7)
+      const vnTime = new Date(date.getTime() + 7 * 60 * 60 * 1000)
+      
+      const dayOfWeek = vnTime.getUTCDay() // 0-6 (Chủ nhật - Thứ 7)
+      const hour = vnTime.getUTCHours() // 0-23
 
       // Xác định khung giờ: 0=sáng(6-12), 1=chiều(12-18), 2=tối(18-24), 3=đêm(0-6)
       let slot: number
