@@ -109,35 +109,89 @@ export default function TimetablePage() {
       const vnMonday = getVietnamMonday()
       setCurrentWeekMonday(vnMonday)
 
-      const savedWeekStart = localStorage.getItem("student_x_timetable_week_start")
       let currentCompleted: string[] = []
 
+      // Sync completed slots from database
+      try {
+        const { data: dbCompleted } = await supabase
+          .from("timetable_study_logs")
+          .select("slot_id")
+          .eq("student_id", user.id)
+          .gte("session_date", vnMonday)
+          .eq("is_completed", true)
+
+        if (dbCompleted && dbCompleted.length > 0) {
+          currentCompleted = dbCompleted.map((row: any) => row.slot_id)
+        }
+      } catch (err) {
+        console.error("Lỗi đọc dữ liệu hoàn thành từ database:", err)
+      }
+
+      // Fallback/Merge with localStorage completed slots
+      const savedWeekStart = localStorage.getItem("student_x_timetable_week_start")
       if (savedWeekStart !== vnMonday) {
-        // Tuần mới -> reset hoàn thành
         localStorage.setItem("student_x_timetable_week_start", vnMonday)
-        localStorage.setItem("student_x_timetable_completed_slots", JSON.stringify([]))
-        setCompletedSlots([])
+        localStorage.setItem("student_x_timetable_completed_slots", JSON.stringify(currentCompleted))
+        setCompletedSlots(currentCompleted)
       } else {
         const savedCompleted = localStorage.getItem("student_x_timetable_completed_slots")
         if (savedCompleted) {
           try {
-            currentCompleted = JSON.parse(savedCompleted)
-            setCompletedSlots(currentCompleted)
+            const localCompleted = JSON.parse(savedCompleted)
+            const merged = Array.from(new Set([...currentCompleted, ...localCompleted]))
+            setCompletedSlots(merged)
           } catch (e) {
-            console.error("Lỗi đọc dữ liệu hoàn thành:", e)
+            setCompletedSlots(currentCompleted)
           }
+        } else {
+          setCompletedSlots(currentCompleted)
         }
       }
 
-      // 3. Load thời khóa biểu tùy chỉnh nếu có
-      const savedCustomSlots = localStorage.getItem("student_x_custom_timetable_slots")
-      if (savedCustomSlots) {
-        try {
-          const parsed = JSON.parse(savedCustomSlots)
-          setSlots(parsed)
-        } catch (e) {
-          console.error("Lỗi đọc thời khóa biểu tùy chỉnh:", e)
+      // 3. Load thời khóa biểu tùy chỉnh từ database
+      try {
+        const { data: dbSlots } = await supabase
+          .from("student_timetable_entries")
+          .select("*")
+          .eq("student_id", user.id)
+
+        if (dbSlots && dbSlots.length > 0) {
+          const grid = JSON.parse(JSON.stringify(DEFAULT_TIMETABLE_SLOTS)) // clone
+          dbSlots.forEach((row: any) => {
+            let timeKey = ''
+            if (row.start_time.startsWith('08:00')) timeKey = 'sang'
+            else if (row.start_time.startsWith('14:00')) timeKey = 'chieu1'
+            else if (row.start_time.startsWith('16:45')) timeKey = 'chieu2'
+            else if (row.start_time.startsWith('20:00')) timeKey = 'toi'
+
+            const dayKeys: Record<number, string> = { 1: 't2', 2: 't3', 3: 't4', 4: 't5', 5: 't6', 6: 't7' }
+            const dayKey = dayKeys[row.day_of_week]
+
+            if (timeKey && dayKey) {
+              grid[timeKey][dayKey] = {
+                id: row.id, // keep DB row UUID as slot ID
+                subject: row.subject,
+                type: row.note || '',
+                time: `${row.start_time.slice(0, 5)} - ${row.end_time.slice(0, 5)}`,
+                color: row.color || 'toan'
+              }
+            }
+          })
+          setSlots(grid)
+        } else {
+          // Fallback to localStorage if database is empty
+          const savedCustomSlots = localStorage.getItem("student_x_custom_timetable_slots")
+          if (savedCustomSlots) {
+            try {
+              const parsed = JSON.parse(savedCustomSlots)
+              setSlots(parsed)
+            } catch (e) {
+              console.error("Lỗi đọc thời khóa biểu tùy chỉnh từ localStorage:", e)
+            }
+          }
         }
+      } catch (err) {
+        console.error("Lỗi nạp thời khóa biểu từ database:", err)
       }
 
       setLoading(false)
@@ -146,15 +200,19 @@ export default function TimetablePage() {
     initPage()
   }, [router, supabase])
 
-  // Lưu thông tin ca học đã chỉnh sửa
-  const handleSaveSlot = (updatedSlot: TimetableSlot) => {
+  // Lưu thông tin ca học đã chỉnh sửa (Đồng bộ localStorage và Database)
+  const handleSaveSlot = async (updatedSlot: TimetableSlot) => {
     const updatedSlots = { ...slots }
     let found = false
+    let slotTimeKey = ''
+    let slotDayKey = ''
     
     for (const timeKey in updatedSlots) {
       for (const dayKey in updatedSlots[timeKey]) {
         if (updatedSlots[timeKey][dayKey].id === updatedSlot.id) {
           updatedSlots[timeKey][dayKey] = updatedSlot
+          slotTimeKey = timeKey
+          slotDayKey = dayKey
           found = true
           break
         }
@@ -165,13 +223,85 @@ export default function TimetablePage() {
     setSlots(updatedSlots)
     localStorage.setItem("student_x_custom_timetable_slots", JSON.stringify(updatedSlots))
     setEditingSlot(null)
+
+    // Save to Database
+    if (profile && slotDayKey) {
+      const [sTime, eTime] = updatedSlot.time.split(' - ')
+      const dayMap: Record<string, number> = { 't2': 1, 't3': 2, 't4': 3, 't5': 4, 't6': 5, 't7': 6 }
+      const dayOfWeek = dayMap[slotDayKey] || 1
+
+      try {
+        const payload = {
+          student_id: profile.id,
+          assigned_by: profile.id, // Student X assignments are self-assigned
+          day_of_week: dayOfWeek,
+          start_time: `${sTime}:00`,
+          end_time: `${eTime}:00`,
+          subject: updatedSlot.subject,
+          note: updatedSlot.type, // type is saved to note
+          color: updatedSlot.color
+        }
+
+        // Try to update using slot's UUID if it is a UUID.
+        // If it starts with 'mon', 'tue', etc. (default ID format), it's not in DB yet, query first.
+        const isUUID = updatedSlot.id.length === 36 || updatedSlot.id.includes('-') && updatedSlot.id.split('-').length === 5;
+        if (isUUID) {
+          await supabase
+            .from("student_timetable_entries")
+            .upsert({ id: updatedSlot.id, ...payload })
+        } else {
+          // Check if slot already exists in DB by checking day_of_week and start_time
+          const { data: existing } = await supabase
+            .from("student_timetable_entries")
+            .select("id")
+            .eq("student_id", profile.id)
+            .eq("day_of_week", dayOfWeek)
+            .eq("start_time", `${sTime}:00`)
+            .maybeSingle()
+
+          if (existing) {
+            await supabase
+              .from("student_timetable_entries")
+              .update(payload)
+              .eq("id", existing.id)
+          } else {
+            const { data: newRow } = await supabase
+              .from("student_timetable_entries")
+              .insert(payload)
+              .select("id")
+              .single()
+            
+            if (newRow) {
+              // Update slot ID in active state with the new database UUID
+              const nextSlots = { ...updatedSlots }
+              nextSlots[slotTimeKey][slotDayKey].id = newRow.id
+              setSlots(nextSlots)
+              localStorage.setItem("student_x_custom_timetable_slots", JSON.stringify(nextSlots))
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi đồng bộ lưu ca học vào database:", err)
+      }
+    }
   }
 
   // Khôi phục thời khóa biểu về mặc định ban đầu
-  const handleResetTimetable = () => {
+  const handleResetTimetable = async () => {
     localStorage.removeItem("student_x_custom_timetable_slots")
     setSlots(DEFAULT_TIMETABLE_SLOTS)
     setShowResetConfirm(false)
+
+    if (profile) {
+      try {
+        await supabase
+          .from("student_timetable_entries")
+          .delete()
+          .eq("student_id", profile.id)
+      } catch (err) {
+        console.error("Lỗi xóa thời khóa biểu trên database:", err)
+      }
+    }
   }
 
   const handleLogout = async () => {
@@ -179,12 +309,13 @@ export default function TimetablePage() {
     router.push("/login")
   }
 
-  // Xử lý hoàn thành/hủy hoàn thành ca học
-  const handleToggleComplete = () => {
-    if (!selectedSlot) return
+  // Xử lý hoàn thành/hủy hoàn thành ca học (Đồng bộ Database & localStorage)
+  const handleToggleComplete = async () => {
+    if (!selectedSlot || !profile) return
 
+    const isCompleted = completedSlots.includes(selectedSlot.id)
     let updatedCompleted: string[]
-    if (completedSlots.includes(selectedSlot.id)) {
+    if (isCompleted) {
       updatedCompleted = completedSlots.filter(id => id !== selectedSlot.id)
     } else {
       updatedCompleted = [...completedSlots, selectedSlot.id]
@@ -193,6 +324,40 @@ export default function TimetablePage() {
     setCompletedSlots(updatedCompleted)
     localStorage.setItem("student_x_timetable_completed_slots", JSON.stringify(updatedCompleted))
     setSelectedSlot(null)
+
+    // Sync state to Supabase
+    try {
+      const todayStr = new Date().toISOString().split('T')[0]
+      const [sTime, eTime] = selectedSlot.time.split(' - ')
+      
+      if (isCompleted) {
+        // Delete or set completed = false
+        await supabase
+          .from("timetable_study_logs")
+          .delete()
+          .eq("student_id", profile.id)
+          .eq("slot_id", selectedSlot.id)
+          .eq("session_date", todayStr)
+      } else {
+        // Upsert log as completed
+        await supabase
+          .from("timetable_study_logs")
+          .upsert({
+            student_id: profile.id,
+            slot_id: selectedSlot.id,
+            subject: selectedSlot.subject,
+            session_date: todayStr,
+            is_completed: true,
+            duration_seconds: 5400, // 90 minutes for manual check
+            start_time: `${sTime}:00`,
+            end_time: `${eTime}:00`
+          }, {
+            onConflict: "student_id,slot_id,session_date"
+          })
+      }
+    } catch (err) {
+      console.error("Lỗi đồng bộ trạng thái ca học lên database:", err)
+    }
   }
 
   // Tính phần trăm hoàn thành tuần

@@ -84,6 +84,14 @@ client.once('ready', async () => {
   } catch (e) {
     console.error('[SCHEDULER ERROR] Failed to start daily challenge scheduler:', e.message);
   }
+
+  // Start timetable scheduler
+  try {
+    const { startTimetableScheduler } = require('./handlers/timetableScheduler');
+    startTimetableScheduler(client);
+  } catch (e) {
+    console.error('[SCHEDULER ERROR] Failed to start timetable scheduler:', e.message);
+  }
 });
 
 // ── Interaction Router ──
