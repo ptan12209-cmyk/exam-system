@@ -14,10 +14,10 @@ CREATE TABLE IF NOT EXISTS public.discord_link_tokens (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Create index on token for fast lookups
+-- 2. Create index on token for fast lookups (only for active unused tokens)
 CREATE INDEX IF NOT EXISTS idx_discord_link_tokens_token 
   ON public.discord_link_tokens(token) 
-  WHERE used = FALSE AND expires_at > NOW();
+  WHERE used = FALSE;
 
 -- 3. Enable Row Level Security (RLS)
 ALTER TABLE public.discord_link_tokens ENABLE ROW LEVEL SECURITY;
