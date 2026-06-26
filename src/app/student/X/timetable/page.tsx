@@ -113,12 +113,16 @@ export default function TimetablePage() {
 
       // Sync completed slots from database
       try {
-        const { data: dbCompleted } = await supabase
+        const { data: dbCompleted, error: completedError } = await supabase
           .from("timetable_study_logs")
           .select("slot_id")
           .eq("student_id", user.id)
           .gte("session_date", vnMonday)
           .eq("is_completed", true)
+
+        if (completedError) {
+          console.error("Lỗi truy vấn completed slots từ DB:", completedError)
+        }
 
         if (dbCompleted && dbCompleted.length > 0) {
           currentCompleted = dbCompleted.map((row: any) => row.slot_id)
@@ -150,10 +154,14 @@ export default function TimetablePage() {
 
       // 3. Load thời khóa biểu tùy chỉnh từ database
       try {
-        const { data: dbSlots } = await supabase
+        const { data: dbSlots, error: slotsError } = await supabase
           .from("student_timetable_entries")
           .select("*")
           .eq("student_id", user.id)
+
+        if (slotsError) {
+          console.error("Lỗi truy vấn student timetable entries từ DB:", slotsError)
+        }
 
         if (dbSlots && dbSlots.length > 0) {
           const grid = JSON.parse(JSON.stringify(DEFAULT_TIMETABLE_SLOTS)) // clone
@@ -246,12 +254,16 @@ export default function TimetablePage() {
         // If it starts with 'mon', 'tue', etc. (default ID format), it's not in DB yet, query first.
         const isUUID = updatedSlot.id.length === 36 || updatedSlot.id.includes('-') && updatedSlot.id.split('-').length === 5;
         if (isUUID) {
-          await supabase
+          const { error: upsertError } = await supabase
             .from("student_timetable_entries")
             .upsert({ id: updatedSlot.id, ...payload })
+          
+          if (upsertError) {
+            console.error("Lỗi upsert student_timetable_entries:", upsertError)
+          }
         } else {
           // Check if slot already exists in DB by checking day_of_week and start_time
-          const { data: existing } = await supabase
+          const { data: existing, error: selectError } = await supabase
             .from("student_timetable_entries")
             .select("id")
             .eq("student_id", profile.id)
@@ -259,17 +271,29 @@ export default function TimetablePage() {
             .eq("start_time", `${sTime}:00`)
             .maybeSingle()
 
+          if (selectError) {
+            console.error("Lỗi tìm kiếm slot đã tồn tại từ DB:", selectError)
+          }
+
           if (existing) {
-            await supabase
+            const { error: updateError } = await supabase
               .from("student_timetable_entries")
               .update(payload)
               .eq("id", existing.id)
+            
+            if (updateError) {
+              console.error("Lỗi cập nhật student_timetable_entries:", updateError)
+            }
           } else {
-            const { data: newRow } = await supabase
+            const { data: newRow, error: insertError } = await supabase
               .from("student_timetable_entries")
               .insert(payload)
               .select("id")
               .single()
+            
+            if (insertError) {
+              console.error("Lỗi thêm mới student_timetable_entries:", insertError)
+            }
             
             if (newRow) {
               // Update slot ID in active state with the new database UUID
@@ -294,10 +318,14 @@ export default function TimetablePage() {
 
     if (profile) {
       try {
-        await supabase
+        const { error: deleteError } = await supabase
           .from("student_timetable_entries")
           .delete()
           .eq("student_id", profile.id)
+        
+        if (deleteError) {
+          console.error("Lỗi xóa student_timetable_entries trên DB:", deleteError)
+        }
       } catch (err) {
         console.error("Lỗi xóa thời khóa biểu trên database:", err)
       }
@@ -332,15 +360,19 @@ export default function TimetablePage() {
       
       if (isCompleted) {
         // Delete or set completed = false
-        await supabase
+        const { error: deleteLogError } = await supabase
           .from("timetable_study_logs")
           .delete()
           .eq("student_id", profile.id)
           .eq("slot_id", selectedSlot.id)
           .eq("session_date", todayStr)
+
+        if (deleteLogError) {
+          console.error("Lỗi xóa timetable_study_logs trên DB:", deleteLogError)
+        }
       } else {
         // Upsert log as completed
-        await supabase
+        const { error: upsertLogError } = await supabase
           .from("timetable_study_logs")
           .upsert({
             student_id: profile.id,
@@ -354,6 +386,10 @@ export default function TimetablePage() {
           }, {
             onConflict: "student_id,slot_id,session_date"
           })
+
+        if (upsertLogError) {
+          console.error("Lỗi upsert timetable_study_logs trên DB:", upsertLogError)
+        }
       }
     } catch (err) {
       console.error("Lỗi đồng bộ trạng thái ca học lên database:", err)
