@@ -57,6 +57,7 @@ export default function CreateExamPage() {
   const [createdExamId, setCreatedExamId] = useState<string | null>(null)
   const [targetGrade, setTargetGrade] = useState<number | null>(null)
   const [targetClasses, setTargetClasses] = useState<string>("")
+  const [isAdvanced, setIsAdvanced] = useState(false)
 
   // Bank import states
   const [showImportModal, setShowImportModal] = useState(false)
@@ -320,6 +321,7 @@ export default function CreateExamPage() {
           teacher_id: user.id,
           target_grade: targetGrade,
           target_classes: classesArray,
+          is_advanced: isAdvanced,
           title: title.trim(),
           subject,
           duration,
@@ -469,6 +471,17 @@ export default function CreateExamPage() {
               <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-4">
                 <Label className="mb-2 block">Thiết lập nâng cao</Label>
                 <div className="grid gap-3 text-sm">
+                  <label className="flex items-center justify-between gap-4 rounded-xl border border-[hsl(var(--border))]/60 p-3">
+                    <span>Loại bài tập</span>
+                    <select
+                      value={isAdvanced ? "true" : "false"}
+                      onChange={(e) => setIsAdvanced(e.target.value === "true")}
+                      className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-2 py-1 text-sm"
+                    >
+                      <option value="false">Bài tập chính</option>
+                      <option value="true">Bài tập nâng trình (nâng cao)</option>
+                    </select>
+                  </label>
                   <label className="flex items-center justify-between gap-4 rounded-xl border border-[hsl(var(--border))]/60 p-3">
                     <span>Ẩn/hiện điểm</span>
                     <select value={scoreVisibilityMode} onChange={(e) => setScoreVisibilityMode(e.target.value as typeof scoreVisibilityMode)} className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-2 py-1 text-sm">
