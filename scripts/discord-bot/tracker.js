@@ -607,7 +607,7 @@ client.on('interactionCreate', async (interaction) => {
     const discordUsername = interaction.user.username;
     
     if (!supabase) {
-      return await interaction.followup.send({ content: '❌ Kết nối cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
+      return await interaction.followUp({ content: '❌ Kết nối cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
     }
     
     const { data: existingProfile } = await supabase
@@ -622,7 +622,7 @@ client.on('interactionCreate', async (interaction) => {
         .setTitle('✅ Đã liên kết rồi!')
         .setDescription(`Tài khoản Discord này đã liên kết với học sinh **${existingProfile.full_name}** trên ExamHub.`)
         .setTimestamp();
-      return await interaction.followup.send({ embeds: [embed], ephemeral: true });
+      return await interaction.followUp({ embeds: [embed], ephemeral: true });
     }
     
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -643,7 +643,7 @@ client.on('interactionCreate', async (interaction) => {
       
     if (insertError) {
       console.error('Failed to create link token:', insertError);
-      return await interaction.followup.send({ content: '❌ Lỗi hệ thống khi tạo mã xác thực. Vui lòng thử lại sau.', ephemeral: true });
+      return await interaction.followUp({ content: '❌ Lỗi hệ thống khi tạo mã xác thực. Vui lòng thử lại sau.', ephemeral: true });
     }
     
     const baseUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'https://luyende.id.vn';
@@ -658,7 +658,7 @@ client.on('interactionCreate', async (interaction) => {
       .setFooter({ text: '⚠️ Mã xác thực sẽ hết hạn sau 10 phút.' })
       .setTimestamp();
       
-    await interaction.followup.send({ embeds: [embed], ephemeral: true });
+    await interaction.followUp({ embeds: [embed], ephemeral: true });
   }
 
   if (interaction.commandName === 'diemdanh') {
@@ -680,7 +680,7 @@ client.on('interactionCreate', async (interaction) => {
           .setDescription(`Bạn đã nhận phần thưởng điểm danh hàng ngày rồi.\nStreak hiện tại: 🔥 **${result.streak} ngày**`)
           .setTimestamp()
           .setFooter({ text: 'ECODEx Learning System' });
-        return await interaction.followup.send({ embeds: [embed], ephemeral: true });
+        return await interaction.followUp({ embeds: [embed], ephemeral: true });
       }
       
       const level = result.level || 1;
@@ -711,11 +711,11 @@ client.on('interactionCreate', async (interaction) => {
       .setTimestamp()
       .setFooter({ text: 'ECODEx Gamification System' });
       
-      await interaction.followup.send({ embeds: [embed], ephemeral: true });
+      await interaction.followUp({ embeds: [embed], ephemeral: true });
     } catch (err) {
       console.error('Checkin command error:', err.response?.data || err.message);
       const errMsg = err.response?.data?.error || 'Có lỗi xảy ra khi thực hiện điểm danh. Bạn đã liên kết tài khoản chưa?';
-      await interaction.followup.send({ content: `❌ ${errMsg}`, ephemeral: true });
+      await interaction.followUp({ content: `❌ ${errMsg}`, ephemeral: true });
     }
   }
 
@@ -758,10 +758,10 @@ client.on('interactionCreate', async (interaction) => {
         embed.setDescription(listLines.join('\n'));
       }
       
-      await interaction.followup.send({ embeds: [embed] });
+      await interaction.followUp({ embeds: [embed] });
     } catch (err) {
       console.error('Report command error:', err.response?.data || err.message);
-      await interaction.followup.send({ content: '❌ Không thể tải báo cáo từ máy chủ.', ephemeral: true });
+      await interaction.followUp({ content: '❌ Không thể tải báo cáo từ máy chủ.', ephemeral: true });
     }
   }
 
@@ -775,7 +775,7 @@ client.on('interactionCreate', async (interaction) => {
     const tag_lop = interaction.options.getRole('tag_lop');
     
     if (!supabase) {
-      return await interaction.followup.send({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.' });
+      return await interaction.followUp({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.' });
     }
     
     // Search exams in Supabase
@@ -786,7 +786,7 @@ client.on('interactionCreate', async (interaction) => {
       .limit(5);
       
     if (searchErr || !exams || exams.length === 0) {
-      return await interaction.followup.send({ content: `❌ Không tìm thấy đề thi nào chứa từ khóa **${ten_de}**` });
+      return await interaction.followUp({ content: `❌ Không tìm thấy đề thi nào chứa từ khóa **${ten_de}**` });
     }
     
     if (exams.length === 1) {
@@ -808,7 +808,7 @@ client.on('interactionCreate', async (interaction) => {
       };
       
       const actionRow = new ActionRowBuilder().addComponents(selectMenu);
-      await interaction.followup.send({ content: '📝 Tìm thấy nhiều đề thi khớp. Vui lòng chọn đề bên dưới:', components: [actionRow] });
+      await interaction.followUp({ content: '📝 Tìm thấy nhiều đề thi khớp. Vui lòng chọn đề bên dưới:', components: [actionRow] });
     }
   }
 
@@ -821,7 +821,7 @@ client.on('interactionCreate', async (interaction) => {
     const ten_de = interaction.options.getString('ten_de');
     
     if (!supabase) {
-      return await interaction.followup.send({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
+      return await interaction.followUp({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
     }
     
     // Query statistics of exams and submissions
@@ -830,14 +830,14 @@ client.on('interactionCreate', async (interaction) => {
       .select('score, time_spent, student_id, exam:exams(title)');
       
     if (subError || !submissions || submissions.length === 0) {
-      return await interaction.followup.send({ content: '📭 Chưa ghi nhận bài nộp nào trên hệ thống.', ephemeral: true });
+      return await interaction.followUp({ content: '📭 Chưa ghi nhận bài nộp nào trên hệ thống.', ephemeral: true });
     }
     
     let filteredSubmissions = submissions;
     if (ten_de) {
       filteredSubmissions = submissions.filter(s => s.exam?.title?.toLowerCase().includes(ten_de.toLowerCase()));
       if (filteredSubmissions.length === 0) {
-        return await interaction.followup.send({ content: `📭 Không tìm thấy kết quả làm bài của đề thi có chứa từ khóa **${ten_de}**.`, ephemeral: true });
+        return await interaction.followUp({ content: `📭 Không tìm thấy kết quả làm bài của đề thi có chứa từ khóa **${ten_de}**.`, ephemeral: true });
       }
     }
     
@@ -862,14 +862,14 @@ client.on('interactionCreate', async (interaction) => {
       .setTimestamp()
       .setFooter({ text: 'ECODEx Statistical Engine' });
       
-    await interaction.followup.send({ embeds: [embed], ephemeral: true });
+    await interaction.followUp({ embeds: [embed], ephemeral: true });
   }
 
   if (interaction.commandName === 'xeploai') {
     await interaction.deferReply();
     
     if (!supabase) {
-      return await interaction.followup.send({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.' });
+      return await interaction.followUp({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.' });
     }
     
     const { data: leaderboard, error: leadError } = await supabase
@@ -879,7 +879,7 @@ client.on('interactionCreate', async (interaction) => {
       .limit(10);
       
     if (leadError || !leaderboard || leaderboard.length === 0) {
-      return await interaction.followup.send({ content: '📭 Chưa có dữ liệu bảng xếp hạng XP.' });
+      return await interaction.followUp({ content: '📭 Chưa có dữ liệu bảng xếp hạng XP.' });
     }
     
     const embed = new EmbedBuilder()
@@ -900,7 +900,7 @@ client.on('interactionCreate', async (interaction) => {
     });
     
     embed.setDescription(desc || 'Không có dữ liệu.');
-    await interaction.followup.send({ embeds: [embed] });
+    await interaction.followUp({ embeds: [embed] });
   }
 
   if (interaction.commandName === 'hocsinh') {
@@ -912,7 +912,7 @@ client.on('interactionCreate', async (interaction) => {
     const targetMember = interaction.options.getMember('student');
     
     if (!supabase) {
-      return await interaction.followup.send({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
+      return await interaction.followUp({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
     }
     
     const { data: profile, error: pErr } = await supabase
@@ -922,7 +922,7 @@ client.on('interactionCreate', async (interaction) => {
       .maybeSingle();
       
     if (pErr || !profile) {
-      return await interaction.followup.send({ content: `❌ Học sinh **${targetMember.user.username}** chưa liên kết tài khoản ExamHub.`, ephemeral: true });
+      return await interaction.followUp({ content: `❌ Học sinh **${targetMember.user.username}** chưa liên kết tài khoản ExamHub.`, ephemeral: true });
     }
     
     const { data: stats } = await supabase
@@ -963,14 +963,14 @@ client.on('interactionCreate', async (interaction) => {
       )
       .setTimestamp();
       
-    await interaction.followup.send({ embeds: [embed], ephemeral: true });
+    await interaction.followUp({ embeds: [embed], ephemeral: true });
   }
 
   if (interaction.commandName === 'thi') {
     await interaction.deferReply({ ephemeral: true });
     
     if (!supabase) {
-      return await interaction.followup.send({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
+      return await interaction.followUp({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
     }
     
     const { data: exams, error: exErr } = await supabase
@@ -981,7 +981,7 @@ client.on('interactionCreate', async (interaction) => {
       .limit(5);
       
     if (exErr || !exams || exams.length === 0) {
-      return await interaction.followup.send({ content: '📭 Hiện chưa có đề thi nào đang mở.', ephemeral: true });
+      return await interaction.followUp({ content: '📭 Hiện chưa có đề thi nào đang mở.', ephemeral: true });
     }
     
     const examhubUrl = process.env.WEB_API_URL?.replace('/api/study-sessions/discord-sync', '') || 'https://luyende.id.vn';
@@ -999,14 +999,14 @@ client.on('interactionCreate', async (interaction) => {
       });
     });
     
-    await interaction.followup.send({ embeds: [embed], ephemeral: true });
+    await interaction.followUp({ embeds: [embed], ephemeral: true });
   }
 
   if (interaction.commandName === 'xp') {
     await interaction.deferReply({ ephemeral: true });
     
     if (!supabase) {
-      return await interaction.followup.send({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
+      return await interaction.followUp({ content: '❌ Cơ sở dữ liệu chưa sẵn sàng.', ephemeral: true });
     }
     
     const { data: profile } = await supabase
@@ -1016,7 +1016,7 @@ client.on('interactionCreate', async (interaction) => {
       .maybeSingle();
       
     if (!profile) {
-      return await interaction.followup.send({ content: '❌ Bạn chưa liên kết tài khoản! Sử dụng lệnh **/lienket** nhé.', ephemeral: true });
+      return await interaction.followUp({ content: '❌ Bạn chưa liên kết tài khoản! Sử dụng lệnh **/lienket** nhé.', ephemeral: true });
     }
     
     const { data: stats } = await supabase
@@ -1046,7 +1046,7 @@ client.on('interactionCreate', async (interaction) => {
       .setTimestamp()
       .setFooter({ text: 'ECODEx Gamification System' });
       
-    await interaction.followup.send({ embeds: [embed], ephemeral: true });
+    await interaction.followUp({ embeds: [embed], ephemeral: true });
   }
 });
 
@@ -1647,7 +1647,7 @@ async function executeCreateArena(interactionOrSelect, exam, tagLop, teacherProf
     if (!profile) {
       const msg = '❌ Bạn chưa liên kết tài khoản ExamHub. Vui lòng chạy lệnh **/lienket** trước.';
       if (interactionOrSelect.isRepliable()) {
-        await interactionOrSelect.followup.send({ content: msg });
+        await interactionOrSelect.followUp({ content: msg });
       }
       return;
     }
@@ -1677,7 +1677,7 @@ async function executeCreateArena(interactionOrSelect, exam, tagLop, teacherProf
     console.error('Error inserting arena session:', insertError);
     const msg = '❌ Lỗi hệ thống khi tạo đợt Arena trong cơ sở dữ liệu.';
     if (interactionOrSelect.isRepliable()) {
-      await interactionOrSelect.followup.send({ content: msg });
+      await interactionOrSelect.followUp({ content: msg });
     }
     return;
   }
