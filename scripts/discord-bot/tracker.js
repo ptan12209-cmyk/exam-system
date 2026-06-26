@@ -29,6 +29,8 @@ const AFK_DEAFEN_TIMEOUT_SECONDS = parseInt(process.env.AFK_DEAFEN_TIMEOUT_SECON
 const AFK_MUTE_TIMEOUT_SECONDS = parseInt(process.env.AFK_MUTE_TIMEOUT_SECONDS || "1800", 10);
 const AFK_SCREENSHARE_TIMEOUT_SECONDS = parseInt(process.env.AFK_SCREENSHARE_TIMEOUT_SECONDS || "600", 10);
 const CHECKIN_INTERVAL_SECONDS = parseInt(process.env.CHECKIN_INTERVAL_SECONDS || "2700", 10);
+const AFK_REJOIN_COOLDOWN_SECONDS = parseInt(process.env.AFK_REJOIN_COOLDOWN_SECONDS || "300", 10);
+const TEACHER_LOG_CHANNEL_ID = process.env.TEACHER_LOG_CHANNEL_ID || "";
 
 const client = new Client({
   intents: [
@@ -41,6 +43,7 @@ const client = new Client({
 // userId -> { joinedAt, durationOffset, lastSyncedAt, deafened, deafenedSince, muted, mutedSince, mutedDuration, sharingScreen, sharingScreenSince, sharingScreenDuration, cameraOn, cameraSince, cameraDuration, screenShareReminderSent, joinTime, noScreenshareSince, lastCheckinTime }
 const activeSessions = new Map();
 const activeCheckins = new Map();
+const afkCooldowns = new Map(); // userId -> cooldownExpiresAt (timestamp)
 
 // Helper to send sync update to Next.js API
 async function syncSession(userId, status, durationSeconds, deafened, mutedSeconds, sharingScreen, cameraOn, sharingScreenSeconds, cameraSeconds) {
@@ -62,6 +65,29 @@ async function syncSession(userId, status, durationSeconds, deafened, mutedSecon
   } catch (error) {
     console.error(`[SYNC ERROR] Failed to sync user ${userId}:`, error.response?.data || error.message);
   }
+}
+
+// Gửi thông báo vi phạm real-time vào kênh log dành cho giáo viên
+async function notifyTeacher(title, description, color = 0xF59E0B) {
+  if (!TEACHER_LOG_CHANNEL_ID) return;
+  try {
+    const channel = client.channels.cache.get(TEACHER_LOG_CHANNEL_ID);
+    if (!channel || !channel.isTextBased()) return;
+    const embed = new EmbedBuilder()
+      .setColor(color)
+      .setTitle(title)
+      .setDescription(description)
+      .setTimestamp()
+      .setFooter({ text: 'ECODEx Learning System' });
+    await channel.send({ embeds: [embed] });
+  } catch (e) {
+    console.error('[TEACHER LOG ERROR]', e.message);
+  }
+}
+
+// Set cooldown khi học sinh bị move sang AFK
+function setAfkCooldown(userId) {
+  afkCooldowns.set(userId, Date.now() + AFK_REJOIN_COOLDOWN_SECONDS * 1000);
 }
 
 // Tính thời gian mute lũy kế cho một session
@@ -220,11 +246,13 @@ app.post('/api/bot-control', async (req, res) => {
         const member = channel.members.get(discord_id);
         if (member) {
           await member.voice.setChannel(AFK_VOICE_CHANNEL_ID);
+          // #2 Set rejoin cooldown
+          setAfkCooldown(discord_id);
           // Gửi tin nhắn thông báo
           const embed = new EmbedBuilder()
             .setColor(0xEF4444)
             .setTitle('🔇 Bạn đã bị chuyển sang phòng AFK')
-            .setDescription('Giáo viên đã chuyển bạn sang phòng AFK từ bảng điều khiển trên Web.')
+            .setDescription(`Giáo viên đã chuyển bạn sang phòng AFK từ bảng điều khiển trên Web.\n\n⏳ Bạn cần đợi **${Math.round(AFK_REJOIN_COOLDOWN_SECONDS / 60)} phút** trước khi có thể quay lại phòng học.`)
             .setTimestamp()
             .setFooter({ text: 'ECODEx Learning System' });
           await member.send({ embeds: [embed] }).catch(() => null);
@@ -515,6 +543,33 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 
   // Case 1: Joined the classroom voice channel
   if (newState.channelId === CLASS_VOICE_CHANNEL_ID && oldState.channelId !== CLASS_VOICE_CHANNEL_ID) {
+    // #2 Rejoin Cooldown: Kiểm tra cooldown trước khi cho phép tham gia
+    const cooldownExpires = afkCooldowns.get(userId);
+    if (cooldownExpires && Date.now() < cooldownExpires) {
+      const remainingSeconds = Math.ceil((cooldownExpires - Date.now()) / 1000);
+      console.log(`[COOLDOWN BLOCKED] ${username} tried to rejoin but cooldown active (${remainingSeconds}s remaining).`);
+      
+      try {
+        if (AFK_VOICE_CHANNEL_ID) {
+          await newState.member.voice.setChannel(AFK_VOICE_CHANNEL_ID);
+        } else {
+          await newState.member.voice.disconnect();
+        }
+        const embed = new EmbedBuilder()
+          .setColor(0xEF4444)
+          .setTitle('⏳ Bạn đang trong thời gian chờ')
+          .setDescription(`Bạn đã bị chuyển sang phòng AFK trước đó. Vui lòng đợi thêm **${Math.ceil(remainingSeconds / 60)} phút** trước khi quay lại phòng học.`)
+          .setTimestamp()
+          .setFooter({ text: 'ECODEx Learning System' });
+        await newState.member.send({ embeds: [embed] }).catch(() => null);
+      } catch (e) {
+        console.error(`[COOLDOWN ERROR] Failed to enforce cooldown for ${userId}:`, e.message);
+      }
+      return;
+    }
+    // Xóa cooldown đã hết hạn
+    afkCooldowns.delete(userId);
+
     console.log(`[JOIN] ${username} entered the classroom.`);
     activeSessions.set(userId, {
       joinedAt: Date.now(),
@@ -531,10 +586,14 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
       cameraOn: isCameraOn,
       cameraSince: isCameraOn ? Date.now() : null,
       cameraDuration: 0,
-      screenShareReminderSent: isSharingScreen, // Nếu đã share ngay từ đầu thì không nhắc
+      screenShareReminderSent: isSharingScreen,
       joinTime: Date.now(),
       noScreenshareSince: isSharingScreen ? null : Date.now(),
-      lastCheckinTime: Date.now()
+      lastCheckinTime: Date.now(),
+      // #1 Escalation Warning: Tracking warning levels per violation type
+      deafenWarningLevel: 0,
+      muteWarningLevel: 0,
+      screenshareWarningLevel: 0
     });
 
     const status = isDeafened ? 'discord_afk' : 'discord_class';
@@ -542,6 +601,28 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
       userId, status, 0, isDeafened, 0,
       isSharingScreen, isCameraOn, 0, 0
     );
+
+    // #6 Join-Mute Detection: Cảnh báo ngay nếu join với mic tắt
+    if (isMuted && !isDeafened) {
+      console.log(`[JOIN-MUTE] ${username} joined with mic already muted!`);
+      try {
+        const embed = new EmbedBuilder()
+          .setColor(0xF59E0B)
+          .setTitle('⚠️ Cảnh báo: Mic đang tắt')
+          .setDescription('Bạn đã vào phòng học với mic bị tắt. Vui lòng bật mic để thầy cô có thể tương tác với bạn. Nếu tiếp tục tắt mic, bạn sẽ bị chuyển sang phòng AFK.')
+          .setTimestamp()
+          .setFooter({ text: 'ECODEx Learning System' });
+        await newState.member.send({ embeds: [embed] }).catch(() => null);
+      } catch (e) {
+        console.error(`[JOIN-MUTE DM ERROR]`, e.message);
+      }
+      // #3 Thông báo cho giáo viên
+      await notifyTeacher(
+        '⚠️ Học sinh vào phòng với mic tắt',
+        `**${username}** (<@${userId}>) đã tham gia phòng học với mic đã tắt sẵn. Có thể cần theo dõi thêm.`,
+        0xF59E0B
+      );
+    }
   }
 
   // Case 2: Left the classroom voice channel
@@ -604,6 +685,10 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
       session.joinedAt = Date.now();
       session.deafened = isDeafened;
       session.deafenedSince = isDeafened ? Date.now() : null;
+      // #1 Reset deafen warning level khi un-deafen
+      if (!isDeafened) {
+        session.deafenWarningLevel = 0;
+      }
 
       const status = isDeafened ? 'discord_afk' : 'discord_class';
       await syncSession(
@@ -625,6 +710,10 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
         }
       }
       session.muted = isMuted;
+      // #1 Reset mute warning level khi un-mute
+      if (!isMuted) {
+        session.muteWarningLevel = 0;
+      }
     }
 
     // Xử lý thay đổi Screen Share
@@ -632,8 +721,10 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
       console.log(`[SCREENSHARE] ${username}: ${oldSharingScreen} -> ${isSharingScreen}`);
       if (isSharingScreen) {
         session.sharingScreenSince = Date.now();
-        session.screenShareReminderSent = true; // Đã share màn hình thì không nhắc nhở nữa
+        session.screenShareReminderSent = true;
         session.noScreenshareSince = null;
+        // #1 Reset screenshare warning level khi bật share
+        session.screenshareWarningLevel = 0;
       } else {
         if (session.sharingScreenSince) {
           session.sharingScreenDuration += Math.floor((Date.now() - session.sharingScreenSince) / 1000);
@@ -760,6 +851,14 @@ setInterval(async () => {
                 if (member && AFK_VOICE_CHANNEL_ID) {
                   await member.voice.setChannel(AFK_VOICE_CHANNEL_ID).catch(() => null);
                   console.log(`[AUTO-AFK] Moved ${member.user.username} to AFK due to check-in timeout.`);
+                  // #2 Set rejoin cooldown
+                  setAfkCooldown(userId);
+                  // #3 Thông báo cho giáo viên
+                  await notifyTeacher(
+                    '❌ Học sinh không xác nhận điểm danh',
+                    `**${member.user.username}** (<@${userId}>) đã không xác nhận điểm danh trong 3 phút và bị chuyển sang phòng AFK.\nCooldown: ${Math.round(AFK_REJOIN_COOLDOWN_SECONDS / 60)} phút.`,
+                    0xEF4444
+                  );
                 }
               }
             }, 180000); // 3 minutes
@@ -780,31 +879,116 @@ setInterval(async () => {
       }
     }
 
-    // 3. Kiểm tra Tự động chuyển phòng AFK do quá hạn Deafen/Mute/Screenshare
-    let shouldMove = false;
-    let reason = "";
+    // 3. #1 Escalation Warning System — Cảnh báo phân cấp thay vì sút thẳng
+    //    Level 0 → DM cảnh báo (33% timeout)
+    //    Level 1 → Ping công khai (66% timeout)
+    //    Level 2 → Move to AFK (100% timeout)
+    const escalationChecks = [];
 
+    // 3a. Kiểm tra Deafen
     if (session.deafened && session.deafenedSince) {
       const elapsedDeafen = Math.floor((now - session.deafenedSince) / 1000);
-      if (elapsedDeafen >= AFK_DEAFEN_TIMEOUT_SECONDS) {
-        shouldMove = true;
-        reason = `tắt tai nghe quá ${Math.round(AFK_DEAFEN_TIMEOUT_SECONDS / 60)} phút`;
-      }
+      escalationChecks.push({
+        type: 'deafen',
+        elapsed: elapsedDeafen,
+        timeout: AFK_DEAFEN_TIMEOUT_SECONDS,
+        warningKey: 'deafenWarningLevel',
+        reason: 'tắt tai nghe',
+        reasonFull: `tắt tai nghe quá ${Math.round(AFK_DEAFEN_TIMEOUT_SECONDS / 60)} phút`
+      });
     }
 
-    if (!shouldMove && session.muted && session.mutedSince) {
+    // 3b. Kiểm tra Mute
+    if (session.muted && session.mutedSince) {
       const elapsedMute = Math.floor((now - session.mutedSince) / 1000);
-      if (elapsedMute >= AFK_MUTE_TIMEOUT_SECONDS) {
-        shouldMove = true;
-        reason = `tắt tiếng mic quá ${Math.round(AFK_MUTE_TIMEOUT_SECONDS / 60)} phút`;
-      }
+      escalationChecks.push({
+        type: 'mute',
+        elapsed: elapsedMute,
+        timeout: AFK_MUTE_TIMEOUT_SECONDS,
+        warningKey: 'muteWarningLevel',
+        reason: 'tắt tiếng mic',
+        reasonFull: `tắt tiếng mic quá ${Math.round(AFK_MUTE_TIMEOUT_SECONDS / 60)} phút`
+      });
     }
 
-    if (!shouldMove && !session.sharingScreen && session.noScreenshareSince) {
+    // 3c. Kiểm tra No-Screenshare
+    if (!session.sharingScreen && session.noScreenshareSince) {
       const elapsedNoScreenshare = Math.floor((now - session.noScreenshareSince) / 1000);
-      if (elapsedNoScreenshare >= AFK_SCREENSHARE_TIMEOUT_SECONDS) {
+      escalationChecks.push({
+        type: 'screenshare',
+        elapsed: elapsedNoScreenshare,
+        timeout: AFK_SCREENSHARE_TIMEOUT_SECONDS,
+        warningKey: 'screenshareWarningLevel',
+        reason: 'không chia sẻ màn hình',
+        reasonFull: `không chia sẻ màn hình quá ${Math.round(AFK_SCREENSHARE_TIMEOUT_SECONDS / 60)} phút`
+      });
+    }
+
+    let shouldMove = false;
+    let moveReason = "";
+
+    for (const check of escalationChecks) {
+      const currentLevel = session[check.warningKey] || 0;
+      const threshold33 = Math.floor(check.timeout / 3);
+      const threshold66 = Math.floor((check.timeout * 2) / 3);
+
+      // Level 0 → DM cảnh báo tại 33% timeout
+      if (currentLevel === 0 && check.elapsed >= threshold33) {
+        session[check.warningKey] = 1;
+        const remainingMin = Math.ceil((check.timeout - check.elapsed) / 60);
+        try {
+          const user = await client.users.fetch(userId);
+          if (user) {
+            const embed = new EmbedBuilder()
+              .setColor(0xF59E0B)
+              .setTitle('⚠️ Cảnh báo lần 1')
+              .setDescription(`Bạn đã **${check.reason}** được ${Math.round(check.elapsed / 60)} phút. Nếu tiếp tục, bạn sẽ bị chuyển sang phòng AFK sau khoảng **${remainingMin} phút** nữa.`)
+              .setTimestamp()
+              .setFooter({ text: 'ECODEx Learning System' });
+            await user.send({ embeds: [embed] }).catch(() => null);
+            console.log(`[ESCALATION L1] DM warning sent to ${user.username} for: ${check.reason}`);
+          }
+        } catch (e) {
+          console.error(`[ESCALATION L1 ERROR]`, e.message);
+        }
+      }
+
+      // Level 1 → Ping công khai tại 66% timeout
+      if (currentLevel === 1 && check.elapsed >= threshold66) {
+        session[check.warningKey] = 2;
+        const remainingMin = Math.ceil((check.timeout - check.elapsed) / 60);
+        try {
+          let textChannel = null;
+          if (CLASS_TEXT_CHANNEL_ID) {
+            textChannel = client.channels.cache.get(CLASS_TEXT_CHANNEL_ID);
+          }
+          if (!textChannel) {
+            const voiceChannel = client.channels.cache.get(CLASS_VOICE_CHANNEL_ID);
+            if (voiceChannel && voiceChannel.guild) {
+              const textChannels = voiceChannel.guild.channels.cache.filter(c => c.type === 0);
+              textChannel = textChannels.find(c => c.name.includes('classroom') || c.name.includes('study') || c.name.includes('general')) || textChannels.first();
+            }
+          }
+          if (textChannel) {
+            await textChannel.send(`<@${userId}> ⚠️ **Cảnh báo lần 2**: Bạn đã **${check.reason}** được ${Math.round(check.elapsed / 60)} phút. Bạn sẽ bị chuyển sang phòng AFK sau **${remainingMin} phút** nữa nếu không hành động!`);
+            console.log(`[ESCALATION L2] Public ping sent for ${userId}: ${check.reason}`);
+          }
+        } catch (e) {
+          console.error(`[ESCALATION L2 ERROR]`, e.message);
+        }
+        // #3 Thông báo cho giáo viên ở mức cảnh báo 2
+        await notifyTeacher(
+          '⚠️ Cảnh báo lần 2 — Sắp bị AFK',
+          `Học sinh <@${userId}> đã **${check.reason}** được **${Math.round(check.elapsed / 60)} phút** và đã nhận 2 cảnh báo. Sẽ tự động chuyển AFK sau **${Math.ceil((check.timeout - check.elapsed) / 60)} phút**.`,
+          0xEF4444
+        );
+      }
+
+      // Level 2 → Move to AFK tại 100% timeout
+      if (currentLevel >= 2 && check.elapsed >= check.timeout) {
         shouldMove = true;
-        reason = `không chia sẻ màn hình quá ${Math.round(AFK_SCREENSHARE_TIMEOUT_SECONDS / 60)} phút`;
+        moveReason = check.reasonFull;
+        break; // Chỉ cần 1 lý do để move
       }
     }
 
@@ -815,20 +999,37 @@ setInterval(async () => {
         if (member) {
           try {
             await member.voice.setChannel(AFK_VOICE_CHANNEL_ID);
-            console.log(`[AUTO-AFK] Moved ${member.user.username} to AFK channel due to: ${reason}.`);
+            console.log(`[AUTO-AFK] Moved ${member.user.username} to AFK channel due to: ${moveReason}.`);
+            
+            // #2 Set rejoin cooldown
+            setAfkCooldown(userId);
             
             // Gửi tin nhắn DM thông báo
             const embed = new EmbedBuilder()
               .setColor(0xEF4444)
               .setTitle('🔇 Bạn đã bị chuyển sang phòng AFK')
-              .setDescription(`Hệ thống đã tự động chuyển bạn sang phòng AFK vì bạn đã **${reason}**. Vui lòng kết nối lại phòng học khi bạn tiếp tục học tập.`)
+              .setDescription(`Hệ thống đã tự động chuyển bạn sang phòng AFK vì bạn đã **${moveReason}**.\n\n⏳ Bạn cần đợi **${Math.round(AFK_REJOIN_COOLDOWN_SECONDS / 60)} phút** trước khi có thể quay lại phòng học.`)
               .setTimestamp()
               .setFooter({ text: 'ECODEx Learning System' });
             await member.send({ embeds: [embed] }).catch(() => null);
+            
+            // #3 Thông báo cho giáo viên
+            await notifyTeacher(
+              '🚫 Học sinh bị chuyển sang AFK',
+              `**${member.user.username}** (<@${userId}>) đã bị tự động chuyển sang phòng AFK vì: **${moveReason}**.\nCooldown: ${Math.round(AFK_REJOIN_COOLDOWN_SECONDS / 60)} phút.`,
+              0xEF4444
+            );
           } catch (e) {
             console.error(`[AUTO-AFK ERROR] Failed to move user ${userId} to AFK channel:`, e.message);
           }
         }
+      }
+    }
+
+    // Cleanup expired cooldowns
+    for (const [cooldownUserId, expiresAt] of afkCooldowns.entries()) {
+      if (now >= expiresAt) {
+        afkCooldowns.delete(cooldownUserId);
       }
     }
   }
