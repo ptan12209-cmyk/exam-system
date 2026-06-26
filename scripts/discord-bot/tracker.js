@@ -917,7 +917,7 @@ client.on('interactionCreate', async (interaction) => {
     
     const { data: profile, error: pErr } = await supabase
       .from('profiles')
-      .select('id, full_name, class, discord_username')
+      .select('id, full_name, class')
       .eq('discord_id', targetMember.id)
       .maybeSingle();
       
@@ -950,7 +950,7 @@ client.on('interactionCreate', async (interaction) => {
     const embed = new EmbedBuilder()
       .setColor(0x6366F1)
       .setTitle(`👤 Hồ sơ: ${profile.full_name}`)
-      .setDescription(`Lớp: **${profile.class || 'Chưa rõ'}** · Discord: @${profile.discord_username || targetMember.user.username}`)
+      .setDescription(`Lớp: **${profile.class || 'Chưa rõ'}** · Discord: @${targetMember.user.username}`)
       .setThumbnail(targetMember.user.displayAvatarURL())
       .addFields(
         { name: '⭐ Level', value: `**Level ${stats?.level || 1}**`, inline: true },
