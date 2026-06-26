@@ -470,31 +470,40 @@ export default function CreateExamPage() {
 
               <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-4">
                 <Label className="mb-2 block">Thiết lập nâng cao</Label>
-                <div className="grid gap-3 text-sm">
-                  <label className="flex items-center justify-between gap-4 rounded-xl border border-[hsl(var(--border))]/60 p-3">
-                    <span>Loại bài tập</span>
+                <div className="grid gap-3.5 text-sm">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold uppercase text-[hsl(var(--muted-foreground))]">Loại bài tập</Label>
                     <select
                       value={isAdvanced ? "true" : "false"}
                       onChange={(e) => setIsAdvanced(e.target.value === "true")}
-                      className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-2 py-1 text-sm"
+                      className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]"
                     >
                       <option value="false">Bài tập chính</option>
                       <option value="true">Bài tập nâng trình (nâng cao)</option>
                     </select>
-                  </label>
-                  <label className="flex items-center justify-between gap-4 rounded-xl border border-[hsl(var(--border))]/60 p-3">
-                    <span>Ẩn/hiện điểm</span>
-                    <select value={scoreVisibilityMode} onChange={(e) => setScoreVisibilityMode(e.target.value as typeof scoreVisibilityMode)} className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-2 py-1 text-sm">
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold uppercase text-[hsl(var(--muted-foreground))]">Ẩn/hiện điểm</Label>
+                    <select
+                      value={scoreVisibilityMode}
+                      onChange={(e) => setScoreVisibilityMode(e.target.value as typeof scoreVisibilityMode)}
+                      className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--foreground))]"
+                    >
                       <option value="always">Luôn hiện</option>
                       <option value="never">Luôn ẩn</option>
                       <option value="threshold">Theo ngưỡng</option>
                     </select>
-                  </label>
+                  </div>
                   {scoreVisibilityMode === "threshold" && (
-                    <label className="flex items-center justify-between gap-4 rounded-xl border border-[hsl(var(--border))]/60 p-3">
-                      <span>Ngưỡng điểm</span>
-                      <Input type="number" value={scoreThreshold} onChange={(e) => setScoreThreshold(Number(e.target.value))} className="w-24 rounded-lg" />
-                    </label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold uppercase text-[hsl(var(--muted-foreground))]">Ngưỡng điểm</Label>
+                      <Input
+                        type="number"
+                        value={scoreThreshold}
+                        onChange={(e) => setScoreThreshold(Number(e.target.value))}
+                        className="rounded-xl border-[hsl(var(--border))]/60 bg-transparent text-sm"
+                      />
+                    </div>
                   )}
                   <ScheduleFields
                     isScheduled={isScheduled}

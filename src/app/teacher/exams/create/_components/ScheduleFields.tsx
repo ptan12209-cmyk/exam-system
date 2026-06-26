@@ -30,19 +30,25 @@ export function ScheduleFields({
         />
       </label>
       {isScheduled && (
-        <div className="grid gap-3 md:grid-cols-2">
-          <Input
-            type="datetime-local"
-            value={startTime}
-            onChange={(e) => onStartTimeChange(e.target.value)}
-            className="rounded-xl"
-          />
-          <Input
-            type="datetime-local"
-            value={endTime}
-            onChange={(e) => onEndTimeChange(e.target.value)}
-            className="rounded-xl"
-          />
+        <div className="grid gap-3 grid-cols-1">
+          <div className="space-y-1">
+            <span className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Thời gian bắt đầu</span>
+            <Input
+              type="datetime-local"
+              value={startTime}
+              onChange={(e) => onStartTimeChange(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] uppercase font-bold text-[hsl(var(--muted-foreground))]">Thời gian kết thúc</span>
+            <Input
+              type="datetime-local"
+              value={endTime}
+              onChange={(e) => onEndTimeChange(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
         </div>
       )}
     </>

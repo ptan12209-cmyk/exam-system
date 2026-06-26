@@ -397,7 +397,7 @@ export default function EditExamPage() {
                     )}
                   >
                     <span className="font-semibold text-xs flex items-center gap-1">
-                      Học sinh X <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#C18CFF] animate-pulse"></span>
+                      Thí sinh tự do (TSTD) <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#C18CFF] animate-pulse"></span>
                     </span>
                   </button>
                 </div>

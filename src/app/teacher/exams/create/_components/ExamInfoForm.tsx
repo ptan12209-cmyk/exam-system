@@ -152,9 +152,9 @@ export function ExamInfoForm({
             )}
           >
             <span className="font-semibold text-sm flex items-center gap-1.5">
-              Học sinh X <span className="inline-block w-2 h-2 rounded-full bg-[#C18CFF] animate-pulse"></span>
+              Thí sinh tự do (TSTD) <span className="inline-block w-2 h-2 rounded-full bg-[#C18CFF] animate-pulse"></span>
             </span>
-            <span className="text-xs opacity-75 mt-1">Giao riêng cho học sinh X</span>
+            <span className="text-xs opacity-75 mt-1">Giao riêng cho thí sinh tự do (Học sinh X)</span>
           </button>
         </div>
       </div>

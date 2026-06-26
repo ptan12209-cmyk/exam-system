@@ -165,7 +165,7 @@ export default function TeacherDashboard() {
               </span>
               {exam.assigned_to === "x" && (
                 <span className="rounded-full border border-[#C18CFF] bg-[#C18CFF]/15 text-[#C18CFF] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] animate-pulse">
-                  Học sinh X
+                  Thí sinh tự do (TSTD)
                 </span>
               )}
             </div>
