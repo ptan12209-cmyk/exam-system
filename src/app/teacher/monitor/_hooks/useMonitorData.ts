@@ -65,6 +65,11 @@ export function useMonitorData() {
   const [ttFormColor, setTtFormColor] = useState(COLORS[0])
   const [ttSaving, setTtSaving] = useState(false)
 
+  // Copy timetable states
+  const [copyTtModalOpen, setCopyTtModalOpen] = useState(false)
+  const [teacherTtEntries, setTeacherTtEntries] = useState<any[]>([])
+  const [copyTtLoading, setCopyTtLoading] = useState(false)
+
   // ──────────────────── Data Fetching ────────────────────
 
   const fetchLinkedStudents = useCallback(async (userId: string) => {
@@ -334,51 +339,71 @@ export function useMonitorData() {
 
   // ──────────────────── Timetable Actions ────────────────────
 
-  const handleCopyTeacherTimetable = () => {
+  const openCopyTimetableModal = async () => {
     if (!selectedStudent || !teacherProfile) return
-    setConfirmState({
-      isOpen: true,
-      title: "Sao chép thời khóa biểu?",
-      description: `Bạn có chắc muốn sao chép toàn bộ thời khóa biểu của bạn sang cho học sinh ${selectedStudent.full_name}? Việc này sẽ không xóa các lịch học sinh đã có.`,
-      confirmText: "Sao chép",
-      variant: "info",
-      onConfirm: async () => {
-        try {
-          const { data: teacherEntries, error: fetchErr } = await supabase
-            .from("timetable_entries")
-            .select("*")
-            .eq("teacher_id", teacherProfile.id)
-            
-          if (fetchErr) throw fetchErr
-          if (!teacherEntries || teacherEntries.length === 0) {
-            warning("Thời khóa biểu của bạn đang trống. Vui lòng thiết lập thời khóa biểu của bạn trước.")
-            return
-          }
-          
-          const payload = teacherEntries.map((entry: any) => ({
-            student_id: selectedStudent.id,
-            assigned_by: teacherProfile.id,
-            day_of_week: entry.day_of_week,
-            start_time: entry.start_time,
-            end_time: entry.end_time,
-            subject: entry.subject,
-            class_name: entry.class_name,
-            room: entry.room,
-            note: entry.note,
-            color: entry.color || '#6366f1'
-          }))
-          
-          const { error: insertErr } = await supabase.from("student_timetable_entries").insert(payload)
-          if (insertErr) throw insertErr
-          
-          success(`Đã sao chép thành công ${teacherEntries.length} tiết học!`)
-          fetchStudentData(selectedStudent.id)
-        } catch (err) {
-          console.error("Error copying timetable:", err)
-          toastError("Lỗi khi sao chép thời khóa biểu: " + (err instanceof Error ? err.message : "Không rõ lỗi"))
-        }
+    setCopyTtLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from("timetable_entries")
+        .select("*")
+        .eq("teacher_id", teacherProfile.id)
+        .order("day_of_week")
+        .order("start_time")
+      if (error) throw error
+      if (!data || data.length === 0) {
+        warning("Thời khóa biểu của bạn đang trống. Vui lòng thiết lập thời khóa biểu của bạn trước.")
+        return
       }
-    })
+      setTeacherTtEntries(data)
+      setCopyTtModalOpen(true)
+    } catch (err) {
+      console.error(err)
+      toastError("Lỗi khi tải lịch dạy của bạn.")
+    } finally {
+      setCopyTtLoading(false)
+    }
+  }
+
+  const executeCopyTimetable = async (strategy: "overwrite" | "merge") => {
+    if (!selectedStudent || !teacherProfile || teacherTtEntries.length === 0) return
+    setTtSaving(true)
+    try {
+      const payload = teacherTtEntries.map((entry: any) => ({
+        student_id: selectedStudent.id,
+        assigned_by: teacherProfile.id,
+        day_of_week: entry.day_of_week,
+        start_time: entry.start_time,
+        end_time: entry.end_time,
+        subject: entry.subject,
+        class_name: entry.class_name,
+        room: entry.room,
+        note: entry.note,
+        color: entry.color || '#6366f1'
+      }))
+
+      if (strategy === "overwrite") {
+        const { error: deleteErr } = await supabase
+          .from("student_timetable_entries")
+          .delete()
+          .eq("student_id", selectedStudent.id)
+          .eq("assigned_by", teacherProfile.id)
+        if (deleteErr) throw deleteErr
+      }
+
+      const { error: insertErr } = await supabase
+        .from("student_timetable_entries")
+        .insert(payload)
+      if (insertErr) throw insertErr
+
+      success(strategy === "overwrite" ? `Đã đồng bộ (ghi đè) thành công ${teacherTtEntries.length} tiết học!` : `Đã trộn thành công ${teacherTtEntries.length} tiết học!`)
+      setCopyTtModalOpen(false)
+      fetchStudentData(selectedStudent.id)
+    } catch (err) {
+      console.error("Error copying timetable:", err)
+      toastError("Lỗi khi sao chép thời khóa biểu: " + (err instanceof Error ? err.message : "Không rõ lỗi"))
+    } finally {
+      setTtSaving(false)
+    }
   }
 
   const handleSaveStudentTimetable = async () => {
@@ -561,8 +586,12 @@ export function useMonitorData() {
     ttFormSubject, setTtFormSubject, ttFormClass, setTtFormClass,
     ttFormRoom, setTtFormRoom, ttFormNote, setTtFormNote,
     ttFormColor, setTtFormColor, ttSaving,
-    handleCopyTeacherTimetable, handleSaveStudentTimetable,
+    handleSaveStudentTimetable,
     handleDeleteStudentTimetable, resetTtForm, handleEditStudentTimetable,
+    
+    // Copy Timetable Modal
+    copyTtModalOpen, setCopyTtModalOpen, teacherTtEntries, copyTtLoading,
+    openCopyTimetableModal, executeCopyTimetable,
     
     // Computed
     completedTasksCount, completionRate, statusInfo,

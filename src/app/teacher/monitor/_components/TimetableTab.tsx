@@ -1,5 +1,4 @@
-"use client"
-
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,9 +24,15 @@ export function TimetableTab({ data }: TimetableTabProps) {
     ttFormEnd, setTtFormEnd, ttFormSubject, setTtFormSubject,
     ttFormClass, setTtFormClass, ttFormRoom, setTtFormRoom,
     ttFormNote, setTtFormNote, ttFormColor, setTtFormColor, ttSaving,
-    handleCopyTeacherTimetable, handleSaveStudentTimetable,
+    handleSaveStudentTimetable,
     handleDeleteStudentTimetable, resetTtForm, handleEditStudentTimetable,
+
+    // Copy Timetable Modal
+    copyTtModalOpen, setCopyTtModalOpen, teacherTtEntries, copyTtLoading,
+    openCopyTimetableModal, executeCopyTimetable,
   } = data
+
+  const [copyStrategy, setCopyStrategy] = useState<"overwrite" | "merge">("overwrite")
 
   if (!selectedStudent) return null
 
@@ -43,10 +48,16 @@ export function TimetableTab({ data }: TimetableTabProps) {
           <div className="flex flex-wrap gap-2">
             <Button 
               variant="outline"
-              onClick={handleCopyTeacherTimetable}
+              onClick={openCopyTimetableModal}
+              disabled={copyTtLoading}
               className="rounded-full border-[hsl(var(--border))]/70 text-xs font-semibold py-3 px-4 flex items-center gap-1.5"
             >
-              <RefreshCw className="h-3.5 w-3.5" /> Sao chép lịch dạy của tôi
+              {copyTtLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              Sao chép lịch dạy của tôi
             </Button>
             <Button 
               onClick={() => { resetTtForm(); setShowTtForm(true) }}
@@ -198,6 +209,150 @@ export function TimetableTab({ data }: TimetableTabProps) {
           </div>
         </div>
       </section>
+
+      {/* Custom Copy Timetable Modal (Premium Design) */}
+      {copyTtModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-lg overflow-hidden rounded-[2.5rem] border border-violet-500/20 bg-slate-950 shadow-2xl animate-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="relative flex items-center justify-between border-b border-white/5 p-6 bg-gradient-to-r from-violet-950/20 to-indigo-950/20">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400">
+                  <RefreshCw className="h-5 w-5 animate-spin" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Đồng Bộ Thời Khóa Biểu</h2>
+                  <p className="text-xs text-slate-400">Đồng bộ lịch dạy của bạn sang học sinh {selectedStudent.full_name}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setCopyTtModalOpen(false)}
+                className="rounded-full p-2 hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
+              {/* Preview Section */}
+              <div className="space-y-3">
+                <Label className="text-xs font-bold uppercase tracking-wider text-slate-450">
+                  Xem trước tiết học sẽ sao chép ({teacherTtEntries.length})
+                </Label>
+                <div className="grid gap-2 rounded-2xl border border-white/5 bg-white/5 p-3 max-h-[160px] overflow-y-auto">
+                  {teacherTtEntries.map((entry) => (
+                    <div 
+                      key={entry.id} 
+                      className="flex items-center justify-between p-2.5 rounded-xl text-xs"
+                      style={{ backgroundColor: `${entry.color}15`, border: `1px solid ${entry.color}25` }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                        <span className="font-bold text-white">{entry.subject}</span>
+                        {entry.class_name && (
+                          <span className="px-1.5 py-0.5 rounded bg-white/5 text-[10px] text-slate-300 border border-white/10">
+                            {entry.class_name}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-400">
+                        <Clock className="h-3 w-3" />
+                        <span>{DAYS[entry.day_of_week]}: {entry.start_time.slice(0,5)} - {entry.end_time.slice(0,5)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sync Strategy Selector */}
+              <div className="space-y-3">
+                <Label className="text-xs font-bold uppercase tracking-wider text-slate-450">
+                  Phương thức đồng bộ
+                </Label>
+                <div className="grid gap-3">
+                  {/* Overwrite strategy */}
+                  <label 
+                    onClick={() => setCopyStrategy("overwrite")}
+                    className={cn(
+                      "flex items-start gap-3 p-4 rounded-2xl border cursor-pointer select-none transition-all",
+                      copyStrategy === "overwrite" 
+                        ? "border-violet-500 bg-violet-500/10 text-white" 
+                        : "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10"
+                    )}
+                  >
+                    <input 
+                      type="radio" 
+                      name="copyStrategy" 
+                      checked={copyStrategy === "overwrite"}
+                      onChange={() => setCopyStrategy("overwrite")}
+                      className="mt-1 accent-violet-500 h-4 w-4"
+                    />
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-white flex items-center gap-1.5">
+                        Ghi đè & Thay thế hoàn toàn <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-violet-500/20 text-violet-300 font-bold uppercase">Khuyên dùng</span>
+                      </p>
+                      <p className="text-xs leading-relaxed text-slate-405">
+                        Xóa tất cả các tiết học cũ do **bạn** đã giao cho học sinh này từ trước, sau đó đồng bộ lịch dạy mới nhất. Tránh trùng lặp hoặc dư thừa lịch học cũ.
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Merge strategy */}
+                  <label 
+                    onClick={() => setCopyStrategy("merge")}
+                    className={cn(
+                      "flex items-start gap-3 p-4 rounded-2xl border cursor-pointer select-none transition-all",
+                      copyStrategy === "merge" 
+                        ? "border-violet-500 bg-violet-500/10 text-white" 
+                        : "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10"
+                    )}
+                  >
+                    <input 
+                      type="radio" 
+                      name="copyStrategy" 
+                      checked={copyStrategy === "merge"}
+                      onChange={() => setCopyStrategy("merge")}
+                      className="mt-1 accent-violet-500 h-4 w-4"
+                    />
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-white">
+                        Giữ lại lịch cũ & Trộn thêm lịch mới
+                      </p>
+                      <p className="text-xs leading-relaxed text-slate-405">
+                        Giữ nguyên các tiết học hiện tại của học sinh và chỉ chèn thêm các tiết học từ thời khóa biểu của bạn.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex gap-3 border-t border-white/5 p-6 bg-gradient-to-r from-violet-950/10 to-indigo-950/10">
+              <Button 
+                variant="outline" 
+                onClick={() => setCopyTtModalOpen(false)}
+                className="flex-1 rounded-full border-white/10 bg-transparent text-slate-450 hover:text-white hover:bg-white/5"
+              >
+                Hủy
+              </Button>
+              <Button 
+                onClick={() => executeCopyTimetable(copyStrategy)}
+                disabled={ttSaving}
+                className="flex-1 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20"
+              >
+                {ttSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Đồng bộ ngay
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -73,7 +73,49 @@ export default function GeneralStudentTimetablePage() {
           .eq("student_id", user.id)
           .order("day_of_week")
           .order("start_time")
-        if (pData) setPersonalEntries(pData)
+
+        // 1.5. Fetch class timetable entries from teacher schedule
+        let classEntries: any[] = []
+        if (profile && profile.class) {
+          const { data: cData } = await supabase
+            .from("timetable_entries")
+            .select("*")
+            .eq("class_name", profile.class)
+            .order("day_of_week")
+            .order("start_time")
+          if (cData) classEntries = cData
+        }
+
+        // Merge and deduplicate
+        const merged = [...(pData || [])]
+        for (const entry of classEntries) {
+          const exists = merged.some(e => 
+            e.day_of_week === entry.day_of_week &&
+            e.start_time.slice(0, 5) === entry.start_time.slice(0, 5) &&
+            e.subject.toLowerCase() === entry.subject.toLowerCase()
+          )
+          if (!exists) {
+            merged.push({
+              id: entry.id,
+              day_of_week: entry.day_of_week,
+              start_time: entry.start_time,
+              end_time: entry.end_time,
+              subject: entry.subject,
+              class_name: entry.class_name,
+              room: entry.room,
+              note: entry.note || "Lịch học chung của lớp",
+              color: entry.color || '#6366f1'
+            })
+          }
+        }
+
+        // Sort by day and start time
+        merged.sort((a, b) => {
+          if (a.day_of_week !== b.day_of_week) return a.day_of_week - b.day_of_week
+          return a.start_time.localeCompare(b.start_time)
+        })
+
+        setPersonalEntries(merged)
 
         // 2. Fetch linked teachers
         const { data: links, error: linkError } = await supabase
