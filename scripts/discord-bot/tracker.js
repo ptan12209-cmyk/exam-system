@@ -412,10 +412,10 @@ client.once('ready', async () => {
     await rest.put(Routes.applicationCommands(client.user.id), { body: commands });
     console.log('[COMMANDS] Registered Discord Bot slash commands globally.');
     
-    // Đăng ký lập tức cho tất cả các Server (Guild) hiện tại Bot đang tham gia
+    // Xóa đăng ký trùng lặp ở cấp Guild (nếu có) để tránh hiển thị trùng lặp (hai lệnh giống nhau)
     for (const guild of client.guilds.cache.values()) {
-      await rest.put(Routes.applicationGuildCommands(client.user.id, guild.id), { body: commands }).catch(() => null);
-      console.log(`[COMMANDS] Registered Discord Bot slash commands instantly for guild: ${guild.name} (${guild.id})`);
+      await rest.put(Routes.applicationGuildCommands(client.user.id, guild.id), { body: [] }).catch(() => null);
+      console.log(`[COMMANDS] Cleaned up duplicate guild-level slash commands for guild: ${guild.name} (${guild.id})`);
     }
   } catch (err) {
     console.error('[COMMANDS ERROR]', err.message);
