@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExamHub Bot - Cẩm Nang Vận Hành Cho Giáo Viên</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #0B0A13;
+      --fg: #F1EDF9;
+      --card: #15131F;
+      --card-border: rgba(140, 135, 162, 0.2);
+      --primary: #C18CFF; /* Dream Violet accent */
+      --secondary: #1C1A2D;
+      --muted-fg: #8C87A2;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --code-bg: #07060C;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      padding: 3rem 1.5rem;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* Hero Header */
+    header {
+      text-align: center;
+      margin-bottom: 4rem;
+      position: relative;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: 35%;
+      width: 250px;
+      height: 250px;
+      background: rgba(193, 140, 255, 0.08);
+      border-radius: 50%;
+      filter: blur(100px);
+      pointer-events: none;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(193, 140, 255, 0.08);
+      border: 1px solid rgba(193, 140, 255, 0.2);
+      color: var(--primary);
+      padding: 0.6rem 1.2rem;
+      border-radius: 99px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(2.8rem, 6vw, 4.8rem);
+      font-weight: 400;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+      color: var(--fg);
+    }
+
+    h1 span {
+      color: var(--primary);
+    }
+
+    .subtitle {
+      color: var(--muted-fg);
+      font-size: 1.1rem;
+      max-width: 700px;
+      margin: 0 auto 2.5rem auto;
+      font-weight: 400;
+    }
+
+    /* Quick Stats Banner */
+    .theme-tokens {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 4rem;
+      flex-wrap: wrap;
+    }
+
+    .token-chip {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.85rem;
+    }
+
+    .token-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+
+    .token-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted-fg);
+    }
+
+    /* Main Grid Layout */
+    .guide-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 3rem;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      position: sticky;
+      top: 2rem;
+      height: fit-content;
+    }
+
+    .sidebar-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted-fg);
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item a {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--muted-fg);
+      text-decoration: none;
+      padding: 0.75rem 1.2rem;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      background: transparent;
+      border: 1px solid transparent;
+    }
+
+    .nav-item a:hover {
+      color: var(--fg);
+      background: rgba(140, 135, 162, 0.05);
+    }
+
+    .nav-item.active a {
+      color: var(--fg);
+      background: rgba(193, 140, 255, 0.08);
+      border-color: rgba(193, 140, 255, 0.2);
+    }
+
+    /* Guide Content */
+    .content-area {
+      display: flex;
+      flex-direction: column;
+      gap: 4rem;
+    }
+
+    .content-section {
+      scroll-margin-top: 2rem;
+    }
+
+    .section-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: 2.4rem;
+      font-weight: 400;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 0.75rem;
+      color: var(--fg);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Cards */
+    .cmd-card {
+      background-color: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+
+    .cmd-card:hover {
+      border-color: rgba(193, 140, 255, 0.25);
+      box-shadow: 0 12px 40px rgba(193, 140, 255, 0.03);
+    }
+
+    .cmd-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .cmd-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.4rem;
+      color: var(--primary);
+      background: rgba(193, 140, 255, 0.08);
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+      border: 1px solid rgba(193, 140, 255, 0.15);
+      font-weight: 700;
+    }
+
+    .cmd-role {
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--warning);
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .cmd-desc {
+      color: var(--muted-fg);
+      font-size: 0.98rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Parameters Table */
+    .params-title {
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted-fg);
+      margin-bottom: 0.75rem;
+    }
+
+    .params-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+    }
+
+    .params-table th, .params-table td {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      border-bottom: 1px solid rgba(140, 135, 162, 0.1);
+    }
+
+    .params-table th {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted-fg);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .param-name {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--fg);
+      font-weight: 700;
+    }
+
+    .param-type {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted-fg);
+      font-size: 0.8rem;
+    }
+
+    .param-req {
+      color: var(--danger);
+      font-weight: bold;
+    }
+
+    /* Response / Embed Simulation */
+    .embed-sim-title {
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted-fg);
+      margin-bottom: 0.75rem;
+    }
+
+    .embed-box {
+      background-color: var(--code-bg);
+      border: 1px solid var(--card-border);
+      border-left: 4px solid var(--primary);
+      border-radius: 12px;
+      padding: 1.75rem;
+      font-size: 0.92rem;
+      box-shadow: inset 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .embed-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--fg);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .embed-desc {
+      color: var(--muted-fg);
+      margin-bottom: 1.25rem;
+      white-space: pre-line;
+    }
+
+    .embed-fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .embed-field-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--fg);
+      margin-bottom: 0.25rem;
+    }
+
+    .embed-field-value {
+      font-size: 0.88rem;
+      color: var(--muted-fg);
+    }
+
+    .embed-footer {
+      font-size: 0.75rem;
+      color: var(--muted-fg);
+      border-top: 1px solid rgba(140, 135, 162, 0.1);
+      padding-top: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    /* Buttons block */
+    .embed-buttons {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .embed-btn {
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.5rem 1.2rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .embed-btn.primary {
+      background-color: var(--primary);
+      color: var(--bg);
+    }
+
+    .embed-btn.secondary {
+      background-color: var(--secondary);
+      border: 1px solid var(--card-border);
+      color: var(--fg);
+    }
+
+    .embed-btn.success {
+      background-color: var(--success);
+      color: #fff;
+    }
+
+    .embed-btn.danger {
+      background-color: var(--danger);
+      color: #fff;
+    }
+
+    /* Callout Alert */
+    .callout {
+      background: rgba(193, 140, 255, 0.04);
+      border: 1px solid rgba(193, 140, 255, 0.15);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+      display: flex;
+      gap: 1.25rem;
+    }
+
+    .callout-icon {
+      font-size: 1.5rem;
+      color: var(--primary);
+    }
+
+    .callout-body h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .callout-body p {
+      color: var(--muted-fg);
+      font-size: 0.92rem;
+      margin: 0;
+    }
+
+    footer {
+      text-align: center;
+      padding: 3rem 0;
+      color: var(--muted-fg);
+      font-size: 0.75rem;
+      border-top: 1px solid var(--card-border);
+      margin-top: 6rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <header>
+      <div class="badge">
+        <span>Dream Engine UI Spec</span>
+      </div>
+      <h1>Cẩm Nang Vận Hành<br><span>ExamHub Discord Bot</span></h1>
+      <p class="subtitle">Tài liệu tương tác hướng dẫn sử dụng các lệnh giám sát, tạo đề AI, và phân tích học vụ dành riêng cho Giáo viên.</p>
+    </header>
+
+    <div class="theme-tokens">
+      <div class="token-chip">
+        <div class="token-color" style="background-color: var(--bg);"></div>
+        <div>
+          <div style="font-weight:600;">Obsidian Dark</div>
+          <div class="token-label">#0B0A13</div>
+        </div>
+      </div>
+      <div class="token-chip">
+        <div class="token-color" style="background-color: var(--primary);"></div>
+        <div>
+          <div style="font-weight:600;">Dream Violet</div>
+          <div class="token-label">#C18CFF</div>
+        </div>
+      </div>
+      <div class="token-chip">
+        <div class="token-color" style="background-color: var(--fg);"></div>
+        <div>
+          <div style="font-weight:600;">Pearl White</div>
+          <div class="token-label">#F1EDF9</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-grid">
+      
+      <!-- Sticky Navigation Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-title">Danh Mục Tính Năng</div>
+        <ul class="nav-list">
+          <li class="nav-item active"><a href="#sec-builder">📝 Soạn Đề & AI</a></li>
+          <li class="nav-item"><a href="#sec-roster">👥 Quản Lý Học Sinh</a></li>
+          <li class="nav-item"><a href="#sec-analytics">📊 AI Phân Tích</a></li>
+          <li class="nav-item"><a href="#sec-ops">⚙️ Vận Hành & Đo Lường</a></li>
+        </ul>
+      </aside>
+
+      <!-- Main Contents -->
+      <main class="content-area">
+        
+        <!-- SECTION 1: EXAM BUILDER -->
+        <section id="sec-builder" class="content-section">
+          <h2 class="section-title">📝 Soạn Đề & Hỗ Trợ AI</h2>
+          
+          <!-- Lệnh /taode -->
+          <div class="cmd-card">
+            <div class="cmd-header">
+              <span class="cmd-name">/taode</span>
+              <span class="cmd-role">Teacher Only</span>
+            </div>
+            <div class="cmd-desc">
+              Tạo đề thi trắc nghiệm thủ công từng bước thông qua biểu mẫu (Modal Builder) tương tác trực tiếp trên Discord.
+            </div>
+            <div class="embed-sim-title">Mô phỏng hộp thoại Modal (Step 1)</div>
+            <div class="embed-box" style="border-left-color: var(--warning);">
+              <div class="embed-title">📋 Biểu mẫu: Tạo đề thi - Bước 1/2</div>
+              <div class="embed-desc">Thầy/cô điền thông tin cơ bản cho đề thi mới:</div>
+              <div class="embed-field-title">Tên đề thi *</div>
+              <div class="embed-box" style="padding: 0.5rem; margin-bottom: 0.75rem; border: 1px solid #333; font-size: 0.85rem;">Kiểm tra Động lượng - Vật lý 10</div>
+              <div class="embed-field-title">Môn học *</div>
+              <div class="embed-box" style="padding: 0.5rem; margin-bottom: 0.75rem; border: 1px solid #333; font-size: 0.85rem;">Vật lý</div>
+              <div class="embed-field-title">Thời gian làm bài (Phút) *</div>
+              <div class="embed-box" style="padding: 0.5rem; margin-bottom: 0.75rem; border: 1px solid #333; font-size: 0.85rem;">15</div>
+              <div class="embed-field-title">Lớp (10, 11, 12, hoặc TSTD) *</div>
+              <div class="embed-box" style="padding: 0.5rem; border: 1px solid #333; font-size: 0.85rem;">10</div>
+            </div>
+          </div>
+
+          <!-- Lệnh /taode-ai -->
+          <div class="cmd-card">
+            <div class="cmd-header">
+              <span class="cmd-name">/taode-ai</span>
+              <span class="cmd-role">Teacher Only</span>
+            </div>
+            <div class="cmd-desc">
+              Tạo nhanh bộ câu hỏi trắc nghiệm hoàn toàn tự động bằng Gemini AI dựa theo chủ đề bài học được yêu cầu.
+            </div>
+            
+            <div class="params-title">Tham số của lệnh</div>
+            <table class="params-table">
+              <thead>
+                <tr>
+                  <th>Tên tham số</th>
+                  <th>Kiểu</th>
+                  <th>Yêu cầu</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="param-name">chu_de</td>
+                  <td class="param-type">String</td>
+                  <td class="param-req">Bắt buộc</td>
+                  <td>Chủ đề trọng tâm cần ra câu hỏi (ví dụ: <em>Sóng dừng</em>)</td>
+                </tr>
+                <tr>
+                  <td class="param-name">so_cau</td>
+                  <td class="param-type">Integer</td>
+                  <td>Tùy chọn</td>
+                  <td>Số lượng câu mong muốn (từ 3 đến 10 câu, mặc định: 5)</td>
+                </tr>
+                <tr>
+                  <td class="param-name">do_kho</td>
+                  <td class="param-type">String</td>
+                  <td>Tùy chọn</td>
+                  <td>Mức độ câu hỏi (Dễ / Trung bình / Khó)</td>
+                </tr>
+                <tr>
+                  <td class="param-name">lop</td>
+                  <td class="param-type">String</td>
+                  <td>Tùy chọn</td>
+                  <td>Phân lớp áp dụng (10, 11, 12, hoặc TSTD)</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="embed-sim-title">Phản hồi Preview từ Bot</div>
+            <div class="embed-box" style="border-left-color: var(--success);">
+              <div class="embed-title">🤖 AI Exam Generator: Khảo sát Sóng Dừng Vật Lý 11</div>
+              <div class="embed-desc"><strong>Môn học:</strong> Vật lý · <strong>Lớp:</strong> 11 · <strong>Thời gian:</strong> 10 phút · <strong>Số câu:</strong> 5 câu<br><br>👁️ <strong>Xem trước 3 câu đầu:</strong></div>
+              <div class="embed-field-value" style="margin-bottom: 1rem;">
+                <strong>Câu 1:</strong> Điều kiện để có sóng dừng trên một sợi dây có hai đầu cố định là chiều dài dây phải bằng:<br>
+                A. Một số nguyên lần bước sóng.<br>
+                B. Một số nguyên lần nửa bước sóng.<br>
+                C. Một số lẻ lần phần tư bước sóng.<br>
+                D. Một số lẻ lần bước sóng.<br>
+                👉 <strong>Đáp án đúng:</strong> B
+              </div>
+              <div class="embed-footer">... và 2 câu hỏi khác. Nhấn nút bên dưới để phát hành.</div>
+              <div class="embed-buttons">
+                <button class="embed-btn success">🚀 Phát hành đề thi</button>
+                <button class="embed-btn danger">❌ Hủy soạn</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 2: STUDENT MANAGEMENT -->
+        <section id="sec-roster" class="content-section">
+          <h2 class="section-title">👥 Quản Lý Học Sinh</h2>
+          
+          <div class="cmd-card">
+            <div class="cmd-header">
+              <span class="cmd-name">/hocsinh info</span>
+              <span class="cmd-role">Teacher Only</span>
+            </div>
+            <div class="cmd-desc">
+              Xem hồ sơ học vụ, cấp độ và số giờ tích lũy học tập thực tế trên kênh thoại lớp học của học sinh.
+            </div>
+            <div class="params-title">Tham số</div>
+            <table class="params-table">
+              <thead>
+                <tr>
+                  <th>Tên tham số</th>
+                  <th>Kiểu</th>
+                  <th>Yêu cầu</th>
+                  <th>Mô tả</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="param-name">student</td>
+                  <td class="param-type">User Mention</td>
+                  <td class="param-req">Bắt buộc</td>
+                  <td>Chọn hoặc tag tên học sinh cần tra cứu</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="embed-sim-title">Hồ Sơ Embed Phản Hồi</div>
+            <div class="embed-box" style="border-left-color: var(--primary);">
+              <div class="embed-title">👤 Hồ sơ: Nguyễn Văn A</div>
+              <div class="embed-desc">Lớp: <strong>12A1</strong> · Discord: @nguyenvana_12</div>
+              <div class="embed-fields">
+                <div>
+                  <div class="embed-field-title">⭐ Level</div>
+                  <div class="embed-field-value">Level 5</div>
+                </div>
+                <div>
+                  <div class="embed-field-title">✨ Tổng XP</div>
+                  <div class="embed-field-value">4,500 XP</div>
+                </div>
+                <div>
+                  <div class="embed-field-title">🔥 Streak</div>
+                  <div class="embed-field-value">7 ngày</div>
+                </div>
+                <div>
+                  <div class="embed-field-title">📝 Đề đã làm</div>
+                  <div class="embed-field-value">12 đề</div>
+                </div>
+                <div>
+                  <div class="embed-field-title">💯 Điểm 10</div>
+                  <div class="embed-field-value">3 lần</div>
+                </div>
+                <div>
+                  <div class="embed-field-title">⏱️ Học Voice</div>
+                  <div class="embed-field-value">14.5h (AFK: 20p)</div>
+                </div>
+              </div>
+              <div class="embed-field-title">🔗 Xem chi tiết</div>
+              <div class="embed-field-value"><a href="#" style="color:var(--primary);">Trang cá nhân học sinh trên website</a></div>
+            </div>
+          </div>
+
+          <div class="cmd-card">
+            <div class="cmd-header">
+              <span class="cmd-name">/hocsinh list</span>
+              <span class="cmd-role">Teacher Only</span>
+            </div>
+            <div class="cmd-desc">
+              Xem danh sách phân trang các học sinh đã liên kết Discord. Thầy cô có thể lọc nhanh theo danh sách <strong>Thí sinh tự do (TSTD)</strong> hoặc các khối lớp thông thường.
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 3: AI ANALYTICS -->
+        <section id="sec-analytics" class="content-section">
+          <h2 class="section-title">📊 AI Phân Tích Thông Minh</h2>
+          
+          <div class="cmd-card">
+            <div class="cmd-header">
+              <span class="cmd-name">/phantich</span>
+              <span class="cmd-role">Teacher Only</span>
+            </div>
+            <div class="cmd-desc">
+              Sử dụng Trí Tuệ Nhân Tạo để tổng hợp kết quả thi, chấm điểm tự động và đưa ra nhận xét, lộ trình ôn thi cá nhân hóa cho học sinh.
+            </div>
+
+            <div class="embed-sim-title">Báo Cáo Phân Tích Embed</div>
+            <div class="embed-box" style="border-left-color: var(--primary);">
+              <div class="embed-title">📊 BÁO CÁO PHÂN TÍCH AI: Nguyễn Văn A</div>
+              <div class="embed-desc"><strong>Lớp:</strong> 12 · <strong>Level:</strong> 5 · <strong>Điểm TB:</strong> 7.85/10<br><i>Dữ liệu dựa trên 15 bài làm gần nhất trên hệ thống ExamHub.</i></div>
+              
+              <div class="embed-field-title">👉 Phân tích học tập</div>
+              <div class="embed-field-value" style="margin-bottom: 0.75rem;">
+                Học sinh học rất tốt môn Vật lý (TB: 8.5/10), phản xạ làm câu hỏi trắc nghiệm nhanh. Tuy nhiên môn Hóa học còn hạn chế (TB: 5.6/10), hay sai ở các câu lý thuyết hữu cơ cơ bản.
+              </div>
+              
+              <div class="embed-field-title">👉 Giải pháp cải thiện</div>
+              <div class="embed-field-value" style="margin-bottom: 0.75rem;">
+                Học sinh cần làm lại các đề ôn lý thuyết este và carbohydrate trên website. Tập trung đọc kỹ đề bài trước khi khoanh đáp án, dành thêm 10 phút soát bài.
+              </div>
+
+              <div class="embed-field-title">👉 Lộ trình ôn tập 2 tuần</div>
+              <div class="embed-field-value">
+                - Tuần 1: Làm 3 đề lý thuyết Hóa học lớp 12 cơ bản.<br>
+                - Tuần 2: Tham gia 2 ca học nhóm Discord để thảo luận bài tập khó với bạn học.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 4: OPS & HEALTH -->
+        <section id="sec-ops" class="content-section">
+          <h2 class="section-title">⚙️ Vận Hành & Đo Lường</h2>
+          
+          <div class="cmd-card">
+            <div class="cmd-header">
+              <span class="cmd-name">/diemdanh</span>
+              <span class="cmd-role">Teacher Only</span>
+            </div>
+            <div class="cmd-desc">
+              Gửi một cảnh báo điểm danh khẩn cấp (Attention Check) đến tất cả các học sinh đang trong phòng Voice học tập để loại bỏ các trường hợp treo máy, tắt tiếng (Mute/Deafen).
+            </div>
+          </div>
+
+          <div class="cmd-card">
+            <div class="cmd-header">
+              <span class="cmd-name">/botstatus</span>
+              <span class="cmd-role">Admin Only</span>
+            </div>
+            <div class="cmd-desc">
+              Kiểm tra trạng thái máy chủ của Discord Bot, lượng RAM đang sử dụng, số lượng luồng thảo luận AI Tutor đang mở và bản đồ nhiệt (Peak Hour Heatmap) thể hiện giờ học đỉnh điểm của học sinh.
+            </div>
+          </div>
+        </section>
+
+        <!-- Callout Banner -->
+        <div class="callout">
+          <div class="callout-icon">💡</div>
+          <div class="callout-body">
+            <h3>Quyền Hạn Thực Thi Lệnh</h3>
+            <p>Tất cả các lệnh giáo viên đều yêu cầu tài khoản Discord thực thi có quyền <strong>Moderate Members (Quản lý thành viên)</strong> trên Server để đảm bảo tính riêng tư của lớp học trực tuyến.</p>
+          </div>
+        </div>
+
+      </main>
+
+    </div>
+
+    <footer>
+      <p>ExamHub Study Observatory Panel © 2026. Designed with Dream Engine Specification.</p>
+    </footer>
+
+  </div>
+
+  <script>
+    // Smooth scrolling active state menu highlight
+    window.addEventListener('DOMContentLoaded', () => {
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const id = entry.target.getAttribute('id');
+          if (entry.intersectionRatio > 0.5) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+              item.classList.remove('active');
+            });
+            const activeNav = document.querySelector(`.nav-item a[href="#${id}"]`);
+            if (activeNav) {
+              activeNav.parentElement.classList.add('active');
+            }
+          }
+        });
+      }, { threshold: 0.6 });
+
+      document.querySelectorAll('.content-section').forEach(section => {
+        observer.observe(section);
+      });
+    });
+  </script>
+</body>
+</html>
