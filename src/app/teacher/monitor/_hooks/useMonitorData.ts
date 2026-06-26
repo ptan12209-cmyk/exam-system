@@ -164,7 +164,54 @@ export function useMonitorData() {
         .order("day_of_week")
         .order("start_time")
 
-      setStudentTimetable(ttData || [])
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("class")
+        .eq("id", studentId)
+        .single()
+
+      let classEntries: any[] = []
+      if (profile && profile.class) {
+        const { data: cData } = await supabase
+          .from("timetable_entries")
+          .select("*")
+          .eq("class_name", profile.class)
+          .order("day_of_week")
+          .order("start_time")
+        if (cData) classEntries = cData
+      }
+
+      const merged = [...(ttData || [])]
+      for (const entry of classEntries) {
+        const exists = merged.some(e => 
+          e.day_of_week === entry.day_of_week &&
+          e.start_time.slice(0, 5) === entry.start_time.slice(0, 5) &&
+          e.subject.toLowerCase() === entry.subject.toLowerCase()
+        )
+        if (!exists) {
+          merged.push({
+            id: entry.id,
+            day_of_week: entry.day_of_week,
+            start_time: entry.start_time,
+            end_time: entry.end_time,
+            subject: entry.subject,
+            class_name: entry.class_name,
+            room: entry.room,
+            note: entry.note || "Lịch học chung của lớp",
+            color: entry.color || '#6366f1',
+            student_id: studentId,
+            assigned_by: '',
+            is_class_entry: true
+          })
+        }
+      }
+
+      merged.sort((a, b) => {
+        if (a.day_of_week !== b.day_of_week) return a.day_of_week - b.day_of_week
+        return a.start_time.localeCompare(b.start_time)
+      })
+
+      setStudentTimetable(merged)
     } catch (err) {
       console.error("Error fetching student details:", err)
     } finally {

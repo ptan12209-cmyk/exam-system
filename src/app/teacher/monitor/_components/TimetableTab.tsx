@@ -180,21 +180,35 @@ export function TimetableTab({ data }: TimetableTabProps) {
                     {dayEntries.map((entry) => (
                       <div 
                         key={entry.id} 
-                        className="group relative cursor-pointer rounded-xl p-2.5 text-white transition-all hover:scale-[1.02] shadow-sm hover:shadow" 
+                        className={cn(
+                          "group relative rounded-xl p-2.5 text-white transition-all shadow-sm hover:shadow",
+                          entry.is_class_entry ? "cursor-default opacity-85" : "cursor-pointer hover:scale-[1.02]"
+                        )} 
                         style={{ backgroundColor: entry.color }} 
-                        onClick={() => handleEditStudentTimetable(entry)}
+                        onClick={() => {
+                          if (!entry.is_class_entry) {
+                            handleEditStudentTimetable(entry)
+                          }
+                        }}
                       >
-                        <p className="text-sm font-bold leading-tight">{entry.subject}</p>
+                        <p className="text-sm font-bold leading-tight flex items-center justify-between gap-1">
+                          <span className="truncate">{entry.subject}</span>
+                          {entry.is_class_entry && (
+                            <span className="shrink-0 rounded bg-white/20 px-1 py-0.5 text-[8px] font-bold uppercase tracking-wider" title="Lịch học chung của lớp">Lớp</span>
+                          )}
+                        </p>
                         <p className="mt-1 flex items-center gap-1 text-[11px] opacity-90"><Clock className="h-3 w-3" />{entry.start_time.slice(0, 5)} - {entry.end_time.slice(0, 5)}</p>
                         {entry.class_name && <p className="mt-0.5 text-[11px] opacity-80 font-semibold">{entry.class_name}</p>}
                         {entry.room && <p className="text-[11px] opacity-70">{entry.room}</p>}
                         {entry.note && <p className="text-[10px] italic mt-1 border-t border-white/20 pt-1 opacity-85 truncate" title={entry.note}>{entry.note}</p>}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleDeleteStudentTimetable(entry.id) }} 
-                          className="absolute right-1.5 top-1.5 rounded-lg bg-black/30 p-1 opacity-0 transition-all group-hover:opacity-100 hover:bg-black/50"
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-white" />
-                        </button>
+                        {!entry.is_class_entry && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteStudentTimetable(entry.id) }} 
+                            className="absolute right-1.5 top-1.5 rounded-lg bg-black/30 p-1 opacity-0 transition-all group-hover:opacity-100 hover:bg-black/50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-white" />
+                          </button>
+                        )}
                       </div>
                     ))}
                     {dayEntries.length === 0 && (

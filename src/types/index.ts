@@ -610,6 +610,7 @@ export interface StudentTimetableEntry {
     room: string | null
     note: string | null
     color: string
+    is_class_entry?: boolean
 }
 
 // =============================================
