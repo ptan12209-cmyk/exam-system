@@ -176,7 +176,7 @@ export default function TeacherDashboard() {
                 {discordStatus.active_members && discordStatus.active_members.length > 0 ? (
                   <div className="space-y-3 max-h-[160px] overflow-y-auto pr-1">
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      Hiện tại có **{discordStatus.active_members.length}** học sinh đang trong phòng học:
+                      Hiện tại có <strong className="font-semibold text-[hsl(var(--foreground))]">{discordStatus.active_members.length}</strong> học sinh đang trong phòng học:
                     </p>
                     <div className="grid gap-2">
                       {discordStatus.active_members.map((member) => (

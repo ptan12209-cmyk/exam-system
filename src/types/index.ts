@@ -56,6 +56,9 @@ export interface Exam {
     max_attempts?: number
     attempts_used?: number
     assigned_to?: 'normal' | 'x'
+    is_advanced?: boolean
+    target_grade?: number | null
+    target_classes?: string[] | null
     submission_count?: number
     security_level?: number
     score_visibility_mode?: string

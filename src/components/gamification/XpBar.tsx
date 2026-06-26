@@ -50,35 +50,70 @@ export function XpBar({ xp, showDetails = true, size = "md", animated = true }: 
     }
 
     return (
-        <div className="flex items-center gap-3">
-            {/* Level Badge */}
+        <div className="flex items-center gap-4 group">
+            {/* Inline CSS for premium animations */}
+            <style dangerouslySetInnerHTML={{__html: `
+                @keyframes shimmer-sweep {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                }
+                .animate-shimmer-sweep {
+                    animation: shimmer-sweep 2.5s infinite;
+                }
+            `}} />
+
+            {/* Level Badge - Premium Gaming Emblem Style */}
             <div className={cn(
-                "flex items-center justify-center rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold shrink-0",
-                size === "sm" ? "w-6 h-6 text-xs" : size === "md" ? "w-8 h-8 text-sm" : "w-10 h-10 text-base"
+                "relative flex items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-600 text-white font-bold shrink-0 shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 border border-white/20",
+                size === "sm" ? "w-8 h-8 text-xs rounded-xl shadow-[0_0_10px_rgba(139,92,246,0.3)]" : 
+                size === "md" ? "w-11 h-11 text-sm rounded-2xl shadow-[0_0_15px_rgba(139,92,246,0.4)]" : 
+                "w-14 h-14 text-lg rounded-2xl shadow-[0_0_20px_rgba(139,92,246,0.5)]"
             )}>
-                {level}
+                {/* Level label */}
+                <div className="flex flex-col items-center justify-center leading-none">
+                    <span className="text-[7px] uppercase font-bold tracking-wider opacity-80">Lv.</span>
+                    <span className="font-extrabold">{level}</span>
+                </div>
+                {/* Subtle backglow */}
+                <div className="absolute inset-0 rounded-[inherit] bg-inherit opacity-30 blur-sm -z-10 group-hover:blur-md transition-all" />
             </div>
 
             <div className="flex-1 min-w-0">
-                {/* Progress Bar */}
+                {/* Label above the bar */}
+                {showDetails && (
+                    <div className="flex justify-between items-end mb-1.5 px-0.5">
+                        <span className="text-[11px] font-bold text-[hsl(var(--foreground))] tracking-wide">
+                            Tiến độ cấp độ
+                        </span>
+                        <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">
+                            {progress.toFixed(0)}%
+                        </span>
+                    </div>
+                )}
+
+                {/* Progress Bar Container - Glassmorphic with Neon Glow */}
                 <div className={cn(
-                    "w-full bg-slate-700 rounded-full overflow-hidden",
+                    "w-full bg-slate-900/60 dark:bg-slate-950/50 rounded-full border border-slate-800/40 p-[2px] overflow-hidden backdrop-blur-md shadow-inner",
                     sizeClasses[size]
                 )}>
                     <div
-                        className="h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 transition-all duration-500"
+                        className="h-full rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 transition-all duration-1000 cubic-bezier(0.4, 0, 0.2, 1) relative shadow-[0_0_8px_rgba(168,85,247,0.5)]"
                         style={{ width: `${progress}%` }}
-                    />
+                    >
+                        {/* Shimmer reflection sweep animation */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer-sweep" />
+                    </div>
                 </div>
 
-                {/* Details */}
+                {/* Details Footer */}
                 {showDetails && (
-                    <div className="flex justify-between mt-1">
-                        <span className="text-xs text-slate-400">
-                            {displayXp.toLocaleString()} XP
+                    <div className="flex justify-between items-center mt-1.5 px-0.5 text-[10px] font-medium tracking-wide">
+                        <span className="text-slate-400 flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                            <strong>{displayXp.toLocaleString()}</strong> <span className="opacity-70">XP</span>
                         </span>
-                        <span className="text-xs text-slate-500">
-                            {nextLevelXp.toLocaleString()} XP để Level {level + 1}
+                        <span className="text-slate-500">
+                            Cần thêm <strong>{(nextLevelXp - xp).toLocaleString()}</strong> XP để lên Level {level + 1}
                         </span>
                     </div>
                 )}
