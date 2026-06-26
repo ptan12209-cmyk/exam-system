@@ -542,6 +542,7 @@ export function useMonitorData() {
     
     // Link form
     linkingEmail, setLinkingEmail, linkingLoading, linkingError, linkingSuccess,
+    setLinkingError, setLinkingSuccess,
     handleLinkStudent,
     
     // Task form

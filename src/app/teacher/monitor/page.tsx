@@ -1,14 +1,16 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { 
   Eye, Activity, Calendar, UserPlus, Mail,
-  AlertCircle, Loader2, CheckCircle,
+  AlertCircle, Loader2, CheckCircle, X,
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
@@ -29,6 +31,7 @@ export default function TeacherMonitorPage() {
     session,
     // Link form
     linkingEmail, setLinkingEmail, linkingLoading, linkingError, linkingSuccess,
+    setLinkingError, setLinkingSuccess,
     handleLinkStudent,
     // Confirm dialog
     confirmState, setConfirmState,
@@ -36,6 +39,18 @@ export default function TeacherMonitorPage() {
     processedDiscordLogs, discordLogs,
     supabase,
   } = data
+
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
+
+  // Auto close link modal on success
+  useEffect(() => {
+    if (linkingSuccess && isLinkModalOpen) {
+      const timer = setTimeout(() => {
+        setIsLinkModalOpen(false)
+      }, 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [linkingSuccess, isLinkModalOpen])
 
   if (loading) return <Loading fullPage label="Đang kết nối Đài giám sát..." />
 
@@ -72,25 +87,41 @@ export default function TeacherMonitorPage() {
           </div>
           
           {/* Student Switcher */}
-          <div className="rounded-[1.5rem] sm:rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-sm">
-            <p className="text-xs uppercase font-bold tracking-wider text-[hsl(var(--muted-foreground))] mb-3">Học sinh đang quan sát</p>
-            {students.length === 0 ? (
-              <p className="text-sm italic text-[hsl(var(--muted-foreground))]">Chưa liên kết tài khoản nào</p>
-            ) : (
-              <div className="relative">
-                <AnimatedSelect 
-                  value={selectedStudent?.id || ""} 
-                  onValueChange={(value) => {
-                    const st = students.find(s => s.id === value)
-                    if (st) setSelectedStudent(st)
-                  }}
-                  options={students.map((student) => ({
-                    value: student.id,
-                    label: `👤 ${student.full_name || "Chưa rõ tên"} (${student.class || "Chưa chọn lớp"})`
-                  }))}
-                  placeholder="Chọn học sinh..."
-                />
-              </div>
+          <div className="rounded-[1.5rem] sm:rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-sm flex flex-col justify-between">
+            <div>
+              <p className="text-xs uppercase font-bold tracking-wider text-[hsl(var(--muted-foreground))] mb-3">Học sinh đang quan sát</p>
+              {students.length === 0 ? (
+                <p className="text-sm italic text-[hsl(var(--muted-foreground))]">Chưa liên kết tài khoản nào</p>
+              ) : (
+                <div className="relative">
+                  <AnimatedSelect 
+                    value={selectedStudent?.id || ""} 
+                    onValueChange={(value) => {
+                      const st = students.find(s => s.id === value)
+                      if (st) setSelectedStudent(st)
+                    }}
+                    options={students.map((student) => ({
+                      value: student.id,
+                      label: `👤 ${student.full_name || "Chưa rõ tên"} (${student.class || "Chưa chọn lớp"})`
+                    }))}
+                    placeholder="Chọn học sinh..."
+                  />
+                </div>
+              )}
+            </div>
+            {students.length > 0 && (
+              <Button 
+                onClick={() => {
+                  setLinkingError(null)
+                  setLinkingSuccess(null)
+                  setLinkingEmail("")
+                  setIsLinkModalOpen(true)
+                }} 
+                variant="outline"
+                className="mt-4 w-full rounded-xl border-dashed border-violet-500/50 text-violet-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/20 text-xs font-semibold"
+              >
+                <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Liên kết học sinh mới
+              </Button>
             )}
           </div>
         </section>
@@ -208,6 +239,82 @@ export default function TeacherMonitorPage() {
           confirmText={confirmState.confirmText}
           variant={confirmState.variant}
         />
+      )}
+
+      {/* Link Student Modal */}
+      {isLinkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-5">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-violet-500" />
+                Liên kết học sinh mới
+              </h2>
+              <button 
+                onClick={() => setIsLinkModalOpen(false)} 
+                className="rounded-full p-2 hover:bg-[hsl(var(--muted))]/20"
+              >
+                <X className="h-5 w-5 text-[hsl(var(--muted-foreground))]" />
+              </button>
+            </div>
+
+            <form onSubmit={async (e) => {
+              await handleLinkStudent(e);
+            }} className="p-5 space-y-4">
+              <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
+                Nhập chính xác địa chỉ email của học sinh để kết nối tài khoản. Học sinh phải đã đăng ký tài khoản trên hệ thống.
+              </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="link-email" className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Email học sinh</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                  <Input 
+                    id="link-email"
+                    type="email" 
+                    placeholder="học sinh@example.com" 
+                    value={linkingEmail}
+                    onChange={(e) => setLinkingEmail(e.target.value)}
+                    className="pl-10 rounded-xl font-medium"
+                    required
+                  />
+                </div>
+              </div>
+
+              {linkingError && (
+                <p className="text-xs font-semibold text-red-500 flex items-center gap-1.5 bg-red-500/5 border border-red-500/25 rounded-xl p-3">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{linkingError}</span>
+                </p>
+              )}
+
+              {linkingSuccess && (
+                <p className="text-xs font-semibold text-emerald-500 flex items-center gap-1.5 bg-emerald-500/5 border border-emerald-500/25 rounded-xl p-3">
+                  <CheckCircle className="h-4 w-4 shrink-0" />
+                  <span>{linkingSuccess}</span>
+                </p>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsLinkModalOpen(false)} 
+                  className="flex-1 rounded-xl"
+                >
+                  Hủy
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={linkingLoading} 
+                  className="flex-1 rounded-xl bg-violet-600 text-white hover:bg-violet-700 font-semibold"
+                >
+                  {linkingLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Liên kết"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </TeacherShell>
   )
