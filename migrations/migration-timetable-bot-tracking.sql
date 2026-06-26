@@ -34,3 +34,20 @@ CREATE POLICY "Students can manage own logs" ON public.timetable_study_logs
 DROP POLICY IF EXISTS "Student manages own timetable" ON public.student_timetable_entries;
 CREATE POLICY "Student manages own timetable" ON public.student_timetable_entries 
   FOR ALL TO authenticated USING (student_id = auth.uid()) WITH CHECK (student_id = auth.uid());
+
+-- 5. Enable teachers/admins to manage all student timetable entries (needed for the teacher monitoring dashboard)
+DROP POLICY IF EXISTS "Teacher manages student timetable" ON public.student_timetable_entries;
+CREATE POLICY "Teacher manages student timetable" ON public.student_timetable_entries
+  FOR ALL TO authenticated USING (
+    assigned_by = auth.uid() OR
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role IN ('teacher', 'admin')
+    )
+  ) WITH CHECK (
+    assigned_by = auth.uid() OR
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role IN ('teacher', 'admin')
+    )
+  );
