@@ -93,19 +93,44 @@ export default function TeacherMonitorPage() {
               {students.length === 0 ? (
                 <p className="text-sm italic text-[hsl(var(--muted-foreground))]">Chưa liên kết tài khoản nào</p>
               ) : (
-                <div className="relative">
-                  <AnimatedSelect 
-                    value={selectedStudent?.id || ""} 
-                    onValueChange={(value) => {
-                      const st = students.find(s => s.id === value)
-                      if (st) setSelectedStudent(st)
-                    }}
-                    options={students.map((student) => ({
-                      value: student.id,
-                      label: `👤 ${student.full_name || "Chưa rõ tên"} (${student.class || "Chưa chọn lớp"})`
-                    }))}
-                    placeholder="Chọn học sinh..."
-                  />
+                <div className="space-y-4">
+                  {/* Học sinh theo lớp */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Học sinh theo lớp</Label>
+                    <AnimatedSelect 
+                      value={selectedStudent && selectedStudent.class !== 'TSTD' ? selectedStudent.id : ""} 
+                      onValueChange={(value) => {
+                        const st = students.find(s => s.id === value)
+                        if (st) setSelectedStudent(st)
+                      }}
+                      options={students
+                        .filter(s => s.class !== 'TSTD')
+                        .map((student) => ({
+                          value: student.id,
+                          label: `👤 ${student.full_name || "Chưa rõ tên"} (${student.class || "Chưa chọn lớp"})`
+                        }))}
+                      placeholder="Chọn học sinh..."
+                    />
+                  </div>
+
+                  {/* Thí sinh tự do (TSTD) */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Thí sinh tự do (TSTD)</Label>
+                    <AnimatedSelect 
+                      value={selectedStudent && selectedStudent.class === 'TSTD' ? selectedStudent.id : ""} 
+                      onValueChange={(value) => {
+                        const st = students.find(s => s.id === value)
+                        if (st) setSelectedStudent(st)
+                      }}
+                      options={students
+                        .filter(s => s.class === 'TSTD')
+                        .map((student) => ({
+                          value: student.id,
+                          label: `🎓 ${student.full_name || "Chưa rõ tên"}`
+                        }))}
+                      placeholder="Chọn thí sinh tự do..."
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -204,7 +229,9 @@ export default function TeacherMonitorPage() {
                     }}
                     options={students.map((student) => ({
                       value: student.id,
-                      label: `${student.full_name || "Chưa rõ tên"} (${student.class || "Chưa chọn lớp"})`
+                      label: student.class === 'TSTD'
+                        ? `🎓 ${student.full_name || "Chưa rõ tên"} (Tự do)`
+                        : `👤 ${student.full_name || "Chưa rõ tên"} (${student.class || "Chưa chọn lớp"})`
                     }))}
                     placeholder="Chọn học sinh..."
                   />
