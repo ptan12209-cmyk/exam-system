@@ -1881,13 +1881,15 @@ function setupRealtimeSubscriptions() {
 
 // Helper: Đồng bộ hóa Level -> Discord Role
 async function syncUserLevelRoles(discordId, level, studentName) {
-  const levelRoleMap = {
-    1: process.env.ROLE_LEVEL_1,
-    5: process.env.ROLE_LEVEL_5,
-    10: process.env.ROLE_LEVEL_10,
-    15: process.env.ROLE_LEVEL_15,
-    20: process.env.ROLE_LEVEL_20
-  };
+  const levelRoleMap = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.startsWith('ROLE_LEVEL_') && value) {
+      const lvl = parseInt(key.replace('ROLE_LEVEL_', ''), 10);
+      if (!isNaN(lvl)) {
+        levelRoleMap[lvl] = value;
+      }
+    }
+  }
   
   for (const guild of client.guilds.cache.values()) {
     try {
