@@ -54,6 +54,9 @@ export default function StudentXDashboard() {
   const [selectedSubject, setSelectedSubject] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+  const [classRank, setClassRank] = useState<number | null>(null)
+  const [classSize, setClassSize] = useState<number | null>(null)
+  const [maxStreak, setMaxStreak] = useState<number>(0)
 
   // 1. Calculate Countdown to THPT 2027
   useEffect(() => {
@@ -114,6 +117,52 @@ export default function StudentXDashboard() {
       const { stats } = await getUserStats(user.id)
       setStudentStats(stats)
       setUserXp(stats.xp)
+
+      // Calculate class rank
+      if (profileData.class) {
+        const { data: classProfiles } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("class", profileData.class)
+
+        if (classProfiles && classProfiles.length > 0) {
+          const studentIds = classProfiles.map((p: { id: string }) => p.id)
+          const { data: classStats } = await supabase
+            .from("student_stats")
+            .select("user_id, xp")
+            .in("user_id", studentIds)
+
+          if (classStats) {
+            const sortedStats = [...classStats].sort((a, b) => b.xp - a.xp)
+            const rankIndex = sortedStats.findIndex(s => s.user_id === user.id)
+            setClassRank(rankIndex !== -1 ? rankIndex + 1 : classProfiles.length)
+            setClassSize(classProfiles.length)
+          } else {
+            setClassRank(1)
+            setClassSize(classProfiles.length)
+          }
+        } else {
+          setClassRank(1)
+          setClassSize(1)
+        }
+      } else {
+        setClassRank(1)
+        setClassSize(1)
+      }
+
+      // Fetch max streak from daily_logins
+      const { data: maxStreakData } = await supabase
+        .from("daily_logins")
+        .select("streak_day")
+        .eq("user_id", user.id)
+        .order("streak_day", { ascending: false })
+        .limit(1)
+
+      if (maxStreakData && maxStreakData.length > 0) {
+        setMaxStreak(Math.max(maxStreakData[0].streak_day, stats.streak_days))
+      } else {
+        setMaxStreak(stats.streak_days)
+      }
 
       // Fetch exams assigned to 'x'
       const { data: examsData } = await supabase
@@ -382,8 +431,13 @@ export default function StudentXDashboard() {
               <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">🏆 Hạng lớp</span>
               <Award className="h-4 w-4 text-[#C18CFF]" />
             </div>
-            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">#12 <span className="text-lg font-normal text-[#8C87A2]">/35</span></p>
-            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Trong Top 15%</p>
+            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">
+              {classRank !== null ? `#${classRank}` : "--"}{" "}
+              <span className="text-lg font-normal text-[#8C87A2]">/{classSize ?? "--"}</span>
+            </p>
+            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">
+              {classRank !== null && classSize ? `Top ${Math.round((classRank / classSize) * 100)}% của lớp` : "Đang tính..."}
+            </p>
           </div>
 
           {/* Card 4: Streak */}
@@ -392,8 +446,10 @@ export default function StudentXDashboard() {
               <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">🔥 Streak</span>
               <Sparkles className="h-4 w-4 text-[#C18CFF]" />
             </div>
-            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">{studentStats.streak_days} <span className="text-lg font-normal text-[#8C87A2]">ngày</span></p>
-            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Kỷ lục: 14 ngày</p>
+            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">
+              {studentStats.streak_days} <span className="text-lg font-normal text-[#8C87A2]">ngày</span>
+            </p>
+            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Kỷ lục: {maxStreak} ngày</p>
           </div>
         </section>
 
