@@ -28,18 +28,49 @@ ExamHub Discord Bot là thành phần cốt lõi của hệ thống giám sát h
 
 ---
 
-## 📂 Cấu Trúc Thư Mục
+## 📂 Cấu Trúc Chi Tiết Mã Nguồn
 
 ```
 scripts/discord-bot/
-├── commands/            # Slash commands (/taode, /diemdanh, /hocsinh, /botstatus...)
-├── handlers/            # Handlers tương tác, Voice state và Lịch trình giám sát
-│   ├── timetableScheduler.js  # Bộ lập lịch nhắc nhở/giám sát thời khóa biểu
-│   └── voiceState.js          # Xử lý sự kiện tham gia/rời phòng học voice
-├── utils/               # Kết nối CSDL Supabase, nạp hằng số
-├── expressServer.js     # Express API kết nối Web-to-Bot
-├── index.js             # File chạy chính của Bot
-└── .env.example         # File mẫu cấu hình biến môi trường
+├── commands/                # Thư mục chứa các Slash Commands của Bot (21 lệnh)
+│   ├── alertDm.js           # Gửi cảnh báo trực tiếp (DM) đến học sinh
+│   ├── alertPing.js         # Gửi tin nhắn ping cảnh báo công khai trên kênh chat
+│   ├── arena.js             # Lệnh /arena quản trị và tham gia đấu trường học tập realtime
+│   ├── baocao.js            # Lệnh /baocao xuất số liệu học tập và làm đề trong ngày/tuần
+│   ├── botstatus.js         # Lệnh /botstatus kiểm tra tài nguyên Bot và vẽ Heatmap học tập
+│   ├── daily.js             # Quản lý sự kiện thử thách hàng ngày và điểm danh nhận thưởng
+│   ├── diemdanh.js          # Lệnh /diemdanh đột xuất ngẫu nhiên học sinh trong kênh voice
+│   ├── hocsinh.js           # Lệnh /hocsinh xem thông tin, lọc danh sách và xuất roster CSV
+│   ├── hoibai.js            # Lệnh tích hợp AI Hỏi Bài (Thread AI Tutor)
+│   ├── lienket.js           # Lệnh /lienket hướng dẫn học sinh liên kết Discord ID lên web
+│   ├── phantich.js          # Lệnh /phantich phân tích học tập và lập lộ trình học bằng AI
+│   ├── status.js            # Kiểm tra trạng thái cơ bản của Bot
+│   ├── streak.js            # Tra cứu streak điểm danh hàng ngày của học sinh
+│   ├── taode-ai.js          # Lệnh /taode-ai tự động sinh đề thi trắc nghiệm bằng Gemini AI
+│   ├── taode.js             # Lệnh /taode thiết lập đề thi trắc nghiệm thủ công qua Discord Modal
+│   ├── thacdau.js           # Lệnh quản lý đấu trường thách đấu học tập giữa các học sinh
+│   ├── thi.js               # Tra cứu thông tin kỳ thi và đề thi đang mở
+│   ├── thongke.js           # Lệnh thống kê điểm số và số lượng nộp bài của học sinh
+│   ├── topstudy.js          # Xem bảng xếp hạng (Leaderboard) học tập tuần/tháng
+│   ├── xeploai.js           # Tra cứu danh hiệu, cấp bậc xếp loại của học sinh
+│   └── xp.js                # Tra cứu và quản lý điểm kinh nghiệm (XP) của học sinh
+├── handlers/                # Thư mục xử lý các luồng sự kiện và tác vụ nền
+│   ├── interactions.js      # Xử lý các Button click và Select Menu tương tác trên Discord
+│   ├── messages.js          # Định tuyến tin nhắn và trả lời tự động trong Thread AI
+│   ├── modals.js            # Xử lý sự kiện Submit của các Form/Modal điền thông tin
+│   ├── timetableScheduler.js# Bộ lập lịch tự động quét thời khóa biểu, nhắc nhở & ghi nhận giờ học
+│   └── voiceState.js        # Giám sát học sinh vào/ra phòng học voice, tự động phạt AFK treo máy
+├── utils/                   # Thư mục chứa các hàm tiện ích và kết nối hệ thống
+│   ├── ai.js                # Kết nối Google Gemini API để tạo đề và phân tích kết quả
+│   ├── constants.js         # Quản lý hằng số, nạp biến môi trường từ tệp .env
+│   ├── embeds.js            # Cấu trúc hiển thị các khung thông tin (Embeds) chuẩn hóa
+│   ├── sessions.js          # Quản lý danh sách các phiên học voice đang hoạt động trong bộ nhớ tạm
+│   ├── supabase.js          # Khởi tạo Supabase Client kết nối Cơ sở dữ liệu
+│   └── sync.js              # Xử lý đồng bộ hóa thời lượng học voice về Web API
+├── expressServer.js         # Khởi tạo API Server Express giao tiếp ngược từ Web sang Bot
+├── index.js                 # Điểm khởi chạy chính (Entry Point) cấu hình Client & Gateway
+├── tracker.js               # Trình theo dõi Voice phụ (đã tích hợp trong index.js)
+└── README.md                # Tài liệu hướng dẫn chi tiết dự án Discord Bot
 ```
 
 ---
