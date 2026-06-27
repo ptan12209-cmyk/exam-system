@@ -9,7 +9,6 @@ import {
   BookOpen,
   Clock,
   FileText,
-  GraduationCap,
   Search,
   Swords,
   Trophy,
@@ -19,23 +18,27 @@ import {
   ListTodo,
   Timer,
   Video,
-  AlertCircle
+  AlertCircle,
+  GraduationCap,
+  Sparkles
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
 import { getUserStats } from "@/lib/gamification"
 import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
 import { DailyCheckIn } from "@/components/gamification/DailyCheckIn"
-import { XpBar } from "@/components/gamification/XpBar"
 import { ChallengesWidget } from "@/components/gamification/ChallengeCard"
-import { BottomNav } from "@/components/BottomNav"
-import { StudentHeader } from "@/components/student/StudentHeader"
 import { StudentShell } from "@/components/student/StudentShell"
-import { StudentStatCard } from "@/components/student/StudentStatCard"
+import { StudentTopbar } from "@/components/student/StudentTopbar"
+import { StudentNavTabs } from "@/components/student/StudentNavTabs"
 import { GradeOnboardingModal } from "@/components/student/GradeOnboardingModal"
 import { useAuth } from "@/hooks/useAuth"
 
 import type { Profile, Exam, Submission } from "@/types"
+
+const instrumentSerif = { className: "font-instrument-serif" }
+const jetbrainsMono = { className: "font-jetbrains-mono" }
+const inter = { className: "font-inter" }
 
 export default function StudentDashboard() {
   const router = useRouter()
@@ -54,12 +57,18 @@ export default function StudentDashboard() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loadingData, setLoadingData] = useState(true)
   const [userXp, setUserXp] = useState(0)
+  const [studentStats, setStudentStats] = useState({ xp: 0, level: 1, streak_days: 0, exams_completed: 0, perfect_scores: 0 })
   const [selectedSubject, setSelectedSubject] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState("")
+
+  const [classRank, setClassRank] = useState<number | null>(null)
+  const [classSize, setClassSize] = useState<number | null>(null)
+  const [maxStreak, setMaxStreak] = useState<number>(0)
 
   useEffect(() => {
     if (!user || !profile) return
 
+    // Redirect Student X to their custom dashboard
     if (profile.nickname === "X") {
       router.push("/student/X/dashboard")
       return
@@ -67,8 +76,10 @@ export default function StudentDashboard() {
 
     const fetchData = async () => {
       const { stats } = await getUserStats(user.id)
+      setStudentStats(stats)
       setUserXp(stats.xp)
 
+      // Fetch normal assigned exams
       let examsQuery = supabase
         .from("exams")
         .select("*")
@@ -91,12 +102,59 @@ export default function StudentDashboard() {
         setAvailableExams(visibleExams)
       }
 
+      // Fetch submissions
       const { data: submissionsData } = await supabase
         .from("submissions")
         .select("*, exam:exams(*)")
         .eq("student_id", user.id)
         .order("submitted_at", { ascending: false })
       if (submissionsData) setSubmissions(submissionsData)
+
+      // Calculate class rank
+      if (profile.class) {
+        const { data: classProfiles } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("class", profile.class)
+
+        if (classProfiles && classProfiles.length > 0) {
+          const studentIds = classProfiles.map((p: { id: string }) => p.id)
+          const { data: classStats } = await supabase
+            .from("student_stats")
+            .select("user_id, xp")
+            .in("user_id", studentIds)
+
+          if (classStats) {
+            const sortedStats = [...classStats].sort((a, b) => b.xp - a.xp)
+            const rankIndex = sortedStats.findIndex(s => s.user_id === user.id)
+            setClassRank(rankIndex !== -1 ? rankIndex + 1 : classProfiles.length)
+            setClassSize(classProfiles.length)
+          } else {
+            setClassRank(1)
+            setClassSize(classProfiles.length)
+          }
+        } else {
+          setClassRank(1)
+          setClassSize(1)
+        }
+      } else {
+        setClassRank(1)
+        setClassSize(1)
+      }
+
+      // Fetch max streak from daily_logins
+      const { data: maxStreakData } = await supabase
+        .from("daily_logins")
+        .select("streak_day")
+        .eq("user_id", user.id)
+        .order("streak_day", { ascending: false })
+        .limit(1)
+
+      if (maxStreakData && maxStreakData.length > 0) {
+        setMaxStreak(Math.max(maxStreakData[0].streak_day, stats.streak_days))
+      } else {
+        setMaxStreak(stats.streak_days)
+      }
 
       setLoadingData(false)
     }
@@ -125,254 +183,397 @@ export default function StudentDashboard() {
     return availableExams.filter(exam => !hasSubmitted(exam.id))
   }, [availableExams, submissions])
 
-  if (loading) return <Loading fullPage label="Đang tải dữ liệu học tập..." />
+  const submissionsThisWeek = useMemo(() => {
+    const oneWeekAgo = new Date()
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+    return submissions.filter(s => new Date(s.submitted_at) >= oneWeekAgo).length
+  }, [submissions])
 
-  const completedCount = submissions.length
-  const bestScore = submissions.length > 0 ? Math.max(...submissions.map((submission) => submission.score)).toFixed(1) : "--"
+  const averageScore = useMemo(() => {
+    if (submissions.length === 0) return 0
+    const total = submissions.reduce((sum, s) => sum + s.score, 0)
+    return parseFloat((total / submissions.length).toFixed(1))
+  }, [submissions])
+
+  const bestScore = useMemo(() => {
+    if (submissions.length === 0) return "--"
+    return Math.max(...submissions.map((submission) => submission.score)).toFixed(1)
+  }, [submissions])
+
+  const rank = useMemo(() => {
+    const level = studentStats.level
+    if (level >= 40) return { name: "Diamond", color: "text-[#B9F2FF]", border: "border-[#B9F2FF]/60 bg-[#B9F2FF]/10" }
+    if (level >= 30) return { name: "Platinum", color: "text-[#E8E8E8]", border: "border-[#E8E8E8]/60 bg-[#E8E8E8]/10" }
+    if (level >= 20) return { name: "Gold", color: "text-[#FFD700]", border: "border-[#FFD700]/60 bg-[#FFD700]/10" }
+    if (level >= 10) return { name: "Silver", color: "text-[#C0C0C0]", border: "border-[#C0C0C0]/60 bg-[#C0C0C0]/10" }
+    return { name: "Bronze", color: "text-[#CD7F32]", border: "border-[#CD7F32]/60 bg-[#CD7F32]/10" }
+  }, [studentStats.level])
+
+  const xpProgress = useMemo(() => {
+    const currentLevel = studentStats.level
+    const currentLevelThreshold = Math.pow(currentLevel - 1, 2) * 100
+    const nextLevelThreshold = Math.pow(currentLevel, 2) * 100
+    const xpInCurrentLevel = userXp - currentLevelThreshold
+    const xpRequiredForLevel = nextLevelThreshold - currentLevelThreshold
+    
+    return {
+      percent: Math.min((xpInCurrentLevel / xpRequiredForLevel) * 100, 100),
+      current: xpInCurrentLevel,
+      required: xpRequiredForLevel,
+      nextTotal: nextLevelThreshold
+    }
+  }, [studentStats.level, userXp])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
+        <Loading label="Khởi động không gian học tập..." />
+      </div>
+    )
+  }
 
   return (
-    <StudentShell>
-      <StudentHeader name={profile?.full_name} studentClass={profile?.class} onLogout={handleLogout} />
+    <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9]", inter.className)}>
+      {/* Topbar Component */}
+      <StudentTopbar
+        name={profile?.full_name}
+        userXp={userXp}
+        level={studentStats.level}
+        streak={studentStats.streak_days}
+        onLogout={handleLogout}
+      />
 
-      <main className="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:py-10">
-        <section className="grid gap-8 lg:grid-cols-[1.45fr_0.85fr] lg:items-start">
-          <div>
-            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/70 px-4 py-2 text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))] backdrop-blur-md">
-              <GraduationCap className="h-3.5 w-3.5" /> Student dashboard
-            </p>
-            <h1 className="max-w-4xl text-5xl font-medium tracking-[-2px] md:text-7xl lg:text-8xl">
-              Xin chào, {profile?.full_name || "bạn"}
-              <span className="mt-3 block max-w-2xl font-serif-italic text-3xl leading-tight tracking-normal text-[hsl(var(--muted-foreground))] md:text-5xl">
-                "Hành trình vạn dặm bắt đầu từ một bước chân"
-              </span>
-            </h1>
-            <p className="mt-6 max-w-2xl text-base leading-[1.7] text-[hsl(var(--muted-foreground))] md:text-lg italic">
-              "Đường tuy gần không đi không bao giờ đến, việc tuy nhỏ không làm không bao giờ thành." – Tuân Tử
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/student/exams">
-                <Button className="rounded-full bg-[hsl(var(--foreground))] px-6 text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90">
-                  Xem đề thi
-                </Button>
-              </Link>
-              <Link href="/student/analytics">
-                <Button variant="outline" className="rounded-full border-[hsl(var(--border))]/80 bg-transparent px-6">
-                  Xem tiến độ
-                </Button>
-              </Link>
-            </div>
-          </div>
+      {/* Navigation Tabs Component */}
+      <StudentNavTabs />
 
-          <div className="space-y-6">
-            <div className="liquid-glass rounded-[2rem] p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">XP hiện tại</p>
-                  <p className="text-3xl font-semibold tracking-tight">{userXp}</p>
-                </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/20">
-                  <Zap className="h-5 w-5" />
-                </div>
-              </div>
-              <XpBar xp={userXp} size="sm" />
-              <div className="mt-6 rounded-2xl border border-[hsl(var(--border))]/50 bg-[hsl(var(--muted))]/10 p-4">
-                <p className="mb-2 flex items-center gap-2 text-sm font-medium">
-                  <CheckCircle className="h-4 w-4" /> Điểm danh hôm nay
-                </p>
-                <DailyCheckIn onComplete={({ xp }) => setUserXp((prev) => prev + xp)} />
-              </div>
-            </div>
-
-            <div className="liquid-glass rounded-[2rem] p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
-              <ChallengesWidget limit={3} />
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-10 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-          <StudentStatCard label="Tổng số đề" value={availableExams.length} icon={FileText} />
-          <StudentStatCard 
-            label="Chưa làm" 
-            value={unsubmittedExams.length} 
-            icon={AlertCircle} 
-            className={cn(unsubmittedExams.length > 0 && "border-red-500/20 bg-red-500/5 text-red-400")}
-          />
-          <StudentStatCard label="Hoàn thành" value={completedCount} icon={CheckCircle} />
-          <StudentStatCard label="Điểm cao nhất" value={bestScore} icon={Trophy} />
-          <StudentStatCard label="XP" value={userXp} icon={Zap} />
-        </section>
-
-        <section className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {[
-            { href: "/resources", label: "Thư viện tài liệu", icon: BookOpen },
-            { href: "/arena", label: "Đấu trường", icon: Swords },
-            { href: "https://theieltsdictionary.com/", label: "IELTS", icon: GraduationCap, isExternal: true },
-            { href: "/student/achievements", label: "Thành tích", icon: Award },
-            { href: "/student/checklist", label: "Checklist / Planner", icon: ListTodo },
-            { href: "/student/co-study", label: "Phòng Pomodoro YPT", icon: Timer },
-            { href: "/live", label: "Lớp học trực tuyến", icon: Video },
-          ].map((item) => {
-            const content = (
-              <>
-                <item.icon className="mb-4 h-5 w-5 text-[hsl(var(--muted-foreground))]" strokeWidth={1.2} />
-                <p className="text-sm font-medium">{item.label}</p>
-              </>
-            )
-            return item.isExternal ? (
-              <a 
-                key={item.href} 
-                href={item.href} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="liquid-glass rounded-[2rem] p-5 transition-transform hover:-translate-y-0.5 shadow-sm block"
-              >
-                {content}
-              </a>
-            ) : (
-              <Link 
-                key={item.href} 
-                href={item.href} 
-                className="liquid-glass rounded-[2rem] p-5 transition-transform hover:-translate-y-0.5 shadow-sm"
-              >
-                {content}
-              </Link>
-            )
-          })}
-        </section>
-
-        <section className="mt-10 overflow-hidden rounded-[2rem] liquid-glass shadow-[0_30px_80px_-40px_rgba(0,0,0,0.35)]">
-          <div className="flex flex-col gap-4 border-b border-[hsl(var(--border))]/50 p-5 lg:flex-row lg:items-center lg:justify-between">
+      {/* Main Content Area */}
+      <main className="mx-auto max-w-7xl w-full px-4 pb-28 pt-8 sm:px-6 lg:px-8">
+        
+        {/* Welcome Section */}
+        <section className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr] lg:items-stretch">
+          
+          {/* Welcome Hero Card */}
+          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 lg:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden">
             <div>
-              <h2 className="text-xl font-semibold">Đề thi có sẵn</h2>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">Chọn đề và bắt đầu luyện tập</p>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#C18CFF]" />
+                <span className={cn("text-[9px] font-bold uppercase tracking-[0.25em] text-[#8C87A2]", jetbrainsMono.className)}>
+                  ExamHub Student Panel
+                </span>
+              </div>
+              <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight", instrumentSerif.className)}>
+                Xin chào, {profile?.full_name || "bạn"} 👋
+              </h1>
+              <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] italic max-w-xl">
+                "Hành trình vạn dặm bắt đầu từ một bước chân. Mỗi câu hỏi đúng mang bạn đến gần hơn mục tiêu."
+              </p>
             </div>
-            <div className="flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/10 px-4 py-2">
-              <Search className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
-              <input
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Tìm kiếm đề thi..."
-                className="w-full bg-transparent text-sm outline-none placeholder:text-[hsl(var(--muted-foreground))]"
-              />
+
+            {/* Quick Actions */}
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a href="#available-exams">
+                <Button className="rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold px-5 py-4 transition-all duration-200 shadow-sm">
+                  Luyện tập ngay
+                </Button>
+              </a>
+              <Link href="/student/analytics">
+                <Button variant="outline" className="rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent px-5 py-4 transition-all">
+                  Xem chi tiết tiến độ
+                </Button>
+              </Link>
             </div>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto border-b border-[hsl(var(--border))]/40 p-4">
-            <button
-              onClick={() => setSelectedSubject("all")}
-              className={cn(
-                "rounded-full px-4 py-2 text-sm transition-colors whitespace-nowrap",
-                selectedSubject === "all"
-                  ? "bg-[hsl(var(--foreground))] text-[hsl(var(--background))]"
-                  : "border border-[hsl(var(--border))]/60 bg-transparent text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--foreground))]/60"
-              )}
-            >
-              Tất cả
-            </button>
-            {SUBJECTS.filter((subject) => availableExams.some((exam) => exam.subject === subject.value)).map((subject) => (
-              <button
-                key={subject.value}
-                onClick={() => setSelectedSubject(subject.value)}
-                className={cn(
-                  "rounded-full px-4 py-2 text-sm transition-colors whitespace-nowrap",
-                    selectedSubject === subject.value
-                    ? "bg-[hsl(var(--foreground))] text-[hsl(var(--background))]"
-                    : "border border-[hsl(var(--border))]/60 bg-transparent text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--foreground))]/60"
+          {/* Gamified Profile Info Card */}
+          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+            <div className="flex items-center gap-4">
+              {/* Avatar with Custom Rank Ring */}
+              <div className={cn("relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 shadow-sm bg-[#0B0A13]", rank.border)}>
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url ?? undefined} alt={profile.full_name ?? undefined} className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  <span className="text-2xl font-bold text-[#F1EDF9]">{profile?.full_name?.[0] || "H"}</span>
                 )}
-              >
-                {subject.label}
-              </button>
-            ))}
+                {/* Level Tag */}
+                <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#15131F] border border-[#8C87A2]/40 text-[10px] font-bold text-[#C18CFF]">
+                  {studentStats.level}
+                </div>
+              </div>
+
+              <div>
+                <span className={cn("text-xs font-bold uppercase tracking-widest", rank.color)}>
+                  {rank.name} Rank 🏆
+                </span>
+                <h3 className="text-xl font-bold text-[#F1EDF9] mt-0.5">{profile?.full_name || "Học sinh"}</h3>
+                <p className="text-xs text-[#8C87A2] mt-0.5">Lớp học: {profile?.class || "Chưa thiết lập"}</p>
+              </div>
+            </div>
+
+            {/* In-Card XP Progress */}
+            <div className="mt-6 space-y-2">
+              <div className="flex justify-between text-xs font-mono text-[#8C87A2]">
+                <span>Tiến trình cấp {studentStats.level}</span>
+                <span>
+                  <strong className="text-[#C18CFF]">{xpProgress.current}</strong> / {xpProgress.required} XP
+                </span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-[#0B0A13] overflow-hidden border border-[#8C87A2]/20">
+                <div 
+                  className="h-full bg-[#C18CFF] transition-all duration-700 ease-out" 
+                  style={{ width: `${xpProgress.percent}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-right text-[#8C87A2]">
+                Còn <strong className="text-[#C18CFF]">{xpProgress.nextTotal - userXp} XP</strong> để lên cấp {studentStats.level + 1}
+              </p>
+            </div>
+
+            {/* Daily Checkin Widget */}
+            <div className="mt-6 border-t border-[#8C87A2]/25 pt-4">
+              <DailyCheckIn onComplete={({ xp }) => setUserXp((prev) => prev + xp)} />
+            </div>
+          </div>
+        </section>
+
+        {/* Row 2: KPI Metrics Cards */}
+        <section className="mt-6 grid gap-4 grid-cols-2 lg:grid-cols-4">
+          {/* Card 1: Exams Completed */}
+          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">📝 Đề đã làm</span>
+              <FileText className="h-4 w-4 text-[#8C87A2]" />
+            </div>
+            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">{submissions.length}</p>
+            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium font-mono">Tuần này: +{submissionsThisWeek}</p>
           </div>
 
-          {filteredExams.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <FileText className="mb-4 h-10 w-10 text-[hsl(var(--muted-foreground))]/30" />
-              <h3 className="text-lg font-medium">Không tìm thấy đề thi</h3>
-              <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Thử đổi từ khóa hoặc bộ lọc.</p>
+          {/* Card 2: Average Score */}
+          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">⭐ Điểm TB</span>
+              <Trophy className="h-4 w-4 text-[#C18CFF]" />
             </div>
-          ) : (
-            <div className="divide-y divide-[hsl(var(--border))]/40">
-              {filteredExams.map((exam) => {
-                const subjectInfo = getSubjectInfo(exam.subject || "other")
-                const submitted = hasSubmitted(exam.id)
-                const submission = getSubmission(exam.id)
+            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">{averageScore} <span className="text-lg font-normal text-[#8C87A2]">/10</span></p>
+            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium font-mono">Kỷ lục điểm: {bestScore}</p>
+          </div>
 
-                return (
-                  <div key={exam.id} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[hsl(var(--border))]/60">
-                        <span className="text-2xl">{subjectInfo.icon}</span>
-                      </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-semibold">{exam.title}</h3>
-                          {submitted && submission && (
-                            <span className="rounded-full border border-[hsl(var(--border))]/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]">
-                              {submission.score.toFixed(1)} điểm
-                            </span>
+          {/* Card 3: Class Rank */}
+          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">🏆 Hạng lớp</span>
+              <Award className="h-4 w-4 text-[#C18CFF]" />
+            </div>
+            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">
+              {classRank !== null ? `#${classRank}` : "--"}{" "}
+              <span className="text-lg font-normal text-[#8C87A2]">/{classSize ?? "--"}</span>
+            </p>
+            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">
+              {classRank !== null && classSize ? `Top ${Math.round((classRank / classSize) * 100)}% của lớp` : "Đang tính..."}
+            </p>
+          </div>
+
+          {/* Card 4: Streak */}
+          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">🔥 Streak</span>
+              <Sparkles className="h-4 w-4 text-[#C18CFF]" />
+            </div>
+            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">
+              {studentStats.streak_days} <span className="text-lg font-normal text-[#8C87A2]">ngày</span>
+            </p>
+            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Kỷ lục: {maxStreak} ngày</p>
+          </div>
+        </section>
+
+        {/* Row 3: Main Layout Content Grid */}
+        <section className="mt-8 grid gap-8 lg:grid-cols-[1.4fr_0.8fr] lg:items-start">
+          
+          {/* Left Panel: Assigned Exams */}
+          <div className="space-y-8">
+            
+            {/* Assigned Exams Timeline */}
+            <div id="available-exams" className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl overflow-hidden shadow-sm">
+              <div className="flex flex-col gap-4 border-b border-[#8C87A2]/20 p-6 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h2 className={cn("text-3xl text-[#F1EDF9] font-normal", instrumentSerif.className)}>Đề thi có sẵn</h2>
+                  <p className="text-xs text-[#8C87A2] mt-1">Chọn đề thi và bắt đầu luyện tập</p>
+                </div>
+                
+                {/* Search Bar */}
+                <div className="flex items-center gap-2 rounded-xl border border-[#8C87A2]/30 bg-[#0B0A13] px-3 py-1.5 w-full max-w-xs">
+                  <Search className="h-4 w-4 text-[#8C87A2]" />
+                  <input
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Tìm kiếm đề thi..."
+                    className="bg-transparent text-xs w-full outline-none text-[#F1EDF9] placeholder-[#8C87A2]"
+                  />
+                </div>
+              </div>
+
+              {/* Subject Filters */}
+              <div className="flex gap-1.5 overflow-x-auto border-b border-[#8C87A2]/20 p-4">
+                <button
+                  onClick={() => setSelectedSubject("all")}
+                  className={cn(
+                    "rounded-lg px-3.5 py-1.5 text-[10px] font-bold tracking-wider uppercase transition-all whitespace-nowrap border",
+                    selectedSubject === "all"
+                      ? "bg-[#C18CFF] text-[#0B0A13] border-transparent shadow-sm"
+                      : "border-[#8C87A2]/40 text-[#8C87A2] hover:border-[#C18CFF]"
+                  )}
+                >
+                  Tất cả
+                </button>
+                {SUBJECTS.filter((subject) => availableExams.some((exam) => exam.subject === subject.value)).map((subject) => (
+                  <button
+                    key={subject.value}
+                    onClick={() => setSelectedSubject(subject.value)}
+                    className={cn(
+                      "rounded-lg px-3.5 py-1.5 text-[10px] font-bold tracking-wider uppercase transition-all whitespace-nowrap border",
+                      selectedSubject === subject.value
+                        ? "bg-[#C18CFF] text-[#0B0A13] border-transparent shadow-sm"
+                        : "border-[#8C87A2]/40 text-[#8C87A2] hover:border-[#C18CFF]"
+                    )}
+                  >
+                    {subject.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Exams Listing */}
+              {filteredExams.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+                  <FileText className="mb-4 h-12 w-12 text-[#8C87A2]/20" />
+                  <h3 className="text-base font-semibold text-[#F1EDF9]">Không tìm thấy đề thi phù hợp</h3>
+                  <p className="mt-1 text-xs text-[#8C87A2] max-w-xs">Hãy đổi bộ lọc môn học hoặc từ khóa tìm kiếm.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#8C87A2]/10 bg-[#15131F]">
+                  {filteredExams.map((exam) => {
+                    const subjectInfo = getSubjectInfo(exam.subject || "other")
+                    const submitted = hasSubmitted(exam.id)
+                    const submission = getSubmission(exam.id)
+
+                    return (
+                      <div key={exam.id} className="flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between hover:bg-[#0B0A13]/40 transition-colors">
+                        <div className="flex items-start gap-4">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13]">
+                            <span className="text-xl">{subjectInfo.icon}</span>
+                          </div>
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-sm sm:text-base font-bold text-[#F1EDF9]">{exam.title}</h3>
+                              {submitted && submission && (
+                                <span className={cn("rounded-lg border border-[#C18CFF]/40 bg-[#C18CFF]/10 px-2 py-0.5 text-[9px] font-bold tracking-wider text-[#C18CFF]", jetbrainsMono.className)}>
+                                  {submission.score.toFixed(1)} ĐIỂM
+                                </span>
+                              )}
+                            </div>
+                            <div className={cn("mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-[#8C87A2]", jetbrainsMono.className)}>
+                              <span className="flex items-center gap-1.5">
+                                <BookOpen className="h-3 w-3" />
+                                {subjectInfo.label}
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                <Clock className="h-3 w-3" />
+                                {exam.duration} phút
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                <FileText className="h-3 w-3" />
+                                {exam.total_questions} câu hỏi
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 self-end lg:self-auto">
+                          {submitted ? (
+                            <>
+                              <Link href={`/student/exams/${exam.id}/result`}>
+                                <Button variant="outline" size="sm" className="rounded-lg border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent text-xs transition-colors">
+                                  Xem kết quả
+                                </Button>
+                              </Link>
+                              <Link href={`/student/exams/${exam.id}/take`}>
+                                <Button size="sm" className="rounded-lg bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold text-xs transition-colors">
+                                  Làm lại
+                                </Button>
+                              </Link>
+                            </>
+                          ) : (
+                            <Link href={`/student/exams/${exam.id}/take`}>
+                              <Button size="sm" className="rounded-lg bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold text-xs px-4 transition-colors">
+                                Làm bài
+                              </Button>
+                            </Link>
                           )}
                         </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[hsl(var(--muted-foreground))]">
-                          <span className="flex items-center gap-1.5">
-                            <BookOpen className="h-3.5 w-3.5" />
-                            {subjectInfo.label}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Clock className="h-3.5 w-3.5" />
-                            {exam.duration} phút
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <FileText className="h-3.5 w-3.5" />
-                            {exam.total_questions} câu
-                          </span>
-                        </div>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 self-start lg:self-auto">
-                      {submitted ? (
-                        <>
-                          <Link href={`/student/exams/${exam.id}/result`}>
-                            <Button variant="outline" size="sm" className="rounded-full border-[hsl(var(--border))]/70 bg-transparent">
-                              Xem kết quả
-                            </Button>
-                          </Link>
-                          <Link href={`/student/exams/${exam.id}/take`}>
-                            <Button size="sm" className="rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90">
-                              Làm lại
-                            </Button>
-                          </Link>
-                        </>
-                      ) : (
-                        <Link href={`/student/exams/${exam.id}/take`}>
-                          <Button size="sm" className="rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90">
-                            Làm bài
-                          </Button>
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+                    )
+                  })}
+                </div>
+              )}
             </div>
-          )}
+
+          </div>
+
+          {/* Right Panel: Challenges & Quick Tools */}
+          <div className="space-y-6">
+            
+            {/* Daily Challenges Widget */}
+            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
+              <ChallengesWidget limit={3} />
+            </div>
+
+            {/* Quick Navigation Tools */}
+            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
+              <h3 className={cn("text-2xl text-[#F1EDF9] font-normal mb-4", instrumentSerif.className)}>Công cụ học tập</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { href: "/resources", label: "Tài liệu", icon: BookOpen },
+                  { href: "/arena", label: "Đấu trường", icon: Swords },
+                  { href: "https://theieltsdictionary.com/", label: "IELTS", icon: GraduationCap, isExternal: true },
+                  { href: "/student/achievements", label: "Thành tích", icon: Award },
+                  { href: "/student/checklist", label: "Checklist / Planner", icon: ListTodo },
+                  { href: "/student/co-study", label: "Pomodoro YPT", icon: Timer },
+                  { href: "/live", label: "Lớp Live", icon: Video },
+                ].map((item) => {
+                  const itemContent = (
+                    <div className="flex flex-col justify-between p-3.5 h-20 bg-[#0B0A13] hover:bg-[#0B0A13]/80 border border-[#8C87A2]/20 hover:border-[#C18CFF]/50 rounded-xl transition-all duration-200 group">
+                      <item.icon className="h-4.5 w-4.5 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
+                      <span className="text-xs font-semibold text-[#F1EDF9]">{item.label}</span>
+                    </div>
+                  )
+                  return item.isExternal ? (
+                    <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer">
+                      {itemContent}
+                    </a>
+                  ) : (
+                    <Link key={item.href} href={item.href}>
+                      {itemContent}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+
+          </div>
+
         </section>
+
       </main>
 
-      <BottomNav />
       {profile && profile.grade === null && (
         <GradeOnboardingModal
           userId={profile.id}
           onComplete={(selectedGrade, selectedClassSuffix) => {
-            // Update local state immediately for UI feedback
             setProfile(prev => prev ? {
               ...prev,
               grade: selectedGrade,
               class_suffix: selectedClassSuffix,
               class: `${selectedGrade}${selectedClassSuffix}`
             } : null)
-            // Force full reload to refetch exams with the new grade filter
             window.location.reload()
           }}
         />
