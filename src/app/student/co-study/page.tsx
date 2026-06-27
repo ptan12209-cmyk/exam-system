@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { StudentShell } from "@/components/student/StudentShell"
-import { StudentHeader } from "@/components/student/StudentHeader"
+import { StudentTopbar } from "@/components/student/StudentTopbar"
+import { StudentNavTabs } from "@/components/student/StudentNavTabs"
+import { getUserStats } from "@/lib/gamification"
 import { 
   Users, Play, Pause, RotateCcw, Volume2, VolumeX, Sparkles, 
   Trophy, Lock, Plus, DoorOpen, Award, ArrowRight, ShieldCheck, Flame
@@ -106,6 +108,7 @@ export default function CoStudyRoomsPage() {
   // User profile
   const [userId, setUserId] = useState<string | null>(null)
   const [profile, setProfile] = useState<any>(null)
+  const [studentStats, setStudentStats] = useState({ xp: 0, level: 1, streak_days: 0 })
 
   // Audio state
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
@@ -246,6 +249,9 @@ export default function CoStudyRoomsPage() {
         .eq("id", user.id)
         .single()
       if (mounted && prof) setProfile(prof)
+
+      const { stats } = await getUserStats(user.id)
+      if (mounted) setStudentStats(stats)
 
       const { data: roomsList } = await supabase.from("co_study_rooms").select("*").order("created_at", { ascending: false })
       if (mounted && roomsList) setRooms(roomsList)
@@ -781,8 +787,15 @@ export default function CoStudyRoomsPage() {
   if (loading) return <Loading fullPage label="Đang kết nối phòng học..." />
 
   return (
-    <StudentShell>
-      <StudentHeader name="Checklist" onLogout={async () => { await supabase.auth.signOut(); router.push("/login") }} />
+    <StudentShell className="bg-[#0B0A13] text-[#F1EDF9]">
+      <StudentTopbar
+        name={profile?.full_name || ""}
+        userXp={studentStats.xp}
+        level={studentStats.level}
+        streak={studentStats.streak_days}
+        onLogout={async () => { await supabase.auth.signOut(); router.push("/login") }}
+      />
+      <StudentNavTabs />
       <main className="mx-auto max-w-7xl px-4 pt-6 pb-24 sm:px-6 lg:px-8 lg:py-10">
         
         {/* Banner Section */}
