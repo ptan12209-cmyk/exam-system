@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { StudentShell } from "@/components/student/StudentShell"
-import { StudentHeader } from "@/components/student/StudentHeader"
+import { StudentTopbar } from "@/components/student/StudentTopbar"
+import { StudentNavTabs } from "@/components/student/StudentNavTabs"
+import { getUserStats } from "@/lib/gamification"
 import { 
   Plus, Check, Trash2, ListTodo, Calendar, Flame, Target, 
   TrendingUp, Sparkles, LayoutGrid, TableProperties, CalendarDays, 
@@ -34,6 +36,8 @@ export default function StudyChecklistPage() {
   const supabase = useMemo(() => createClient(), [])
   const [tasks, setTasks] = useState<StudyTask[]>([])
   const [loading, setLoading] = useState(true)
+  const [fullName, setFullName] = useState("")
+  const [studentStats, setStudentStats] = useState({ xp: 0, level: 1, streak_days: 0 })
   
   // View states
   const [activeView, setActiveView] = useState<"board" | "table" | "calendar">("board")
@@ -196,6 +200,17 @@ export default function StudyChecklistPage() {
     const fetchTasks = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push("/login"); return }
+
+      const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
+      if (mounted && profile) {
+        setFullName(profile.full_name || "")
+      }
+
+      const { stats } = await getUserStats(user.id)
+      if (mounted && stats) {
+        setStudentStats(stats)
+      }
+
       const { data } = await supabase.from("study_tasks").select("*").order("created_at", { ascending: false })
       if (mounted && data) {
         // Map any old legacy tasks status based on is_completed
@@ -586,8 +601,15 @@ export default function StudyChecklistPage() {
   if (loading) return <Loading fullPage label="Đang đồng bộ Planner..." />
 
   return (
-    <StudentShell>
-      <StudentHeader name="Checklist" onLogout={async () => { await supabase.auth.signOut(); router.push("/login") }} />
+    <StudentShell className="bg-[#0B0A13] text-[#F1EDF9]">
+      <StudentTopbar
+        name={fullName}
+        userXp={studentStats.xp}
+        level={studentStats.level}
+        streak={studentStats.streak_days}
+        onLogout={async () => { await supabase.auth.signOut(); router.push("/login") }}
+      />
+      <StudentNavTabs />
       <main className="mx-auto max-w-7xl px-4 pt-6 pb-24 sm:px-6 lg:px-8 lg:py-10">
         
         {/* Global Error Banner */}
@@ -828,7 +850,7 @@ export default function StudyChecklistPage() {
                             <div className="mt-3 flex items-center justify-between border-t border-[hsl(var(--border))]/20 pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button 
                                 onClick={(e) => { e.stopPropagation(); handleDelete(task.id) }} 
-                                className="rounded-full p-1.5 text-red-500 hover:bg-red-50"
+                                className="rounded-full p-1.5 text-red-500 hover:bg-red-500/10 transition-colors"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
@@ -1242,7 +1264,7 @@ export default function StudyChecklistPage() {
                         {/* Delete Block control */}
                         <button 
                           onClick={() => deleteBlock(block.id)}
-                          className="opacity-0 group-hover/block:opacity-100 transition-opacity rounded-full p-1 text-red-400 hover:bg-red-50"
+                          className="opacity-0 group-hover/block:opacity-100 transition-opacity rounded-full p-1 text-red-400 hover:bg-red-500/10 transition-colors"
                           title="Xóa khối nội dung"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
