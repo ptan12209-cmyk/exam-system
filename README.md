@@ -14,7 +14,7 @@
 - [Giới Thiệu](#-giới-thiệu)
 - [Tính Năng](#-tính-năng)
 - [Công Nghệ](#-công-nghệ-sử-dụng)
-- [Cấu Trúc Dự Án](#-cấu-trúc-dự-án)
+- [Cấu Trúc Dự Án](#-cấu-trúc-chi-tiết-toàn-bộ-dự-án-all-in-one-repo-structure)
 - [Hướng Dẫn Cài Đặt](#-hướng-dẫn-cài-đặt)
 - [Tài Khoản Demo](#-tài-khoản-demo)
 - [API Reference](#-api-reference)
@@ -32,7 +32,7 @@
 - ⚔️ **Đấu trường realtime**: Thi đấu trực tiếp với bạn bè
 - 📺 **Live class**: Học trực tiếp qua YouTube Live tích hợp
 
-### Đối Tượng Sử Dụng
+### Đối Tuyên Sử Dụng
 
 | Vai trò | Chức năng chính |
 |---------|-----------------|
@@ -118,35 +118,110 @@
 
 ---
 
-## 📁 Cấu Trúc Dự Án
+## 📁 Cấu Trúc Chi Tiết Toàn Bộ Dự Án (All-in-One Repo Structure)
+
+Mã nguồn dự án được tổ chức dạng Monorepo tích hợp đầy đủ cả Frontend (Next.js App Router), API Backend, Database Migrations, AI Worker (Python), và Discord Bot giám sát học tập.
 
 ```
 exam-system/
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── (pages)/           # Route groups
-│   │   │   ├── student/       # Trang học sinh
-│   │   │   ├── teacher/       # Trang giáo viên
-│   │   │   ├── arena/         # Đấu trường
-│   │   │   ├── live/          # Live class
-│   │   │   └── resources/     # Kho tài liệu
-│   │   ├── api/               # API Routes
-│   │   └── layout.tsx         # Root layout
-│   │
-│   ├── components/            # React Components
-│   │   ├── ui/               # Base UI (Button, Card, Input...)
-│   │   ├── gamification/     # XP, Achievements, Rewards
-│   │   ├── realtime/         # Live features
-│   │   └── shared/           # Reusable components
-│   │
-│   └── lib/                  # Utilities
-│       ├── supabase/         # Supabase client
-│       ├── gamification.ts   # XP, Level logic
-│       └── subjects.ts       # Subject config
+├── migrations/                           # Lưu trữ toàn bộ các tệp Migrations của Supabase PostgreSQL
+│   ├── combined_database_schema.sql      # Schema CSDL hợp nhất toàn hệ thống
+│   ├── migration-checklist-timetable.sql # Khởi tạo bảng checklist và thời khóa biểu gốc
+│   ├── migration-linked-timetable-rls.sql# Phân quyền RLS cho giáo viên/học sinh/phụ huynh liên kết
+│   ├── migration-rewards-shop.sql        # Di chuyển bảng tích lũy điểm thưởng và đổi quà
+│   ├── migration-timetable-bot-tracking.sql # Bảng nhật ký học tập và RLS cho Bot giám sát
+│   ├── migration-youtube-live.sql        # Cấu hình buổi dạy YouTube Live
+│   └── supabase-schema.sql               # Các hàm SQL và trigger tự động cập nhật XP/Streak
 │
-├── public/                   # Static assets
-├── migrations/               # SQL migrations
-└── package.json
+├── scripts/
+│   └── discord-bot/                      # Discord Bot giám sát phòng voice & thời khóa biểu
+│       ├── commands/                     # 21 Lệnh Slash quản trị (taode, taode-ai, phantich, diemdanh...)
+│       ├── handlers/                     # Handlers tương tác, VoiceState và TimetableScheduler
+│       ├── utils/                        # Tiện ích kết nối Supabase CSDL, hằng số, Gemini API
+│       ├── expressServer.js              # Server Express API giao tiếp Web-to-Bot
+│       ├── index.js                      # Điểm khởi chạy chính của Bot
+│       ├── tracker.js                    # Tracker theo dõi voice
+│       └── README.md                     # Hướng dẫn chi tiết thiết lập và sử dụng Bot
+│
+├── src/                                  # Mã nguồn chính của ứng dụng Web Next.js 16+
+│   ├── app/                              # App Router & API Endpoints
+│   │   ├── (auth)/                       # Nhóm xác thực (Đăng nhập, Đăng ký)
+│   │   ├── (pages)/                      # Các trang tĩnh giao diện chính
+│   │   │   ├── arena/                    # Đấu trường realtime (/arena, /arena/[id]/result)
+│   │   │   ├── live/                     # Trang học trực tuyến qua YouTube Live
+│   │   │   ├── pricing/                  # Trang giá và thanh toán dịch vụ
+│   │   │   ├── profile/                  # Trang thông tin tài khoản người dùng công khai
+│   │   │   └── resources/                # Kho tài liệu học tập (/resources, /resources/upload)
+│   │   ├── student/                      # Khu vực dành cho Học sinh
+│   │   │   ├── X/                        # Dashboard & Thời khóa biểu tùy chỉnh của Học sinh X
+│   │   │   │   ├── checklist/            # Dashboard checklist công việc
+│   │   │   │   ├── dashboard/            # Dashboard học tập cá nhân hóa
+│   │   │   │   └── timetable/            # Giao diện thời khóa biểu thông minh đồng bộ Supabase
+│   │   │   ├── achievements/             # Xem huy hiệu học tập đã đạt được
+│   │   │   ├── analytics/                # Biểu đồ radar, heatmap tiến trình học
+│   │   │   ├── checklist/                # Nhiệm vụ hàng ngày, Pomodoro học sinh
+│   │   │   ├── co-study/                 # Kênh tự học nhóm và kết nối
+│   │   │   ├── dashboard/                # Dashboard học sinh chung
+│   │   │   ├── exams/                    # Giao diện thi trắc nghiệm và kết quả thi cá nhân
+│   │   │   ├── notifications/            # Hộp thư thông báo học tập
+│   │   │   └── rewards/                  # Shop đổi điểm kinh nghiệm (XP) lấy quà
+│   │   ├── teacher/                      # Khu vực dành cho Giáo viên
+│   │   │   ├── analytics/                # Thống kê điểm số và tỉ lệ nộp bài của học sinh
+│   │   │   ├── arena/                    # Bảng quản lý tạo phòng đấu trường thi đấu realtime
+│   │   │   ├── dashboard/                # Dashboard điều hành của giáo viên
+│   │   │   ├── exam-bank/                # Ngân hàng đề thi trắc nghiệm
+│   │   │   ├── exams/                    # CRUD đề thi, chấm điểm và đài giám sát
+│   │   │   ├── monitor/                  # Đài giám sát học voice & thời khóa biểu Discord học sinh
+│   │   │   ├── question-bank/            # Quản lý ngân hàng câu hỏi
+│   │   │   ├── study/                    # Cấu hình bài giảng học tập
+│   │   │   └── timetable/                # Quản lý thời khóa biểu giảng dạy lớp học
+│   │   ├── api/                          # Next.js API Routes (Backend)
+│   │   │   ├── achievements/             # API quản lý và mở khóa danh hiệu
+│   │   │   ├── arena/                    # API khởi tạo phòng đấu trường realtime
+│   │   │   ├── challenges/               # API danh sách thử thách hàng ngày
+│   │   │   ├── daily-checkin/            # API điểm danh tích lũy Streak
+│   │   │   ├── exams/                    # API quản lý đề thi trắc nghiệm
+│   │   │   ├── extract-questions/        # API trích xuất câu hỏi từ PDF qua AI
+│   │   │   ├── parent/                   # API liên kết phụ huynh giám sát
+│   │   │   ├── profile/                  # API cập nhật hồ sơ người dùng
+│   │   │   ├── rewards/                  # API mua sắm quà bằng XP
+│   │   │   ├── study-sessions/           # API đồng bộ dữ liệu Voice/Bot Discord và gửi cảnh báo
+│   │   │   ├── study/                    # API quản lý giáo trình (chương, bài học, tài liệu)
+│   │   │   ├── titles/                   # API trao danh hiệu đặc biệt
+│   │   │   └── upload-avatar/            # API upload ảnh đại diện lên Supabase Storage
+│   │   └── layout.tsx                # Giao diện khung chính (Root Layout)
+│   │
+│   ├── components/                       # Thư mục chứa các React Components dùng chung
+│   │   ├── ui/                           # Base UI Components (button, card, dialog, progress...)
+│   │   ├── checklist/                    # Widgets Pomodoro, Quote động lực, Lịch hôm nay
+│   │   ├── exam/                         # Bộ làm bài trắc nghiệm (Digital question viewer, Anti-cheat...)
+│   │   ├── gamification/                 # Hệ thống bảng xếp hạng (Leaderboard), check-in, shop quà
+│   │   ├── proctoring/                   # Giám sát camera học sinh và theo dõi ánh mắt (Gaze tracker)
+│   │   ├── pwa/                          # Banner cài đặt ứng dụng tiến trình PWA
+│   │   ├── realtime/                     # Hiển thị số lượng học sinh tham gia realtime
+│   │   └── shared/                       # Các component loading, stats card tái sử dụng
+│   │
+│   ├── data/                             # Dữ liệu tĩnh cục bộ (danh ngôn, cài đặt môn học)
+│   ├── hooks/                            # Custom React Hooks (useAuth, usePdfUpload, useAnswerForm...)
+│   ├── lib/                              # Thư viện tiện ích, cấu hình và lớp kết nối
+│   │   ├── supabase/                     # Supabase clients (client.ts & server.ts)
+│   │   ├── gamification/                 # Logic tính toán XP, Level, Huy hiệu, Streak
+│   │   ├── pdf-parser.ts                 # Trình phân tích cấu trúc PDF
+│   │   └── subjects.ts                   # Định nghĩa danh sách các môn học
+│   └── services/                         # Tầng xử lý nghiệp vụ kết nối trực tiếp Supabase Database
+│       ├── exam-server.ts                # Nghiệp vụ liên quan đến quản lý và chấm điểm đề thi
+│       ├── scoring.ts                    # Công cụ chấm điểm trắc nghiệm tự động
+│       └── user-server.ts                # Nghiệp vụ quản lý thông tin hồ sơ và vai trò học sinh
+│
+├── worker/                               # Python Background Worker trích xuất câu hỏi từ PDF qua AI
+│   ├── gemini_service.py                 # Hàm gọi Google Gemini API phân tích nội dung đề thi
+│   ├── pdf_parser.py                     # Đọc văn bản từ tệp PDF tải lên
+│   ├── main.py                           # FastAPI Server nhận file và điều phối xử lý trích xuất
+│   └── requirements.txt                  # Danh sách thư viện Python cần thiết
+│
+├── package.json                          # Tệp quản lý các dependencies và scripts chạy dự án Web
+├── vercel.json                           # Cấu hình deploy ứng dụng Web lên Vercel Cloud
+└── README.md                             # Tài liệu hướng dẫn sử dụng và phát triển dự án
 ```
 
 ---
