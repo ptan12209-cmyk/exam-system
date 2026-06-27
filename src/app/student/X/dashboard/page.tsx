@@ -209,10 +209,10 @@ export default function StudentXDashboard() {
     }
   }, [studentStats.level, userXp])
 
-  // Helper for dynamic timing badges
+  // Helper for dynamic timing badges (Dream Engine flat style)
   const getExamTimeBadge = (exam: Exam) => {
     if (!exam.is_scheduled || !exam.start_time) {
-      return { label: "Tự do", className: "bg-[#6366F1]/10 text-[#6366F1] border-[#6366F1]/20" }
+      return { label: "Tự do", className: "bg-[#8C87A2]/10 text-[#8C87A2] border-[#8C87A2]/20" }
     }
     const now = Date.now()
     const start = new Date(exam.start_time).getTime()
@@ -231,27 +231,27 @@ export default function StudentXDashboard() {
     const isTomorrow = startDate.toDateString() === tomorrow.toDateString()
 
     if (isToday) {
-      return { label: "Hôm nay", className: "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20 animate-pulse" }
+      return { label: "Hôm nay", className: "bg-[#C18CFF]/15 text-[#C18CFF] border-[#C18CFF]/30 animate-pulse" }
     }
     if (isTomorrow) {
-      return { label: "Ngày mai", className: "bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/20" }
+      return { label: "Ngày mai", className: "bg-[#8C87A2]/10 text-[#F1EDF9] border-[#8C87A2]/20" }
     }
     return { 
       label: startDate.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }), 
-      className: "bg-[#2D2D6B]/30 text-[#94A3B8] border-[#2D2D6B]/50" 
+      className: "bg-[#8C87A2]/5 text-[#8C87A2] border-[#8C87A2]/20" 
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0F0F23] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
         <Loading label="Khởi động không gian Dream Engine..." />
       </div>
     )
   }
 
   return (
-    <StudentShell className={cn("bg-[#0F0F23] text-[#F1F5F9]", inter.className)}>
+    <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9]", inter.className)}>
       {/* 1. Custom Topbar */}
       <StudentTopbar
         name={profile?.full_name}
@@ -270,20 +270,19 @@ export default function StudentXDashboard() {
         {/* Row 1: Welcome Hero Section & Profile Details */}
         <section className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr] lg:items-stretch">
           
-          {/* Welcome Card */}
-          <div className="bg-[#1A1A3E] border border-[#2D2D6B]/40 rounded-2xl p-6 lg:p-8 flex flex-col justify-between shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-[#6366F1]/5 rounded-full blur-3xl pointer-events-none" />
+          {/* Welcome Card (Surface) */}
+          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 lg:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <span className="h-2 w-2 rounded-full bg-[#22C55E] animate-ping" />
-                <span className={cn("text-[10px] font-bold uppercase tracking-[0.25em] text-[#94A3B8]", jetbrainsMono.className)}>
-                  Dream Engine V2 Active
+                <span className="h-1.5 w-1.5 rounded-full bg-[#C18CFF]" />
+                <span className={cn("text-[9px] font-bold uppercase tracking-[0.25em] text-[#8C87A2]", jetbrainsMono.className)}>
+                  Dream Engine Edition
                 </span>
               </div>
-              <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[#F1F5F9] font-normal leading-tight", instrumentSerif.className)}>
+              <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight", instrumentSerif.className)}>
                 Chào mừng trở lại, X! 👋
               </h1>
-              <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#94A3B8] italic max-w-xl">
+              <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] italic max-w-xl">
                 "Học nhi thời tập chi, bất diệc duyệt hồ? Học mà thường ôn tập, chẳng cũng vui lắm sao?" – Khổng Tử
               </p>
             </div>
@@ -291,30 +290,30 @@ export default function StudentXDashboard() {
             {/* Quick Actions */}
             <div className="mt-8 flex flex-wrap gap-3">
               <a href="#available-exams">
-                <Button className="rounded-xl bg-[#6366F1] hover:bg-[#6366F1]/95 text-white font-semibold px-5 py-4 transition-all duration-200">
+                <Button className="rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold px-5 py-4 transition-all duration-200 shadow-sm">
                   Làm đề giao riêng
                 </Button>
               </a>
               <Link href="/student/X/timetable">
-                <Button variant="outline" className="rounded-xl border-[#2D2D6B] hover:border-[#6366F1] text-[#94A3B8] hover:text-[#F1F5F9] bg-transparent px-5 py-4">
+                <Button variant="outline" className="rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent px-5 py-4 transition-all">
                   Xem thời khóa biểu
                 </Button>
               </Link>
             </div>
           </div>
 
-          {/* Gamified Profile Aura Card */}
-          <div className="bg-[#1A1A3E] border border-[#2D2D6B]/40 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+          {/* Gamified Profile Aura Card (Surface) */}
+          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
             <div className="flex items-center gap-4">
               {/* Avatar with Custom Rank Ring */}
-              <div className={cn("relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 shadow-lg bg-[#0F0F23]", rank.border)}>
+              <div className={cn("relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 shadow-sm bg-[#0B0A13]", rank.border)}>
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url ?? undefined} alt={profile.full_name ?? undefined} className="h-full w-full rounded-full object-cover" />
                 ) : (
-                  <span className="text-2xl font-bold text-[#F1F5F9]">{profile?.full_name?.[0] || "X"}</span>
+                  <span className="text-2xl font-bold text-[#F1EDF9]">{profile?.full_name?.[0] || "X"}</span>
                 )}
                 {/* Level Tag */}
-                <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#1E1E4A] border border-[#2D2D6B] text-[10px] font-bold text-[#8B5CF6]">
+                <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#15131F] border border-[#8C87A2]/40 text-[10px] font-bold text-[#C18CFF]">
                   {studentStats.level}
                 </div>
               </div>
@@ -323,32 +322,32 @@ export default function StudentXDashboard() {
                 <span className={cn("text-xs font-bold uppercase tracking-widest", rank.color)}>
                   {rank.name} Rank 🏆
                 </span>
-                <h3 className="text-xl font-bold text-[#F1F5F9] mt-0.5">{profile?.full_name || "Học sinh X"}</h3>
-                <p className="text-xs text-[#94A3B8] mt-0.5">Lớp học: Lớp X • THPT 2027</p>
+                <h3 className="text-xl font-bold text-[#F1EDF9] mt-0.5">{profile?.full_name || "Học sinh X"}</h3>
+                <p className="text-xs text-[#8C87A2] mt-0.5">Lớp học: Lớp X • THPT 2027</p>
               </div>
             </div>
 
             {/* In-Card XP Progress */}
             <div className="mt-6 space-y-2">
-              <div className="flex justify-between text-xs font-mono text-[#94A3B8]">
+              <div className="flex justify-between text-xs font-mono text-[#8C87A2]">
                 <span>Tiến trình cấp {studentStats.level}</span>
                 <span>
-                  <strong className="text-[#F59E0B]">{xpProgress.current}</strong> / {xpProgress.required} XP
+                  <strong className="text-[#C18CFF]">{xpProgress.current}</strong> / {xpProgress.required} XP
                 </span>
               </div>
-              <div className="h-2.5 w-full rounded-full bg-[#0F0F23] overflow-hidden border border-[#2D2D6B]/50">
+              <div className="h-2 w-full rounded-full bg-[#0B0A13] overflow-hidden border border-[#8C87A2]/20">
                 <div 
-                  className="h-full bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] transition-all duration-700 ease-out" 
+                  className="h-full bg-[#C18CFF] transition-all duration-700 ease-out" 
                   style={{ width: `${xpProgress.percent}%` }}
                 />
               </div>
-              <p className="text-[10px] text-right text-[#94A3B8]">
-                Còn <strong className="text-[#6366F1]">{xpProgress.nextTotal - userXp} XP</strong> để lên cấp {studentStats.level + 1}
+              <p className="text-[10px] text-right text-[#8C87A2]">
+                Còn <strong className="text-[#C18CFF]">{xpProgress.nextTotal - userXp} XP</strong> để lên cấp {studentStats.level + 1}
               </p>
             </div>
 
             {/* Daily Checkin Wrapper */}
-            <div className="mt-6 border-t border-[#2D2D6B]/40 pt-4">
+            <div className="mt-6 border-t border-[#8C87A2]/25 pt-4">
               <DailyCheckIn onComplete={({ xp }) => setUserXp((prev) => prev + xp)} />
             </div>
           </div>
@@ -358,43 +357,43 @@ export default function StudentXDashboard() {
         <section className="mt-6 grid gap-4 grid-cols-2 lg:grid-cols-4">
           
           {/* Card 1: Exams Completed */}
-          <div className="bg-[#1A1A3E] border border-[#2D2D6B]/40 rounded-xl p-5 hover:border-[#6366F1]/40 transition-colors">
+          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#94A3B8] uppercase tracking-wider">📝 Đề đã làm</span>
-              <FileText className="h-4 w-4 text-[#94A3B8]" />
+              <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">📝 Đề đã làm</span>
+              <FileText className="h-4 w-4 text-[#8C87A2]" />
             </div>
-            <p className="text-3xl font-bold tracking-tight text-[#F1F5F9] mt-3">{submissions.length}</p>
-            <p className="text-xs text-[#22C55E] mt-1.5 font-medium">Tuần này: +{submissionsThisWeek}</p>
+            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">{submissions.length}</p>
+            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Tuần này: +{submissionsThisWeek}</p>
           </div>
 
           {/* Card 2: Average Score */}
-          <div className="bg-[#1A1A3E] border border-[#2D2D6B]/40 rounded-xl p-5 hover:border-[#6366F1]/40 transition-colors">
+          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#94A3B8] uppercase tracking-wider">⭐ Điểm TB</span>
-              <Trophy className="h-4 w-4 text-[#F59E0B]" />
+              <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">⭐ Điểm TB</span>
+              <Trophy className="h-4 w-4 text-[#C18CFF]" />
             </div>
-            <p className="text-3xl font-bold tracking-tight text-[#F1F5F9] mt-3">{averageScore} <span className="text-lg font-normal text-[#94A3B8]">/10</span></p>
-            <p className="text-xs text-[#6366F1] mt-1.5 font-medium">Kỷ lục điểm: {bestScore}</p>
+            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">{averageScore} <span className="text-lg font-normal text-[#8C87A2]">/10</span></p>
+            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Kỷ lục điểm: {bestScore}</p>
           </div>
 
           {/* Card 3: Class Rank */}
-          <div className="bg-[#1A1A3E] border border-[#2D2D6B]/40 rounded-xl p-5 hover:border-[#6366F1]/40 transition-colors">
+          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#94A3B8] uppercase tracking-wider">🏆 Hạng lớp</span>
-              <Award className="h-4 w-4 text-[#8B5CF6]" />
+              <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">🏆 Hạng lớp</span>
+              <Award className="h-4 w-4 text-[#C18CFF]" />
             </div>
-            <p className="text-3xl font-bold tracking-tight text-[#F1F5F9] mt-3">#12 <span className="text-lg font-normal text-[#94A3B8]">/35</span></p>
-            <p className="text-xs text-[#22C55E] mt-1.5 font-medium">Top 15% của lớp</p>
+            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">#12 <span className="text-lg font-normal text-[#8C87A2]">/35</span></p>
+            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Trong Top 15%</p>
           </div>
 
           {/* Card 4: Streak */}
-          <div className="bg-[#1A1A3E] border border-[#2D2D6B]/40 rounded-xl p-5 hover:border-[#6366F1]/40 transition-colors">
+          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#94A3B8] uppercase tracking-wider">🔥 Streak học</span>
-              <Sparkles className="h-4 w-4 text-[#F97316]" />
+              <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">🔥 Streak</span>
+              <Sparkles className="h-4 w-4 text-[#C18CFF]" />
             </div>
-            <p className="text-3xl font-bold tracking-tight text-[#F1F5F9] mt-3">{studentStats.streak_days} <span className="text-lg font-normal text-[#94A3B8]">ngày</span></p>
-            <p className="text-xs text-[#F97316] mt-1.5 font-medium">Kỷ lục: 14 ngày</p>
+            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">{studentStats.streak_days} <span className="text-lg font-normal text-[#8C87A2]">ngày</span></p>
+            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Kỷ lục: 14 ngày</p>
           </div>
         </section>
 
@@ -405,34 +404,34 @@ export default function StudentXDashboard() {
           <div className="space-y-8">
             
             {/* Assigned Exams Timeline */}
-            <div id="available-exams" className="bg-[#1A1A3E] border border-[#2D2D6B]/40 rounded-2xl overflow-hidden shadow-xl">
-              <div className="flex flex-col gap-4 border-b border-[#2D2D6B]/40 p-6 lg:flex-row lg:items-center lg:justify-between">
+            <div id="available-exams" className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl overflow-hidden shadow-sm">
+              <div className="flex flex-col gap-4 border-b border-[#8C87A2]/20 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <h2 className={cn("text-3xl text-[#F1F5F9] font-normal", instrumentSerif.className)}>Nhiệm vụ đề thi của X</h2>
-                  <p className="text-xs text-[#94A3B8] mt-1">Các đề thi độc quyền được giáo viên giao trực tiếp</p>
+                  <h2 className={cn("text-3xl text-[#F1EDF9] font-normal", instrumentSerif.className)}>Nhiệm vụ đề thi của X</h2>
+                  <p className="text-xs text-[#8C87A2] mt-1">Các đề thi độc quyền được giáo viên giao trực tiếp</p>
                 </div>
                 
                 {/* Search Inputs */}
-                <div className="flex items-center gap-2 rounded-xl border border-[#2D2D6B] bg-[#0F0F23] px-3 py-1.5 w-full max-w-xs">
-                  <Search className="h-4 w-4 text-[#94A3B8]" />
+                <div className="flex items-center gap-2 rounded-xl border border-[#8C87A2]/30 bg-[#0B0A13] px-3 py-1.5 w-full max-w-xs">
+                  <Search className="h-4 w-4 text-[#8C87A2]" />
                   <input
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="Tìm đề thi..."
-                    className="bg-transparent text-xs w-full outline-none text-[#F1F5F9] placeholder-[#94A3B8]"
+                    className="bg-transparent text-xs w-full outline-none text-[#F1EDF9] placeholder-[#8C87A2]"
                   />
                 </div>
               </div>
 
               {/* Subject Filters */}
-              <div className="flex gap-1.5 overflow-x-auto border-b border-[#2D2D6B]/40 p-4">
+              <div className="flex gap-1.5 overflow-x-auto border-b border-[#8C87A2]/20 p-4">
                 <button
                   onClick={() => setSelectedSubject("all")}
                   className={cn(
-                    "rounded-lg px-3.5 py-1.5 text-[10px] font-bold tracking-wider uppercase transition-colors whitespace-nowrap border",
+                    "rounded-lg px-3.5 py-1.5 text-[10px] font-bold tracking-wider uppercase transition-all whitespace-nowrap border",
                     selectedSubject === "all"
-                      ? "bg-[#6366F1] text-white border-transparent shadow-sm"
-                      : "border-[#2D2D6B] text-[#94A3B8] hover:border-[#6366F1]"
+                      ? "bg-[#C18CFF] text-[#0B0A13] border-transparent shadow-sm"
+                      : "border-[#8C87A2]/40 text-[#8C87A2] hover:border-[#C18CFF]"
                   )}
                 >
                   Tất cả
@@ -442,10 +441,10 @@ export default function StudentXDashboard() {
                     key={subject.value}
                     onClick={() => setSelectedSubject(subject.value)}
                     className={cn(
-                      "rounded-lg px-3.5 py-1.5 text-[10px] font-bold tracking-wider uppercase transition-colors whitespace-nowrap border",
+                      "rounded-lg px-3.5 py-1.5 text-[10px] font-bold tracking-wider uppercase transition-all whitespace-nowrap border",
                       selectedSubject === subject.value
-                        ? "bg-[#6366F1] text-white border-transparent shadow-sm"
-                        : "border-[#2D2D6B] text-[#94A3B8] hover:border-[#6366F1]"
+                        ? "bg-[#C18CFF] text-[#0B0A13] border-transparent shadow-sm"
+                        : "border-[#8C87A2]/40 text-[#8C87A2] hover:border-[#C18CFF]"
                     )}
                   >
                     {subject.label}
@@ -456,12 +455,12 @@ export default function StudentXDashboard() {
               {/* Exams Listing */}
               {filteredExams.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-                  <FileText className="mb-4 h-12 w-12 text-[#2D2D6B]/40" />
-                  <h3 className="text-base font-semibold text-[#F1F5F9]">Không tìm thấy đề thi phù hợp</h3>
-                  <p className="mt-1 text-xs text-[#94A3B8] max-w-xs">Hãy đổi bộ lọc môn học hoặc từ khóa tìm kiếm.</p>
+                  <FileText className="mb-4 h-12 w-12 text-[#8C87A2]/20" />
+                  <h3 className="text-base font-semibold text-[#F1EDF9]">Không tìm thấy đề thi phù hợp</h3>
+                  <p className="mt-1 text-xs text-[#8C87A2] max-w-xs">Hãy đổi bộ lọc môn học hoặc từ khóa tìm kiếm.</p>
                 </div>
               ) : (
-                <div className="divide-y divide-[#2D2D6B]/30">
+                <div className="divide-y divide-[#8C87A2]/10 bg-[#15131F]">
                   {filteredExams.map((exam) => {
                     const subjectInfo = getSubjectInfo(exam.subject || "other")
                     const submitted = hasSubmitted(exam.id)
@@ -469,16 +468,16 @@ export default function StudentXDashboard() {
                     const timeBadge = getExamTimeBadge(exam)
 
                     return (
-                      <div key={exam.id} className="flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between hover:bg-[#0F0F23]/20 transition-colors">
+                      <div key={exam.id} className="flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between hover:bg-[#0B0A13]/40 transition-colors">
                         <div className="flex items-start gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#2D2D6B] bg-[#0F0F23]">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13]">
                             <span className="text-xl">{subjectInfo.icon}</span>
                           </div>
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="text-sm sm:text-base font-bold text-[#F1F5F9]">{exam.title}</h3>
+                              <h3 className="text-sm sm:text-base font-bold text-[#F1EDF9]">{exam.title}</h3>
                               {submitted && submission && (
-                                <span className={cn("rounded-lg border border-[#22C55E]/40 bg-[#22C55E]/10 px-2 py-0.5 text-[9px] font-bold tracking-wider text-[#22C55E]", jetbrainsMono.className)}>
+                                <span className={cn("rounded-lg border border-[#C18CFF]/40 bg-[#C18CFF]/10 px-2 py-0.5 text-[9px] font-bold tracking-wider text-[#C18CFF]", jetbrainsMono.className)}>
                                   {submission.score.toFixed(1)} ĐIỂM
                                 </span>
                               )}
@@ -486,7 +485,7 @@ export default function StudentXDashboard() {
                                 {timeBadge.label.toUpperCase()}
                               </span>
                             </div>
-                            <div className={cn("mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-[#94A3B8]", jetbrainsMono.className)}>
+                            <div className={cn("mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-[#8C87A2]", jetbrainsMono.className)}>
                               <span className="flex items-center gap-1.5">
                                 <BookOpen className="h-3 w-3" />
                                 {subjectInfo.label}
@@ -508,19 +507,19 @@ export default function StudentXDashboard() {
                           {submitted ? (
                             <>
                               <Link href={`/student/exams/${exam.id}/result`}>
-                                <Button variant="outline" size="sm" className="rounded-lg border-[#2D2D6B] hover:border-[#6366F1] text-[#94A3B8] hover:text-[#F1F5F9] bg-transparent text-xs">
+                                <Button variant="outline" size="sm" className="rounded-lg border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent text-xs transition-colors">
                                   Xem kết quả
                                 </Button>
                               </Link>
                               <Link href={`/student/exams/${exam.id}/take`}>
-                                <Button size="sm" className="rounded-lg bg-[#6366F1] hover:bg-[#6366F1]/90 text-white font-semibold text-xs">
+                                <Button size="sm" className="rounded-lg bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold text-xs transition-colors">
                                   Làm lại
                                 </Button>
                               </Link>
                             </>
                           ) : (
                             <Link href={`/student/exams/${exam.id}/take`}>
-                              <Button size="sm" className="rounded-lg bg-[#6366F1] hover:bg-[#6366F1]/90 text-white font-semibold text-xs px-4">
+                              <Button size="sm" className="rounded-lg bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold text-xs px-4 transition-colors">
                                 Làm bài
                               </Button>
                             </Link>
@@ -534,32 +533,32 @@ export default function StudentXDashboard() {
             </div>
 
             {/* Arena Waiting Sessions */}
-            <div className="bg-[#1A1A3E] border border-[#2D2D6B]/40 rounded-2xl p-6 shadow-xl">
+            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Swords className="h-5 w-5 text-[#8B5CF6] animate-pulse" />
-                  <h3 className={cn("text-2xl text-[#F1F5F9] font-normal", instrumentSerif.className)}>Đấu trường sắp mở</h3>
+                  <Swords className="h-5 w-5 text-[#C18CFF] animate-pulse" />
+                  <h3 className={cn("text-2xl text-[#F1EDF9] font-normal", instrumentSerif.className)}>Đấu trường sắp mở</h3>
                 </div>
-                <span className="text-xs text-[#94A3B8] font-mono">Đồng bộ trực tiếp</span>
+                <span className="text-xs text-[#8C87A2] font-mono">Đồng bộ trực tiếp</span>
               </div>
 
               {arenaSessions.length === 0 ? (
-                <div className="text-center py-6 border border-dashed border-[#2D2D6B]/60 rounded-xl">
-                  <p className="text-xs text-[#94A3B8]">Hiện chưa có phòng đấu trường nào đang chờ mở.</p>
+                <div className="text-center py-6 border border-dashed border-[#8C87A2]/30 rounded-xl">
+                  <p className="text-xs text-[#8C87A2]">Hiện chưa có phòng đấu trường nào đang chờ mở.</p>
                 </div>
               ) : (
                 <div className="grid gap-3">
                   {arenaSessions.map((session) => (
-                    <div key={session.id} className="flex justify-between items-center bg-[#0F0F23]/60 border border-[#2D2D6B]/40 rounded-xl p-4 hover:border-[#8B5CF6]/50 transition-colors">
+                    <div key={session.id} className="flex justify-between items-center bg-[#0B0A13]/60 border border-[#8C87A2]/20 rounded-xl p-4 hover:border-[#C18CFF]/50 transition-colors">
                       <div>
-                        <h4 className="text-sm font-bold text-[#F1F5F9]">{session.name}</h4>
-                        <p className="text-xs text-[#94A3B8] mt-1 flex items-center gap-1.5">
+                        <h4 className="text-sm font-bold text-[#F1EDF9]">{session.name}</h4>
+                        <p className="text-xs text-[#8C87A2] mt-1 flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5" />
                           Bắt đầu: {new Date(session.start_time).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
                       <Link href="/arena">
-                        <Button size="sm" className="rounded-lg bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white text-xs px-4">
+                        <Button size="sm" className="rounded-lg bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] text-xs px-4 transition-colors">
                           Vào phòng
                         </Button>
                       </Link>
@@ -575,9 +574,8 @@ export default function StudentXDashboard() {
           <div className="space-y-6">
             
             {/* 1. THPT 2027 Countdown Widget */}
-            <div className="bg-[#1A1A3E] border border-[#2D2D6B]/40 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-[#6366F1]/5 rounded-full blur-xl pointer-events-none" />
-              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#6366F1] mb-4 font-semibold">
+            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#C18CFF] mb-4 font-semibold">
                 <Clock className="h-4 w-4 animate-pulse" />
                 <span>Đếm ngược THPT Quốc Gia 2027</span>
               </div>
@@ -589,11 +587,11 @@ export default function StudentXDashboard() {
                   { label: "Phút", value: timeLeft.minutes },
                   { label: "Giây", value: timeLeft.seconds }
                 ].map((item) => (
-                  <div key={item.label} className="bg-[#0F0F23] border border-[#2D2D6B]/30 rounded-xl p-2.5">
-                    <span className={cn("text-2xl font-bold text-[#F1F5F9]", jetbrainsMono.className)}>
+                  <div key={item.label} className="bg-[#0B0A13] border border-[#8C87A2]/20 rounded-xl p-2.5">
+                    <span className={cn("text-2xl font-bold text-[#F1EDF9]", jetbrainsMono.className)}>
                       {String(item.value).padStart(2, '0')}
                     </span>
-                    <span className="block text-[9px] uppercase tracking-wider text-[#94A3B8] mt-1">
+                    <span className="block text-[9px] uppercase tracking-wider text-[#8C87A2] mt-1">
                       {item.label}
                     </span>
                   </div>
@@ -601,20 +599,20 @@ export default function StudentXDashboard() {
               </div>
               
               <div className="mt-4 text-center">
-                <p className="text-[10px] text-[#94A3B8]">
-                  Ngày thi dự kiến: <span className="text-[#6366F1] font-bold">11/06/2027</span>
+                <p className="text-[10px] text-[#8C87A2]">
+                  Ngày thi dự kiến: <span className="text-[#C18CFF] font-bold">11/06/2027</span>
                 </p>
               </div>
             </div>
 
             {/* 2. Daily Challenges Widget */}
-            <div className="bg-[#1A1A3E] border border-[#2D2D6B]/40 rounded-2xl p-6 shadow-xl">
+            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
               <ChallengesWidget limit={3} />
             </div>
 
             {/* 3. Quick Navigation Tools */}
-            <div className="bg-[#1A1A3E] border border-[#2D2D6B]/40 rounded-2xl p-6 shadow-xl">
-              <h3 className={cn("text-2xl text-[#F1F5F9] font-normal mb-4", instrumentSerif.className)}>Công cụ học tập</h3>
+            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
+              <h3 className={cn("text-2xl text-[#F1EDF9] font-normal mb-4", instrumentSerif.className)}>Công cụ học tập</h3>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { href: "/resources", label: "Tài liệu", icon: BookOpen },
@@ -627,9 +625,9 @@ export default function StudentXDashboard() {
                   { href: "/live", label: "Học Live", icon: Video },
                 ].map((item) => {
                   const itemContent = (
-                    <div className="flex flex-col justify-between p-3.5 h-20 bg-[#0F0F23]/60 hover:bg-[#1E1E4A] border border-[#2D2D6B]/40 hover:border-[#6366F1]/50 rounded-xl transition-all duration-200 group">
-                      <item.icon className="h-4.5 w-4.5 text-[#94A3B8] group-hover:text-[#6366F1] transition-colors" />
-                      <span className="text-xs font-semibold text-[#F1F5F9]">{item.label}</span>
+                    <div className="flex flex-col justify-between p-3.5 h-20 bg-[#0B0A13] hover:bg-[#0B0A13]/80 border border-[#8C87A2]/20 hover:border-[#C18CFF]/50 rounded-xl transition-all duration-200 group">
+                      <item.icon className="h-4.5 w-4.5 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
+                      <span className="text-xs font-semibold text-[#F1EDF9]">{item.label}</span>
                     </div>
                   )
                   return item.isExternal ? (
