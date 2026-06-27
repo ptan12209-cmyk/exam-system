@@ -92,6 +92,9 @@ async function checkTimetables(client) {
       const todaySlots = timetable.filter(entry => entry.day_of_week === dayOfWeek);
 
       for (const entry of todaySlots) {
+        if (!entry.subject || entry.subject === 'Nghỉ' || entry.subject.toLowerCase() === 'nghỉ') {
+          continue;
+        }
         const [startH, startM] = entry.start_time.split(':').map(Number);
         const [endH, endM] = entry.end_time.split(':').map(Number);
         const startMinutes = startH * 60 + startM;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { X, BookOpen, AlertCircle } from "lucide-react"
+import { X, BookOpen, AlertCircle, Trash2, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TimetableSlot, PRESET_SUBJECTS, PRESET_TYPES, PRESET_TIMES } from "./constants"
 
@@ -7,9 +7,12 @@ interface EditSlotModalProps {
   slot: TimetableSlot
   onClose: () => void
   onSave: (updatedSlot: TimetableSlot) => void
+  onDelete: (slot: TimetableSlot) => void
+  onReset: (slot: TimetableSlot) => void
+  isCustomized: boolean
 }
 
-export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
+export function EditSlotModal({ slot, onClose, onSave, onDelete, onReset, isCustomized }: EditSlotModalProps) {
   const [subject, setSubject] = useState(slot.subject)
   const [customSubject, setCustomSubject] = useState("")
   const [isCustomSubject, setIsCustomSubject] = useState(!PRESET_SUBJECTS.includes(slot.subject))
@@ -206,20 +209,43 @@ export function EditSlotModal({ slot, onClose, onSave }: EditSlotModalProps) {
         </div>
 
         {/* Nút hành động */}
-        <div className="flex gap-3 mt-8">
-          <Button
-            onClick={onClose}
-            variant="outline"
-            className="flex-1 py-5 rounded-xl border-[hsl(var(--border))]/40 hover:border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-transparent font-medium"
-          >
-            Hủy
-          </Button>
-          <Button
-            onClick={handleSave}
-            className="flex-1 py-5 rounded-xl bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-[hsl(var(--primary-foreground))] font-semibold tracking-wide"
-          >
-            Lưu thay đổi
-          </Button>
+        <div className="flex flex-col gap-3 mt-8">
+          <div className="flex gap-3">
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="flex-1 py-5 rounded-xl border-[hsl(var(--border))]/40 hover:border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-transparent font-medium"
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleSave}
+              className="flex-1 py-5 rounded-xl bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-[hsl(var(--primary-foreground))] font-semibold tracking-wide"
+            >
+              Lưu thay đổi
+            </Button>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              onClick={() => onDelete(slot)}
+              variant="outline"
+              className="flex-1 py-3.5 rounded-xl border-red-500/20 hover:border-red-500/40 text-red-400 bg-transparent font-medium text-xs flex items-center justify-center gap-1.5"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Xóa ca học (Nghỉ)</span>
+            </Button>
+            {isCustomized && (
+              <Button
+                onClick={() => onReset(slot)}
+                variant="outline"
+                className="flex-1 py-3.5 rounded-xl border-yellow-500/20 hover:border-yellow-500/40 text-yellow-400 bg-transparent font-medium text-xs flex items-center justify-center gap-1.5"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Khôi phục mặc định</span>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

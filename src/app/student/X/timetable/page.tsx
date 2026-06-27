@@ -310,6 +310,63 @@ export default function TimetablePage() {
     }
   }
 
+  // Xóa ca học (Thiết lập thành "Nghỉ")
+  const handleDeleteSlot = async (slot: TimetableSlot) => {
+    const deletedSlot = {
+      ...slot,
+      subject: "Nghỉ",
+      type: "Nghỉ",
+      color: "other"
+    }
+    await handleSaveSlot(deletedSlot)
+  }
+
+  // Khôi phục ca học về mặc định
+  const handleResetSingleSlot = async (slot: TimetableSlot) => {
+    if (!profile) return
+
+    try {
+      const { error } = await supabase
+        .from("student_timetable_entries")
+        .delete()
+        .eq("id", slot.id)
+      
+      if (error) {
+        console.error("Lỗi xóa slot tùy chỉnh trên DB:", error)
+        return
+      }
+    } catch (err) {
+      console.error("Lỗi khi kết nối database:", err)
+      return
+    }
+
+    let slotTimeKey = ''
+    let slotDayKey = ''
+    let found = false
+
+    const updatedSlots = { ...slots }
+    for (const timeKey in updatedSlots) {
+      for (const dayKey in updatedSlots[timeKey]) {
+        if (updatedSlots[timeKey][dayKey].id === slot.id) {
+          slotTimeKey = timeKey
+          slotDayKey = dayKey
+          found = true
+          break
+        }
+      }
+      if (found) break
+    }
+
+    if (slotTimeKey && slotDayKey) {
+      const defaultSlot = DEFAULT_TIMETABLE_SLOTS[slotTimeKey][slotDayKey]
+      updatedSlots[slotTimeKey][slotDayKey] = defaultSlot
+      setSlots(updatedSlots)
+      localStorage.setItem("student_x_custom_timetable_slots", JSON.stringify(updatedSlots))
+    }
+
+    setEditingSlot(null)
+  }
+
   // Khôi phục thời khóa biểu về mặc định ban đầu
   const handleResetTimetable = async () => {
     localStorage.removeItem("student_x_custom_timetable_slots")
@@ -413,16 +470,25 @@ export default function TimetablePage() {
   // Render ô ca học
   const renderSlotCell = (slot: TimetableSlot) => {
     const isCompleted = completedSlots.includes(slot.id)
+    const isOff = slot.subject === "Nghỉ"
 
     return (
       <button
         key={slot.id}
-        onClick={() => isEditMode ? setEditingSlot(slot) : setSelectedSlot(slot)}
+        onClick={() => {
+          if (isEditMode) {
+            setEditingSlot(slot)
+          } else if (!isOff) {
+            setSelectedSlot(slot)
+          }
+        }}
         className={cn(
           "w-full text-left p-4 rounded-xl border transition-all duration-300 relative overflow-hidden group select-none",
           isCompleted
             ? "bg-[hsl(var(--secondary))] border-[hsl(var(--primary))] shadow-[0_0_15px_hsl(var(--primary)/0.25)] text-[hsl(var(--foreground))] hover:shadow-[0_0_20px_hsl(var(--primary)/0.4)]"
-            : "bg-[hsl(var(--card))]/80 border-[hsl(var(--border))]/30 text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--muted-foreground))]/50 hover:bg-[hsl(var(--secondary))]"
+            : isOff
+              ? "bg-[hsl(var(--card))]/30 border-dashed border-[hsl(var(--border))]/20 text-[hsl(var(--muted-foreground))]/40"
+              : "bg-[hsl(var(--card))]/80 border-[hsl(var(--border))]/30 text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--muted-foreground))]/50 hover:bg-[hsl(var(--secondary))]"
         )}
       >
         {isCompleted && (
@@ -434,7 +500,9 @@ export default function TimetablePage() {
             "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded",
             isCompleted
               ? "bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))]"
-              : "bg-[hsl(var(--muted-foreground))]/10 text-[hsl(var(--muted-foreground))]"
+              : isOff
+                ? "bg-[hsl(var(--muted-foreground))]/5 text-[hsl(var(--muted-foreground))]/30"
+                : "bg-[hsl(var(--muted-foreground))]/10 text-[hsl(var(--muted-foreground))]"
           )}>
             {slot.type}
           </span>
@@ -451,9 +519,13 @@ export default function TimetablePage() {
 
         <h3 className={cn(
           "mt-3 text-lg font-medium leading-none tracking-tight",
-          isCompleted ? "text-[hsl(var(--foreground))]" : "text-[hsl(var(--foreground))]/70 group-hover:text-[hsl(var(--foreground))]"
+          isOff
+            ? "text-[hsl(var(--muted-foreground))]/45 font-normal italic"
+            : isCompleted
+              ? "text-[hsl(var(--foreground))]"
+              : "text-[hsl(var(--foreground))]/70 group-hover:text-[hsl(var(--foreground))]"
         )}>
-          {slot.subject}
+          {isOff ? "Nghỉ học" : slot.subject}
         </h3>
 
         <div className="mt-4 flex items-center gap-1.5 text-[11px] text-[hsl(var(--muted-foreground))]">
@@ -772,6 +844,9 @@ export default function TimetablePage() {
           slot={editingSlot}
           onClose={() => setEditingSlot(null)}
           onSave={handleSaveSlot}
+          onDelete={handleDeleteSlot}
+          onReset={handleResetSingleSlot}
+          isCustomized={editingSlot.id.length === 36 || (editingSlot.id.includes('-') && editingSlot.id.split('-').length === 5)}
         />
       )}
 
