@@ -550,17 +550,26 @@ export function XTimetable() {
           ) : null}
         </div>
 
-        <div className="flex-1 flex flex-col justify-center my-1.5">
-          <h3 className={cn(
-            "text-[13px] font-medium leading-snug tracking-tight line-clamp-3",
-            isOff
-              ? "text-[hsl(var(--muted-foreground))]/45 font-normal italic"
-              : isCompleted
-                ? "text-[hsl(var(--foreground))]"
-                : "text-[hsl(var(--foreground))]/70 group-hover:text-[hsl(var(--foreground))]"
-          )}>
-            {isOff ? "Nghỉ học" : slot.subject}
-          </h3>
+        <div className="flex-1 flex flex-col justify-center my-1.5 space-y-0.5">
+          {isOff ? (
+            <h3 className="text-[13px] font-normal italic leading-snug tracking-tight text-[hsl(var(--muted-foreground))]/45">
+              Nghỉ học
+            </h3>
+          ) : (
+            slot.subject.split(",").map((sub, idx) => (
+              <div
+                key={idx}
+                className={cn(
+                  "text-[11.5px] font-medium leading-tight tracking-tight truncate",
+                  isCompleted
+                    ? "text-[hsl(var(--foreground))]"
+                    : "text-[hsl(var(--foreground))]/75 group-hover:text-[hsl(var(--foreground))]"
+                )}
+              >
+                {sub.trim()}
+              </div>
+            ))
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 text-[11px] text-[hsl(var(--muted-foreground))]">
