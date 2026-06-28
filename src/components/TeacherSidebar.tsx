@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 import { 
   BarChart3, 
   BookOpen, 
+  FileText,
   ChevronRight, 
   ChevronsLeft, 
   ChevronsRight, 
@@ -33,6 +34,7 @@ interface TeacherSidebarProps {
 
 const NAV_ITEMS = [
   { href: "/teacher/dashboard", label: "Tổng quan", icon: LayoutDashboard },
+  { href: "/teacher/exams", label: "Đề thi", icon: FileText },
   { href: "/teacher/exams/create", label: "Tạo đề mới", icon: Plus },
 ]
 
