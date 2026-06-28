@@ -102,7 +102,7 @@ export function LiveParticipants({ examId, className }: LiveParticipantsProps) {
 
     if (loading) {
         return (
-            <div className={cn("rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-sm", className)}>
+            <div className={cn("rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-sm", className)}>
                 <div className="animate-pulse">
                     <div className="h-4 bg-[hsl(var(--muted))]/30 rounded w-1/2 mb-3"></div>
                     <div className="space-y-2">
@@ -115,7 +115,7 @@ export function LiveParticipants({ examId, className }: LiveParticipantsProps) {
     }
 
     return (
-        <div className={cn("rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm overflow-hidden", className)}>
+        <div className={cn("rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm overflow-hidden", className)}>
             {/* Header */}
             <div className="px-5 py-4 border-b border-[hsl(var(--border))]/50 bg-[hsl(var(--muted))]/10">
                 <div className="flex items-center justify-between">

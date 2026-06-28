@@ -92,12 +92,12 @@ export default function SubmissionDetailPage() {
         </div>
 
         <section className="mb-8 grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
-          <div className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
             <div className="h-28 bg-gradient-to-r from-[hsl(var(--foreground))] to-[hsl(var(--muted-foreground))]" />
             <div className="px-8 pb-8 pt-12">
               <div className="-mt-20 mb-8 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
                 <div className="flex items-end gap-5">
-                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-[2rem] border-4 border-[hsl(var(--card))] bg-[hsl(var(--muted))]/20 text-4xl font-semibold shadow-lg">
+                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border-4 border-[hsl(var(--card))] bg-[hsl(var(--muted))]/20 text-4xl font-semibold shadow-lg">
                     {profile?.full_name?.charAt(0) || <User className="h-10 w-10" />}
                   </div>
                   <div className="pb-1">
@@ -107,7 +107,7 @@ export default function SubmissionDetailPage() {
                     </div>
                   </div>
                 </div>
-                <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/5 px-6 py-4 text-center shadow-sm">
+                <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/5 px-6 py-4 text-center shadow-sm">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[hsl(var(--muted-foreground))]">Điểm số</p>
                   <div className={cn("mt-1 text-4xl font-bold", getScoreColor(submission.score))}>{submission.score.toFixed(1)}</div>
                 </div>
@@ -138,7 +138,7 @@ export default function SubmissionDetailPage() {
             </div>
           </div>
 
-          <div className="liquid-glass flex flex-col items-center justify-center rounded-[2rem] p-8 text-center">
+          <div className="flex flex-col items-center justify-center rounded-2xl p-8 text-center">
             <div className={cn(
               "mb-6 flex h-24 w-24 items-center justify-center rounded-full ring-8 ring-opacity-20", 
               (submission.score / 10) >= 0.5 ? "bg-emerald-500/10 text-emerald-500 ring-emerald-500" : "bg-rose-500/10 text-rose-500 ring-rose-500"
@@ -158,7 +158,7 @@ export default function SubmissionDetailPage() {
         </section>
 
         {mcCorrectAnswers.length > 0 && (
-          <section className="mb-8 overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
+          <section className="mb-8 overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
             <div className="border-b border-[hsl(var(--border))]/50 bg-[hsl(var(--muted))]/5 p-6">
               <h3 className="text-base font-semibold tracking-tight flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" /> Phần Trắc nghiệm ({mcCorrectAnswers.length} câu)
@@ -194,7 +194,7 @@ export default function SubmissionDetailPage() {
         )}
 
         {tfAnswers.length > 0 && (
-          <section className="mb-8 overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
+          <section className="mb-8 overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
             <div className="border-b border-[hsl(var(--border))]/50 bg-[hsl(var(--muted))]/5 p-6">
               <h3 className="text-base font-semibold tracking-tight flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" /> Phần Đúng/Sai ({tfAnswers.length} câu)
@@ -205,7 +205,7 @@ export default function SubmissionDetailPage() {
                 const studentTf = studentTfAnswers.find((a) => a.question === tf.question); 
                 const qNum = (exam.mc_answers?.length || exam.correct_answers?.length || 0) + 1 + index; 
                 return (
-                  <div key={index} className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 p-5 hover:bg-[hsl(var(--muted))]/5 transition-colors">
+                  <div key={index} className="rounded-xl border border-[hsl(var(--border))]/60 p-5 hover:bg-[hsl(var(--muted))]/5 transition-colors">
                     <p className="mb-4 border-b border-[hsl(var(--border))]/40 pb-2 text-sm font-bold tracking-tight">CÂU HỎI {qNum}</p>
                     <div className="grid grid-cols-4 gap-3">
                       {(['a', 'b', 'c', 'd'] as const).map((opt) => { 
@@ -231,7 +231,7 @@ export default function SubmissionDetailPage() {
         )}
 
         {saAnswers.length > 0 && (
-          <section className="mb-8 overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
+          <section className="mb-8 overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
             <div className="border-b border-[hsl(var(--border))]/50 bg-[hsl(var(--muted))]/5 p-6">
               <h3 className="text-base font-semibold tracking-tight flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" /> Trả lời ngắn ({saAnswers.length} câu)

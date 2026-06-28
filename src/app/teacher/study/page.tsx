@@ -512,7 +512,7 @@ export default function TeacherStudyPage() {
             </p>
           </div>
 
-          <div className="liquid-glass rounded-[2rem] p-6 shadow-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50">
+          <div className="rounded-2xl p-6 shadow-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50">
             <h3 className="text-sm font-bold uppercase text-[hsl(var(--muted-foreground))] tracking-wider">Thông tin thống kê</h3>
             <div className="mt-4 grid grid-cols-2 gap-4">
               <div>
@@ -598,7 +598,7 @@ export default function TeacherStudyPage() {
                 const isLoadingLessons = !!loadingLessons[chapter.id]
 
                 return (
-                  <div key={chapter.id} className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 backdrop-blur-sm shadow-sm transition-all duration-300">
+                  <div key={chapter.id} className="overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 backdrop-blur-sm shadow-sm transition-all duration-300">
                     {/* Chapter Header */}
                     <div className="flex flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between border-b border-[hsl(var(--border))]/20 bg-[hsl(var(--muted))]/10">
                       <div className="flex items-center gap-3 cursor-pointer select-none min-w-0 flex-1" onClick={() => toggleChapter(chapter.id)}>

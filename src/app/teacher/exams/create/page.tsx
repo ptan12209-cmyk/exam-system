@@ -404,7 +404,7 @@ export default function CreateExamPage() {
             </p>
           </div>
 
-          <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
+          <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
             <div className="grid gap-3 text-sm text-[hsl(var(--muted-foreground))]">
               <div className="flex items-center justify-between rounded-2xl border border-[hsl(var(--border))]/60 p-3"><span>Trạng thái</span><span className="font-medium">{step === "info" ? "Thông tin" : "Đáp án"}</span></div>
               <div className="flex items-center justify-between rounded-2xl border border-[hsl(var(--border))]/60 p-3"><span>Câu trắc nghiệm</span><span className="font-medium">{mcCount}</span></div>
@@ -418,7 +418,7 @@ export default function CreateExamPage() {
         <StepIndicator currentStep={step} onStepChange={setStep} />
 
         {step === "info" ? (
-          <section className="mt-8 rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
+          <section className="mt-8 rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
             <ExamInfoForm
               title={title}
               onTitleChange={setTitle}
@@ -561,7 +561,7 @@ export default function CreateExamPage() {
         {/* Import from Bank Modal */}
         {showImportModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl">
+            <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl">
               <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-5">
                 <h2 className="text-xl font-semibold">Nhập đáp án từ Kho đề thi</h2>
                 <button onClick={() => setShowImportModal(false)} className="rounded-full p-2 hover:bg-[hsl(var(--muted))]/20">

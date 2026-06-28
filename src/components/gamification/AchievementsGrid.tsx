@@ -76,7 +76,7 @@ export function AchievementCard({ achievement }: { achievement: Achievement }) {
     return (
         <div
             className={cn(
-                "group relative p-5 rounded-[2rem] border-2 transition-all duration-300 flex flex-col justify-between h-full min-h-[190px]",
+                "group relative p-5 rounded-2xl border-2 transition-all duration-300 flex flex-col justify-between h-full min-h-[190px]",
                 isLocked 
                     ? "bg-gradient-to-b from-[hsl(var(--card))]/50 to-[hsl(var(--card))]/10 border-[hsl(var(--border))]/40 opacity-45 grayscale hover:opacity-60" 
                     : cn(cfg.card, cfg.glow)
@@ -206,7 +206,7 @@ export function AchievementsGrid() {
     return (
         <div className="space-y-6">
             {/* Stats Header banner */}
-            <div className="relative overflow-hidden p-6 bg-gradient-to-r from-purple-500/10 via-pink-500/5 to-transparent rounded-[2rem] border border-purple-500/20 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="relative overflow-hidden p-6 bg-gradient-to-r from-purple-500/10 via-pink-500/5 to-transparent rounded-2xl border border-purple-500/20 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-purple-500/10 rounded-full blur-[60px] pointer-events-none" />
                 
                 <div className="flex items-center gap-4">

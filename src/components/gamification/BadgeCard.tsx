@@ -32,7 +32,7 @@ export function BadgeCard({ badge, earned = false, earnedAt, size = "md" }: Badg
 
     return (
         <div className={cn(
-            "group relative flex flex-col items-center gap-3 p-4 rounded-[2rem] border transition-all duration-300",
+            "group relative flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-300",
             earned
                 ? "bg-gradient-to-b from-[hsl(var(--card))]/90 to-[hsl(var(--card))]/60 border-amber-500/35 dark:border-amber-500/20 shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:-translate-y-1.5 hover:border-amber-500/50 hover:shadow-[0_20px_40px_rgba(245,158,11,0.08)]"
                 : "bg-gradient-to-b from-[hsl(var(--card))]/40 to-[hsl(var(--card))]/10 border-[hsl(var(--border))]/40 opacity-40 grayscale hover:opacity-50"

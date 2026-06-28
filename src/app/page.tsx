@@ -85,7 +85,7 @@ export default function HomePage() {
 
         <div className="flex items-center gap-3">
           {[Instagram, Linkedin, Twitter].map((Icon, idx) => (
-            <button key={idx} className="liquid-glass flex h-10 w-10 items-center justify-center rounded-full text-[hsl(var(--foreground))] transition-transform hover:scale-105">
+            <button key={idx} className="flex h-10 w-10 items-center justify-center rounded-full text-[hsl(var(--foreground))] transition-transform hover:scale-105">
               <Icon size={18} />
             </button>
           ))}
@@ -129,7 +129,7 @@ export default function HomePage() {
             <Link href="/register" className="rounded-full bg-[hsl(var(--foreground))] px-8 py-3.5 text-sm font-semibold text-[hsl(var(--background))] transition-transform hover:scale-[1.03] inline-flex items-center justify-center gap-2">
               Bắt đầu miễn phí <ArrowRight size={16} />
             </Link>
-            <Link href="/login" className="liquid-glass rounded-full px-8 py-3.5 text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:bg-[hsl(var(--foreground))]/5 inline-flex items-center justify-center">
+            <Link href="/login" className="rounded-full px-8 py-3.5 text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:bg-[hsl(var(--foreground))]/5 inline-flex items-center justify-center">
               Đăng nhập
             </Link>
           </motion.div>
@@ -263,7 +263,7 @@ export default function HomePage() {
             <Link href="/register" className="rounded-lg bg-[hsl(var(--foreground))] px-8 py-3.5 text-sm font-semibold text-[hsl(var(--background))] transition-transform hover:scale-105 inline-flex items-center justify-center">
               Bắt đầu ngay
             </Link>
-            <Link href="/login" className="liquid-glass rounded-lg px-8 py-3.5 text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:bg-[hsl(var(--foreground))]/5 inline-flex items-center justify-center">
+            <Link href="/login" className="rounded-lg px-8 py-3.5 text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:bg-[hsl(var(--foreground))]/5 inline-flex items-center justify-center">
               Đăng nhập
             </Link>
           </motion.div>

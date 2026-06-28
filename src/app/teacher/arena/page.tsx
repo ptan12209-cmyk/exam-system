@@ -259,7 +259,7 @@ export default function ArenaAdminPage() {
               Tạo các đợt thi tập trung cho học sinh với khung thời gian rõ ràng.
             </p>
           </div>
-          <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
+          <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Số đợt thi</p>
             <div className="mt-2 text-3xl font-semibold">{sessions.length}</div>
             <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Đang quản lý</p>
@@ -295,7 +295,7 @@ export default function ArenaAdminPage() {
             {sessions.map((session) => (
               <div
                 key={session.id}
-                className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden flex flex-col justify-between"
+                className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden flex flex-col justify-between"
               >
                 <div className="border-b border-[hsl(var(--border))]/50 p-5">
                   <div className="mb-2 flex items-start justify-between gap-3">
@@ -364,7 +364,7 @@ export default function ArenaAdminPage() {
         {/* Modal Create/Edit */}
         {showCreate && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-lg overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl">
+            <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl">
               <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-5">
                 <h2 className="text-xl font-semibold">
                   {editingId ? "Cập nhật đợt thi" : "Tạo đợt thi mới"}

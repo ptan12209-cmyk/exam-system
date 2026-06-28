@@ -26,7 +26,7 @@ export function EmptyState({
     className
 }: EmptyStateProps) {
     return (
-        <div className={cn("liquid-glass rounded-[2rem] shadow-sm", className)}>
+        <div className={cn("rounded-2xl shadow-sm", className)}>
             <div className="p-12 text-center">
                 <div className={cn("w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4", iconBgColor)}>
                     <Icon className={cn("w-8 h-8", iconColor)} strokeWidth={1.2} />

@@ -93,7 +93,7 @@ export default function LoginPage() {
             </p>
           </section>
 
-          <section className="liquid-glass rounded-[2rem] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)] md:p-8">
+          <section className="rounded-2xl p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)] md:p-8">
             <div className="mb-8">
               <h2 className="text-2xl font-semibold tracking-tight">Đăng nhập</h2>
               <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Nhập email và mật khẩu để vào đúng dashboard.</p>

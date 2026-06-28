@@ -158,7 +158,7 @@ export default function ExamMonitorPage() {
             { icon: CheckCircle2, value: stats.submitted_count, label: "Đã nộp" },
             { icon: AlertTriangle, value: stats.disconnected_count, label: "Mất kết nối" },
           ].map(({ icon: Icon, value, label }) => (
-            <div key={label} className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5">
+            <div key={label} className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/20 p-3">
                   <Icon className="h-5 w-5" />
@@ -172,7 +172,7 @@ export default function ExamMonitorPage() {
           ))}
         </section>
 
-        <section className="mt-6 rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
+        <section className="mt-6 rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
           <h3 className="mb-3 flex items-center gap-2 text-base font-semibold">
             <TrendingUp className="h-5 w-5" />Tiến độ tổng quan
           </h3>
@@ -187,7 +187,7 @@ export default function ExamMonitorPage() {
           </div>
         </section>
 
-        <section className="mt-6 overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]">
+        <section className="mt-6 overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]">
           <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-5">
             <h3 className="flex items-center gap-2 text-base font-semibold">
               <Users className="h-5 w-5" />Danh sách học sinh ({participants.length})

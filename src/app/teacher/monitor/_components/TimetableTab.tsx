@@ -39,7 +39,7 @@ export function TimetableTab({ data }: TimetableTabProps) {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Timetable Header Card */}
-      <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
+      <div className="rounded-xl sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h3 className="font-bold text-lg">Thời Khóa Biểu Học Sinh</h3>
@@ -158,7 +158,7 @@ export function TimetableTab({ data }: TimetableTabProps) {
       )}
 
       {/* Timetable Grid View */}
-      <section className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden shadow-md">
+      <section className="rounded-xl sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden shadow-md">
         <div className="overflow-x-auto">
           <div className="min-w-[900px]">
             <div className="grid grid-cols-7 border-b border-[hsl(var(--border))]/20">

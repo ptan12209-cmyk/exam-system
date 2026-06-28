@@ -107,7 +107,7 @@ export default function RegisterPage() {
             </p>
           </section>
 
-          <section className="liquid-glass rounded-[2rem] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)] md:p-8">
+          <section className="rounded-2xl p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)] md:p-8">
             <div className="mb-6">
               <h2 className="text-2xl font-semibold tracking-tight">Đăng ký</h2>
               <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Điền thông tin để tạo tài khoản test.</p>

@@ -193,7 +193,7 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
       {/* Streak + Alert Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Streak Card */}
-        <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-md flex items-center gap-4">
+        <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-md flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500/10 border border-orange-500/20">
             <Flame className="h-7 w-7 text-orange-500" />
           </div>
@@ -204,7 +204,7 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
         </div>
 
         {/* Real-time Interaction Card */}
-        <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-md flex flex-col justify-center gap-3">
+        <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-md flex flex-col justify-center gap-3">
           <p className="text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-bold">Giám sát Real-time</p>
           <div className="flex flex-wrap gap-2">
             {session && session.status !== "offline" && session.status.startsWith("discord") ? (
@@ -243,7 +243,7 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
         </div>
 
         {/* Send Alert Card */}
-        <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-md flex items-center justify-between">
+        <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-md flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-bold">Nhắc nhở qua Discord</p>
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Gửi tin nhắn trực tiếp đến học sinh</p>
@@ -260,7 +260,7 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
       {/* Heatmap & Bot Control Row */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-6">
         {/* Heatmap Grid */}
-        <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
+        <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
           <h3 className="font-bold text-lg mb-1">Biểu Đồ Nhiệt Hoạt Động</h3>
           <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">Thời gian học qua Discord trong 30 ngày gần nhất (theo ngày trong tuần và khung giờ)</p>
           {heatmapLoading ? (
@@ -315,7 +315,7 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
         </div>
 
         {/* Discord Bot Control Panel */}
-        <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md flex flex-col justify-between min-h-[300px] relative overflow-hidden">
+        <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md flex flex-col justify-between min-h-[300px] relative overflow-hidden">
           <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-violet-500/5 blur-3xl pointer-events-none" />
           
           <div>
@@ -425,7 +425,7 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
       </div>
 
       {/* Discord History Dashboard */}
-      <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
+      <div className="rounded-xl sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[hsl(var(--border))]/20 pb-4 mb-6 gap-4">
           <div>
             <h3 className="font-bold text-lg flex items-center gap-2">
@@ -466,7 +466,7 @@ export function DiscordTab({ processedDiscordLogs, discordLogs, afkWarning, stud
       </div>
 
       {/* Log Table */}
-      <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
+      <div className="rounded-xl sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-md">
         <h3 className="font-bold text-lg mb-4">Chi Tiết Các Phiên Học</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">

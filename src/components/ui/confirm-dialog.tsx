@@ -79,7 +79,7 @@ export function ConfirmDialog({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className={cn(
-        "fixed left-[50%] top-[50%] z-50 w-[calc(100%-2rem)] max-w-sm translate-x-[-50%] translate-y-[-50%] p-6 rounded-[2rem] duration-200 focus:outline-none bg-[hsl(var(--card))]/90 backdrop-blur-md transition-all border",
+        "fixed left-[50%] top-[50%] z-50 w-[calc(100%-2rem)] max-w-sm translate-x-[-50%] translate-y-[-50%] p-6 rounded-2xl duration-200 focus:outline-none bg-[hsl(var(--card))]/90 backdrop-blur-md transition-all border",
         dialogShadowMap[variant]
       )}>
         <DialogHeader className="flex flex-col items-center gap-3 text-center">

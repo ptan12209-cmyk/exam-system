@@ -197,7 +197,7 @@ export default function ArenaBattlePage() {
 
             {showConfirm && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in-0 duration-200">
-                    <div className="w-full max-w-sm rounded-[2rem] border border-amber-500/20 bg-[hsl(var(--card))]/90 backdrop-blur-md p-6 text-center shadow-[0_0_50px_-12px_rgba(245,158,11,0.25)] transition-all duration-200 animate-in zoom-in-95">
+                    <div className="w-full max-w-sm rounded-2xl border border-amber-500/20 bg-[hsl(var(--card))]/90 backdrop-blur-md p-6 text-center shadow-[0_0_50px_-12px_rgba(245,158,11,0.25)] transition-all duration-200 animate-in zoom-in-95">
                         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-amber-500/20 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.15)] transition-all duration-300 hover:rotate-12">
                             <Swords className="h-8 w-8 text-amber-500" />
                         </div>

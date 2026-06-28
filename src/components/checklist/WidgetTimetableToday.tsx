@@ -59,7 +59,7 @@ export function WidgetTimetableToday() {
   const fmtTime = (t: string) => t?.substring(0, 5) || ""
 
   return (
-    <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-sm">
+    <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-sm">
       <div className="mb-4 flex items-center gap-2">
         <Calendar className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
         <h3 className="text-sm font-bold">Hôm nay — {todayName}</h3>

@@ -946,7 +946,7 @@ export default function CoStudyRoomsPage() {
         {/* ========================================== */}
         {showPasscodeModal && selectedPrivateRoom && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-sm rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-full max-w-sm rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 text-center animate-in fade-in zoom-in-95 duration-200">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500">
                 <Lock className="h-6 w-6" />
               </div>
@@ -1345,7 +1345,7 @@ export default function CoStudyRoomsPage() {
         {/* Timer Alert Non-blocking Modal */}
         {timerAlert && timerAlert.isOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="w-full max-w-sm rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/90 p-6 text-center shadow-2xl backdrop-blur-md animate-in zoom-in-95 duration-200">
+            <div className="w-full max-w-sm rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/90 p-6 text-center shadow-2xl backdrop-blur-md animate-in zoom-in-95 duration-200">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500">
                 <Sparkles className="h-6 w-6 text-indigo-500 animate-pulse" />
               </div>

@@ -24,7 +24,7 @@ export function StatsCard({
     className
 }: StatsCardProps) {
     return (
-        <div className={cn("liquid-glass rounded-[2rem] p-6 shadow-sm", className)}>
+        <div className={cn("rounded-2xl p-6 shadow-sm", className)}>
             <div className="flex items-center justify-between">
                 <div>
                     <p className="mb-2 text-sm font-medium text-[hsl(var(--muted-foreground))]">

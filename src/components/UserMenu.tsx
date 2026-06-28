@@ -121,7 +121,7 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute right-0 top-full mt-4 w-64 bg-[hsl(var(--card))]/95 backdrop-blur-2xl border border-[hsl(var(--border))]/40 rounded-[2rem] shadow-2xl z-[150] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 ease-out">
+                <div className="absolute right-0 top-full mt-4 w-64 bg-[hsl(var(--card))]/95 backdrop-blur-2xl border border-[hsl(var(--border))]/40 rounded-2xl shadow-2xl z-[150] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 ease-out">
                     {/* User Info Header */}
                     <div className="px-4 py-4 border-b border-[hsl(var(--border))]/40">
                         <div className="flex items-center gap-3">

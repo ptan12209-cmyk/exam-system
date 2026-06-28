@@ -87,7 +87,7 @@ export default function TeacherMonitorPage() {
           </div>
           
           {/* Student Switcher */}
-          <div className="rounded-[1.5rem] sm:rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-sm flex flex-col justify-between">
+          <div className="rounded-xl sm:rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-sm flex flex-col justify-between">
             <div>
               <p className="text-xs uppercase font-bold tracking-wider text-[hsl(var(--muted-foreground))] mb-3">Học sinh đang quan sát</p>
               {students.length === 0 ? (
@@ -271,7 +271,7 @@ export default function TeacherMonitorPage() {
       {/* Link Student Modal */}
       {isLinkModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-5">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <UserPlus className="h-5 w-5 text-violet-500" />

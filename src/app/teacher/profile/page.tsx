@@ -92,7 +92,7 @@ export default function TeacherProfilePage() {
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--muted-foreground))] md:text-lg">Quản lý thông tin cá nhân và theo dõi hoạt động giảng dạy trong một nơi duy nhất.</p>
           </div>
 
-          <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
+          <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Tổng đề thi</p>
             <div className="mt-2 text-3xl font-semibold">{stats.totalExams}</div>
             <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">{stats.totalSubmissions} lượt nộp bài</p>
@@ -110,7 +110,7 @@ export default function TeacherProfilePage() {
 
         <section className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
           <div className="space-y-6">
-            <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
+            <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
               <div className="flex flex-col gap-6 md:flex-row md:items-center">
                 <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/20 text-4xl font-semibold">
                   {profile?.avatar_url ? <img src={profile.avatar_url} alt={profile.full_name || "Avatar"} className="h-full w-full object-cover" /> : profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "?"}
@@ -132,18 +132,18 @@ export default function TeacherProfilePage() {
               <StatsCard label="Lượt làm bài" value={stats.totalSubmissions} icon={Users} iconColor={STAT_COLORS.purple.icon} iconBgColor={STAT_COLORS.purple.bg} />
             </div>
 
-            <section className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden">
+            <section className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden">
               <div className="border-b border-[hsl(var(--border))]/50 p-5"><h3 className="flex items-center gap-2 text-lg font-semibold"><FileText className="h-5 w-5" /> Đề thi gần đây</h3></div>
               {recentExams.length > 0 ? <div className="divide-y divide-[hsl(var(--border))]/30">{recentExams.map((exam) => <Link key={exam.id} href={`/teacher/exams/${exam.id}/scores`} className="flex items-center justify-between p-4 transition-colors hover:bg-[hsl(var(--muted))]/20"><div><p className="font-medium">{exam.title}</p><p className="text-xs text-[hsl(var(--muted-foreground))]">{new Date(exam.created_at).toLocaleDateString("vi-VN")}</p></div><span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", exam.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700")}>{exam.status === "published" ? "Đã phát hành" : "Bản nháp"}</span></Link>)}</div> : <div className="py-12 text-center text-[hsl(var(--muted-foreground))]">Chưa có đề thi nào.</div>}
             </section>
           </div>
 
           <aside className="space-y-6">
-            <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
+            <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
               <h3 className="mb-3 text-lg font-semibold">Trạng thái tài khoản</h3>
               <div className="space-y-2 text-sm text-[hsl(var(--muted-foreground))]"><p>Giảng viên chính thức</p><p>Đang hoạt động</p><p>{profile?.email}</p></div>
             </div>
-            <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
+            <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
               <h3 className="mb-3 text-lg font-semibold">Hành động nhanh</h3>
               <div className="space-y-2">
                 <Link href="/teacher/exams/create" className="block rounded-xl border border-[hsl(var(--border))]/60 px-4 py-3 hover:bg-[hsl(var(--muted))]/20">Tạo đề thi mới</Link>

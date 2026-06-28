@@ -11,7 +11,7 @@ export function AntiCheatWarning() {
 
     return (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-[hsl(var(--background))]/80 backdrop-blur-xl animate-in fade-in duration-200">
-            <div className="liquid-glass border border-red-500/30 rounded-[2rem] p-8 max-w-md mx-4 shadow-[0_30px_80px_-20px_rgba(239,68,68,0.2)] animate-in fade-in zoom-in duration-300">
+            <div className="border border-red-500/30 rounded-2xl p-8 max-w-md mx-4 shadow-[0_30px_80px_-20px_rgba(239,68,68,0.2)] animate-in fade-in zoom-in duration-300">
                 <div className="flex flex-col items-center text-center">
                     <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center shrink-0 mb-4 animate-bounce">
                         <AlertTriangle className="w-8 h-8 text-red-500" />
@@ -78,7 +78,7 @@ export function FullscreenPrompt({ onStart }: { onStart: () => void }) {
 
     return (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-[hsl(var(--background))]/95 backdrop-blur-2xl animate-in fade-in duration-300">
-            <div className="liquid-glass border border-[hsl(var(--border))]/60 rounded-[2.5rem] p-8 max-w-lg mx-4 text-center shadow-[0_30px_100px_-40px_rgba(0,0,0,0.4)] animate-in fade-in zoom-in duration-300">
+            <div className="border border-[hsl(var(--border))]/60 rounded-[2.5rem] p-8 max-w-lg mx-4 text-center shadow-[0_30px_100px_-40px_rgba(0,0,0,0.4)] animate-in fade-in zoom-in duration-300">
                 <div className="w-20 h-20 bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/20 rounded-full flex items-center justify-center mx-auto mb-6">
                     <ShieldAlert className="w-10 h-10 text-[hsl(var(--foreground))]" />
                 </div>

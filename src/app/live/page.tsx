@@ -300,7 +300,7 @@ export default function LiveRoomPage() {
             ) : liveConfig?.youtube_video_id ? (
               <>
                 <h1 className="text-2xl font-bold tracking-tight">{liveConfig.title || "Buổi Live Chữa Đề"}</h1>
-                <div className="relative aspect-video overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-black">
+                <div className="relative aspect-video overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-black">
                   <iframe 
                     src={`https://www.youtube.com/embed/${liveConfig.youtube_video_id}?autoplay=1&rel=0`} 
                     title="YouTube Live" 
@@ -319,7 +319,7 @@ export default function LiveRoomPage() {
                 </a>
               </>
             ) : (
-              <div className="liquid-glass flex flex-col items-center justify-center rounded-[2rem] py-20 text-center">
+              <div className="flex flex-col items-center justify-center rounded-2xl py-20 text-center">
                 <div className="relative mb-6">
                   <Video className="h-16 w-16 text-[hsl(var(--muted-foreground))]/30" />
                   <div className="absolute -right-1 -top-1 h-4 w-4 rounded-full border-2 border-[hsl(var(--card))] bg-[hsl(var(--muted-foreground))]/30" />
@@ -352,7 +352,7 @@ export default function LiveRoomPage() {
 
           <div className="space-y-6">
             {liveConfig?.live_mode === "youtube" && liveConfig?.youtube_video_id && liveConfig.youtube_chat_enabled && (
-              <div className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
+              <div className="overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
                 <div className="border-b border-[hsl(var(--border))]/50 p-4">
                   <h3 className="flex items-center gap-2 text-base font-semibold">
                     <MessageCircle className="h-4 w-4 text-red-500" />Chat Trực Tiếp
@@ -367,7 +367,7 @@ export default function LiveRoomPage() {
               </div>
             )}
 
-            <div className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
+            <div className="overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
               <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-4">
                 <h3 className="flex items-center gap-2 text-base font-semibold">
                   <Calendar className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />Lịch Live Tuần Này
@@ -411,13 +411,13 @@ export default function LiveRoomPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <Link href="/resources">
-                <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 text-center transition-transform hover:-translate-y-0.5">
+                <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 text-center transition-transform hover:-translate-y-0.5">
                   <BookOpen className="mx-auto mb-2 h-6 w-6 text-[hsl(var(--muted-foreground))]" />
                   <p className="text-sm font-medium">Tài liệu</p>
                 </div>
               </Link>
               <Link href="/student/exams">
-                <div className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 text-center transition-transform hover:-translate-y-0.5">
+                <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 text-center transition-transform hover:-translate-y-0.5">
                   <GraduationCap className="mx-auto mb-2 h-6 w-6 text-[hsl(var(--muted-foreground))]" />
                   <p className="text-sm font-medium">Luyện đề</p>
                 </div>
@@ -429,7 +429,7 @@ export default function LiveRoomPage() {
 
       {showLiveSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="liquid-glass w-full max-w-lg overflow-hidden rounded-[2.5rem] p-0 shadow-2xl">
+          <div className="w-full max-w-lg overflow-hidden rounded-[2.5rem] p-0 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-6">
               <h2 className="flex items-center gap-2 text-lg font-semibold"><Video className="h-5 w-5 text-indigo-500" />Cấu hình Lớp Học Trực Tuyến</h2>
               <Button variant="ghost" size="icon" onClick={() => setShowLiveSettings(false)} className="rounded-full"><X className="h-5 w-5" /></Button>
@@ -526,7 +526,7 @@ export default function LiveRoomPage() {
 
       {showEditor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="liquid-glass w-full max-w-md overflow-hidden rounded-[2.5rem] p-0 shadow-2xl">
+          <div className="w-full max-w-md overflow-hidden rounded-[2.5rem] p-0 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-6">
               <h2 className="text-lg font-semibold">{editItem ? "Chỉnh sửa lịch" : "Thêm lịch mới"}</h2>
               <Button variant="ghost" size="icon" onClick={() => setShowEditor(false)} className="rounded-full"><X className="h-5 w-5" /></Button>

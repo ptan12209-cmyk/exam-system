@@ -84,7 +84,7 @@ export default function TeacherProfileEditPage() {
           <div><p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">Teacher profile</p><h1 className="text-2xl font-semibold">Chỉnh sửa hồ sơ</h1></div>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 space-y-6">
           <div>
             <Label className="mb-4 block text-center">Ảnh đại diện</Label>
             <AvatarUpload currentUrl={formData.avatar_url} onUploadComplete={(url) => setFormData((prev) => ({ ...prev, avatar_url: url }))} onRemove={() => setFormData((prev) => ({ ...prev, avatar_url: "" }))} />

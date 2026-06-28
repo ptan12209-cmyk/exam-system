@@ -26,7 +26,7 @@ function PaymentResultContent() {
             </nav>
 
             <div className="flex min-h-screen items-center justify-center p-4 pt-24">
-                <div className="liquid-glass w-full max-w-md rounded-[2rem] p-8 shadow-sm">
+                <div className="w-full max-w-md rounded-2xl p-8 shadow-sm">
                     <div className="text-center">
                         <div className={cn(
                             "mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full ring-4",

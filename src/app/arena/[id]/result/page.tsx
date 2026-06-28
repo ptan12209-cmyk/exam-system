@@ -181,7 +181,7 @@ export default function ArenaResultPage() {
         {/* Top Summary Row */}
         <section className="grid gap-6 md:grid-cols-3">
           {/* Card 1: Score & Rank */}
-          <div className="liquid-glass rounded-[2rem] p-6 flex flex-col items-center justify-center text-center relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-[hsl(var(--border))]/60">
+          <div className="rounded-2xl p-6 flex flex-col items-center justify-center text-center relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-[hsl(var(--border))]/60">
             <div className="absolute top-4 right-4 text-amber-500">
               <Trophy className="h-6 w-6" />
             </div>
@@ -197,7 +197,7 @@ export default function ArenaResultPage() {
           </div>
 
           {/* Card 2: Stats */}
-          <div className="liquid-glass rounded-[2rem] p-6 flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-[hsl(var(--border))]/60">
+          <div className="rounded-2xl p-6 flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-[hsl(var(--border))]/60">
             <div>
               <p className="text-sm text-[hsl(var(--muted-foreground))] uppercase tracking-wider font-semibold">
                 Độ chính xác
@@ -223,7 +223,7 @@ export default function ArenaResultPage() {
           </div>
 
           {/* Card 3: Comparison */}
-          <div className="liquid-glass rounded-[2rem] p-6 flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-[hsl(var(--border))]/60">
+          <div className="rounded-2xl p-6 flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-[hsl(var(--border))]/60">
             <div>
               <p className="text-sm text-[hsl(var(--muted-foreground))] uppercase tracking-wider font-semibold">
                 So sánh lớp
@@ -244,7 +244,7 @@ export default function ArenaResultPage() {
         {/* Leaderboard and Detail Review */}
         <section className="grid gap-8 md:grid-cols-[0.35fr_0.65fr] items-start">
           {/* Top 3 Leaderboard Widget */}
-          <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-6 space-y-6">
+          <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-6 space-y-6">
             <h3 className="font-bold text-base flex items-center gap-2 border-b border-[hsl(var(--border))]/40 pb-3">
               <Trophy className="h-5 w-5 text-amber-500" /> Bảng vàng Đợt thi
             </h3>

@@ -153,7 +153,7 @@ export default function PricingPage() {
         </section>
 
         {currentSubscription && (
-          <section className="mx-auto mb-10 max-w-7xl rounded-[2rem] border border-emerald-500/20 bg-emerald-500/5 p-6">
+          <section className="mx-auto mb-10 max-w-7xl rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-start gap-4 text-left">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500">
@@ -185,8 +185,8 @@ export default function PricingPage() {
               <article
                 key={plan.id}
                 className={cn(
-                  "relative rounded-[2rem] p-8 shadow-sm transition-transform hover:-translate-y-1",
-                  isPopular ? "bg-[hsl(var(--foreground))] text-[hsl(var(--background))]" : "liquid-glass"
+                  "relative rounded-2xl p-8 shadow-sm transition-transform hover:-translate-y-1",
+                  isPopular ? "bg-[hsl(var(--foreground))] text-[hsl(var(--background))]" : "bg-[hsl(var(--card))]/50 border border-[hsl(var(--border))]/60"
                 )}
               >
                 {isPopular && (

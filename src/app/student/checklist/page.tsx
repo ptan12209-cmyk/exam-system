@@ -614,7 +614,7 @@ export default function StudyChecklistPage() {
         
         {/* Global Error Banner */}
         {globalError && (
-          <div className="mb-6 rounded-[1.5rem] border border-red-500/20 bg-red-500/10 p-4 text-xs font-semibold text-red-600 backdrop-blur-md shadow-md animate-in fade-in slide-in-from-top-4 duration-300 flex items-start gap-2.5">
+          <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-xs font-semibold text-red-600 backdrop-blur-md shadow-md animate-in fade-in slide-in-from-top-4 duration-300 flex items-start gap-2.5">
             <AlertCircle className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
             <div className="flex-1">
               <p className="font-bold text-red-700 mb-1">Cảnh báo hệ thống</p>
@@ -660,7 +660,7 @@ export default function StudyChecklistPage() {
             { icon: ListTodo, value: `${completedTasks}/${totalTasks}`, label: "Nhiệm vụ", sub: "Tổng chỉ số" },
             { icon: Flame, value: `${streak} ngày`, label: "Streak", sub: "Đều đặn hàng ngày" }
           ].map((item, idx) => (
-            <div key={idx} className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 rounded-[1.5rem] sm:rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-3 sm:p-6 shadow-sm text-center sm:text-left">
+            <div key={idx} className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 rounded-xl sm:rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-3 sm:p-6 shadow-sm text-center sm:text-left">
               <div className="flex h-8 w-8 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-[hsl(var(--foreground))]/5">
                 <item.icon className="h-4 w-4 sm:h-6 sm:w-6 text-[hsl(var(--foreground))]" />
               </div>
@@ -792,7 +792,7 @@ export default function StudyChecklistPage() {
                         await handleMoveStatus(task, column.key)
                       }
                     }}
-                    className={cn("min-w-[75vw] sm:min-w-[280px] md:min-w-0 snap-start rounded-[1.5rem] sm:rounded-[2.5rem] border p-3 sm:p-4 flex flex-col min-h-[50vh] shrink-0 md:shrink", column.bg, column.border)}
+                    className={cn("min-w-[75vw] sm:min-w-[280px] md:min-w-0 snap-start rounded-xl sm:rounded-[2.5rem] border p-3 sm:p-4 flex flex-col min-h-[50vh] shrink-0 md:shrink", column.bg, column.border)}
                   >
                     <div className="mb-4 flex items-center justify-between border-b border-[hsl(var(--border))]/25 pb-2">
                       <span className={cn("text-xs font-bold uppercase tracking-wider", column.color)}>{column.label}</span>
@@ -812,7 +812,7 @@ export default function StudyChecklistPage() {
                               e.dataTransfer.setData("text/plain", task.id)
                             }}
                             className={cn(
-                              "group relative rounded-[1.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer",
+                              "group relative rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer",
                               task.id === selectedTask?.id && "ring-2 ring-[hsl(var(--foreground))]"
                             )}
                           >
@@ -886,7 +886,7 @@ export default function StudyChecklistPage() {
 
             {/* 2. DATABASE TABLE VIEW */}
             {activeView === "table" && (
-              <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden shadow-sm">
+              <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-sm">
                     <thead>
@@ -988,7 +988,7 @@ export default function StudyChecklistPage() {
 
             {/* 3. INTERACTIVE CALENDAR VIEW */}
             {activeView === "calendar" && (
-              <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-3 sm:p-6 shadow-sm">
+              <div className="rounded-xl sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-3 sm:p-6 shadow-sm">
                 
                 {/* Calendar monthly controls */}
                 <div className="mb-6 flex items-center justify-between border-b border-[hsl(var(--border))]/40 pb-4">
@@ -1070,7 +1070,7 @@ export default function StudyChecklistPage() {
 
             {/* Show Notion Editor or Widgets */}
             {selectedTask ? (
-              <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/90 p-4 sm:p-6 shadow-md shadow-[hsl(var(--foreground))]/5 animate-in slide-in-from-bottom-8 lg:slide-in-from-right-8 duration-200 max-w-2xl mx-auto lg:max-w-none">
+              <div className="rounded-xl sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/90 p-4 sm:p-6 shadow-md shadow-[hsl(var(--foreground))]/5 animate-in slide-in-from-bottom-8 lg:slide-in-from-right-8 duration-200 max-w-2xl mx-auto lg:max-w-none">
                 {/* Header and Close controls */}
                 <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/40 pb-4 mb-4">
                   <span className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Ghi chú bài học</span>

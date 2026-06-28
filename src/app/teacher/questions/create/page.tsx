@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { TeacherSidebar } from "@/components/TeacherSidebar"
+import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { TeacherBottomNav } from "@/components/BottomNav"
 import { ArrowLeft, Save, Loader2, Plus, CheckCircle2, HelpCircle, GraduationCap } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -156,15 +156,14 @@ export default function CreateQuestionPage() {
   const selectClass = "w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] px-3 py-2 text-sm"
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--background))]">
-      <TeacherSidebar onLogout={async () => { await supabase.auth.signOut(); router.push("/login") }} />
-      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10 pt-20 lg:pt-10 pb-24 lg:ml-64">
+    <TeacherShell onLogout={async () => { await supabase.auth.signOut(); router.push("/login") }}>
+      <main className="mx-auto max-w-4xl px-4 pb-24 pt-24 lg:px-8 lg:py-10">
         <div className="mb-6 flex items-center gap-4">
           <Link href="/teacher/exam-bank"><Button variant="outline" size="icon" className="rounded-full border-[hsl(var(--border))]/70 bg-transparent"><ArrowLeft className="h-5 w-5" /></Button></Link>
           <div><p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">Question bank</p><h1 className="text-2xl font-semibold">Thêm câu hỏi mới</h1></div>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden">
+        <form onSubmit={handleSubmit} className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden">
           <div className="border-b border-[hsl(var(--border))]/50 p-5"><h2 className="flex items-center gap-2 text-lg font-semibold"><Plus className="h-5 w-5" />Thông tin câu hỏi</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Tạo câu hỏi trắc nghiệm thủ công.</p></div>
           <div className="space-y-6 p-6">
             <div className="grid gap-6 md:grid-cols-2">
@@ -219,6 +218,6 @@ export default function CreateQuestionPage() {
         </form>
       </main>
       <TeacherBottomNav />
-    </div>
+    </TeacherShell>
   )
 }

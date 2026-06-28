@@ -129,7 +129,7 @@ export function SubmissionFeed({ examId, className, maxItems = 5 }: SubmissionFe
 
     if (loading) {
         return (
-            <div className={cn("rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-sm", className)}>
+            <div className={cn("rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-sm", className)}>
                 <div className="animate-pulse space-y-3">
                     <div className="h-4 bg-[hsl(var(--muted))]/30 rounded w-1/2"></div>
                     <div className="h-12 bg-[hsl(var(--muted))]/20 rounded"></div>
@@ -140,7 +140,7 @@ export function SubmissionFeed({ examId, className, maxItems = 5 }: SubmissionFe
     }
 
     return (
-        <div className={cn("rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm overflow-hidden", className)}>
+        <div className={cn("rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm overflow-hidden", className)}>
             {/* Header */}
             <div className="px-5 py-4 border-b border-[hsl(var(--border))]/50 bg-[hsl(var(--muted))]/10">
                 <h3 className="font-semibold text-[hsl(var(--foreground))] flex items-center gap-2">

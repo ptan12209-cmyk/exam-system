@@ -263,7 +263,7 @@ export default function ResourcesPage() {
                 </p>
               </div>
               
-              <div className="liquid-glass rounded-[2rem] p-6 shadow-sm border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50">
+              <div className="rounded-2xl p-6 shadow-sm border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/50">
                 <p className="text-xs text-[hsl(var(--muted-foreground))] uppercase tracking-wider font-semibold">Khối lớp hiện tại</p>
                 <div className="mt-2 text-3xl font-bold text-foreground">
                   {profile?.role === "student" ? (profile.nickname === "X" ? `Không gian X - Khối ${selectedGrade}` : `Khối ${profile?.grade} (${profile?.grade}${profile?.class_suffix || ""})`) : `Khối lớp ${selectedGrade}`}
@@ -344,7 +344,7 @@ export default function ResourcesPage() {
                   <Loader2 className="h-8 w-8 animate-spin text-[hsl(var(--foreground))]/70" />
                 </div>
               ) : filteredChapters.length === 0 ? (
-                <div className="rounded-[2rem] liquid-glass p-16 text-center border border-[hsl(var(--border))]/60">
+                <div className="rounded-2xl p-16 text-center border border-[hsl(var(--border))]/60">
                   <FolderOpen className="mx-auto mb-4 h-12 w-12 opacity-30 text-[hsl(var(--muted-foreground))]" />
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Không tìm thấy tài nguyên</h3>
                   <p className="mt-2 text-[hsl(var(--muted-foreground))]">
@@ -359,7 +359,7 @@ export default function ResourcesPage() {
                     const isLoadingLessons = !!loadingLessons[chapter.id];
 
                     return (
-                      <div key={chapter.id} className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 backdrop-blur-sm shadow-sm transition-all duration-300">
+                      <div key={chapter.id} className="overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 backdrop-blur-sm shadow-sm transition-all duration-300">
                         {/* Chapter Click Area */}
                         <div 
                           onClick={() => toggleChapter(chapter.id)}

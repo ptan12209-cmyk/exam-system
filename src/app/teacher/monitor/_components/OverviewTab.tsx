@@ -57,7 +57,7 @@ export function OverviewTab({ data }: OverviewTabProps) {
         
         {/* Card 1: Real-time Presence */}
         <div className={cn(
-          "rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 p-4 sm:p-6 shadow-md transition-all relative overflow-hidden bg-[hsl(var(--card))]",
+          "rounded-xl sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 p-4 sm:p-6 shadow-md transition-all relative overflow-hidden bg-[hsl(var(--card))]",
           session?.status === "focusing" && "ring-1 ring-emerald-500/25"
         )}>
           <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-violet-500/5 blur-3xl pointer-events-none" />
@@ -152,7 +152,7 @@ export function OverviewTab({ data }: OverviewTabProps) {
         </div>
 
         {/* Card 2: Checklist Manager */}
-        <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md">
+        <div className="rounded-xl sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md">
           <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
             <div>
               <h3 className="font-bold text-lg">Checklist & Planner của học sinh</h3>
@@ -341,7 +341,7 @@ export function OverviewTab({ data }: OverviewTabProps) {
       <div className="space-y-6">
         
         {/* Card 3: Submissions Tracker */}
-        <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md overflow-hidden">
+        <div className="rounded-xl sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md overflow-hidden">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
             <div>
               <h3 className="font-bold text-lg">Bài Tập Trực Tuyến</h3>
@@ -428,7 +428,7 @@ export function OverviewTab({ data }: OverviewTabProps) {
         </div>
 
         {/* Card 4: Timetable Widget Preview */}
-        <div className="rounded-[1.5rem] sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md">
+        <div className="rounded-xl sm:rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:p-6 shadow-md">
           <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-4 mb-4">
             <div>
               <h3 className="font-bold text-lg">Khung Giờ Học Tập</h3>

@@ -91,7 +91,7 @@ export function NotificationBell() {
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-4 w-80 bg-[hsl(var(--card))]/95 backdrop-blur-2xl border border-[hsl(var(--border))]/40 rounded-[2rem] shadow-2xl z-[150] overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 ease-out">
+                <div className="absolute right-0 top-full mt-4 w-80 bg-[hsl(var(--card))]/95 backdrop-blur-2xl border border-[hsl(var(--border))]/40 rounded-2xl shadow-2xl z-[150] overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 ease-out">
                     <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]/40">
                         <h3 className="font-bold text-sm tracking-tight">Thông báo</h3>
                         {unreadCount > 0 && (

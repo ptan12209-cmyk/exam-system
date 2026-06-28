@@ -247,7 +247,7 @@ export default function EditExamPage() {
   
   if (authError) return (
     <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center p-4">
-      <div className="max-w-md w-full liquid-glass rounded-[2rem] p-8 text-center">
+      <div className="max-w-md w-full rounded-2xl p-8 text-center">
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-red-500/20 bg-red-500/5 text-red-500">
           <AlertCircle className="w-8 h-8" />
         </div>
@@ -313,7 +313,7 @@ export default function EditExamPage() {
         )}
 
         <div className="grid gap-6 md:grid-cols-2 mb-6">
-          <div className="liquid-glass rounded-[2rem] p-6 space-y-5">
+          <div className="rounded-2xl p-6 space-y-5">
             <h3 className="text-base font-semibold tracking-tight flex items-center gap-2">
               <Save className="h-4 w-4" /> Thông tin cơ bản
             </h3>
@@ -406,7 +406,7 @@ export default function EditExamPage() {
           </div>
 
           {/* Hierarchy: Phân tầng hệ thống */}
-          <div className="liquid-glass rounded-[2rem] p-6 space-y-5 md:col-span-2">
+          <div className="rounded-2xl p-6 space-y-5 md:col-span-2">
             <h3 className="text-base font-semibold tracking-tight flex items-center gap-2">
               <BookOpen className="h-4 w-4" /> Phân tầng hệ thống bài tập
             </h3>
@@ -455,7 +455,7 @@ export default function EditExamPage() {
             )}
           </div>
 
-          <div className="liquid-glass rounded-[2rem] p-6 space-y-5">
+          <div className="rounded-2xl p-6 space-y-5">
             <div className="flex justify-between items-center">
               <h3 className="text-base font-semibold tracking-tight">Cấu trúc đề thi</h3>
               <span className="rounded-full bg-[hsl(var(--foreground))]/5 px-2 py-0.5 text-[10px] font-bold">TỔNG: {mcCount + tfCount + saCount} CÂU</span>
@@ -477,7 +477,7 @@ export default function EditExamPage() {
           </div>
         </div>
 
-        <div className="mb-6 liquid-glass rounded-[2rem] p-6">
+        <div className="mb-6 rounded-2xl p-6">
           <h3 className="mb-5 flex items-center gap-2 text-base font-semibold tracking-tight">
             <Shield className="h-5 w-5 text-red-500" /> Mức độ bảo mật
           </h3>
@@ -507,7 +507,7 @@ export default function EditExamPage() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
           <div className="flex flex-col gap-4 border-b border-[hsl(var(--border))]/50 p-6 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="font-semibold tracking-tight">Bảng đáp án hệ thống</h3>
             <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
@@ -563,7 +563,7 @@ export default function EditExamPage() {
                   const qNum = mcCount + 1 + i; 
                   const answer = tfAnswers[i] || { question: qNum, a: true, b: true, c: true, d: true }; 
                   return (
-                    <div key={i} className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 p-5 hover:bg-[hsl(var(--muted))]/5 transition-colors">
+                    <div key={i} className="rounded-xl border border-[hsl(var(--border))]/60 p-5 hover:bg-[hsl(var(--muted))]/5 transition-colors">
                       <p className="mb-4 font-semibold text-sm tracking-tight border-b border-[hsl(var(--border))]/40 pb-2 flex items-center justify-between">
                         CÂU HỎI {qNum}
                         <span className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] tracking-[0.2em] uppercase">Đúng / Sai</span>

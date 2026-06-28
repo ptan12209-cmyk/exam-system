@@ -106,7 +106,7 @@ export function PWAInstallButton() {
             </Button>
 
             <Dialog open={showInstructions} onOpenChange={setShowInstructions}>
-                <DialogContent className="fixed left-[50%] top-[50%] z-50 w-[calc(100%-2rem)] max-w-sm translate-x-[-50%] translate-y-[-50%] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-2xl rounded-[2rem] duration-200 focus:outline-none">
+                <DialogContent className="fixed left-[50%] top-[50%] z-50 w-[calc(100%-2rem)] max-w-sm translate-x-[-50%] translate-y-[-50%] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-2xl rounded-2xl duration-200 focus:outline-none">
                     <DialogHeader className="flex flex-col items-center gap-2 text-center">
                         <div className="flex h-12 w-12 items-center justify-center rounded-full border bg-indigo-500/10 border-indigo-500/20">
                             <Smartphone className="h-6 w-6 text-indigo-500" />

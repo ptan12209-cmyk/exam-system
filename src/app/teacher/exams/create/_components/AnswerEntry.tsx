@@ -64,7 +64,7 @@ export function AnswerEntry({
   const answerPdfRef = useRef<HTMLInputElement>(null);
 
   return (
-    <section className="mt-8 rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
+    <section className="mt-8 rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
       <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={() => onAnswerTabChange("mc")}
@@ -200,7 +200,7 @@ export function AnswerEntry({
                 return (
                   <div
                     key={i}
-                    className="rounded-[1.5rem] border border-[hsl(var(--border))]/60 p-5 hover:bg-[hsl(var(--muted))]/5 transition-colors"
+                    className="rounded-xl border border-[hsl(var(--border))]/60 p-5 hover:bg-[hsl(var(--muted))]/5 transition-colors"
                   >
                     <p className="mb-4 font-semibold text-sm tracking-tight border-b border-[hsl(var(--border))]/40 pb-2 flex items-center justify-between">
                       CÂU HỎI {baseQ}

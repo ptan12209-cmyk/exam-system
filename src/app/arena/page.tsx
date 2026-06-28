@@ -332,7 +332,7 @@ export default function ArenaPage() {
           {selectedTab !== "history" ? (
             <div className="space-y-4">
               {filteredSessions.length === 0 ? (
-                <div className="liquid-glass rounded-[2rem] p-12 text-center border border-[hsl(var(--border))]/60">
+                <div className="rounded-2xl p-12 text-center border border-[hsl(var(--border))]/60">
                   <Swords className="mx-auto mb-3 h-10 w-10 text-[hsl(var(--muted-foreground))]/30" />
                   <p className="text-[hsl(var(--muted-foreground))]">Chưa có đợt thi nào</p>
                 </div>
@@ -344,7 +344,7 @@ export default function ArenaPage() {
                   return (
                     <div
                       key={session.id}
-                      className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
+                      className="overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
                     >
                       <div className="grid lg:grid-cols-[220px_1fr]">
                         <div
@@ -445,7 +445,7 @@ export default function ArenaPage() {
             /* History Section */
             <div className="space-y-6">
               {/* Personal Dashboard Metrics */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-[2rem] bg-[hsl(var(--card))]/40 border border-[hsl(var(--border))]/60 shadow-inner">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-2xl bg-[hsl(var(--card))]/40 border border-[hsl(var(--border))]/60 shadow-inner">
                 <div className="text-center p-2">
                   <p className="text-xs text-[hsl(var(--muted-foreground))] uppercase tracking-wider font-semibold">
                     Đã đấu
@@ -491,7 +491,7 @@ export default function ArenaPage() {
               {/* History List */}
               <div className="space-y-4">
                 {filteredHistory.length === 0 ? (
-                  <div className="liquid-glass rounded-[2rem] p-12 text-center border border-[hsl(var(--border))]/60">
+                  <div className="rounded-2xl p-12 text-center border border-[hsl(var(--border))]/60">
                     <Activity className="mx-auto mb-3 h-10 w-10 text-[hsl(var(--muted-foreground))]/30" />
                     <p className="text-[hsl(var(--muted-foreground))]">Chưa có lịch sử tham gia</p>
                   </div>
@@ -550,7 +550,7 @@ export default function ArenaPage() {
 
         {/* Sidebar Leaderboards */}
         <aside className="space-y-6">
-          <div className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm">
             <div className="bg-[hsl(var(--foreground))] px-6 py-5 text-[hsl(var(--background))]">
               <div className="flex items-center justify-between">
                 <div>
@@ -625,7 +625,7 @@ export default function ArenaPage() {
           </div>
 
           {/* Remaining Top 10 List */}
-          <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm overflow-hidden">
+          <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm overflow-hidden">
             <div className="border-b border-[hsl(var(--border))]/50 p-4 px-6">
               <h3 className="text-base font-semibold tracking-tight">Top 10 Đấu trường</h3>
             </div>

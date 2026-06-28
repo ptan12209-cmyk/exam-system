@@ -17,7 +17,7 @@ export function WidgetQuote() {
   const quote = QUOTES[(dayOfYear + offset) % QUOTES.length]
 
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-sm">
+    <div className="relative overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-sm">
       {/* Decorative quotation mark */}
       <span className="pointer-events-none absolute -top-2 left-4 text-7xl font-serif leading-none text-[hsl(var(--foreground))]/[0.04] select-none">
         &ldquo;

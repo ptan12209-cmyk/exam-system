@@ -85,7 +85,7 @@ export function WidgetPomodoroMini() {
   }
 
   return (
-    <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-sm">
+    <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-5 shadow-sm">
       {/* Mode toggle */}
       <div className="mb-4 flex items-center justify-center gap-2">
         <button

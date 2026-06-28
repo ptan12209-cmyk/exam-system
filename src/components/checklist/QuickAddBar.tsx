@@ -32,7 +32,7 @@ export function QuickAddBar({ onAdd }: QuickAddBarProps) {
   }
 
   return (
-    <div className="group relative flex items-center gap-3 rounded-[1.5rem] border border-[hsl(var(--border))]/50 bg-[hsl(var(--card))]/80 px-4 py-3 shadow-sm backdrop-blur-md transition-all focus-within:border-[hsl(var(--foreground))]/20 focus-within:shadow-md">
+    <div className="group relative flex items-center gap-3 rounded-xl border border-[hsl(var(--border))]/50 bg-[hsl(var(--card))]/80 px-4 py-3 shadow-sm backdrop-blur-md transition-all focus-within:border-[hsl(var(--foreground))]/20 focus-within:shadow-md">
       <div className={cn(
         "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors",
         value.trim() 

@@ -499,7 +499,7 @@ export default function ExamBankPage() {
             <h1 className="max-w-4xl font-serif-italic text-5xl tracking-[-2px] md:text-7xl lg:text-8xl">Ngân hàng đề thi</h1>
             <p className="mt-6 max-w-3xl text-lg leading-[1.7] text-[hsl(var(--muted-foreground))]">Lưu trữ, xem trước và quản lý các đề thi của bạn ở một nơi.</p>
           </div>
-          <div className="liquid-glass rounded-[2rem] p-6 shadow-sm border border-[hsl(var(--border))]/60">
+          <div className="rounded-2xl p-6 shadow-sm border border-[hsl(var(--border))]/60">
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Tổng đề đã lưu</p>
             <div className="mt-2 text-3xl font-semibold">{exams.length}</div>
             <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Dùng để tạo đề nhanh hơn</p>
@@ -514,7 +514,7 @@ export default function ExamBankPage() {
         </div>
 
         {/* Dynamic Filter Section */}
-        <div className="mt-8 overflow-hidden rounded-[2rem] bg-[hsl(var(--card))]/30 border border-[hsl(var(--border))]/60 shadow-sm p-5 space-y-4">
+        <div className="mt-8 overflow-hidden rounded-2xl bg-[hsl(var(--card))]/30 border border-[hsl(var(--border))]/60 shadow-sm p-5 space-y-4">
           <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
             <h3 className="font-semibold text-base">Bộ lọc tìm kiếm</h3>
             <div className="flex items-center gap-3 rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/10 px-4 py-2 w-full md:w-[300px]">
@@ -619,7 +619,7 @@ export default function ExamBankPage() {
         ) : (
           <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {filteredExams.map((exam) => (
-              <article key={exam.id} className="overflow-hidden rounded-[2rem] bg-[hsl(var(--card))] border border-[hsl(var(--border))]/60 shadow-sm flex flex-col justify-between">
+              <article key={exam.id} className="overflow-hidden rounded-2xl bg-[hsl(var(--card))] border border-[hsl(var(--border))]/60 shadow-sm flex flex-col justify-between">
                 <div className="border-b border-[hsl(var(--border))]/50 p-5">
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <h3 className="line-clamp-1 text-lg font-semibold">{exam.title}</h3>
@@ -660,7 +660,7 @@ export default function ExamBankPage() {
         {/* Modal Create/Edit */}
         {showCreate && (
           <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm">
-            <div className="my-8 w-full max-w-2xl rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl">
+            <div className="my-8 w-full max-w-2xl rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl">
               <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-5">
                 <h2 className="text-xl font-semibold">{editingId ? "Cập nhật đề thi" : "Thêm đề thi mới"}</h2>
                 <button onClick={() => { setShowCreate(false); resetForm() }} className="rounded-full p-2 hover:bg-[hsl(var(--muted))]/20"><X className="h-5 w-5 text-[hsl(var(--muted-foreground))]" /></button>
@@ -778,7 +778,7 @@ export default function ExamBankPage() {
         {/* Modal Publish to Exams */}
         {publishingExam && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-lg overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl">
+            <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl">
               <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-5">
                 <h2 className="text-xl font-semibold">Đăng tải thành Đề thi chính thức</h2>
                 <button onClick={() => setPublishingExam(null)} className="rounded-full p-2 hover:bg-[hsl(var(--muted))]/20">
@@ -876,7 +876,7 @@ export default function ExamBankPage() {
         {/* Side-by-side Preview Dialog */}
         {previewExam && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
-            <div className="flex h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl">
+            <div className="flex h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-2xl">
               <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-4 px-6 bg-[hsl(var(--card))]">
                 <h3 className="font-semibold text-lg">{previewExam.title}</h3>
                 <button

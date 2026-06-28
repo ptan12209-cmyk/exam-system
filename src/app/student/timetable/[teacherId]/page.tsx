@@ -95,7 +95,7 @@ export default function StudentTimetablePage() {
             </p>
           </div>
 
-          <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-sm">
+          <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6 shadow-sm">
             <p className="text-sm text-[hsl(var(--muted-foreground))] uppercase tracking-wider text-[10px] font-bold">Giáo viên</p>
             <div className="mt-2 text-2xl font-bold tracking-tight">{teacherName}</div>
             <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">{entries.length} buổi học trong tuần</p>
@@ -104,7 +104,7 @@ export default function StudentTimetablePage() {
 
         <section className="mt-12 space-y-4">
           {entries.length === 0 ? (
-            <div className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] py-20 text-center">
+            <div className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] py-20 text-center">
               <Calendar className="mx-auto mb-4 h-16 w-16 text-[hsl(var(--muted-foreground))]/20" />
               <p className="font-medium">Giáo viên chưa tạo thời khóa biểu</p>
             </div>
@@ -118,7 +118,7 @@ export default function StudentTimetablePage() {
                 <article
                   key={dayIdx}
                   className={cn(
-                    "overflow-hidden rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm transition-all hover:border-[hsl(var(--border))]",
+                    "overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm transition-all hover:border-[hsl(var(--border))]",
                     isToday && "ring-1 ring-[hsl(var(--foreground))]/20"
                   )}
                 >
