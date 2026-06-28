@@ -10,10 +10,17 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { AvatarUpload } from "@/components/AvatarUpload"
 import { StudentShell } from "@/components/student/StudentShell"
-import { StudentHeader } from "@/components/student/StudentHeader"
+import { StudentTopbar } from "@/components/student/StudentTopbar"
+import { StudentNavTabs } from "@/components/student/StudentNavTabs"
 import { ArrowLeft, Save, User } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
+import { getUserStats } from "@/lib/gamification"
+import { cn } from "@/lib/utils"
+
+const instrumentSerif = { className: "font-instrument-serif" }
+const jetbrainsMono = { className: "font-jetbrains-mono" }
+const inter = { className: "font-inter" }
 
 export default function StudentProfileEditPage() {
   const router = useRouter()
@@ -24,6 +31,7 @@ export default function StudentProfileEditPage() {
   const [success, setSuccess] = useState(false)
   const [originalNickname, setOriginalNickname] = useState("")
   const isX = originalNickname === "X"
+  const [studentStats, setStudentStats] = useState({ xp: 0, level: 1, streak_days: 0 })
   const [formData, setFormData] = useState({ 
     full_name: "", 
     nickname: "", 
@@ -43,6 +51,7 @@ export default function StudentProfileEditPage() {
         router.push("/login")
         return
       }
+      
       const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
       if (profile) {
         setFormData({ 
@@ -58,12 +67,18 @@ export default function StudentProfileEditPage() {
         })
         setOriginalNickname(profile.nickname || "")
       }
+
+      const { stats } = await getUserStats(user.id)
+      setStudentStats(stats)
       setLoading(false)
     }
     loadProfile()
   }, [router, supabase])
 
-  const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login") }
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -126,94 +141,120 @@ export default function StudentProfileEditPage() {
     }
   }
 
-  if (loading) return <Loading fullPage label="Đang tải hồ sơ..." />
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
+        <Loading label="Đang tải hồ sơ..." />
+      </div>
+    )
+  }
 
   return (
-    <StudentShell>
-      <StudentHeader name={formData.full_name} studentClass={formData.class} onLogout={handleLogout} nickname={formData.nickname} />
-      <main className="mx-auto max-w-3xl px-4 pt-6 pb-24 sm:px-6 lg:px-8 lg:py-10">
-        <div className="mb-8 flex items-center gap-4">
+    <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9]", inter.className)}>
+      {/* Topbar */}
+      <StudentTopbar
+        name={formData.full_name}
+        userXp={studentStats.xp}
+        level={studentStats.level}
+        streak={studentStats.streak_days}
+        onLogout={handleLogout}
+      />
+
+      {/* NavTabs */}
+      <StudentNavTabs />
+
+      <main className="mx-auto max-w-3xl px-4 pb-28 pt-8 sm:px-6 lg:px-8">
+        
+        {/* Back Link Header */}
+        <div className="mb-6 flex items-center gap-4">
           <Link href="/student/profile">
-            <Button variant="outline" size="icon" className="rounded-full border-[hsl(var(--border))]/70 bg-transparent transition-transform hover:scale-110 active:scale-90">
+            <Button variant="outline" size="icon" className="rounded-xl border-[#8C87A2]/30 bg-[#15131F] text-[#8C87A2] hover:text-[#C18CFF] hover:border-[#C18CFF] transition-all">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <div>
-            <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/70 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[hsl(var(--muted-foreground))] backdrop-blur-md">
-              <User className="h-3 w-3" /> Profile
+            <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/20 bg-[#15131F] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[#8C87A2]">
+              <User className="h-3 w-3 text-[#C18CFF]" /> Profile Settings
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">Chỉnh sửa hồ sơ</h1>
+            <h1 className={cn("text-3xl text-[#F1EDF9] font-bold tracking-tight", instrumentSerif.className)}>Chỉnh sửa hồ sơ</h1>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-[2rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-8 space-y-8 shadow-sm">
-          <div className="flex flex-col items-center">
-            <Label className="mb-6 block text-sm font-bold uppercase tracking-widest text-[hsl(var(--muted-foreground))]">Ảnh đại diện</Label>
-            <AvatarUpload currentUrl={formData.avatar_url} onUploadComplete={(url) => setFormData((prev) => ({ ...prev, avatar_url: url }))} onRemove={() => setFormData((prev) => ({ ...prev, avatar_url: "" }))} />
+        {/* Settings Form Container */}
+        <form onSubmit={handleSubmit} className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-8 space-y-8 shadow-sm">
+          
+          {/* Avatar Area */}
+          <div className="flex flex-col items-center border-b border-[#8C87A2]/10 pb-6">
+            <Label className="mb-4 block text-xs font-bold uppercase tracking-widest text-[#8C87A2] font-mono">Ảnh đại diện</Label>
+            <AvatarUpload 
+              currentUrl={formData.avatar_url} 
+              onUploadComplete={(url) => setFormData((prev) => ({ ...prev, avatar_url: url }))} 
+              onRemove={() => setFormData((prev) => ({ ...prev, avatar_url: "" }))} 
+            />
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="full_name" className="text-sm font-bold">Họ và tên <span className="text-red-500">*</span></Label>
-              <Input id="full_name" value={formData.full_name} onChange={(e) => setFormData((prev) => ({ ...prev, full_name: e.target.value }))} required className="rounded-xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))]" />
+              <Label htmlFor="full_name" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Họ và tên <span className="text-red-500">*</span></Label>
+              <Input id="full_name" value={formData.full_name} onChange={(e) => setFormData((prev) => ({ ...prev, full_name: e.target.value }))} required className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nickname" className="text-sm font-bold">Biệt danh</Label>
-              <Input id="nickname" value={formData.nickname} onChange={(e) => setFormData((prev) => ({ ...prev, nickname: e.target.value }))} placeholder="vd: hoc_sinh_gioi" maxLength={20} className="rounded-xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))]" />
-              <p className="text-[10px] text-[hsl(var(--muted-foreground))] px-1 italic">Dùng chữ cái, số và dấu gạch dưới</p>
+              <Label htmlFor="nickname" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Biệt danh</Label>
+              <Input id="nickname" value={formData.nickname} onChange={(e) => setFormData((prev) => ({ ...prev, nickname: e.target.value }))} placeholder="vd: hoc_sinh_gioi" maxLength={20} className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
+              <p className="text-[9px] text-[#8C87A2] font-mono px-1 italic">Dùng chữ cái, số và dấu gạch dưới</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="grade-select" className="text-sm font-bold">Khối lớp {!isX && <span className="text-red-500">*</span>}</Label>
+              <Label htmlFor="grade-select" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Khối lớp {!isX && <span className="text-red-500">*</span>}</Label>
               <select
                 id="grade-select"
                 value={formData.grade}
                 onChange={(e) => setFormData((prev) => ({ ...prev, grade: e.target.value }))}
-                className="w-full rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 px-4 py-3 text-sm focus:border-[hsl(var(--foreground))] focus:ring-1 focus:ring-[hsl(var(--foreground))] outline-none transition-all duration-200"
+                className="w-full rounded-xl border border-[#8C87A2]/30 bg-[#0B0A13] px-4 py-3 text-sm text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-1 focus:ring-[#C18CFF] outline-none transition-all cursor-pointer font-medium"
                 required={!isX}
               >
                 {isX ? (
-                  <option value="">-- Không chọn (Mở khóa toàn bộ khối) --</option>
+                  <option value="" className="bg-[#15131F]">-- Không chọn (Mở khóa toàn bộ khối) --</option>
                 ) : (
-                  <option value="" disabled>-- Chọn khối --</option>
+                  <option value="" disabled className="bg-[#15131F]">-- Chọn khối --</option>
                 )}
                 {Array.from({ length: 7 }, (_, i) => i + 6).map((g) => (
-                  <option key={g} value={g}>Khối {g}</option>
+                  <option key={g} value={g} className="bg-[#15131F]">Khối {g}</option>
                 ))}
               </select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="class_suffix" className="text-sm font-bold">Tên lớp {!isX && <span className="text-red-500">*</span>}</Label>
-              <Input id="class_suffix" value={formData.class_suffix} onChange={(e) => setFormData((prev) => ({ ...prev, class_suffix: e.target.value }))} placeholder="vd: A1, B2" required={!isX} className="rounded-xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))]" />
+              <Label htmlFor="class_suffix" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Tên lớp {!isX && <span className="text-red-500">*</span>}</Label>
+              <Input id="class_suffix" value={formData.class_suffix} onChange={(e) => setFormData((prev) => ({ ...prev, class_suffix: e.target.value }))} placeholder="vd: A1, B2" required={!isX} className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm font-bold">Số điện thoại</Label>
-              <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} placeholder="0123456789" className="rounded-xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))]" />
+              <Label htmlFor="phone" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Số điện thoại</Label>
+              <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} placeholder="0123456789" className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="discord_id" className="text-sm font-bold">Discord ID</Label>
-              <Input id="discord_id" value={formData.discord_id} onChange={(e) => setFormData((prev) => ({ ...prev, discord_id: e.target.value }))} placeholder="Ví dụ: 123456789012345678" className="rounded-xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))]" />
+              <Label htmlFor="discord_id" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Discord ID</Label>
+              <Input id="discord_id" value={formData.discord_id} onChange={(e) => setFormData((prev) => ({ ...prev, discord_id: e.target.value }))} placeholder="Ví dụ: 123456789012345678" className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bio" className="text-sm font-bold">Giới thiệu bản thân</Label>
-            <Textarea id="bio" value={formData.bio} onChange={(e) => setFormData((prev) => ({ ...prev, bio: e.target.value }))} placeholder="Viết vài dòng ngắn về bạn..." maxLength={200} rows={4} className="rounded-2xl border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/50 focus:bg-[hsl(var(--background))] resize-none" />
-            <div className="flex justify-end"><span className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-widest">{formData.bio.length}/200</span></div>
+            <Label htmlFor="bio" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Giới thiệu bản thân</Label>
+            <Textarea id="bio" value={formData.bio} onChange={(e) => setFormData((prev) => ({ ...prev, bio: e.target.value }))} placeholder="Viết vài dòng ngắn giới thiệu về bản thân bạn..." maxLength={200} rows={4} className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF] resize-none" />
+            <div className="flex justify-end"><span className="text-[9px] font-bold text-[#8C87A2] uppercase tracking-widest font-mono">{formData.bio.length}/200</span></div>
           </div>
 
-          {error && <div className="rounded-2xl border border-red-200 bg-red-50/50 px-4 py-3 text-sm text-red-600 backdrop-blur-sm animate-in fade-in slide-in-from-top-2">{error}</div>}
-          {success && <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 text-sm text-emerald-600 backdrop-blur-sm animate-in fade-in slide-in-from-top-2">Đã lưu thành công. Đang chuyển hướng...</div>}
+          {error && <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-bold text-red-400 animate-in fade-in slide-in-from-top-2">{error}</div>}
+          {success && <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-400 animate-in fade-in slide-in-from-top-2">Đã lưu hồ sơ thành công. Đang quay lại...</div>}
 
-          <div className="flex gap-4 pt-4">
+          <div className="flex gap-4 pt-4 border-t border-[#8C87A2]/10">
             <Link href="/student/profile" className="flex-1">
-              <Button type="button" variant="outline" className="w-full rounded-full border-[hsl(var(--border))]/70 bg-transparent py-6 font-bold" disabled={saving}>Hủy</Button>
+              <Button type="button" variant="outline" className="w-full rounded-xl border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent py-6 font-bold" disabled={saving}>Hủy</Button>
             </Link>
-            <Button type="submit" disabled={saving} className="flex-1 rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90 py-6 font-bold shadow-lg shadow-black/5">
+            <Button type="submit" disabled={saving} className="flex-1 rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] py-6 font-bold shadow-md">
               {saving ? <><DotmSquare1 size={16} dotSize={2} className="mr-2" />Đang lưu</> : <><Save className="mr-2 h-4 w-4" />Lưu thay đổi</>}
             </Button>
           </div>
