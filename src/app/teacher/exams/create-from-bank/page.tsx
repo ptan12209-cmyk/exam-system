@@ -12,6 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Loader2, Save, Database, AlertTriangle } from "lucide-react"
 import { ExamLinkDialog } from "@/components/ExamLinkDialog"
 import { SUBJECTS } from "@/lib/subjects"
+import { TeacherShell } from "@/components/teacher/TeacherShell"
+import { TeacherBottomNav } from "@/components/BottomNav"
+import { NotificationBell } from "@/components/NotificationBell"
+import { UserMenu } from "@/components/UserMenu"
 
 export default function CreateExamFromBankPage() {
     const router = useRouter()
@@ -33,10 +37,20 @@ export default function CreateExamFromBankPage() {
     const [error, setError] = useState<string | null>(null)
     const [showLinkDialog, setShowLinkDialog] = useState(false)
     const [createdExamId, setCreatedExamId] = useState<string | null>(null)
+    const [fullName, setFullName] = useState("")
 
     useEffect(() => {
         fetchBanks()
+        fetchProfile()
     }, [])
+
+    const fetchProfile = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+            const { data } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
+            if (data) setFullName(data.full_name || "")
+        }
+    }
 
     const fetchBanks = async () => {
         setFetchingBanks(true)
@@ -91,8 +105,30 @@ export default function CreateExamFromBankPage() {
         }
     }
 
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
+        router.push("/login")
+    }
+
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 md:p-8">
+        <TeacherShell onLogout={handleLogout} className="bg-[#0B0A13] text-[#F1EDF9]">
+            {/* Header cho Mobile */}
+            <header className="fixed inset-x-0 top-0 z-50 border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/75 px-4 backdrop-blur-md lg:hidden safe-top">
+                <div className="flex h-16 items-center justify-between">
+                    <Link href="/teacher/dashboard" className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[hsl(var(--border))]/60">
+                            <Database className="h-4 w-4" />
+                        </div>
+                        <span className="text-lg font-semibold tracking-tight">ExamHub</span>
+                    </Link>
+                    <div className="flex items-center gap-2">
+                        <NotificationBell />
+                        <UserMenu userName={fullName} userClass="Giáo viên" onLogout={handleLogout} role="teacher" />
+                    </div>
+                </div>
+            </header>
+
+            <main className="mx-auto max-w-3xl px-4 pb-24 pt-24 lg:px-8 lg:py-10">
             <div className="max-w-3xl mx-auto space-y-6">
                 <div className="flex items-center gap-4">
                     <Link href="/teacher/dashboard">
@@ -196,6 +232,8 @@ export default function CreateExamFromBankPage() {
                     }}
                 />
             )}
-        </div>
+            </main>
+            <TeacherBottomNav />
+        </TeacherShell>
     )
 }

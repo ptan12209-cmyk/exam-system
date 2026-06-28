@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +25,7 @@ import { DiscordTab } from "./_components/DiscordTab"
 import { TimetableTab } from "./_components/TimetableTab"
 
 export default function TeacherMonitorPage() {
+  const router = useRouter()
   const data = useMonitorData()
   const {
     teacherProfile, students, selectedStudent, setSelectedStudent,
@@ -52,10 +54,15 @@ export default function TeacherMonitorPage() {
     }
   }, [linkingSuccess, isLinkModalOpen])
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
+
   if (loading) return <Loading fullPage label="Đang kết nối Đài giám sát..." />
 
   return (
-    <TeacherShell>
+    <TeacherShell onLogout={handleLogout}>
       {/* Header cho Mobile */}
       <header className="fixed inset-x-0 top-0 z-50 border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/75 px-4 backdrop-blur-md lg:hidden safe-top">
         <div className="flex h-16 items-center justify-between">
@@ -67,7 +74,7 @@ export default function TeacherMonitorPage() {
           </Link>
           <div className="flex items-center gap-2">
             <NotificationBell />
-            <UserMenu userName={teacherProfile?.full_name || ""} userClass="Giáo viên" role="teacher" />
+            <UserMenu userName={teacherProfile?.full_name || ""} userClass="Giáo viên" onLogout={handleLogout} role="teacher" />
           </div>
         </div>
       </header>
