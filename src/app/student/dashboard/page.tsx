@@ -20,7 +20,8 @@ import {
   Video,
   AlertCircle,
   GraduationCap,
-  Sparkles
+  Sparkles,
+  Calendar
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
@@ -64,42 +65,70 @@ export default function StudentDashboard() {
   const [classRank, setClassRank] = useState<number | null>(null)
   const [classSize, setClassSize] = useState<number | null>(null)
   const [maxStreak, setMaxStreak] = useState<number>(0)
+  
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+
+  // 1. Calculate Countdown to THPT 2027
+  useEffect(() => {
+    const targetDate = new Date("2027-06-11T07:30:00").getTime()
+
+    const updateCountdown = () => {
+      const difference = targetDate - Date.now()
+
+      if (difference <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+        return
+      }
+
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((difference % (1000 * 60)) / 1000)
+
+      setTimeLeft({ days, hours, minutes, seconds })
+    }
+
+    updateCountdown()
+    const interval = setInterval(updateCountdown, 1000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     if (!user || !profile) return
-
-    // Redirect Student X to their custom dashboard
-    if (profile.nickname === "X") {
-      router.push("/student/X/dashboard")
-      return
-    }
 
     const fetchData = async () => {
       const { stats } = await getUserStats(user.id)
       setStudentStats(stats)
       setUserXp(stats.xp)
 
-      // Fetch normal assigned exams
+      const isX = profile.nickname === "X"
+
+      // Fetch exams
       let examsQuery = supabase
         .from("exams")
         .select("*")
         .eq("status", "published")
-        .eq("assigned_to", "normal")
+        .eq("assigned_to", isX ? "x" : "normal")
 
-      if (profile.grade !== null) {
+      if (!isX && profile.grade !== null) {
         examsQuery = examsQuery.or(`target_grade.is.null,target_grade.eq.${profile.grade}`)
       }
 
       const { data: examsData } = await examsQuery.order("created_at", { ascending: false })
       if (examsData) {
-        const studentClassSuffix = profile.class_suffix?.toUpperCase()
-        const visibleExams = examsData.filter((exam: any) => {
-          if (exam.target_classes && exam.target_classes.length > 0) {
-            return studentClassSuffix && exam.target_classes.map((c: string) => c.toUpperCase()).includes(studentClassSuffix)
-          }
-          return true
-        })
-        setAvailableExams(visibleExams)
+        if (isX) {
+          setAvailableExams(examsData)
+        } else {
+          const studentClassSuffix = profile.class_suffix?.toUpperCase()
+          const visibleExams = examsData.filter((exam: any) => {
+            if (exam.target_classes && exam.target_classes.length > 0) {
+              return studentClassSuffix && exam.target_classes.map((c: string) => c.toUpperCase()).includes(studentClassSuffix)
+            }
+            return true
+          })
+          setAvailableExams(visibleExams)
+        }
       }
 
       // Fetch submissions
@@ -161,6 +190,39 @@ export default function StudentDashboard() {
 
     fetchData()
   }, [user, profile, router, supabase])
+
+  // Helper for dynamic timing badges (Dream Engine flat style)
+  const getExamTimeBadge = (exam: Exam) => {
+    if (!exam.is_scheduled || !exam.start_time) {
+      return { label: "Tự do", className: "bg-[#8C87A2]/10 text-[#8C87A2] border-[#8C87A2]/20" }
+    }
+    const now = Date.now()
+    const start = new Date(exam.start_time).getTime()
+    const end = exam.end_time ? new Date(exam.end_time).getTime() : Infinity
+
+    if (now > end) {
+      return { label: "Quá hạn", className: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/20" }
+    }
+
+    const startDate = new Date(exam.start_time)
+    const today = new Date()
+    const tomorrow = new Date()
+    tomorrow.setDate(today.getDate() + 1)
+
+    const isToday = startDate.toDateString() === today.toDateString()
+    const isTomorrow = startDate.toDateString() === tomorrow.toDateString()
+
+    if (isToday) {
+      return { label: "Hôm nay", className: "bg-[#C18CFF]/15 text-[#C18CFF] border-[#C18CFF]/30 animate-pulse" }
+    }
+    if (isTomorrow) {
+      return { label: "Ngày mai", className: "bg-[#8C87A2]/10 text-[#F1EDF9] border-[#8C87A2]/20" }
+    }
+    return { 
+      label: startDate.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }), 
+      className: "bg-[#8C87A2]/5 text-[#8C87A2] border-[#8C87A2]/20" 
+    }
+  }
 
   const filteredExams = useMemo(() => {
     return availableExams.filter((exam) => {
@@ -241,6 +303,8 @@ export default function StudentDashboard() {
         level={studentStats.level}
         streak={studentStats.streak_days}
         onLogout={handleLogout}
+        nickname={profile?.nickname}
+        studentClass={profile?.class}
       />
 
       {/* Navigation Tabs Component */}
@@ -258,14 +322,16 @@ export default function StudentDashboard() {
               <div className="flex items-center gap-2 mb-4">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#C18CFF]" />
                 <span className={cn("text-[9px] font-bold uppercase tracking-[0.25em] text-[#8C87A2]", jetbrainsMono.className)}>
-                  ExamHub Student Panel
+                  {profile?.nickname === "X" ? "Dream Engine Edition" : "ExamHub Student Panel"}
                 </span>
               </div>
               <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight", instrumentSerif.className)}>
-                Xin chào, {profile?.full_name || "bạn"} 👋
+                {profile?.nickname === "X" ? "Chào mừng trở lại, X! 👋" : `Xin chào, ${profile?.full_name || "bạn"} 👋`}
               </h1>
               <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] italic max-w-xl">
-                "Hành trình vạn dặm bắt đầu từ một bước chân. Mỗi câu hỏi đúng mang bạn đến gần hơn mục tiêu."
+                {profile?.nickname === "X" 
+                  ? '"Học nhi thời tập chi, bất diệc duyệt hồ? Học mà thường ôn tập, chẳng cũng vui lắm sao?" – Khổng Tử' 
+                  : '"Hành trình vạn dặm bắt đầu từ một bước chân. Mỗi câu hỏi đúng mang bạn đến gần hơn mục tiêu."'}
               </p>
             </div>
 
@@ -273,14 +339,22 @@ export default function StudentDashboard() {
             <div className="mt-8 flex flex-wrap gap-3">
               <a href="#available-exams">
                 <Button className="rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold px-5 py-4 transition-all duration-200 shadow-sm">
-                  Luyện tập ngay
+                  {profile?.nickname === "X" ? "Làm đề giao riêng" : "Luyện tập ngay"}
                 </Button>
               </a>
-              <Link href="/student/analytics">
-                <Button variant="outline" className="rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent px-5 py-4 transition-all">
-                  Xem chi tiết tiến độ
-                </Button>
-              </Link>
+              {profile?.nickname === "X" ? (
+                <Link href="/student/timetable">
+                  <Button variant="outline" className="rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent px-5 py-4 transition-all">
+                    Xem thời khóa biểu
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/student/analytics">
+                  <Button variant="outline" className="rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent px-5 py-4 transition-all">
+                    Xem chi tiết tiến độ
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -292,7 +366,7 @@ export default function StudentDashboard() {
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url ?? undefined} alt={profile.full_name ?? undefined} className="h-full w-full rounded-full object-cover" />
                 ) : (
-                  <span className="text-2xl font-bold text-[#F1EDF9]">{profile?.full_name?.[0] || "H"}</span>
+                  <span className="text-2xl font-bold text-[#F1EDF9]">{profile?.full_name?.[0] || (profile?.nickname === "X" ? "X" : "H")}</span>
                 )}
                 {/* Level Tag */}
                 <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#15131F] border border-[#8C87A2]/40 text-[10px] font-bold text-[#C18CFF]">
@@ -304,8 +378,10 @@ export default function StudentDashboard() {
                 <span className={cn("text-xs font-bold uppercase tracking-widest", rank.color)}>
                   {rank.name} Rank 🏆
                 </span>
-                <h3 className="text-xl font-bold text-[#F1EDF9] mt-0.5">{profile?.full_name || "Học sinh"}</h3>
-                <p className="text-xs text-[#8C87A2] mt-0.5">Lớp học: {profile?.class || "Chưa thiết lập"}</p>
+                <h3 className="text-xl font-bold text-[#F1EDF9] mt-0.5">{profile?.full_name || (profile?.nickname === "X" ? "Học sinh X" : "Học sinh")}</h3>
+                <p className="text-xs text-[#8C87A2] mt-0.5">
+                  Lớp học: {profile?.nickname === "X" ? "Lớp X • THPT 2027" : (profile?.class || "Chưa thiết lập")}
+                </p>
               </div>
             </div>
 
@@ -395,8 +471,12 @@ export default function StudentDashboard() {
             <div id="available-exams" className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl overflow-hidden shadow-sm">
               <div className="flex flex-col gap-4 border-b border-[#8C87A2]/20 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <h2 className={cn("text-3xl text-[#F1EDF9] font-normal", instrumentSerif.className)}>Đề thi có sẵn</h2>
-                  <p className="text-xs text-[#8C87A2] mt-1">Chọn đề thi và bắt đầu luyện tập</p>
+                  <h2 className={cn("text-3xl text-[#F1EDF9] font-normal", instrumentSerif.className)}>
+                    {profile?.nickname === "X" ? "Nhiệm vụ đề thi của X" : "Đề thi có sẵn"}
+                  </h2>
+                  <p className="text-xs text-[#8C87A2] mt-1">
+                    {profile?.nickname === "X" ? "Các đề thi độc quyền được giáo viên giao trực tiếp" : "Chọn đề thi và bắt đầu luyện tập"}
+                  </p>
                 </div>
                 
                 {/* Search Bar */}
@@ -405,7 +485,7 @@ export default function StudentDashboard() {
                   <input
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Tìm kiếm đề thi..."
+                    placeholder={profile?.nickname === "X" ? "Tìm đề thi..." : "Tìm kiếm đề thi..."}
                     className="bg-transparent text-xs w-full outline-none text-[#F1EDF9] placeholder-[#8C87A2]"
                   />
                 </div>
@@ -468,6 +548,11 @@ export default function StudentDashboard() {
                                   {submission.score.toFixed(1)} ĐIỂM
                                 </span>
                               )}
+                              {profile?.nickname === "X" && (
+                                <span className={cn("rounded-lg border px-2 py-0.5 text-[9px] font-bold tracking-wider whitespace-nowrap", getExamTimeBadge(exam).className)}>
+                                  {getExamTimeBadge(exam).label.toUpperCase()}
+                                </span>
+                              )}
                             </div>
                             <div className={cn("mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-[#8C87A2]", jetbrainsMono.className)}>
                               <span className="flex items-center gap-1.5">
@@ -521,6 +606,40 @@ export default function StudentDashboard() {
           {/* Right Panel: Challenges & Quick Tools */}
           <div className="space-y-6">
             
+            {/* 1. THPT 2027 Countdown Widget (For student X only) */}
+            {profile?.nickname === "X" && (
+              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#C18CFF] mb-4 font-semibold">
+                  <Clock className="h-4 w-4 animate-pulse" />
+                  <span>Đếm ngược THPT Quốc Gia 2027</span>
+                </div>
+                
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  {[
+                    { label: "Ngày", value: timeLeft.days },
+                    { label: "Giờ", value: timeLeft.hours },
+                    { label: "Phút", value: timeLeft.minutes },
+                    { label: "Giây", value: timeLeft.seconds }
+                  ].map((item) => (
+                    <div key={item.label} className="bg-[#0B0A13] border border-[#8C87A2]/20 rounded-xl p-2.5">
+                      <span className={cn("text-2xl font-bold text-[#F1EDF9]", jetbrainsMono.className)}>
+                        {String(item.value).padStart(2, '0')}
+                      </span>
+                      <span className="block text-[9px] uppercase tracking-wider text-[#8C87A2] mt-1">
+                        {item.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-[10px] text-[#8C87A2]">
+                    Ngày thi dự kiến: <span className="text-[#C18CFF] font-bold">11/06/2027</span>
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Daily Challenges Widget */}
             <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
               <ChallengesWidget limit={3} />
@@ -535,9 +654,17 @@ export default function StudentDashboard() {
                   { href: "/arena", label: "Đấu trường", icon: Swords },
                   { href: "https://theieltsdictionary.com/", label: "IELTS", icon: GraduationCap, isExternal: true },
                   { href: "/student/achievements", label: "Thành tích", icon: Award },
-                  { href: "/student/checklist", label: "Checklist / Planner", icon: ListTodo },
-                  { href: "/student/co-study", label: "Pomodoro YPT", icon: Timer },
-                  { href: "/live", label: "Lớp Live", icon: Video },
+                  ...(profile?.nickname === "X"
+                    ? [
+                        { href: "/student/timetable", label: "Lịch học X", icon: Calendar },
+                        { href: "/student/checklist", label: "Nhiệm vụ X", icon: ListTodo }
+                      ]
+                    : [
+                        { href: "/student/checklist", label: "Checklist / Planner", icon: ListTodo }
+                      ]
+                  ),
+                  { href: "/student/co-study", label: profile?.nickname === "X" ? "Pomodoro" : "Pomodoro YPT", icon: Timer },
+                  { href: "/live", label: profile?.nickname === "X" ? "Học Live" : "Lớp Live", icon: Video },
                 ].map((item) => {
                   const itemContent = (
                     <div className="flex flex-col justify-between p-3.5 h-20 bg-[#0B0A13] hover:bg-[#0B0A13]/80 border border-[#8C87A2]/20 hover:border-[#C18CFF]/50 rounded-xl transition-all duration-200 group">

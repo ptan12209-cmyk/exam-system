@@ -16,30 +16,30 @@ import {
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
-  { href: "/student/X/dashboard", label: "Trang Chủ", icon: Home },
+  { href: "/student/dashboard", label: "Trang Chủ", icon: Home },
   { href: "/student/exams", label: "Làm Đề", icon: FileText },
   { href: "/arena", label: "Đấu Trường", icon: Swords },
   { href: "/student/achievements", label: "Thành Tích", icon: Trophy },
   { href: "/student/analytics", label: "Thống Kê", icon: BarChart2 },
-  { href: "/student/X/checklist", label: "Checklist", icon: ListTodo },
+  { href: "/student/checklist", label: "Checklist", icon: ListTodo },
   { href: "/student/co-study", label: "Cùng Học", icon: Users },
   { href: "/student/rewards", label: "Phần Thưởng", icon: Gift },
   { href: "/student/notifications", label: "Thông Báo", icon: Bell },
 ]
 
 const MOBILE_NAV_ITEMS = [
-  { href: "/student/X/dashboard", label: "Trang Chủ", icon: Home },
+  { href: "/student/dashboard", label: "Trang Chủ", icon: Home },
   { href: "/student/exams", label: "Làm Đề", icon: FileText },
   { href: "/arena", label: "Đấu Trường", icon: Swords },
   { href: "/student/achievements", label: "Thành Tích", icon: Trophy },
-  { href: "/student/X/checklist", label: "Checklist", icon: ListTodo },
+  { href: "/student/checklist", label: "Checklist", icon: ListTodo },
 ]
 
 export function StudentNavTabs() {
   const pathname = usePathname()
 
   const isActive = (href: string) => {
-    if (href === "/student/X/dashboard") {
+    if (href === "/student/dashboard") {
       return pathname === href
     }
     return pathname.startsWith(href)

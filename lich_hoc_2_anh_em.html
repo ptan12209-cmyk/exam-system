@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Lịch Học Ôn Thi - 2 Anh Em</title>
+    <style>
+        :root {
+            --bg-main: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --brother1-color: #0284c7;
+            --brother1-light: #e0f2fe;
+            --brother2-color: #0d9488;
+            --brother2-light: #ccfbf1;
+            
+            /* Subject Colors */
+            --math-color: #2563eb;
+            --math-bg: #dbeafe;
+            --lit-color: #ea580c;
+            --lit-bg: #ffedd5;
+            --sci-color: #7c3aed;
+            --sci-bg: #ede9fe;
+            --eng-color: #0891b2;
+            --eng-bg: #ecfeff;
+            --logic-color: #4f46e5;
+            --logic-bg: #e0e7ff;
+            --free-bg: #f8fafc;
+            --free-color: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        /* Tabs Navigation */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background: #e2e8f0;
+            padding: 6px;
+            border-radius: 12px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-btn.active[data-tab="brother1"] {
+            background-color: var(--card-bg);
+            color: var(--brother1-color);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+        }
+
+        .tab-btn.active[data-tab="brother2"] {
+            background-color: var(--card-bg);
+            color: var(--brother2-color);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+        }
+
+        /* Tab Content Visibility */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Profile Banner */
+        .profile-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .profile-banner.b1 {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        }
+
+        .profile-banner.b2 {
+            background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+        }
+
+        .profile-info h2 {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .profile-info p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .badge-target {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Schedule Grid Grid / Table */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            padding: 24px;
+            margin-bottom: 25px;
+            overflow-x: auto;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1e293b;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            min-width: 800px;
+        }
+
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px 14px;
+            font-size: 13px;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: var(--text-main);
+            font-weight: 600;
+            width: 12%;
+        }
+
+        th:first-child {
+            width: 16%;
+        }
+
+        /* Subject Badges styling inside cells */
+        .slot-box {
+            background-color: var(--free-bg);
+            border-left: 3px solid var(--free-color);
+            padding: 6px 8px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+        }
+
+        .slot-title {
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+
+        .slot-time {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Custom Colors for subjects */
+        .sub-math { border-left-color: var(--math-color); background-color: var(--math-bg); color: #1e40af; }
+        .sub-lit { border-left-color: var(--lit-color); background-color: var(--lit-bg); color: #c2410c; }
+        .sub-sci { border-left-color: var(--sci-color); background-color: var(--sci-bg); color: #5b21b6; }
+        .sub-eng { border-left-color: var(--eng-color); background-color: var(--eng-bg); color: #155e75; }
+        .sub-logic { border-left-color: var(--logic-color); background-color: var(--logic-bg); color: #3730a3; }
+        .sub-busy { border-left-color: #ef4444; background-color: #fee2e2; color: #991b1b; font-style: italic; }
+
+        /* Interactive Elements */
+        .interactive-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .interactive-row:last-child { border-bottom: none; }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 13px;
+            user-select: none;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .checkbox-container input {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            accent-color: var(--brother1-color);
+        }
+        
+        .b2-check input {
+            accent-color: var(--brother2-color);
+        }
+
+        .checkbox-container input:checked + .slot-inline-box {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+
+        .slot-inline-box {
+            flex-grow: 1;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Grid Layout for dashboard metadata */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .info-block {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .info-block h4 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 4px;
+        }
+
+        .info-block ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .info-block li {
+            font-size: 13px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .info-block li span {
+            font-weight: 600;
+        }
+
+        /* Progress bars */
+        .progress-bar-container {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 8px;
+            width: 100%;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 10px;
+            width: 0%; /* Dynamic via script or default */
+            transition: width 0.3s ease;
+        }
+
+        .pb-math { background-color: var(--math-color); }
+        .pb-lit { background-color: var(--lit-color); }
+        .pb-sci { background-color: var(--sci-color); }
+        .pb-eng { background-color: var(--eng-color); }
+        .pb-logic { background-color: var(--logic-color); }
+
+        @media (max-width: 768px) {
+            .tabs { flex-direction: column; }
+            .meta-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>HỆ THỐNG THỜI GIAN BIỂU ÔN THI THÔNG MINH</h1>
+        <p>Tối ưu hóa Pomodoro chống Burnout • Phù hợp lịch bận cá nhân cá thể hóa</p>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="brother1" onclick="switchTab('brother1')">
+            👦 Em Út (Lịch 3 Ca / 3 Tiếng)
+        </button>
+        <button class="tab-btn" data-tab="brother2" onclick="switchTab('brother2')">
+            👨 Anh Lớn (Cày Thủ Khoa / 10 Ca)
+        </button>
+    </div>
+
+    <!-- ================= BROTHER 1 CONTENT ================= -->
+    <div id="brother1" class="tab-content active">
+        <div class="profile-banner b1">
+            <div class="profile-info">
+                <h2>Lịch Học Của Em Út</h2>
+                <p>Chu kỳ Pomodoro cải tiến: 45 phút học tập sâu + 15 phút giải lao trọn vẹn</p>
+            </div>
+            <span class="badge-target">Mục tiêu: Củng cố & Bứt phá</span>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📅 Thời Gian Biểu Trong Tuần (3 Ca/Ngày)</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Khung Giờ Tổng Quát</th>
+                        <th>Thứ 2</th>
+                        <th>Thứ 3</th>
+                        <th>Thứ 4</th>
+                        <th>Thứ 5</th>
+                        <th>Thứ 6</th>
+                        <th>Thứ 7</th>
+                        <th>Chủ Nhật</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Ca Sáng</strong><br><span class="slot-time">08:00 - 11:00</span></td>
+                        <td><div class="slot-box sub-math"><div class="slot-title">Toán Học</div><div class="slot-time">3 Blocks 45/15</div></div></td>
+                        <td><div class="slot-box sub-sci"><div class="slot-title">KHTN</div><div class="slot-time">3 Blocks 45/15</div></div></td>
+                        <td><div class="slot-box sub-lit"><div class="slot-title">Ngữ Văn</div><div class="slot-time">3 Blocks 45/15</div></div></td>
+                        <td><div class="slot-box sub-math"><div class="slot-title">Toán Học</div><div class="slot-time">3 Blocks 45/15</div></div></td>
+                        <td><div class="slot-box sub-sci"><div class="slot-title">KHTN</div><div class="slot-time">3 Blocks 45/15</div></div></td>
+                        <td><div class="slot-box sub-lit"><div class="slot-title">Ngữ Văn</div><div class="slot-time">3 Blocks 45/15</div></div></td>
+                        <td><div class="slot-box sub-math"><div class="slot-title">Toán Học</div><div class="slot-time">3 Blocks 45/15</div></div></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ca Chiều</strong><br><span class="slot-time">Linh hoạt theo ngày</span></td>
+                        <td><div class="slot-box sub-sci"><div class="slot-title">KHTN</div><div class="slot-time">14:00 - 17:00</div></div></td>
+                        <td><div class="slot-box sub-lit"><div class="slot-title">Ngữ Văn</div><div class="slot-time">14:00 - 17:00</div></div></td>
+                        <td><div class="slot-box sub-math"><div class="slot-title">Toán Học</div><div class="slot-time">14:00 - 17:00</div></div></td>
+                        <td>
+                            <div class="slot-box sub-busy"><div class="slot-title">Lịch Kẹt Cố Định</div><div class="slot-time">13:50 - 15:50</div></div>
+                            <div class="slot-box sub-sci"><div class="slot-title">KHTN (Học Lùi)</div><div class="slot-time">16:00 - 19:00</div></div>
+                        </td>
+                        <td>
+                            <div class="slot-box sub-busy"><div class="slot-title">Lịch Kẹt Cố Định</div><div class="slot-time">13:50 - 15:50</div></div>
+                            <div class="slot-box sub-lit"><div class="slot-title">Ngữ Văn (Học Lùi)</div><div class="slot-time">16:00 - 19:00</div></div>
+                        </td>
+                        <td><div class="slot-box sub-math"><div class="slot-title">Toán Học</div><div class="slot-time">14:00 - 17:00</div></div></td>
+                        <td><div class="slot-box sub-sci"><div class="slot-title">KHTN</div><div class="slot-time">14:00 - 17:00</div></div></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ca Tối</strong><br><span class="slot-time">Linh hoạt theo ngày</span></td>
+                        <td>
+                            <div class="slot-box sub-busy"><div class="slot-title">Lịch Kẹt Cố Định</div><div class="slot-time">19:00 - 21:00</div></div>
+                            <div class="slot-box sub-lit"><div class="slot-title">Ngữ Văn (Muộn)</div><div class="slot-time">21:00 - 00:00</div></div>
+                        </td>
+                        <td><div class="slot-box sub-math"><div class="slot-title">Toán Học</div><div class="slot-time">19:00 - 22:00</div></div></td>
+                        <td>
+                            <div class="slot-box sub-busy"><div class="slot-title">Lịch Kẹt Cố Định</div><div class="slot-time">19:00 - 21:00</div></div>
+                            <div class="slot-box sub-sci"><div class="slot-title">KHTN (Muộn)</div><div class="slot-time">21:00 - 00:00</div></div>
+                        </td>
+                        <td><div class="slot-box sub-lit"><div class="slot-title">Ngữ Văn</div><div class="slot-time">20:00 - 23:00</div></div></td>
+                        <td>
+                            <div class="slot-box sub-busy"><div class="slot-title">Lịch Kẹt Cố Định</div><div class="slot-time">19:00 - 21:00</div></div>
+                            <div class="slot-box sub-math"><div class="slot-title">Toán (Muộn)</div><div class="slot-time">21:00 - 00:00</div></div>
+                        </td>
+                        <td><div class="slot-box sub-sci"><div class="slot-title">KHTN</div><div class="slot-time">19:00 - 22:00</div></div></td>
+                        <td><div class="slot-box sub-logic"><div class="slot-title">Tổng Ôn/Luyện Đề</div><div class="slot-time">19:00 - 22:00</div></div></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="meta-grid">
+            <div class="info-block">
+                <h4>📊 Trọng Số Phân Bổ Môn Học / Tuần</h4>
+                <ul>
+                    <li>Toán Học: <span>6 Ca (18 Tiếng)</span></li>
+                    <div class="progress-bar-container"><div class="progress-bar pb-math" style="width: 100%;"></div></div>
+                    <li style="margin-top: 10px;">Khoa Học Tự Nhiên: <span>7 Ca (21 Tiếng)</span></li>
+                    <div class="progress-bar-container"><div class="progress-bar pb-sci" style="width: 100%;"></div></div>
+                    <li style="margin-top: 10px;">Ngữ Văn: <span>7 Ca (21 Tiếng)</span></li>
+                    <div class="progress-bar-container"><div class="progress-bar pb-lit" style="width: 100%;"></div></div>
+                    <li style="margin-top: 10px;">Luyện Đề Tổng Hợp: <span>1 Ca (3 Tiếng)</span></li>
+                    <div class="progress-bar-container"><div class="progress-bar pb-logic" style="width: 30%;"></div></div>
+                </ul>
+            </div>
+            <div class="info-block">
+                <h4>💡 Nguyên Tắc Vàng Giữ Nhịp Tập Trung</h4>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
+                    • <strong>Quy tắc 45/15:</strong> Học chuẩn xác 45 phút, đứng dậy vận động nhẹ 15 phút. Không lướt điện thoại khi nghỉ.<br>
+                    • <strong>Bù giấc ngủ:</strong> Các ngày học muộn đến 00:00 (T2, T4, T6), hãy cố gắng ngủ sâu giấc ngay sau đó, ca sáng hôm sau bắt đầu đúng 8:00 đảm bảo ngủ đủ 7-8 tiếng.
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================= BROTHER 2 CONTENT ================= -->
+    <div id="brother2" class="tab-content">
+        <div class="profile-banner b2">
+            <div class="profile-info">
+                <h2>Lịch Học Của Anh Lớn</h2>
+                <p>Chiến lược Micro-learning: 10 ca/ngày, 40 phút/ca đan xen liên tục chống quá tải não bộ</p>
+            </div>
+            <span class="badge-target">Mục tiêu: Thủ Khoa Đại Học & ĐGNL</span>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📅 Phân Bổ Môn Học Chi Tiết Theo Ca (Lách Tuyệt Đối Giờ Bận)</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Buổi & Ca Học</th>
+                        <th>Thứ 2 / 4 / 6 <br><small style="color:red">(Kẹt 16h30-19h)</small></th>
+                        <th>Thứ 3 / 5 <br><small style="color:green">(Giữ nhịp tiêu chuẩn)</small></th>
+                        <th>Thứ 7 / Chủ Nhật <br><small style="color:red">(Kẹt 13h30-17h)</small></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- SÁNG -->
+                    <tr>
+                        <td><strong>SÁNG (Ca 1 - 4)</strong><br><span class="slot-time">07:30 - 10:50</span><br><small>40p học / 10p nghỉ</small></td>
+                        <td>
+                            <div class="slot-box sub-math"><div class="slot-title">Ca 1: Toán (THPT)</div></div>
+                            <div class="slot-box sub-math"><div class="slot-title">Ca 2: Toán (THPT)</div></div>
+                            <div class="slot-box sub-eng"><div class="slot-title">Ca 3: Tiếng Anh (ĐGNL)</div></div>
+                            <div class="slot-box sub-logic"><div class="slot-title">Ca 4: Tư duy Logic (ĐGNL)</div></div>
+                        </td>
+                        <td>
+                            <div class="slot-box sub-math"><div class="slot-title">Ca 1: Toán (THPT)</div></div>
+                            <div class="slot-box sub-sci"><div class="slot-title">Ca 2: Hóa Học (THPT)</div></div>
+                            <div class="slot-box sub-sci"><div class="slot-title">Ca 3: Hóa Học (THPT)</div></div>
+                            <div class="slot-box sub-eng"><div class="slot-title">Ca 4: Tiếng Anh (ĐGNL)</div></div>
+                        </td>
+                        <td>
+                            <div class="slot-box sub-logic" style="border-left-color:#dc2626; background:#fef2f2; color:#991b1b;"><div class="slot-title">Ca 1 - Ca 4: Bấm Giờ Luyện Đề</div><small>Thi thử full format THPTQG / ĐGNL</small></div>
+                        </td>
+                    </tr>
+                    <!-- CHIỀU -->
+                    <tr>
+                        <td><strong>CHIỀU (Ca 5 - 7)</strong><br><span class="slot-time">Khung giờ dịch chuyển</span></td>
+                        <td>
+                            <span class="slot-time">Thời gian: 14:00 - 16:20</span>
+                            <div class="slot-box sub-sci"><div class="slot-title">Ca 5: Vật Lý (THPT)</div></div>
+                            <div class="slot-box sub-sci"><div class="slot-title">Ca 6: Hóa Học (THPT)</div></div>
+                            <div class="slot-box sub-lit"><div class="slot-title">Ca 7: Văn/Tiếng Việt</div></div>
+                        </td>
+                        <td>
+                            <span class="slot-time">Thời gian: 14:00 - 16:20</span>
+                            <div class="slot-box sub-sci"><div class="slot-title">Ca 5: Vật Lý (THPT)</div></div>
+                            <div class="slot-box sub-sci"><div class="slot-title">Ca 6: Vật Lý (THPT)</div></div>
+                            <div class="slot-box sub-logic"><div class="slot-title">Ca 7: Logic / PTSL (ĐGNL)</div></div>
+                        </td>
+                        <td>
+                            <div class="slot-box sub-busy"><div class="slot-title">Lịch Kẹt Cố Định</div><div class="slot-time">13:30 - 17:00</div></div>
+                            <hr style="margin: 5px 0; border: none; border-top: 1px dashed #cbd5e1;">
+                            <span class="slot-time">Ca Chiều Muộn: 17:15 - 19:25</span>
+                            <div class="slot-box sub-lit" style="background:#fff7ed; border-left-color:#f97316; color:#9a3412;"><div class="slot-title">Ca 5 - Ca 6: Phân Tích Sâu Lỗi Sai</div><small>Đục rỗng kiến thức từ đề sáng</small></div>
+                        </td>
+                    </tr>
+                    <!-- TỐI -->
+                    <tr>
+                        <td><strong>TỐI (Ca 8 - 10)</strong><br><span class="slot-time">Khung giờ dịch chuyển</span></td>
+                        <td>
+                            <span class="slot-time">Thời gian: 19:30 - 21:50</span>
+                            <div class="slot-box sub-math"><div class="slot-title">Ca 8: Toán (ĐGNL/Nâng cao)</div></div>
+                            <div class="slot-box sub-logic"><div class="slot-title">Ca 9: Tư duy Khoa Học</div></div>
+                            <div class="slot-box sub-sci"><div class="slot-title">Ca 10: Sinh Học</div></div>
+                        </td>
+                        <td>
+                            <span class="slot-time">Thời gian: 19:30 - 21:50</span>
+                            <div class="slot-box sub-sci"><div class="slot-title">Ca 8: Sinh Học</div></div>
+                            <div class="slot-box sub-lit"><div class="slot-title">Ca 9: Văn / Tiếng Việt</div></div>
+                            <div class="slot-box sub-logic"><div class="slot-title">Ca 10: Tư duy Khoa Học</div></div>
+                        </td>
+                        <td>
+                            <span class="slot-time">Thời gian: 20:15 - 23:25 (4 Ca)</span>
+                            <div class="slot-box sub-math"><div class="slot-title">Ca 7: Toán nâng cao VDC</div></div>
+                            <div class="slot-box sub-eng"><div class="slot-title">Ca 8: Tiếng Anh</div></div>
+                            <div class="slot-box sub-logic"><div class="slot-title">Ca 9: Tư duy Logic</div></div>
+                            <div class="slot-box sub-logic"><div class="slot-title">Ca 10: Phân tích số liệu</div></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📝 Trình Theo Dõi Hoàn Thành Hàng Ngày (Nhấp chọn để đánh dấu xong)</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+                <div class="interactive-row"><label class="checkbox-container b2-check"><input type="checkbox"><span class="slot-inline-box sub-math">Ca 1: Toán học</span></label></div>
+                <div class="interactive-row"><label class="checkbox-container b2-check"><input type="checkbox"><span class="slot-inline-box sub-math">Ca 2: Toán học</span></label></div>
+                <div class="interactive-row"><label class="checkbox-container b2-check"><input type="checkbox"><span class="slot-inline-box sub-sci">Ca 3: Lý / Hóa</span></label></div>
+                <div class="interactive-row"><label class="checkbox-container b2-check"><input type="checkbox"><span class="slot-inline-box sub-sci">Ca 4: Lý / Hóa</span></label></div>
+                <div class="interactive-row"><label class="checkbox-container b2-check"><input type="checkbox"><span class="slot-inline-box sub-eng">Ca 5: Tiếng Anh</span></label></div>
+                <div class="interactive-row"><label class="checkbox-container b2-check"><input type="checkbox"><span class="slot-inline-box class sub-lit">Ca 6: Ngữ Văn / TV</span></label></div>
+                <div class="interactive-row"><label class="checkbox-container b2-check"><input type="checkbox"><span class="slot-inline-box sub-logic">Ca 7: Tư duy Logic</span></label></div>
+                <div class="interactive-row"><label class="checkbox-container b2-check"><input type="checkbox"><span class="slot-inline-box sub-logic">Ca 8: PTSL / TDKH</span></label></div>
+                <div class="interactive-row"><label class="checkbox-container b2-check"><input type="checkbox"><span class="slot-inline-box sub-sci">Ca 9: Sinh Học</span></label></div>
+                <div class="interactive-row"><label class="checkbox-container b2-check"><input type="checkbox"><span class="slot-inline-box sub-logic" style="background:#fee2e2; color:#991b1b;">Ca 10: Đề / Sửa Lỗi</span></label></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabId) {
+        // Hide all tab contents
+        const contents = document.querySelectorAll('.tab-content');
+        contents.forEach(content => content.classList.remove('active'));
+
+        // Deactivate all buttons
+        const buttons = document.querySelectorAll('.tab-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+
+        // Show selected content and activate matching button
+        document.getElementById(tabId).classList.add('active');
+        document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+    }
+</script>
+
+</body>
+</html>

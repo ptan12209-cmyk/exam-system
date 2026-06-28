@@ -11,9 +11,11 @@ interface StudentTopbarProps {
   readonly level: number
   readonly streak: number
   readonly onLogout: () => void
+  readonly nickname?: string | null
+  readonly studentClass?: string | null
 }
 
-export function StudentTopbar({ name, userXp, level, streak, onLogout }: Readonly<StudentTopbarProps>) {
+export function StudentTopbar({ name, userXp, level, streak, onLogout, nickname, studentClass }: Readonly<StudentTopbarProps>) {
   // Calculate progress percent to next level
   const xpInCurrentLevel = userXp % 1000
   const xpNeededForNextLevel = 1000
@@ -34,14 +36,14 @@ export function StudentTopbar({ name, userXp, level, streak, onLogout }: Readonl
 
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left Side Logo */}
-        <Link href="/student/X/dashboard" className="group flex items-center gap-3 transition-transform active:scale-95">
+        <Link href="/student/dashboard" className="group flex items-center gap-3 transition-transform active:scale-95">
           <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#8C87A2]/40 bg-[#0B0A13] shadow-sm transition-all duration-300 group-hover:rotate-12 group-hover:border-[#C18CFF]">
             <GraduationCap className="h-4 w-4 text-[#C18CFF]" strokeWidth={1.5} />
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-tighter text-[#F1EDF9] leading-none">ExamHub</span>
             <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.25em] text-[#C18CFF]">
-              Space X
+              {nickname === "X" ? "Space X" : "Student Hub"}
             </span>
           </div>
         </Link>
@@ -73,8 +75,8 @@ export function StudentTopbar({ name, userXp, level, streak, onLogout }: Readonl
 
           {/* Profile Menu */}
           <UserMenu
-            userName={name || "Học sinh X"}
-            userClass="Lớp X"
+            userName={name || (nickname === "X" ? "Học sinh X" : "Học sinh")}
+            userClass={nickname === "X" ? "Lớp X" : (studentClass ?? "Học sinh")}
             onLogout={onLogout}
             role="student"
           />

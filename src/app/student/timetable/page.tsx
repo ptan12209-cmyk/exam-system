@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import { StudentShell } from "@/components/student/StudentShell"
 import { StudentTopbar } from "@/components/student/StudentTopbar"
 import { StudentNavTabs } from "@/components/student/StudentNavTabs"
+import { XTimetable } from "./_components/XTimetable"
 import { Calendar, Clock, Loader2, User, AlertCircle, CalendarDays } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AnimatedSelect } from "@/components/ui/animated-select"
@@ -44,7 +45,7 @@ export default function GeneralStudentTimetablePage() {
 
   // Shared States
   const [loading, setLoading] = useState(true)
-  const [studentProfile, setStudentProfile] = useState<{ id: string; full_name?: string; class?: string } | null>(null)
+  const [studentProfile, setStudentProfile] = useState<{ id: string; full_name?: string; class?: string; nickname?: string | null } | null>(null)
   const [studentStats, setStudentStats] = useState({ xp: 0, level: 1, streak_days: 0 })
 
   // Personal Timetable States
@@ -68,7 +69,7 @@ export default function GeneralStudentTimetablePage() {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("id, full_name, class")
+          .select("id, full_name, class, nickname")
           .eq("id", user.id)
           .single()
         if (profile) setStudentProfile(profile)
@@ -205,6 +206,10 @@ export default function GeneralStudentTimetablePage() {
     )
   }
 
+  if (studentProfile?.nickname === "X") {
+    return <XTimetable />
+  }
+
   const currentDayIdx = new Date().getDay()
 
   return (
@@ -216,6 +221,8 @@ export default function GeneralStudentTimetablePage() {
         level={studentStats.level}
         streak={studentStats.streak_days}
         onLogout={handleLogout}
+        nickname={studentProfile?.nickname}
+        studentClass={studentProfile?.class}
       />
 
       {/* NavTabs */}

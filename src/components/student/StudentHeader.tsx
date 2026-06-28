@@ -20,7 +20,7 @@ export function StudentHeader({ name, studentClass, onLogout, nickname }: Readon
     <LiveBanner />
     <header className="sticky top-0 z-50 border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/90 px-4 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href={nickname === "X" ? "/student/X/dashboard" : "/student/dashboard"} className="group flex items-center gap-3 transition-transform active:scale-95">
+        <Link href="/student/dashboard" className="group flex items-center gap-3 transition-transform active:scale-95">
           <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))] shadow-sm transition-transform group-hover:rotate-12">
             <GraduationCap className="h-4 w-4 text-[hsl(var(--foreground))]" strokeWidth={1.2} />
           </div>
