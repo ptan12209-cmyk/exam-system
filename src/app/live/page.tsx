@@ -279,7 +279,7 @@ export default function LiveRoomPage() {
                   </span>
                 </div>
                 
-                <div className="relative w-full aspect-video md:min-h-[500px] overflow-hidden rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-black shadow-lg">
+                <div className="relative w-full aspect-video md:min-h-[500px] overflow-hidden rounded-2xl border border-[hsl(var(--border))]/60 bg-black shadow-lg">
                   <div 
                     ref={jitsiContainerRef} 
                     className="absolute inset-0 h-full w-full"
@@ -429,7 +429,7 @@ export default function LiveRoomPage() {
 
       {showLiveSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg overflow-hidden rounded-[2.5rem] p-0 shadow-2xl">
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl p-0 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-6">
               <h2 className="flex items-center gap-2 text-lg font-semibold"><Video className="h-5 w-5 text-indigo-500" />Cấu hình Lớp Học Trực Tuyến</h2>
               <Button variant="ghost" size="icon" onClick={() => setShowLiveSettings(false)} className="rounded-full"><X className="h-5 w-5" /></Button>
@@ -526,7 +526,7 @@ export default function LiveRoomPage() {
 
       {showEditor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md overflow-hidden rounded-[2.5rem] p-0 shadow-2xl">
+          <div className="w-full max-w-md overflow-hidden rounded-3xl p-0 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 p-6">
               <h2 className="text-lg font-semibold">{editItem ? "Chỉnh sửa lịch" : "Thêm lịch mới"}</h2>
               <Button variant="ghost" size="icon" onClick={() => setShowEditor(false)} className="rounded-full"><X className="h-5 w-5" /></Button>

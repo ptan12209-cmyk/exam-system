@@ -235,7 +235,7 @@ export default function ResourcesPage() {
       {/* Main Container */}
       <main className="mx-auto max-w-7xl px-4 py-6 lg:py-10 lg:pl-10">
         {isStudentBlocked ? (
-          <section className="mx-auto max-w-lg mt-10 rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-8 text-center shadow-xl">
+          <section className="mx-auto max-w-lg mt-10 rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-8 text-center shadow-xl">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
               <Lock className="h-8 w-8" />
             </div>
@@ -492,7 +492,7 @@ export default function ResourcesPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-4xl rounded-[2.5rem] border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden shadow-2xl flex flex-col h-[85vh] lg:h-[80vh]"
+              className="w-full max-w-4xl rounded-3xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] overflow-hidden shadow-2xl flex flex-col h-[85vh] lg:h-[80vh]"
             >
               {/* Modal Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]/30 bg-[hsl(var(--muted))]/10 shrink-0">
