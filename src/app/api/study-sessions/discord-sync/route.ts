@@ -101,14 +101,37 @@ export async function POST(req: Request) {
     }
 
     // 3.5. Manage discord attendance logs
-    const { data: openLog } = await supabaseAdmin
+    let { data: openLog } = await supabaseAdmin
       .from("discord_attendance_logs")
-      .select("id, joined_at")
+      .select("id, joined_at, total_active_seconds, total_afk_seconds, session_date")
       .eq("student_id", profile.id)
       .is("left_at", null)
       .order("joined_at", { ascending: false })
       .limit(1)
       .maybeSingle()
+
+    // Safety check: Auto-close ghost session if it is from a previous calendar day 
+    // or is older than 12 hours.
+    const todayStr = new Date().toISOString().split('T')[0]
+    if (openLog) {
+      const logJoinedTime = new Date(openLog.joined_at).getTime()
+      const isTooOld = Date.now() - logJoinedTime > 12 * 60 * 60 * 1000 // 12 hours
+      const isDifferentDay = openLog.session_date !== todayStr
+
+      if (isTooOld || isDifferentDay) {
+        console.log(`[GHOST SESSION AUTO-CLOSE] Closing open log ${openLog.id} from day ${openLog.session_date}`)
+        const activeSec = openLog.total_active_seconds || 0
+        const afkSec = openLog.total_afk_seconds || 0
+        const autoLeftAt = new Date(logJoinedTime + (activeSec + afkSec) * 1000).toISOString()
+        
+        await supabaseAdmin
+          .from("discord_attendance_logs")
+          .update({ left_at: autoLeftAt })
+          .eq("id", openLog.id)
+          
+        openLog = null
+      }
+    }
 
     const mutedSecs = typeof muted_seconds === 'number' ? Math.max(0, muted_seconds) : 0
     const screenSecs = typeof sharing_screen_seconds === 'number' ? Math.max(0, sharing_screen_seconds) : 0
