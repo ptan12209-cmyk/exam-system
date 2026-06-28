@@ -61,6 +61,26 @@ export function XTimetable() {
   // Mốc Thứ 2 của tuần hiện tại (YYYY-MM-DD)
   const [currentWeekMonday, setCurrentWeekMonday] = useState("")
 
+  // Hàm lấy key thứ trong tuần hiện tại theo giờ Việt Nam
+  const currentDayKey = useMemo(() => {
+    const now = new Date()
+    const vnTime = new Date(now.getTime() + (7 * 60 * 60 * 1000))
+    const day = vnTime.getUTCDay()
+    const keys = ["cn", "t2", "t3", "t4", "t5", "t6", "t7"]
+    return keys[day]
+  }, [])
+
+  const getHeaderClass = (dayKey: string, hasRightBorder = true) => {
+    const isToday = dayKey === currentDayKey
+    return cn(
+      "p-5 text-sm font-semibold text-center transition-all duration-300 relative",
+      hasRightBorder && "border-r border-[hsl(var(--border))]/10",
+      isToday 
+        ? "text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/5 border-b-2 border-b-[hsl(var(--primary))]" 
+        : "text-[hsl(var(--foreground))]"
+    )
+  }
+
   // Hàm tính toán ngày Thứ 2 đầu tuần hiện tại theo giờ Việt Nam (UTC+7)
   const getVietnamMonday = () => {
     const now = new Date()
@@ -476,9 +496,10 @@ export function XTimetable() {
   }
 
   // Render ô ca học
-  const renderSlotCell = (slot: TimetableSlot) => {
+  const renderSlotCell = (slot: TimetableSlot, cellDayKey: string) => {
     const isCompleted = completedSlots.includes(slot.id)
     const isOff = slot.subject === "Nghỉ"
+    const isToday = cellDayKey === currentDayKey
 
     return (
       <button
@@ -491,12 +512,16 @@ export function XTimetable() {
           }
         }}
         className={cn(
-          "w-full text-left p-4 rounded-xl border transition-all duration-300 relative overflow-hidden group select-none",
+          "w-full text-left p-4 rounded-xl border transition-all duration-300 relative overflow-hidden group select-none flex flex-col justify-between h-[135px]",
           isCompleted
             ? "bg-[hsl(var(--secondary))] border-[hsl(var(--primary))] shadow-[0_0_15px_hsl(var(--primary)/0.25)] text-[hsl(var(--foreground))] hover:shadow-[0_0_20px_hsl(var(--primary)/0.4)]"
             : isOff
               ? "bg-[hsl(var(--card))]/30 border-dashed border-[hsl(var(--border))]/20 text-[hsl(var(--muted-foreground))]/40"
-              : "bg-[hsl(var(--card))]/80 border-[hsl(var(--border))]/30 text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--muted-foreground))]/50 hover:bg-[hsl(var(--secondary))]"
+              : "bg-[hsl(var(--card))]/80 border-[hsl(var(--border))]/30 text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--muted-foreground))]/50 hover:bg-[hsl(var(--secondary))]",
+          isToday && !isOff && (isCompleted 
+            ? "ring-2 ring-[hsl(var(--primary))] border-[hsl(var(--primary))] shadow-[0_0_20px_hsl(var(--primary)/0.45)]"
+            : "ring-2 ring-[hsl(var(--primary))]/50 border-[hsl(var(--primary))]/70 shadow-[0_0_15px_hsl(var(--primary)/0.3)] bg-[hsl(var(--card))]/95"
+          )
         )}
       >
         {isCompleted && (
@@ -525,18 +550,20 @@ export function XTimetable() {
           ) : null}
         </div>
 
-        <h3 className={cn(
-          "mt-3 text-lg font-medium leading-none tracking-tight",
-          isOff
-            ? "text-[hsl(var(--muted-foreground))]/45 font-normal italic"
-            : isCompleted
-              ? "text-[hsl(var(--foreground))]"
-              : "text-[hsl(var(--foreground))]/70 group-hover:text-[hsl(var(--foreground))]"
-        )}>
-          {isOff ? "Nghỉ học" : slot.subject}
-        </h3>
+        <div className="flex-1 flex flex-col justify-center my-1.5">
+          <h3 className={cn(
+            "text-[13px] font-medium leading-snug tracking-tight line-clamp-3",
+            isOff
+              ? "text-[hsl(var(--muted-foreground))]/45 font-normal italic"
+              : isCompleted
+                ? "text-[hsl(var(--foreground))]"
+                : "text-[hsl(var(--foreground))]/70 group-hover:text-[hsl(var(--foreground))]"
+          )}>
+            {isOff ? "Nghỉ học" : slot.subject}
+          </h3>
+        </div>
 
-        <div className="mt-4 flex items-center gap-1.5 text-[11px] text-[hsl(var(--muted-foreground))]">
+        <div className="flex items-center gap-1.5 text-[11px] text-[hsl(var(--muted-foreground))]">
           <Clock className="h-3 w-3" />
           <span className={jetbrainsMono.className}>{slot.time}</span>
         </div>
@@ -667,13 +694,13 @@ export function XTimetable() {
                   <th className={cn("p-5 text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] w-[120px] text-center border-r border-[hsl(var(--border))]/10", jetbrainsMono.className)}>
                     Khung Giờ
                   </th>
-                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center border-r border-[hsl(var(--border))]/10">Thứ 2</th>
-                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center border-r border-[hsl(var(--border))]/10">Thứ 3</th>
-                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center border-r border-[hsl(var(--border))]/10">Thứ 4</th>
-                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center border-r border-[hsl(var(--border))]/10">Thứ 5</th>
-                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center border-r border-[hsl(var(--border))]/10">Thứ 6</th>
-                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center border-r border-[hsl(var(--border))]/10">Thứ 7</th>
-                  <th className="p-5 text-sm font-semibold text-[hsl(var(--foreground))] text-center">Chủ Nhật</th>
+                  <th className={getHeaderClass('t2')}>Thứ 2</th>
+                  <th className={getHeaderClass('t3')}>Thứ 3</th>
+                  <th className={getHeaderClass('t4')}>Thứ 4</th>
+                  <th className={getHeaderClass('t5')}>Thứ 5</th>
+                  <th className={getHeaderClass('t6')}>Thứ 6</th>
+                  <th className={getHeaderClass('t7')}>Thứ 7</th>
+                  <th className={getHeaderClass('cn', false)}>Chủ Nhật</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[hsl(var(--border))]/25">
@@ -683,13 +710,13 @@ export function XTimetable() {
                     <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca Sáng</span>
                     <span className={cn("block mt-1.5 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>07:30 - 10:50</span>
                   </td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t2)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t3)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t4)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t5)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t6)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t7)}</td>
-                  <td className="p-3">{renderSlotCell(slots.sang.cn)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t2, "t2")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t3, "t3")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t4, "t4")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t5, "t5")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t6, "t6")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t7, "t7")}</td>
+                  <td className="p-3">{renderSlotCell(slots.sang.cn, "cn")}</td>
                 </tr>
 
                 {/* HÀNG 2: CA CHIỀU 1 */}
@@ -698,13 +725,13 @@ export function XTimetable() {
                     <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca Chiều 1</span>
                     <span className={cn("block mt-1.5 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>14:00 - 16:20</span>
                   </td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t2)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t3)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t4)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t5)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t6)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t7)}</td>
-                  <td className="p-3">{renderSlotCell(slots.chieu1.cn)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t2, "t2")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t3, "t3")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t4, "t4")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t5, "t5")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t6, "t6")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t7, "t7")}</td>
+                  <td className="p-3">{renderSlotCell(slots.chieu1.cn, "cn")}</td>
                 </tr>
 
                 {/* HÀNG 3: CA CHIỀU 2 */}
@@ -713,13 +740,13 @@ export function XTimetable() {
                     <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca Chiều 2</span>
                     <span className={cn("block mt-1.5 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>17:15 - 19:25</span>
                   </td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t2)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t3)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t4)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t5)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t6)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t7)}</td>
-                  <td className="p-3">{renderSlotCell(slots.chieu2.cn)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t2, "t2")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t3, "t3")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t4, "t4")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t5, "t5")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t6, "t6")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t7, "t7")}</td>
+                  <td className="p-3">{renderSlotCell(slots.chieu2.cn, "cn")}</td>
                 </tr>
 
                 {/* HÀNG 4: CA TỐI */}
@@ -728,13 +755,13 @@ export function XTimetable() {
                     <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca Tối</span>
                     <span className={cn("block mt-1.5 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>19:30 - 21:50</span>
                   </td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t2)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t3)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t4)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t5)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t6)}</td>
-                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t7)}</td>
-                  <td className="p-3">{renderSlotCell(slots.toi.cn)}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t2, "t2")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t3, "t3")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t4, "t4")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t5, "t5")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t6, "t6")}</td>
+                  <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t7, "t7")}</td>
+                  <td className="p-3">{renderSlotCell(slots.toi.cn, "cn")}</td>
                 </tr>
               </tbody>
             </table>
