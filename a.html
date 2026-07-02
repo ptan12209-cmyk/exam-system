@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Học Tập - Tối Giản & Trực Quan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            900: '#134e4a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+        }
+        
+        /* Checkbox Styling */
+        .checkbox-wrapper input:checked + div {
+            background-color: #14b8a6;
+            border-color: #14b8a6;
+        }
+        .checkbox-wrapper input:checked + div svg {
+            display: block;
+        }
+        .strike-through {
+            text-decoration: line-through;
+            color: #94a3b8;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+        }
+
+        /* Subject Colors */
+        .sub-math { border-left: 4px solid #2563eb; }
+        .sub-lit { border-left: 4px solid #ea580c; }
+        .sub-sci { border-left: 4px solid #7c3aed; }
+        .sub-eng { border-left: 4px solid #0891b2; }
+        .sub-logic { border-left: 4px solid #4f46e5; }
+        .sub-practice { border-left: 4px solid #dc2626; }
+        
+        .day-tab.active {
+            background-color: #14b8a6;
+            color: white;
+            border-color: #14b8a6;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto space-y-8">
+        
+        <!-- Header -->
+        <header class="text-center space-y-4 pt-4 pb-6">
+            <div class="inline-flex items-center justify-center p-3 bg-brand-100 rounded-2xl mb-2 text-brand-600">
+                <i class="fa-solid fa-brain text-3xl"></i>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
+                Hệ Thống Theo Dõi Khối Lượng Kiến Thức
+            </h1>
+            <p class="text-slate-500 text-lg max-w-2xl mx-auto font-medium">
+                4 Tiếng / Ngày • Bao quát trọn vẹn THPTQG & ĐGNL
+            </p>
+        </header>
+
+        <!-- Progress Global -->
+        <div class="glass-card rounded-2xl p-6 border-t-4 border-t-brand-500 mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-brand-500"></i> Tiến Độ Tuần Này
+                    </h3>
+                    <p class="text-sm text-slate-500">Tổng cộng: 28 ca (Hoàn thành: <span id="global-completed" class="font-bold text-brand-600">0</span>/28)</p>
+                </div>
+                <button onclick="resetAll()" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg transition font-medium">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> Làm mới tuần
+                </button>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-4 overflow-hidden">
+                <div id="global-progress" class="bg-gradient-to-r from-brand-400 to-brand-600 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Main Content: Tabs and Schedule -->
+        <div class="glass-card rounded-2xl overflow-hidden shadow-sm">
+            
+            <!-- Day Tabs -->
+            <div class="flex overflow-x-auto bg-slate-50 border-b border-slate-200 p-2 gap-2 hide-scrollbar">
+                <button onclick="showDay('t2')" id="btn-t2" class="day-tab active px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 border border-transparent whitespace-nowrap transition">Thứ 2</button>
+                <button onclick="showDay('t3')" id="btn-t3" class="day-tab px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 border border-transparent whitespace-nowrap transition">Thứ 3</button>
+                <button onclick="showDay('t4')" id="btn-t4" class="day-tab px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 border border-transparent whitespace-nowrap transition">Thứ 4</button>
+                <button onclick="showDay('t5')" id="btn-t5" class="day-tab px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 border border-transparent whitespace-nowrap transition">Thứ 5</button>
+                <button onclick="showDay('t6')" id="btn-t6" class="day-tab px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 border border-transparent whitespace-nowrap transition">Thứ 6</button>
+                <button onclick="showDay('t7')" id="btn-t7" class="day-tab px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 border border-transparent whitespace-nowrap transition">Thứ 7</button>
+                <button onclick="showDay('cn')" id="btn-cn" class="day-tab px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 border border-transparent whitespace-nowrap transition">Chủ Nhật</button>
+            </div>
+
+            <!-- Schedule Content -->
+            <div class="p-6 md:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="schedule-grid">
+                    <!-- Day content will be injected here by JS -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Legend -->
+        <div class="flex flex-wrap justify-center gap-4 mt-6 text-sm text-slate-600">
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-600"></span> Toán</div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-orange-600"></span> Văn / TV</div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-purple-600"></span> Khoa Học (Lý, Hóa, Sinh)</div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-cyan-600"></span> Tiếng Anh</div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-indigo-600"></span> Logic / PTSL / TDKH</div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-600"></span> Luyện Đề</div>
+        </div>
+
+    </div>
+
+    <script>
+        // Database of schedule
+        const scheduleData = {
+            t2: [
+                { id: 't2_c1', time: '11:30 - 12:30', name: 'Toán Học', desc: 'Đại số / Giải tích', type: 'sub-math' },
+                { id: 't2_c2', time: '14:30 - 15:30', name: 'Hóa Học', desc: 'Lý thuyết / Bài tập', type: 'sub-sci' },
+                { id: 't2_c3', time: '20:00 - 21:00', name: 'Văn / Tiếng Việt', desc: 'Đọc hiểu / Phân tích', type: 'sub-lit' },
+                { id: 't2_c4', time: '23:00 - 00:00', name: 'Tư duy Khoa Học', desc: 'ĐGNL - Giải quyết vấn đề', type: 'sub-logic' }
+            ],
+            t3: [
+                { id: 't3_c1', time: '11:30 - 12:30', name: 'Vật Lý', desc: 'Lý thuyết / Bài tập', type: 'sub-sci' },
+                { id: 't3_c2', time: '15:00 - 16:00', name: 'Tiếng Anh', desc: 'ĐGNL - Từ vựng / Ngữ pháp', type: 'sub-eng' },
+                { id: 't3_c3', time: '20:00 - 21:00', name: 'Toán Học', desc: 'Hình học', type: 'sub-math' },
+                { id: 't3_c4', time: '23:00 - 00:00', name: 'Tư duy Logic / PTSL', desc: 'ĐGNL - Suy luận', type: 'sub-logic' }
+            ],
+            t4: [
+                { id: 't4_c1', time: '11:30 - 12:30', name: 'Sinh Học', desc: 'Lý thuyết cốt lõi', type: 'sub-sci' },
+                { id: 't4_c2', time: '14:30 - 15:30', name: 'Văn / Tiếng Việt', desc: 'Luyện đề ĐGNL', type: 'sub-lit' },
+                { id: 't4_c3', time: '20:00 - 21:00', name: 'Vật Lý', desc: 'Vận dụng', type: 'sub-sci' },
+                { id: 't4_c4', time: '23:00 - 00:00', name: 'Toán ĐGNL', desc: 'Phản xạ nhanh', type: 'sub-math' }
+            ],
+            t5: [
+                { id: 't5_c1', time: '11:30 - 12:30', name: 'Hóa Học', desc: 'Vận dụng / Phương trình', type: 'sub-sci' },
+                { id: 't5_c2', time: '15:00 - 16:00', name: 'Tiếng Anh', desc: 'ĐGNL - Đọc hiểu', type: 'sub-eng' },
+                { id: 't5_c3', time: '20:00 - 21:00', name: 'Sinh Học', desc: 'Di truyền / Sinh thái', type: 'sub-sci' },
+                { id: 't5_c4', time: '23:00 - 00:00', name: 'Tư duy Khoa Học', desc: 'ĐGNL', type: 'sub-logic' }
+            ],
+            t6: [
+                { id: 't6_c1', time: '11:30 - 12:30', name: 'Văn / Tiếng Việt', desc: 'Nghị luận văn học', type: 'sub-lit' },
+                { id: 't6_c2', time: '14:30 - 15:30', name: 'Tư duy Logic / PTSL', desc: 'ĐGNL', type: 'sub-logic' },
+                { id: 't6_c3', time: '20:00 - 21:00', name: 'Toán Học', desc: 'Vận dụng cao', type: 'sub-math' },
+                { id: 't6_c4', time: '23:00 - 00:00', name: 'Giải Đề Mini', desc: 'Chọn 1 môn bất kỳ', type: 'sub-practice' }
+            ],
+            t7: [
+                { id: 't7_c1', time: '11:30 - 12:30', name: 'Tiếng Anh', desc: 'ĐGNL - Tổng hợp', type: 'sub-eng' },
+                { id: 't7_c2', time: '17:30 - 18:30', name: 'Hóa Học', desc: 'Luyện đề', type: 'sub-sci' },
+                { id: 't7_c3', time: '20:30 - 21:30', name: 'Vật Lý', desc: 'Luyện đề', type: 'sub-sci' },
+                { id: 't7_c4', time: '23:00 - 00:00', name: 'Luyện Đề ĐGNL', desc: 'Bấm giờ thực tế', type: 'sub-practice' }
+            ],
+            cn: [
+                { id: 'cn_c1', time: '11:30 - 12:30', name: 'Toán Học', desc: 'Tổng ôn tuần', type: 'sub-math' },
+                { id: 'cn_c2', time: '17:30 - 18:30', name: 'Văn / Tiếng Việt', desc: 'Tổng ôn tuần', type: 'sub-lit' },
+                { id: 'cn_c3', time: '20:30 - 21:30', name: 'Tư duy Logic / PTSL', desc: 'Tổng ôn tuần', type: 'sub-logic' },
+                { id: 'cn_c4', time: '23:00 - 00:00', name: 'Chữa Lỗi Sai', desc: 'Review toàn bộ tuần (Rất quan trọng)', type: 'sub-practice' }
+            ]
+        };
+
+        // State management
+        let completedTasks = JSON.parse(localStorage.getItem('studyProgress')) || [];
+
+        function init() {
+            // Determine current day (0 is Sunday, 1 is Monday...)
+            const date = new Date();
+            let dayIndex = date.getDay();
+            const dayMap = ['cn', 't2', 't3', 't4', 't5', 't6', 't7'];
+            showDay(dayMap[dayIndex]);
+            updateGlobalProgress();
+        }
+
+        function showDay(dayKey) {
+            // Update Tab styles
+            document.querySelectorAll('.day-tab').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${dayKey}`).classList.add('active');
+
+            // Render content
+            const grid = document.getElementById('schedule-grid');
+            grid.innerHTML = '';
+            
+            const tasks = scheduleData[dayKey];
+            tasks.forEach((task, index) => {
+                const isChecked = completedTasks.includes(task.id);
+                const caNum = index + 1;
+                
+                const cardHTML = `
+                    <div class="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition ${task.type}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex gap-4">
+                                <div class="bg-slate-50 text-slate-500 rounded-lg p-2 flex flex-col items-center justify-center min-w-[70px] h-fit border border-slate-100">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider">Ca ${caNum}</span>
+                                    <span class="text-sm font-bold text-slate-700 mt-0.5">${task.time.split(' - ')[0]}</span>
+                                </div>
+                                <div class="task-content ${isChecked ? 'strike-through' : ''}">
+                                    <h3 class="font-bold text-lg text-slate-800">${task.name}</h3>
+                                    <p class="text-sm text-slate-500 mt-1">${task.desc}</p>
+                                </div>
+                            </div>
+                            <label class="checkbox-wrapper cursor-pointer relative mt-1 ml-2 shrink-0">
+                                <input type="checkbox" class="peer sr-only" ${isChecked ? 'checked' : ''} onchange="toggleTask('${task.id}', this)">
+                                <div class="w-7 h-7 rounded border-2 border-slate-300 flex items-center justify-center transition-all peer-hover:border-brand-500">
+                                    <svg class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                `;
+                grid.innerHTML += cardHTML;
+            });
+        }
+
+        function toggleTask(taskId, checkbox) {
+            const contentDiv = checkbox.closest('.bg-white').querySelector('.task-content');
+            
+            if(checkbox.checked) {
+                if(!completedTasks.includes(taskId)) completedTasks.push(taskId);
+                contentDiv.classList.add('strike-through');
+            } else {
+                completedTasks = completedTasks.filter(id => id !== taskId);
+                contentDiv.classList.remove('strike-through');
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('studyProgress', JSON.stringify(completedTasks));
+            updateGlobalProgress();
+        }
+
+        function updateGlobalProgress() {
+            const totalTasks = 28; // 4 ca * 7 days
+            const completedCount = completedTasks.length;
+            const percentage = (completedCount / totalTasks) * 100;
+            
+            document.getElementById('global-completed').innerText = completedCount;
+            document.getElementById('global-progress').style.width = percentage + '%';
+        }
+
+        function resetAll() {
+            if(confirm('Bạn có chắc chắn muốn xóa toàn bộ tiến độ của tuần này không?')) {
+                completedTasks = [];
+                localStorage.removeItem('studyProgress');
+                init(); // Reload current day view
+            }
+        }
+
+        // Run on load
+        window.onload = init;
+    </script>
+</body>
+</html>

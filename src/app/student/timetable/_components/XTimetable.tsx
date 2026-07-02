@@ -674,7 +674,7 @@ export function XTimetable() {
               <div className="flex justify-between items-center mb-3">
                 <span className="text-xs text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Tiến độ tuần học</span>
                 <span className={cn("text-sm font-bold text-[hsl(var(--primary))]", jetbrainsMono.className)}>
-                  {completedSlots.length} / 24 Ca
+                  {completedSlots.length} / 28 Ca
                 </span>
               </div>
               <div className="h-1.5 w-full bg-[hsl(var(--background))] rounded-full overflow-hidden border border-[hsl(var(--border))]/20">
@@ -716,8 +716,8 @@ export function XTimetable() {
                 {/* HÀNG 1: CA SÁNG */}
                 <tr>
                   <td className="p-4 text-center border-r border-[hsl(var(--border))]/10 bg-[hsl(var(--background))]/20">
-                    <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca Sáng</span>
-                    <span className={cn("block mt-1.5 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>07:30 - 10:50</span>
+                    <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca 1</span>
+                    <span className={cn("block mt-1 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>11:30</span>
                   </td>
                   <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t2, "t2")}</td>
                   <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.sang.t3, "t3")}</td>
@@ -731,8 +731,8 @@ export function XTimetable() {
                 {/* HÀNG 2: CA CHIỀU 1 */}
                 <tr>
                   <td className="p-4 text-center border-r border-[hsl(var(--border))]/10 bg-[hsl(var(--background))]/20">
-                    <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca Chiều 1</span>
-                    <span className={cn("block mt-1.5 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>14:00 - 16:20</span>
+                    <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca 2</span>
+                    <span className={cn("block mt-1 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>Chiều</span>
                   </td>
                   <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t2, "t2")}</td>
                   <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu1.t3, "t3")}</td>
@@ -746,8 +746,8 @@ export function XTimetable() {
                 {/* HÀNG 3: CA CHIỀU 2 */}
                 <tr>
                   <td className="p-4 text-center border-r border-[hsl(var(--border))]/10 bg-[hsl(var(--background))]/20">
-                    <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca Chiều 2</span>
-                    <span className={cn("block mt-1.5 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>17:15 - 19:25</span>
+                    <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca 3</span>
+                    <span className={cn("block mt-1 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>Tối</span>
                   </td>
                   <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t2, "t2")}</td>
                   <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.chieu2.t3, "t3")}</td>
@@ -761,8 +761,8 @@ export function XTimetable() {
                 {/* HÀNG 4: CA TỐI */}
                 <tr>
                   <td className="p-4 text-center border-r border-[hsl(var(--border))]/10 bg-[hsl(var(--background))]/20">
-                    <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca Tối</span>
-                    <span className={cn("block mt-1.5 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>19:30 - 21:50</span>
+                    <span className="block text-xs font-bold text-[hsl(var(--foreground))]/90">Ca 4</span>
+                    <span className={cn("block mt-1 text-[10px] text-[hsl(var(--muted-foreground))]", jetbrainsMono.className)}>23:00</span>
                   </td>
                   <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t2, "t2")}</td>
                   <td className="p-3 border-r border-[hsl(var(--border))]/10">{renderSlotCell(slots.toi.t3, "t3")}</td>

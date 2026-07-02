@@ -8,38 +8,47 @@ const X_ID = "6b4f85c6-b496-464f-967e-4402db77d714"
 const DAT_ID = "cfb9b2b9-c21e-4417-a7d3-17e77db7af03"
 
 const xTimetable = [
-  // SÁNG (Ca 1 - 4)
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 1, start_time: "07:30:00", end_time: "10:50:00", subject: "Toán (THPT) x2, Anh (ĐGNL), Logic (ĐGNL)", note: "Ca 1 - 4", color: "toan" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 2, start_time: "07:30:00", end_time: "10:50:00", subject: "Toán (THPT), Hóa (THPT) x2, Anh (ĐGNL)", note: "Ca 1 - 4", color: "toan" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 3, start_time: "07:30:00", end_time: "10:50:00", subject: "Toán (THPT) x2, Anh (ĐGNL), Logic (ĐGNL)", note: "Ca 1 - 4", color: "toan" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 4, start_time: "07:30:00", end_time: "10:50:00", subject: "Toán (THPT), Hóa (THPT) x2, Anh (ĐGNL)", note: "Ca 1 - 4", color: "toan" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 5, start_time: "07:30:00", end_time: "10:50:00", subject: "Toán (THPT) x2, Anh (ĐGNL), Logic (ĐGNL)", note: "Ca 1 - 4", color: "toan" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 6, start_time: "07:30:00", end_time: "10:50:00", subject: "Bấm Giờ Luyện Đề (THPTQG / ĐGNL)", note: "Ca 1 - 4", color: "logic" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 0, start_time: "07:30:00", end_time: "10:50:00", subject: "Bấm Giờ Luyện Đề (THPTQG / ĐGNL)", note: "Ca 1 - 4", color: "logic" },
+  // Thứ 2
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 1, start_time: "11:30:00", end_time: "12:30:00", subject: "Toán Học", note: "Đại số / Giải tích", color: "toan" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 1, start_time: "14:30:00", end_time: "15:30:00", subject: "Hóa Học", note: "Lý thuyết / Bài tập", color: "hoa" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 1, start_time: "20:00:00", end_time: "21:00:00", subject: "Văn / Tiếng Việt", note: "Đọc hiểu / Phân tích", color: "van" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 1, start_time: "23:00:00", end_time: "00:00:00", subject: "Tư duy Khoa Học", note: "ĐGNL - Giải quyết vấn đề", color: "logic" },
 
-  // CHIỀU (Ca 5 - 7)
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 1, start_time: "14:00:00", end_time: "16:20:00", subject: "Vật Lý (THPT), Hóa (THPT), Văn/Tiếng Việt", note: "Ca 5 - 7", color: "ly" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 2, start_time: "14:00:00", end_time: "16:20:00", subject: "Vật Lý (THPT) x2, Logic/PTSL (ĐGNL)", note: "Ca 5 - 7", color: "ly" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 3, start_time: "14:00:00", end_time: "16:20:00", subject: "Vật Lý (THPT), Hóa (THPT), Văn/Tiếng Việt", note: "Ca 5 - 7", color: "ly" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 4, start_time: "14:00:00", end_time: "16:20:00", subject: "Vật Lý (THPT) x2, Logic/PTSL (ĐGNL)", note: "Ca 5 - 7", color: "ly" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 5, start_time: "14:00:00", end_time: "16:20:00", subject: "Vật Lý (THPT), Hóa (THPT), Văn/Tiếng Việt", note: "Ca 5 - 7", color: "ly" },
-  
-  // Thứ 7 kẹt 13h30-17h, then Chiều Muộn 17h15-19h25
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 6, start_time: "13:30:00", end_time: "17:00:00", subject: "Lịch Kẹt Cố Định", note: "Bận", color: "busy" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 6, start_time: "17:15:00", end_time: "19:25:00", subject: "Phân Tích Sâu Lỗi Sai (Đục rỗng kiến thức)", note: "Ca 5 - 6", color: "van" },
-  
-  // Chủ Nhật kẹt 13h30-17h, then Chiều Muộn 17h15-19h25
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 0, start_time: "13:30:00", end_time: "17:00:00", subject: "Lịch Kẹt Cố Định", note: "Bận", color: "busy" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 0, start_time: "17:15:00", end_time: "19:25:00", subject: "Phân Tích Sâu Lỗi Sai (Đục rỗng kiến thức)", note: "Ca 5 - 6", color: "van" },
+  // Thứ 3
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 2, start_time: "11:30:00", end_time: "12:30:00", subject: "Vật Lý", note: "Lý thuyết / Bài tập", color: "ly" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 2, start_time: "15:00:00", end_time: "16:00:00", subject: "Tiếng Anh", note: "ĐGNL - Từ vựng / Ngữ pháp", color: "anh" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 2, start_time: "20:00:00", end_time: "21:00:00", subject: "Toán Học", note: "Hình học", color: "toan" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 2, start_time: "23:00:00", end_time: "00:00:00", subject: "Tư duy Logic / PTSL", note: "ĐGNL - Suy luận", color: "logic" },
 
-  // TỐI (Ca 8 - 10)
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 1, start_time: "19:30:00", end_time: "21:50:00", subject: "Toán (Nâng cao), Tư duy Khoa Học, Sinh", note: "Ca 8 - 10", color: "vact" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 2, start_time: "19:30:00", end_time: "21:50:00", subject: "Sinh Học, Văn/Tiếng Việt, Tư duy Khoa Học", note: "Ca 8 - 10", color: "vact" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 3, start_time: "19:30:00", end_time: "21:50:00", subject: "Toán (Nâng cao), Tư duy Khoa Học, Sinh", note: "Ca 8 - 10", color: "vact" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 4, start_time: "19:30:00", end_time: "21:50:00", subject: "Sinh Học, Văn/Tiếng Việt, Tư duy Khoa Học", note: "Ca 8 - 10", color: "vact" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 5, start_time: "19:30:00", end_time: "21:50:00", subject: "Toán (Nâng cao), Tư duy Khoa Học, Sinh", note: "Ca 8 - 10", color: "vact" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 6, start_time: "20:15:00", end_time: "23:25:00", subject: "Toán VDC, Tiếng Anh, Logic, PTSL", note: "Ca 7 - 10", color: "vact" },
-  { student_id: X_ID, assigned_by: X_ID, day_of_week: 0, start_time: "20:15:00", end_time: "23:25:00", subject: "Toán VDC, Tiếng Anh, Logic, PTSL", note: "Ca 7 - 10", color: "vact" }
+  // Thứ 4
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 3, start_time: "11:30:00", end_time: "12:30:00", subject: "Sinh Học", note: "Lý thuyết cốt lõi", color: "sinh" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 3, start_time: "14:30:00", end_time: "15:30:00", subject: "Văn / Tiếng Việt", note: "Luyện đề ĐGNL", color: "van" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 3, start_time: "20:00:00", end_time: "21:00:00", subject: "Vật Lý", note: "Vận dụng", color: "ly" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 3, start_time: "23:00:00", end_time: "00:00:00", subject: "Toán ĐGNL", note: "Phản xạ nhanh", color: "toan" },
+
+  // Thứ 5
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 4, start_time: "11:30:00", end_time: "12:30:00", subject: "Hóa Học", note: "Vận dụng / Phương trình", color: "hoa" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 4, start_time: "15:00:00", end_time: "16:00:00", subject: "Tiếng Anh", note: "ĐGNL - Đọc hiểu", color: "anh" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 4, start_time: "20:00:00", end_time: "21:00:00", subject: "Sinh Học", note: "Di truyền / Sinh thái", color: "sinh" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 4, start_time: "23:00:00", end_time: "00:00:00", subject: "Tư duy Khoa Học", note: "ĐGNL", color: "logic" },
+
+  // Thứ 6
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 5, start_time: "11:30:00", end_time: "12:30:00", subject: "Văn / Tiếng Việt", note: "Nghị luận văn học", color: "van" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 5, start_time: "14:30:00", end_time: "15:30:00", subject: "Tư duy Logic / PTSL", note: "ĐGNL", color: "logic" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 5, start_time: "20:00:00", end_time: "21:00:00", subject: "Toán Học", note: "Vận dụng cao", color: "toan" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 5, start_time: "23:00:00", end_time: "00:00:00", subject: "Giải Đề Mini", note: "Chọn 1 môn bất kỳ", color: "vact" },
+
+  // Thứ 7
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 6, start_time: "11:30:00", end_time: "12:30:00", subject: "Tiếng Anh", note: "ĐGNL - Tổng hợp", color: "anh" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 6, start_time: "17:30:00", end_time: "18:30:00", subject: "Hóa Học", note: "Luyện đề", color: "hoa" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 6, start_time: "20:30:00", end_time: "21:30:00", subject: "Vật Lý", note: "Luyện đề", color: "ly" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 6, start_time: "23:00:00", end_time: "00:00:00", subject: "Luyện Đề ĐGNL", note: "Bấm giờ thực tế", color: "vact" },
+
+  // Chủ Nhật
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 0, start_time: "11:30:00", end_time: "12:30:00", subject: "Toán Học", note: "Tổng ôn tuần", color: "toan" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 0, start_time: "17:30:00", end_time: "18:30:00", subject: "Văn / Tiếng Việt", note: "Tổng ôn tuần", color: "van" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 0, start_time: "20:30:00", end_time: "21:30:00", subject: "Tư duy Logic / PTSL", note: "Tổng ôn tuần", color: "logic" },
+  { student_id: X_ID, assigned_by: X_ID, day_of_week: 0, start_time: "23:00:00", end_time: "00:00:00", subject: "Chữa Lỗi Sai", note: "Review toàn bộ tuần (Rất quan trọng)", color: "vact" }
 ]
 
 const datTimetable = [
