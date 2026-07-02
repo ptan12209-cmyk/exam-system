@@ -10,6 +10,14 @@ function startExpressServer(client) {
   const app = express();
   app.use(express.json());
 
+  app.get('/', (req, res) => {
+    res.json({ status: 'active', message: 'ExamHub Discord Bot API is running.' });
+  });
+
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', uptime: process.uptime() });
+  });
+
   app.post('/api/send-dm', async (req, res) => {
     const { discord_id, message, secret_token } = req.body;
     if (secret_token !== DISCORD_SYNC_SECRET) return res.status(401).json({ error: 'Unauthorized' });
