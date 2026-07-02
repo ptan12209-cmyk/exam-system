@@ -187,10 +187,10 @@ export function XTimetable() {
           const grid = JSON.parse(JSON.stringify(DEFAULT_TIMETABLE_SLOTS)) // clone
           dbSlots.forEach((row: any) => {
             let timeKey = ''
-            if (row.start_time.startsWith('08:00') || row.start_time.startsWith('07:30')) timeKey = 'sang'
-            else if (row.start_time.startsWith('14:00') || row.start_time.startsWith('13:30')) timeKey = 'chieu1'
-            else if (row.start_time.startsWith('16:45') || row.start_time.startsWith('17:15')) timeKey = 'chieu2'
-            else if (row.start_time.startsWith('20:00') || row.start_time.startsWith('19:30') || row.start_time.startsWith('20:15')) timeKey = 'toi'
+            if (row.start_time.startsWith('11:30')) timeKey = 'sang'
+            else if (row.start_time.startsWith('14:30') || row.start_time.startsWith('15:00') || row.start_time.startsWith('17:30')) timeKey = 'chieu1'
+            else if (row.start_time.startsWith('20:00') || row.start_time.startsWith('20:30')) timeKey = 'chieu2'
+            else if (row.start_time.startsWith('23:00')) timeKey = 'toi'
 
             const dayKeys: Record<number, string> = { 1: 't2', 2: 't3', 3: 't4', 4: 't5', 5: 't6', 6: 't7', 0: 'cn' }
             const dayKey = dayKeys[row.day_of_week]
