@@ -6,6 +6,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const { activeSessions, activeCheckins, afkCooldowns, setAfkCooldown, getMutedDuration, getSharingScreenDuration, getCameraDuration } = require('../utils/sessions');
 const { syncSession } = require('../utils/sync');
 const { notifyTeacher } = require('../utils/embeds');
+const supabase = require('../utils/supabase');
 const {
   CLASS_VOICE_CHANNEL_ID, AFK_VOICE_CHANNEL_ID,
   AFK_DEAFEN_TIMEOUT_SECONDS, AFK_MUTE_TIMEOUT_SECONDS, AFK_SCREENSHARE_TIMEOUT_SECONDS,
@@ -21,8 +22,22 @@ function registerVoiceStateHandler(client) {
     const isSharingScreen = newState.streaming;
     const isCameraOn = newState.selfVideo;
 
+    // Fetch profile to resolve dedicated study voice channel
+    let profile = null;
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, discord_study_channel_id')
+        .eq('discord_id', userId)
+        .maybeSingle();
+      profile = data;
+    } catch (err) {
+      console.error(`[VOICE_STATE] Error fetching profile for ${userId}:`, err.message);
+    }
+    const userClassroomChannelId = profile?.discord_study_channel_id || CLASS_VOICE_CHANNEL_ID;
+
     // Case 1: Joined the classroom
-    if (newState.channelId === CLASS_VOICE_CHANNEL_ID && oldState.channelId !== CLASS_VOICE_CHANNEL_ID) {
+    if (newState.channelId === userClassroomChannelId && oldState.channelId !== userClassroomChannelId) {
       // Rejoin cooldown check
       const cooldownExpires = afkCooldowns.get(userId);
       if (cooldownExpires && Date.now() < cooldownExpires) {
@@ -76,7 +91,7 @@ function registerVoiceStateHandler(client) {
     }
 
     // Case 2: Left the classroom
-    else if (oldState.channelId === CLASS_VOICE_CHANNEL_ID && newState.channelId !== CLASS_VOICE_CHANNEL_ID) {
+    else if (oldState.channelId === userClassroomChannelId && newState.channelId !== userClassroomChannelId) {
       console.log(`[LEAVE] ${username} left the classroom.`);
       const session = activeSessions.get(userId);
       if (session) {
@@ -102,7 +117,7 @@ function registerVoiceStateHandler(client) {
     }
 
     // Case 3: Status change while in channel
-    else if (newState.channelId === CLASS_VOICE_CHANNEL_ID && oldState.channelId === CLASS_VOICE_CHANNEL_ID) {
+    else if (newState.channelId === userClassroomChannelId && oldState.channelId === userClassroomChannelId) {
       const session = activeSessions.get(userId);
       if (!session) return;
 
@@ -221,15 +236,16 @@ function startPeriodicTimer(client) {
                   .setTimestamp().setFooter({ text: 'ECODEx Learning System' });
                 await dmMessage.edit({ embeds: [expiredEmbed], components: [] }).catch(() => null);
 
-                const voiceChannel = client.channels.cache.get(CLASS_VOICE_CHANNEL_ID);
-                if (voiceChannel && voiceChannel.isVoiceBased()) {
-                  const member = voiceChannel.members.get(userId);
-                  if (member && AFK_VOICE_CHANNEL_ID) {
-                    await member.voice.setChannel(AFK_VOICE_CHANNEL_ID).catch(() => null);
-                    console.log(`[AUTO-AFK] Moved ${member.user.username} to AFK due to check-in timeout.`);
-                    setAfkCooldown(userId);
-                    await notifyTeacher(client, '❌ Học sinh không xác nhận điểm danh', `**${member.user.username}** (<@${userId}>) đã không xác nhận điểm danh trong 3 phút và bị chuyển sang phòng AFK.\nCooldown: ${Math.round(AFK_REJOIN_COOLDOWN_SECONDS / 60)} phút.`, 0xEF4444);
-                  }
+                let member = null;
+                for (const guild of client.guilds.cache.values()) {
+                  member = guild.members.cache.get(userId);
+                  if (member && member.voice.channelId) break;
+                }
+                if (member && member.voice.channelId && AFK_VOICE_CHANNEL_ID) {
+                  await member.voice.setChannel(AFK_VOICE_CHANNEL_ID).catch(() => null);
+                  console.log(`[AUTO-AFK] Moved ${member.user.username} to AFK due to check-in timeout.`);
+                  setAfkCooldown(userId);
+                  await notifyTeacher(client, '❌ Học sinh không xác nhận điểm danh', `**${member.user.username}** (<@${userId}>) đã không xác nhận điểm danh trong 3 phút và bị chuyển sang phòng AFK.\nCooldown: ${Math.round(AFK_REJOIN_COOLDOWN_SECONDS / 60)} phút.`, 0xEF4444);
                 }
               }, 180000);
 
@@ -242,7 +258,6 @@ function startPeriodicTimer(client) {
             session.lastCheckinTime = now;
           }
         }
-      }
 
       // 3. Escalation Warning System
       const escalationChecks = [];
@@ -312,14 +327,16 @@ function startPeriodicTimer(client) {
       }
 
       if (shouldMove && AFK_VOICE_CHANNEL_ID) {
-        const channel = client.channels.cache.get(CLASS_VOICE_CHANNEL_ID);
-        if (channel && channel.isVoiceBased()) {
-          const member = channel.members.get(userId);
-          if (member) {
-            try {
-              await member.voice.setChannel(AFK_VOICE_CHANNEL_ID);
-              console.log(`[AUTO-AFK] Moved ${member.user.username} to AFK channel due to: ${moveReason}.`);
-              setAfkCooldown(userId);
+        let member = null;
+        for (const guild of client.guilds.cache.values()) {
+          member = guild.members.cache.get(userId);
+          if (member && member.voice.channelId) break;
+        }
+        if (member && member.voice.channelId) {
+          try {
+            await member.voice.setChannel(AFK_VOICE_CHANNEL_ID);
+            console.log(`[AUTO-AFK] Moved ${member.user.username} to AFK channel due to: ${moveReason}.`);
+            setAfkCooldown(userId);
               const embed = new EmbedBuilder()
                 .setColor(0xEF4444).setTitle('🔇 Bạn đã bị chuyển sang phòng AFK')
                 .setDescription(`Hệ thống đã tự động chuyển bạn sang phòng AFK vì bạn đã **${moveReason}**.\n\n⏳ Bạn cần đợi **${Math.round(AFK_REJOIN_COOLDOWN_SECONDS / 60)} phút** trước khi có thể quay lại phòng học.`)

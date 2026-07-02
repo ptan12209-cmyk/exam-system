@@ -81,7 +81,7 @@ async function checkTimetables(client) {
     // Fetch all student profiles with linked discord_id
     const { data: profiles, error } = await supabase
       .from('profiles')
-      .select('id, full_name, class, nickname, discord_id')
+      .select('id, full_name, class, nickname, discord_id, discord_study_channel_id')
       .eq('role', 'student')
       .not('discord_id', 'is', null);
 
@@ -178,13 +178,15 @@ async function checkTimetables(client) {
                 sentPublicReminders.add(reminderKey);
 
                 // Fetch guild to find channels
-                const voiceChannel = await client.channels.fetch(CLASS_VOICE_CHANNEL_ID).catch(() => null);
+                const studyChannelId = profile.discord_study_channel_id || CLASS_VOICE_CHANNEL_ID;
+                const voiceChannel = await client.channels.fetch(studyChannelId).catch(() => null);
                 if (voiceChannel && voiceChannel.guild) {
                   const channel = await getReminderChannel(client, voiceChannel.guild);
                   if (channel) {
                     const lateText = elapsedLate >= 5 ? `đã muộn **5 phút** 🚨` : `đã bắt đầu ⏰`;
+                    const channelMention = studyChannelId ? ` <#${studyChannelId}>` : '';
                     await channel.send({
-                      content: `🚨 **CẢNH BÁO VẮNG HỌC** 🚨\nChào <@${profile.discord_id}>, ca học môn **${entry.subject}** (${entry.start_time.slice(0, 5)} - ${entry.end_time.slice(0, 5)}) ${lateText}.\n\nHiện tại hệ thống nhận thấy bạn vẫn chưa vào phòng học Discord.\n👉 Vui lòng tham gia phòng học ngay lập tức!`
+                      content: `🚨 **CẢNH BÁO VẮNG HỌC** 🚨\nChào <@${profile.discord_id}>, ca học môn **${entry.subject}** (${entry.start_time.slice(0, 5)} - ${entry.end_time.slice(0, 5)}) ${lateText}.\n\nHiện tại hệ thống nhận thấy bạn vẫn chưa vào phòng học Discord${channelMention}.\n👉 Vui lòng tham gia phòng học ngay lập tức!`
                     }).catch(() => null);
                     console.log(`[PUBLIC WARNING] Sent late reminder for ${profile.full_name} (${elapsedLate}m late).`);
                   }
