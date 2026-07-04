@@ -9,7 +9,7 @@ import { NextResponse, type NextRequest } from 'next/server'
  */
 
 // Routes that require authentication
-const PROTECTED_PREFIXES = ['/teacher', '/student', '/arena', '/live', '/profile', '/pricing']
+const PROTECTED_PREFIXES = ['/teacher', '/student', '/arena', '/live', '/profile', '/pricing', '/online-student']
 
 // Routes that should only be accessed when NOT authenticated
 const AUTH_ROUTES = ['/login', '/register']
@@ -72,15 +72,19 @@ export async function middleware(request: NextRequest) {
     }
 
     const dashboardUrl = request.nextUrl.clone()
-    dashboardUrl.pathname = profile.role === 'teacher'
-      ? '/teacher/dashboard'
-      : '/student/dashboard'
+    if (profile.role === 'teacher') {
+      dashboardUrl.pathname = '/teacher/dashboard'
+    } else if (profile.role === 'online_student') {
+      dashboardUrl.pathname = '/online-student/dashboard'
+    } else {
+      dashboardUrl.pathname = '/student/dashboard'
+    }
     return NextResponse.redirect(dashboardUrl)
   }
 
   // Role-based access control for authenticated users
   if (user && isProtected) {
-    const needsRoleCheck = pathname.startsWith('/teacher') || pathname.startsWith('/student')
+    const needsRoleCheck = pathname.startsWith('/teacher') || pathname.startsWith('/student') || pathname.startsWith('/online-student')
     
     if (needsRoleCheck) {
       const { data: profile } = await supabase
@@ -90,16 +94,22 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (profile) {
-        // Student trying to access teacher routes
+        // Accessing teacher routes without being a teacher
         if (pathname.startsWith('/teacher') && profile.role !== 'teacher') {
           const redirectUrl = request.nextUrl.clone()
-          redirectUrl.pathname = '/student/dashboard'
+          redirectUrl.pathname = profile.role === 'online_student' ? '/online-student/dashboard' : '/student/dashboard'
           return NextResponse.redirect(redirectUrl)
         }
-        // Teacher trying to access student routes
+        // Accessing student routes without being a student
         if (pathname.startsWith('/student') && profile.role !== 'student') {
           const redirectUrl = request.nextUrl.clone()
-          redirectUrl.pathname = '/teacher/dashboard'
+          redirectUrl.pathname = profile.role === 'teacher' ? '/teacher/dashboard' : '/online-student/dashboard'
+          return NextResponse.redirect(redirectUrl)
+        }
+        // Accessing online student routes without being an online student
+        if (pathname.startsWith('/online-student') && profile.role !== 'online_student') {
+          const redirectUrl = request.nextUrl.clone()
+          redirectUrl.pathname = profile.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard'
           return NextResponse.redirect(redirectUrl)
         }
       }

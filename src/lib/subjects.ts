@@ -59,3 +59,25 @@ export function getSubjectInfo(value: string) {
 export function getSubjectOptions() {
     return SUBJECTS.map(s => ({ value: s.value, label: `${s.icon} ${s.label}` }))
 }
+
+// Danh sách môn học cho phân hệ Học Online (E-learning)
+export const ONLINE_SUBJECTS = [
+  { value: "toan", dbValue: "math", label: "Toán học", icon: "📐", color: "from-blue-600 to-cyan-600" },
+  { value: "ly", dbValue: "physics", label: "Vật lý", icon: "⚛️", color: "from-purple-600 to-violet-600" },
+  { value: "hoa", dbValue: "chemistry", label: "Hóa học", icon: "🧪", color: "from-green-600 to-emerald-600" },
+  { value: "van", dbValue: "literature", label: "Ngữ văn", icon: "📖", color: "from-amber-600 to-orange-600" },
+  { value: "su", dbValue: "history", label: "Lịch sử", icon: "📜", color: "from-yellow-600 to-amber-600" },
+  { value: "dia", dbValue: "geography", label: "Địa lý", icon: "🌍", color: "from-teal-600 to-cyan-600" },
+  { value: "ktpl", dbValue: "civic_education", label: "Kinh tế & Pháp luật (KTPL)", icon: "⚖️", color: "from-rose-600 to-pink-600" },
+  { value: "sinh", dbValue: "biology", label: "Sinh học", icon: "🧬", color: "from-lime-600 to-green-600" },
+  { value: "anh", dbValue: "english", label: "Tiếng Anh", icon: "🌎", color: "from-sky-600 to-blue-600" },
+  { value: "dgnl_hsa", dbValue: "dgnl_hsa", label: "ĐGNL - HSA", icon: "🎓", color: "from-fuchsia-600 to-pink-600" },
+  { value: "dgnl_vact", dbValue: "dgnl_vact", label: "ĐGNL - VACT", icon: "🎓", color: "from-fuchsia-600 to-purple-600" },
+  { value: "dgnl_tsa", dbValue: "dgnl_tsa", label: "ĐGNL - TSA", icon: "🎓", color: "from-violet-600 to-pink-600" },
+] as const
+
+export type OnlineSubjectValue = typeof ONLINE_SUBJECTS[number]["value"]
+
+export function getOnlineSubjectInfo(value: string) {
+    return ONLINE_SUBJECTS.find(s => s.value === value) || ONLINE_SUBJECTS[0]
+}
