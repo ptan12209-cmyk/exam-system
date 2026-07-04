@@ -36,7 +36,10 @@ import {
   ShieldAlert,
   ShieldCheck,
   UserCheck,
-  UserX
+  UserX,
+  ChevronsUpDown,
+  Eye,
+  EyeOff
 } from "lucide-react"
 
 interface DbFolder {
@@ -91,6 +94,9 @@ export default function TeacherOnlineStudyPage() {
   const [lessons, setLessons] = useState<DbLesson[]>([])
   const [loadingData, setLoadingData] = useState(false)
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({})
+  
+  // Search Lecture/Folder locally
+  const [lectureSearchQuery, setLectureSearchQuery] = useState("")
 
   // Data States (Student Permissions)
   const [students, setStudents] = useState<StudentProfile[]>([])
@@ -189,6 +195,19 @@ export default function TeacherOnlineStudyPage() {
     }
   }, [selectedSubject, activeTab])
 
+  // Expand / Collapse all actions
+  const handleExpandAll = () => {
+    const expanded: Record<string, boolean> = {}
+    folders.forEach(f => {
+      expanded[f.id] = true
+    })
+    setExpandedFolders(expanded)
+  }
+
+  const handleCollapseAll = () => {
+    setExpandedFolders({})
+  }
+
   // Build Folder Tree
   const treeRoots = useMemo(() => {
     const folderMap = new Map<string, TreeNode>()
@@ -201,7 +220,10 @@ export default function TeacherOnlineStudyPage() {
     lessons.forEach(l => {
       const node = folderMap.get(l.folder_id)
       if (node) {
-        node.lessons.push(l)
+        // Apply search query filter if search input is filled
+        if (!lectureSearchQuery.trim() || l.title.toLowerCase().includes(lectureSearchQuery.toLowerCase())) {
+          node.lessons.push(l)
+        }
       }
     })
 
@@ -211,6 +233,17 @@ export default function TeacherOnlineStudyPage() {
 
     folders.forEach(f => {
       const node = folderMap.get(f.id)!
+      
+      // Auto expand folders if searching
+      if (lectureSearchQuery.trim() && (node.lessons.length > 0 || f.name.toLowerCase().includes(lectureSearchQuery.toLowerCase()))) {
+        let parent = f.parent_id
+        while (parent) {
+          setExpandedFolders(prev => ({ ...prev, [parent!]: true }))
+          const parentFolder = folders.find(fd => fd.id === parent)
+          parent = parentFolder ? parentFolder.parent_id : null
+        }
+      }
+
       if (f.parent_id) {
         const parentNode = folderMap.get(f.parent_id)
         if (parentNode) {
@@ -223,13 +256,30 @@ export default function TeacherOnlineStudyPage() {
       }
     })
 
+    // Filter trees based on search query
+    const filterTree = (nodes: TreeNode[]): TreeNode[] => {
+      return nodes.filter(node => {
+        const isMatch = node.folder.name.toLowerCase().includes(lectureSearchQuery.toLowerCase())
+        const filteredChildren = filterTree(node.children)
+        const hasMatchingChildrenOrLessons = filteredChildren.length > 0 || node.lessons.length > 0
+        
+        node.children = filteredChildren
+        return isMatch || hasMatchingChildrenOrLessons
+      })
+    }
+
+    let finalRoots = roots
+    if (lectureSearchQuery.trim()) {
+      finalRoots = filterTree(roots)
+    }
+
     folderMap.forEach(node => {
       node.children.sort((a, b) => a.folder.order_index - b.folder.order_index)
     })
 
-    roots.sort((a, b) => a.folder.order_index - b.folder.order_index)
-    return roots
-  }, [folders, lessons])
+    finalRoots.sort((a, b) => a.folder.order_index - b.folder.order_index)
+    return finalRoots
+  }, [folders, lessons, lectureSearchQuery])
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders(prev => ({ ...prev, [folderId]: !prev[folderId] }))
@@ -340,7 +390,6 @@ export default function TeacherOnlineStudyPage() {
       if (!res.ok) throw new Error(data.error || "Lỗi cập nhật quyền")
       
       success(targetRole === "online_student" ? "Đã cấp quyền học online!" : "Đã thu hồi quyền học online!")
-      // Update local state
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, role: targetRole } : s))
     } catch (err) {
       toastError(err instanceof Error ? err.message : "Lỗi xử lý đổi quyền.")
@@ -394,37 +443,45 @@ export default function TeacherOnlineStudyPage() {
     router.push("/login")
   }
 
-  // Recursive folder tree node component
+  // Recursive folder tree node component with cleaner layout and guidelines
   const ManagedFolderNode = ({ node, level = 0 }: { node: TreeNode; level: number }) => {
     const isExpanded = !!expandedFolders[node.folder.id]
     const hasChildren = node.children.length > 0 || node.lessons.length > 0
+    const isRoot = level === 0
 
     return (
       <div className="space-y-1">
-        {/* Folder row */}
+        {/* Folder row with group class for hover action opacity controls */}
         <div 
-          style={{ paddingLeft: `${level * 16 + 8}px` }}
-          className="flex flex-col gap-3 py-3 px-4 rounded-xl border border-[#8C87A2]/10 bg-[#15131F]/30 sm:flex-row sm:items-center sm:justify-between hover:bg-[#15131F]/60 transition-colors"
+          style={{ paddingLeft: `${isRoot ? 12 : 8}px` }}
+          className={`flex flex-col gap-3 py-2 px-3 rounded-xl border transition-all duration-200 group sm:flex-row sm:items-center sm:justify-between ${
+            isRoot 
+              ? "bg-[#15131F] border-[#8C87A2]/20 hover:border-[#8C87A2]/40" 
+              : "bg-[#15131F]/30 border-[#8C87A2]/10 hover:bg-[#15131F]/50"
+          }`}
         >
           <div 
             onClick={() => toggleFolder(node.folder.id)}
-            className="flex items-center gap-2 cursor-pointer select-none min-w-0 flex-1"
+            className="flex items-center gap-2 cursor-pointer select-none min-w-0 flex-1 py-1"
           >
-            <span className="text-[#8C87A2] shrink-0">
+            <span className="text-[#8C87A2] shrink-0 hover:text-[#C18CFF] transition-colors">
               {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </span>
-            <span className="text-[#C18CFF] shrink-0">
-              {isExpanded ? <FolderOpen className="h-4 w-4" /> : <Folder className="h-4 w-4" />}
+            <span className={`shrink-0 ${isExpanded ? "text-[#C18CFF]" : "text-[#8C87A2]"}`}>
+              {isExpanded ? <FolderOpen className="h-4.5 w-4.5" /> : <Folder className="h-4.5 w-4.5" />}
             </span>
             <div className="min-w-0">
-              <span className="text-[9px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">
-                Order: {node.folder.order_index}
+              <span className="text-[8px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">
+                Thứ tự: {node.folder.order_index}
               </span>
-              <h4 className="font-bold text-sm text-[#F1EDF9] truncate mt-0.5">{node.folder.name}</h4>
+              <h4 className="font-bold text-sm text-[#F1EDF9] truncate group-hover:text-[#C18CFF] transition-colors leading-tight">
+                {node.folder.name}
+              </h4>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+          {/* Action buttons: Subtle on normal, solid on hover to reduce clutter */}
+          <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0 md:opacity-40 group-hover:opacity-100 transition-opacity duration-200">
             {/* Add folder sub */}
             <Button 
               variant="ghost" 
@@ -435,9 +492,9 @@ export default function TeacherOnlineStudyPage() {
                 setFolderOrder(node.children.length + 1)
                 setActiveModal("folder")
               }}
-              className="h-8 rounded-lg border border-[#8C87A2]/30 text-[10px] font-bold px-2 py-1 hover:bg-[#0B0A13]/40"
+              className="h-7.5 rounded-lg border border-[#8C87A2]/20 text-[9px] font-bold px-2 py-0.5 hover:bg-[#0B0A13] text-[#8C87A2] hover:text-[#F1EDF9] transition-colors"
             >
-              <FolderPlus className="mr-0.5 h-3 w-3 text-[#C18CFF]" /> Thư mục
+              <FolderPlus className="mr-0.5 h-3 w-3 text-[#C18CFF]" /> + Thư mục
             </Button>
             {/* Add lesson */}
             <Button 
@@ -452,16 +509,17 @@ export default function TeacherOnlineStudyPage() {
                 setLessonOrder(node.lessons.length + 1)
                 setActiveModal("lesson")
               }}
-              className="h-8 rounded-lg border border-[#8C87A2]/30 text-[10px] font-bold px-2 py-1 hover:bg-[#0B0A13]/40"
+              className="h-7.5 rounded-lg border border-[#8C87A2]/20 text-[9px] font-bold px-2 py-0.5 hover:bg-[#0B0A13] text-[#8C87A2] hover:text-[#F1EDF9] transition-colors"
             >
-              <FilePlus2 className="mr-0.5 h-3 w-3 text-[#C18CFF]" /> Bài học
+              <FilePlus2 className="mr-0.5 h-3 w-3 text-[#C18CFF]" /> + Bài học
             </Button>
             {/* Edit folder */}
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={() => openEditFolder(node.folder)}
-              className="h-8 w-8 rounded-lg border border-[#8C87A2]/30 p-1.5 hover:bg-[#0B0A13]/40"
+              className="h-7.5 w-7.5 rounded-lg border border-[#8C87A2]/20 p-1.5 hover:bg-[#0B0A13] text-[#8C87A2] hover:text-[#C18CFF] transition-colors"
+              title="Đổi tên / sửa đổi"
             >
               <Edit3 className="h-3 w-3" />
             </Button>
@@ -470,16 +528,17 @@ export default function TeacherOnlineStudyPage() {
               variant="ghost" 
               size="icon" 
               onClick={() => setDeleteTarget({ type: "folder", id: node.folder.id, title: node.folder.name })}
-              className="h-8 w-8 rounded-lg border border-red-500/10 text-red-500 hover:text-red-600 hover:bg-red-500/5 p-1.5"
+              className="h-7.5 w-7.5 rounded-lg border border-red-500/10 text-red-400 hover:text-red-500 hover:bg-red-500/10 p-1.5 transition-colors"
+              title="Xóa thư mục"
             >
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>
         </div>
 
-        {/* Children render */}
+        {/* Children indent layout with guide lines */}
         {isExpanded && hasChildren && (
-          <div className="space-y-1.5 mt-1 border-l border-[#8C87A2]/20 pl-2 ml-4">
+          <div className="space-y-1.5 mt-1 border-l border-dashed border-[#8C87A2]/20 ml-4.5 pl-3">
             {/* Subfolders */}
             {node.children.map(child => (
               <ManagedFolderNode key={child.folder.id} node={child} level={level + 1} />
@@ -489,25 +548,25 @@ export default function TeacherOnlineStudyPage() {
             {node.lessons.map(lesson => (
               <div
                 key={lesson.id}
-                style={{ paddingLeft: `${(level + 1) * 16 + 12}px` }}
-                className="flex flex-col gap-2 py-2.5 px-3 rounded-lg border border-[#8C87A2]/5 bg-[#0B0A13]/30 sm:flex-row sm:items-center sm:justify-between hover:bg-[#0B0A13]/55 transition-colors"
+                className="flex flex-col gap-2 py-2 px-3 rounded-lg border border-[#8C87A2]/5 bg-[#0B0A13]/25 group sm:flex-row sm:items-center sm:justify-between hover:bg-[#0B0A13]/50 transition-colors"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <PlayCircle className="h-4 w-4 text-[#8C87A2] shrink-0" />
+                <div className="flex items-center gap-2 min-w-0 flex-1 py-0.5">
+                  <PlayCircle className="h-4 w-4 text-[#8C87A2] shrink-0 group-hover:text-[#C18CFF] transition-colors" />
                   <div className="min-w-0">
-                    <span className="text-[9px] font-semibold text-[#8C87A2] uppercase tracking-wider font-mono">
-                      Bài {lesson.order_index}
+                    <span className="text-[8px] font-semibold text-[#8C87A2] uppercase tracking-wider font-mono">
+                      Bài học {lesson.order_index}
                     </span>
-                    <h5 className="font-semibold text-xs text-[#F1EDF9] truncate mt-0.5">{lesson.title}</h5>
+                    <h5 className="font-semibold text-xs text-[#F1EDF9] truncate mt-0.5 leading-tight">{lesson.title}</h5>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+                <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0 md:opacity-45 group-hover:opacity-100 transition-opacity duration-250">
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     onClick={() => openEditLesson(lesson)}
-                    className="h-7 w-7 rounded-lg border border-[#8C87A2]/30 p-1.5 hover:bg-[#0B0A13]/40"
+                    className="h-7 w-7 rounded-lg border border-[#8C87A2]/20 p-1.5 hover:bg-[#0B0A13] text-[#8C87A2] hover:text-[#C18CFF] transition-colors"
+                    title="Chỉnh sửa bài giảng"
                   >
                     <Edit3 className="h-2.5 w-2.5" />
                   </Button>
@@ -515,7 +574,8 @@ export default function TeacherOnlineStudyPage() {
                     variant="ghost" 
                     size="icon" 
                     onClick={() => setDeleteTarget({ type: "lesson", id: lesson.id, title: lesson.title })}
-                    className="h-7 w-7 rounded-lg border border-red-500/10 text-red-500 hover:text-red-600 hover:bg-red-500/5 p-1.5"
+                    className="h-7 w-7 rounded-lg border border-red-500/10 text-red-400 hover:text-red-500 hover:bg-red-500/10 p-1.5 transition-colors"
+                    title="Xóa bài giảng"
                   >
                     <Trash2 className="h-2.5 w-2.5" />
                   </Button>
@@ -571,7 +631,7 @@ export default function TeacherOnlineStudyPage() {
                   setFolderOrder(folders.filter(f => !f.parent_id).length + 1)
                   setActiveModal("folder")
                 }}
-                className="w-full rounded-xl bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 h-full py-4 text-xs font-bold transition-transform active:scale-95"
+                className="w-full rounded-xl bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 h-full py-4 text-xs font-bold transition-transform active:scale-95 animate-pulse-subtle"
               >
                 <FolderPlus className="mr-1.5 h-4 w-4" /> Tạo Thư Mục Gốc
               </Button>
@@ -605,27 +665,67 @@ export default function TeacherOnlineStudyPage() {
 
         {/* Tab 1: Lectures Manager */}
         {activeTab === "lectures" && (
-          <div className="space-y-6">
-            {/* Filter Toolbar */}
-            <div className="flex flex-col gap-4 rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/30 p-5 md:flex-row md:items-center">
-              <div className="flex-1 space-y-1.5">
-                <Label className="text-xs font-bold uppercase text-[#8C87A2] tracking-wider font-mono">Chọn môn học</Label>
-                <select
-                  value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="w-full rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13] px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#C18CFF] text-[#F1EDF9]"
-                >
-                  {ONLINE_SUBJECTS.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.icon} {s.label}
-                    </option>
-                  ))}
-                </select>
+          <div className="space-y-4">
+            
+            {/* Filter & View Toolbar */}
+            <div className="flex flex-col gap-4 rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/30 p-4 md:flex-row md:items-center justify-between">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
+                <div>
+                  <Label className="text-[10px] font-bold uppercase text-[#8C87A2] tracking-wider font-mono">Chọn môn học</Label>
+                  <select
+                    value={selectedSubject}
+                    onChange={(e) => setSelectedSubject(e.target.value)}
+                    className="w-full mt-1.5 rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                  >
+                    {ONLINE_SUBJECTS.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.icon} {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <Label className="text-[10px] font-bold uppercase text-[#8C87A2] tracking-wider font-mono">Tìm nhanh bài giảng/thư mục</Label>
+                  <div className="relative mt-1.5">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#8C87A2]" />
+                    <input
+                      value={lectureSearchQuery}
+                      onChange={(e) => setLectureSearchQuery(e.target.value)}
+                      placeholder="Tìm bài học..."
+                      className="w-full rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13] pl-9 pr-4 py-2 text-sm text-[#F1EDF9] placeholder-[#8C87A2] outline-none focus:ring-1 focus:ring-[#C18CFF]"
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Expand / Collapse Actions */}
+              <div className="flex items-center gap-2 self-end md:self-auto pt-3 md:pt-0">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleExpandAll}
+                  className="rounded-lg border border-[#8C87A2]/30 text-xs text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F] flex items-center gap-1 px-3 py-1.5"
+                  title="Mở toàn bộ cây thư mục"
+                >
+                  <Eye className="h-3.5 w-3.5" /> Mở tất cả
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleCollapseAll}
+                  className="rounded-lg border border-[#8C87A2]/30 text-xs text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F] flex items-center gap-1 px-3 py-1.5"
+                  title="Thu gọn toàn bộ cây thư mục"
+                >
+                  <EyeOff className="h-3.5 w-3.5" /> Thu gọn
+                </Button>
+              </div>
+
             </div>
 
-            {/* Folder & Lesson tree */}
-            <div className="space-y-4">
+            {/* Folder & Lesson tree container */}
+            <div className="space-y-3 bg-[#15131F]/5 p-4 rounded-2xl border border-[#8C87A2]/10 max-h-[calc(100vh-20rem)] overflow-y-auto custom-scrollbar">
               {loadingData ? (
                 <div className="flex flex-col items-center justify-center py-20">
                   <Loader2 className="h-10 w-10 animate-spin text-[#C18CFF]" />
@@ -650,6 +750,10 @@ export default function TeacherOnlineStudyPage() {
                     <Plus className="mr-1.5 h-4 w-4" /> Tạo thư mục mới
                   </Button>
                 </div>
+              ) : treeRoots.length === 0 && lectureSearchQuery.trim() ? (
+                <div className="text-center py-20 text-sm text-[#8C87A2] italic">
+                  Không tìm thấy bài học/thư mục nào trùng khớp từ khóa.
+                </div>
               ) : (
                 <div className="space-y-3">
                   {treeRoots.map(root => (
@@ -672,9 +776,9 @@ export default function TeacherOnlineStudyPage() {
                 value={searchStudentQuery}
                 onChange={(e) => setSearchStudentQuery(e.target.value)}
                 placeholder="Tìm học sinh theo tên hoặc email..."
-                className="bg-transparent text-sm w-full outline-none text-[#F1EDF9] placeholder-[#8C87A2]"
+                className="bg-transparent text-sm w-full outline-none text-[#F1EDF9] placeholder-[#8C87A2] --webkit-appearance-none"
               />
-              <Button type="submit" size="sm" className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 text-xs font-bold">
+              <Button type="submit" size="sm" className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 text-xs font-bold px-4 py-1.5">
                 Tìm kiếm
               </Button>
             </form>
