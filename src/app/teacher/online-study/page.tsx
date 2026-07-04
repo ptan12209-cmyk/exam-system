@@ -60,6 +60,8 @@ interface DbLesson {
   video_url: string | null
   document_url: string | null
   order_index: number
+  videos?: Array<{ title: string; url: string }>
+  documents?: Array<{ title: string; url: string }>
 }
 
 interface FolderTreeNode {
