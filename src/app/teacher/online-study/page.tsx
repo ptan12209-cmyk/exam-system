@@ -29,7 +29,8 @@ import {
   BookOpen,
   X,
   PlusCircle,
-  Video
+  Video,
+  GraduationCap
 } from "lucide-react"
 
 interface DbFolder {
