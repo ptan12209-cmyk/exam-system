@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { requireAuth, requireRole } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
 
@@ -25,8 +25,9 @@ async function handlePOST(request: NextRequest) {
     throw new ApiError("BAD_REQUEST", "Vai trò không hợp lệ", 400)
   }
 
-  // Update profile role
-  const { data: updatedProfile, error } = await supabase
+  // Use createAdminClient to bypass RLS when editing profiles table
+  const adminSupabase = createAdminClient()
+  const { data: updatedProfile, error } = await adminSupabase
     .from("profiles")
     .update({ role })
     .eq("id", student_id)
@@ -46,7 +47,9 @@ async function handleGET(request: NextRequest) {
 
   const search = request.nextUrl.searchParams.get("search") || ""
 
-  let query = supabase
+  // Use createAdminClient to read profiles safely to ensure teachers can see all students
+  const adminSupabase = createAdminClient()
+  let query = adminSupabase
     .from("profiles")
     .select("id, full_name, email, role, class")
     .in("role", ["student", "online_student"])
