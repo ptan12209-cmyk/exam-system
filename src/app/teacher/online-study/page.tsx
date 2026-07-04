@@ -15,6 +15,7 @@ import { ONLINE_SUBJECTS, getOnlineSubjectInfo } from "@/lib/subjects"
 import { AnimatePresence, motion } from "framer-motion"
 import { 
   Plus, 
+  Folder,
   FolderOpen, 
   FolderPlus, 
   FilePlus2, 
