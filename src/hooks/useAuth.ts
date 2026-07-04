@@ -91,9 +91,15 @@ export function useAuth(options?: UseAuthOptions) {
       setUser({ id: authUser.id, email: authUser.email })
       setProfile(profileData as Profile | null)
 
-      if (options?.requiredRole && profileData.role !== options.requiredRole) {
-        router.push("/login")
-        return
+      if (options?.requiredRole) {
+        const allowedRoles = options.requiredRole === "student" 
+          ? ["student", "online_student"] 
+          : [options.requiredRole];
+          
+        if (!allowedRoles.includes(profileData.role)) {
+          router.push("/login")
+          return
+        }
       }
 
       setLoading(false)
