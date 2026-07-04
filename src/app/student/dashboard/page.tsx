@@ -21,7 +21,8 @@ import {
   AlertCircle,
   GraduationCap,
   Sparkles,
-  Calendar
+  Calendar,
+  Globe2
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
@@ -665,6 +666,12 @@ export default function StudentDashboard() {
                   ),
                   { href: "/student/co-study", label: profile?.nickname === "X" ? "Pomodoro" : "Pomodoro YPT", icon: Timer },
                   { href: "/live", label: profile?.nickname === "X" ? "Học Live" : "Lớp Live", icon: Video },
+                  ...(profile?.role === "online_student"
+                    ? [
+                        { href: "/online-student/dashboard", label: "Học Online 🌐", icon: Globe2 }
+                      ]
+                    : []
+                  ),
                 ].map((item) => {
                   const itemContent = (
                     <div className="flex flex-col justify-between p-3.5 h-20 bg-[#0B0A13] hover:bg-[#0B0A13]/80 border border-[#8C87A2]/20 hover:border-[#C18CFF]/50 rounded-xl transition-all duration-200 group">

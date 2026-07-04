@@ -74,8 +74,6 @@ export async function middleware(request: NextRequest) {
     const dashboardUrl = request.nextUrl.clone()
     if (profile.role === 'teacher') {
       dashboardUrl.pathname = '/teacher/dashboard'
-    } else if (profile.role === 'online_student') {
-      dashboardUrl.pathname = '/online-student/dashboard'
     } else {
       dashboardUrl.pathname = '/student/dashboard'
     }
@@ -100,16 +98,16 @@ export async function middleware(request: NextRequest) {
           redirectUrl.pathname = profile.role === 'online_student' ? '/online-student/dashboard' : '/student/dashboard'
           return NextResponse.redirect(redirectUrl)
         }
-        // Accessing student routes without being a student
-        if (pathname.startsWith('/student') && profile.role !== 'student') {
+        // Accessing student routes without being a student/online_student
+        if (pathname.startsWith('/student') && profile.role !== 'student' && profile.role !== 'online_student') {
           const redirectUrl = request.nextUrl.clone()
-          redirectUrl.pathname = profile.role === 'teacher' ? '/teacher/dashboard' : '/online-student/dashboard'
+          redirectUrl.pathname = '/teacher/dashboard'
           return NextResponse.redirect(redirectUrl)
         }
         // Accessing online student routes without being an online student
         if (pathname.startsWith('/online-student') && profile.role !== 'online_student') {
           const redirectUrl = request.nextUrl.clone()
-          redirectUrl.pathname = profile.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard'
+          redirectUrl.pathname = '/student/dashboard'
           return NextResponse.redirect(redirectUrl)
         }
       }

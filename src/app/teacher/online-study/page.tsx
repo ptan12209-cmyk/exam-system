@@ -30,7 +30,13 @@ import {
   X,
   PlusCircle,
   Video,
-  GraduationCap
+  GraduationCap,
+  Search,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  UserCheck,
+  UserX
 } from "lucide-react"
 
 interface DbFolder {
@@ -57,6 +63,14 @@ interface TreeNode {
   lessons: DbLesson[]
 }
 
+interface StudentProfile {
+  id: string
+  full_name: string | null
+  email: string | null
+  role: "student" | "online_student"
+  class: string | null
+}
+
 export default function TeacherOnlineStudyPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -65,17 +79,23 @@ export default function TeacherOnlineStudyPage() {
   // Auth & Profile
   const [profile, setProfile] = useState<{ full_name: string | null } | null>(null)
   
+  // Navigation Tabs
+  const [activeTab, setActiveTab] = useState<"lectures" | "permissions">("lectures")
+
   // Selection States
   const [selectedSubject, setSelectedSubject] = useState("toan")
   const subjectInfo = getOnlineSubjectInfo(selectedSubject)
 
-  // Data States
+  // Data States (Lectures)
   const [folders, setFolders] = useState<DbFolder[]>([])
   const [lessons, setLessons] = useState<DbLesson[]>([])
   const [loadingData, setLoadingData] = useState(false)
-
-  // Collapsed States for Folder tree
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({})
+
+  // Data States (Student Permissions)
+  const [students, setStudents] = useState<StudentProfile[]>([])
+  const [loadingStudents, setLoadingStudents] = useState(false)
+  const [searchStudentQuery, setSearchStudentQuery] = useState("")
 
   // Modals & Submitting
   const [activeModal, setActiveModal] = useState<"folder" | "lesson" | null>(null)
@@ -97,6 +117,7 @@ export default function TeacherOnlineStudyPage() {
   const [lessonOrder, setLessonOrder] = useState(1)
   const [targetFolderId, setTargetFolderId] = useState("")
 
+  // Check auth
   useEffect(() => {
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser()
@@ -123,11 +144,9 @@ export default function TeacherOnlineStudyPage() {
   const fetchData = async () => {
     setLoadingData(true)
     try {
-      // Fetch folders
       const resFolders = await fetch(`/api/online-study/folders?subject=${subjectInfo.dbValue}`)
       const dataFolders = await resFolders.json()
       
-      // Fetch all lessons for this subject
       const resLessons = await fetch(`/api/online-study/lessons?subject=${subjectInfo.dbValue}`)
       const dataLessons = await resLessons.json()
 
@@ -145,9 +164,30 @@ export default function TeacherOnlineStudyPage() {
     }
   }
 
+  // Fetch Student List for permissions
+  const fetchStudents = async (query = "") => {
+    setLoadingStudents(true)
+    try {
+      const res = await fetch(`/api/online-study/assign-role?search=${encodeURIComponent(query)}`)
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setStudents(data.data || [])
+      }
+    } catch (err) {
+      console.error(err)
+      toastError("Không thể tải danh sách học sinh.")
+    } finally {
+      setLoadingStudents(false)
+    }
+  }
+
   useEffect(() => {
-    fetchData()
-  }, [selectedSubject])
+    if (activeTab === "lectures") {
+      fetchData()
+    } else {
+      fetchStudents(searchStudentQuery)
+    }
+  }, [selectedSubject, activeTab])
 
   // Build Folder Tree
   const treeRoots = useMemo(() => {
@@ -284,6 +324,35 @@ export default function TeacherOnlineStudyPage() {
     }
   }
 
+  // Handle Student Permission Change (Toggle role)
+  const handleToggleRole = async (studentId: string, currentRole: "student" | "online_student") => {
+    const targetRole = currentRole === "student" ? "online_student" : "student"
+    try {
+      const res = await fetch("/api/online-study/assign-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student_id: studentId,
+          role: targetRole
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Lỗi cập nhật quyền")
+      
+      success(targetRole === "online_student" ? "Đã cấp quyền học online!" : "Đã thu hồi quyền học online!")
+      // Update local state
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, role: targetRole } : s))
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : "Lỗi xử lý đổi quyền.")
+    }
+  }
+
+  // Search handler for students
+  const handleStudentSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    fetchStudents(searchStudentQuery)
+  }
+
   // Open Edit Forms
   const openEditFolder = (folder: DbFolder) => {
     setEditingItem({ type: "folder", id: folder.id })
@@ -325,7 +394,7 @@ export default function TeacherOnlineStudyPage() {
     router.push("/login")
   }
 
-  // Recursive folder tree component for management
+  // Recursive folder tree node component
   const ManagedFolderNode = ({ node, level = 0 }: { node: TreeNode; level: number }) => {
     const isExpanded = !!expandedFolders[node.folder.id]
     const hasChildren = node.children.length > 0 || node.lessons.length > 0
@@ -475,7 +544,7 @@ export default function TeacherOnlineStudyPage() {
       <main className="mx-auto max-w-5xl px-4 pb-24 pt-24 md:px-6 lg:pt-28">
         
         {/* Header Section */}
-        <section className="mb-10 grid gap-6 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
+        <section className="mb-8 grid gap-6 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
           <div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/40 px-4 py-2 text-xs font-semibold text-[#8C87A2] uppercase tracking-widest font-mono">
               <GraduationCap className="h-4 w-4 text-[#C18CFF]" /> E-learning portal database
@@ -484,7 +553,7 @@ export default function TeacherOnlineStudyPage() {
               Quản trị Học Online
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-[1.7] text-[#8C87A2]">
-              Xây dựng cây thư mục bài giảng môn học linh hoạt. Học liệu hỗ trợ trực tiếp dán link video và tài liệu lưu trữ từ <strong className="text-[#C18CFF]">Bunny.net</strong> hoặc YouTube.
+              Xây dựng cây thư mục bài giảng môn học và cấp quyền học trực tuyến cho học sinh. Học liệu dán trực tiếp link video và tài liệu từ <strong className="text-[#C18CFF]">Bunny.net</strong>.
             </p>
           </div>
 
@@ -510,58 +579,190 @@ export default function TeacherOnlineStudyPage() {
           </div>
         </section>
 
-        {/* Filter Toolbar */}
-        <div className="mb-8 flex flex-col gap-4 rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/30 p-5 md:flex-row md:items-center">
-          <div className="flex-1 space-y-1.5">
-            <Label className="text-xs font-bold uppercase text-[#8C87A2] tracking-wider font-mono">Chọn môn học</Label>
-            <select
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13] px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#C18CFF] text-[#F1EDF9]"
-            >
-              {ONLINE_SUBJECTS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.icon} {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Tab Selection */}
+        <div className="mb-6 flex gap-2 border-b border-[#8C87A2]/20 pb-px">
+          <button
+            onClick={() => setActiveTab("lectures")}
+            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors ${
+              activeTab === "lectures" 
+                ? "border-[#C18CFF] text-[#C18CFF]" 
+                : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
+            }`}
+          >
+            Quản lý bài giảng
+          </button>
+          <button
+            onClick={() => setActiveTab("permissions")}
+            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors ${
+              activeTab === "permissions" 
+                ? "border-[#C18CFF] text-[#C18CFF]" 
+                : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
+            }`}
+          >
+            Cấp quyền học sinh
+          </button>
         </div>
 
-        {/* Folder & Lesson tree */}
-        <div className="space-y-4">
-          {loadingData ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 className="h-10 w-10 animate-spin text-[#C18CFF]" />
-              <p className="mt-3 text-sm text-[#8C87A2]">Đang tải cấu trúc bài giảng môn {subjectInfo.label}...</p>
+        {/* Tab 1: Lectures Manager */}
+        {activeTab === "lectures" && (
+          <div className="space-y-6">
+            {/* Filter Toolbar */}
+            <div className="flex flex-col gap-4 rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/30 p-5 md:flex-row md:items-center">
+              <div className="flex-1 space-y-1.5">
+                <Label className="text-xs font-bold uppercase text-[#8C87A2] tracking-wider font-mono">Chọn môn học</Label>
+                <select
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value)}
+                  className="w-full rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13] px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                >
+                  {ONLINE_SUBJECTS.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.icon} {s.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          ) : folders.length === 0 ? (
-            <div className="rounded-[2rem] border border-dashed border-[#8C87A2]/30 bg-[#15131F]/20 p-16 text-center">
-              <FolderOpen className="mx-auto h-16 w-16 text-[#8C87A2]/30" strokeWidth={1} />
-              <h3 className="mt-4 text-xl font-bold">Chưa có bài học nào</h3>
-              <p className="mt-2 text-sm text-[#8C87A2] max-w-sm mx-auto">
-                Bắt đầu xây dựng giáo trình học online bằng cách tạo thư mục gốc đầu tiên cho môn này.
-              </p>
-              <Button 
-                onClick={() => {
-                  setFolderName("")
-                  setFolderParentId(null)
-                  setFolderOrder(1)
-                  setActiveModal("folder")
-                }}
-                className="mt-6 rounded-xl bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 font-bold px-6 transition-transform active:scale-95"
-              >
-                <Plus className="mr-1.5 h-4 w-4" /> Tạo thư mục mới
+
+            {/* Folder & Lesson tree */}
+            <div className="space-y-4">
+              {loadingData ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Loader2 className="h-10 w-10 animate-spin text-[#C18CFF]" />
+                  <p className="mt-3 text-sm text-[#8C87A2]">Đang tải cấu trúc bài giảng môn {subjectInfo.label}...</p>
+                </div>
+              ) : folders.length === 0 ? (
+                <div className="rounded-[2rem] border border-dashed border-[#8C87A2]/30 bg-[#15131F]/20 p-16 text-center">
+                  <FolderOpen className="mx-auto h-16 w-16 text-[#8C87A2]/30" strokeWidth={1} />
+                  <h3 className="mt-4 text-xl font-bold">Chưa có bài học nào</h3>
+                  <p className="mt-2 text-sm text-[#8C87A2] max-w-sm mx-auto">
+                    Bắt đầu xây dựng giáo trình học online bằng cách tạo thư mục gốc đầu tiên cho môn này.
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      setFolderName("")
+                      setFolderParentId(null)
+                      setFolderOrder(1)
+                      setActiveModal("folder")
+                    }}
+                    className="mt-6 rounded-xl bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 font-bold px-6 transition-transform active:scale-95"
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" /> Tạo thư mục mới
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {treeRoots.map(root => (
+                    <ManagedFolderNode key={root.folder.id} node={root} level={0} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: Permission Manager */}
+        {activeTab === "permissions" && (
+          <div className="space-y-6">
+            
+            {/* Search toolbar */}
+            <form onSubmit={handleStudentSearchSubmit} className="flex items-center gap-2 rounded-xl border border-[#8C87A2]/20 bg-[#15131F]/30 px-3 py-2">
+              <Search className="h-4 w-4 text-[#8C87A2]" />
+              <input
+                value={searchStudentQuery}
+                onChange={(e) => setSearchStudentQuery(e.target.value)}
+                placeholder="Tìm học sinh theo tên hoặc email..."
+                className="bg-transparent text-sm w-full outline-none text-[#F1EDF9] placeholder-[#8C87A2]"
+              />
+              <Button type="submit" size="sm" className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 text-xs font-bold">
+                Tìm kiếm
               </Button>
+            </form>
+
+            {/* Students list */}
+            <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/10 overflow-hidden">
+              <div className="p-4 border-b border-[#8C87A2]/20 bg-[#15131F]/50 flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Danh sách học viên</span>
+                <span className="text-[10px] bg-[#0B0A13] px-2 py-0.5 rounded border border-[#8C87A2]/20 text-[#8C87A2] font-mono">
+                  {students.length} học viên tìm thấy
+                </span>
+              </div>
+
+              {loadingStudents ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#C18CFF]" />
+                  <p className="mt-2 text-xs text-[#8C87A2]">Đang tải học sinh...</p>
+                </div>
+              ) : students.length === 0 ? (
+                <div className="text-center py-20 text-sm text-[#8C87A2] italic">
+                  Không tìm thấy học sinh nào.
+                </div>
+              ) : (
+                <div className="divide-y divide-[#8C87A2]/10 bg-[#15131F]/20">
+                  {students.map(student => {
+                    const isOnline = student.role === "online_student"
+                    return (
+                      <div key={student.id} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-[#15131F]/30 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${
+                            isOnline 
+                              ? "border-[#C18CFF]/50 bg-[#C18CFF]/10 text-[#C18CFF]" 
+                              : "border-[#8C87A2]/30 bg-[#0B0A13] text-[#8C87A2]"
+                          }`}>
+                            {student.full_name?.[0]?.toUpperCase() || "H"}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-sm text-[#F1EDF9]">{student.full_name || "Chưa đặt tên"}</h4>
+                              {student.class && (
+                                <span className="rounded bg-[#0B0A13] border border-[#8C87A2]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#8C87A2] font-mono">
+                                  {student.class}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-[#8C87A2] mt-0.5">{student.email}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+                          {/* Status Badge */}
+                          <div className={`flex items-center gap-1 px-3 py-1 rounded-full border text-xs font-medium font-mono ${
+                            isOnline 
+                              ? "bg-[#C18CFF]/10 text-[#C18CFF] border-[#C18CFF]/20" 
+                              : "bg-[#8C87A2]/5 text-[#8C87A2] border-[#8C87A2]/15"
+                          }`}>
+                            {isOnline ? (
+                              <><ShieldCheck className="h-3.5 w-3.5" /> ONLINE</>
+                            ) : (
+                              <><ShieldAlert className="h-3.5 w-3.5" /> OFFLINE</>
+                            )}
+                          </div>
+
+                          {/* Toggle Button */}
+                          <Button
+                            size="sm"
+                            onClick={() => handleToggleRole(student.id, student.role)}
+                            className={`rounded-xl font-bold text-xs py-1.5 px-4 flex items-center gap-1 transition-transform active:scale-95 ${
+                              isOnline
+                                ? "bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20"
+                                : "bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90"
+                            }`}
+                          >
+                            {isOnline ? (
+                              <><UserX className="h-3.5 w-3.5" /> Hủy quyền</>
+                            ) : (
+                              <><UserCheck className="h-3.5 w-3.5" /> Cấp quyền</>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="space-y-3">
-              {treeRoots.map(root => (
-                <ManagedFolderNode key={root.folder.id} node={root} level={0} />
-              ))}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
       </main>
 
