@@ -173,7 +173,7 @@ export default function TeacherOnlineStudyPage() {
     } catch (err) {
       console.error(err)
       toastError("Lỗi kết nối tải dữ liệu.")
-    } fill-level: 50%
+    }
     setLoadingData(false)
   }
 
