@@ -45,6 +45,8 @@ interface DbLesson {
   video_url: string | null
   document_url: string | null
   order_index: number
+  videos?: Array<{ title: string; url: string }>
+  documents?: Array<{ title: string; url: string }>
 }
 
 interface FolderTreeNode {
@@ -122,6 +124,9 @@ export default function OnlineStudentStudy() {
 
   // Active Lesson Viewer (like double clicking a file to open viewer)
   const [activeLesson, setActiveLesson] = useState<DbLesson | null>(null)
+  
+  // Selected Video Player State
+  const [activeVideo, setActiveVideo] = useState<{ title: string; url: string } | null>(null)
 
   useEffect(() => {
     async function checkAuth() {
@@ -161,6 +166,18 @@ export default function OnlineStudentStudy() {
     checkAuth()
   }, [router, supabase])
 
+  // Set active video playlist item when active lesson changes
+  useEffect(() => {
+    if (activeLesson) {
+      const initialVideo = activeLesson.videos && activeLesson.videos.length > 0
+        ? activeLesson.videos[0]
+        : (activeLesson.video_url ? { title: "Video bài học", url: activeLesson.video_url } : null)
+      setActiveVideo(initialVideo)
+    } else {
+      setActiveVideo(null)
+    }
+  }, [activeLesson])
+
   // Verify access permissions for current subject
   const hasAccessToSubject = useMemo(() => {
     if (loadingAuth) return true
@@ -188,9 +205,8 @@ export default function OnlineStudentStudy() {
         }
       } catch (e) {
         console.error("Lỗi tải bài học online:", e)
-      } finally {
-        setLoadingData(false)
       }
+      setLoadingData(false)
     }
 
     fetchData()
@@ -493,17 +509,48 @@ export default function OnlineStudentStudy() {
                 <div>
                   <h2 className="text-2xl font-bold text-[#F1EDF9] tracking-tight">{activeLesson.title}</h2>
                   <div className="flex items-center gap-4 mt-2 text-xs text-[#8C87A2] font-mono">
-                    <span className="flex items-center gap-1"><Video className="h-3.5 w-3.5" /> Bunny.net video</span>
+                    <span className="flex items-center gap-1"><Video className="h-3.5 w-3.5" /> Video bài học</span>
                   </div>
                 </div>
 
-                {/* Video Player */}
-                {activeLesson.video_url ? (
-                  <VideoPlayer url={activeLesson.video_url} />
+                {/* Video Player & Playlist Selector */}
+                {activeVideo ? (
+                  <div className="space-y-4">
+                    <VideoPlayer url={activeVideo.url} />
+                    {activeVideo.title && (
+                      <p className="text-xs text-[#8C87A2] font-semibold italic mt-1.5">Đang phát: {activeVideo.title}</p>
+                    )}
+                  </div>
                 ) : (
                   <div className="aspect-video rounded-xl bg-[#0B0A13] border border-[#8C87A2]/20 flex flex-col items-center justify-center text-center p-6">
                     <PlayCircle className="h-12 w-12 text-[#8C87A2]/30 mb-3" />
                     <p className="text-sm font-medium text-[#8C87A2]">Bài giảng này không có video.</p>
+                  </div>
+                )}
+
+                {/* Video Playlist Selector */}
+                {activeLesson.videos && activeLesson.videos.length > 1 && (
+                  <div className="space-y-2.5 mt-4 bg-[#0B0A13]/40 p-4 rounded-xl border border-[#8C87A2]/10">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Danh sách Video bài giảng ({activeLesson.videos.length})</h4>
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {activeLesson.videos.map((vid, idx) => {
+                        const isPlaying = activeVideo?.url === vid.url
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => setActiveVideo(vid)}
+                            className={`flex items-center gap-2 p-2.5 rounded-lg border text-left text-xs font-semibold transition-all ${
+                              isPlaying
+                                ? "bg-[#C18CFF]/15 border-[#C18CFF]/30 text-[#C18CFF] font-bold"
+                                : "bg-[#15131F] border-[#8C87A2]/20 text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F]/80"
+                            }`}
+                          >
+                            <PlayCircle className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{vid.title || `Video ${idx + 1}`}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
 
@@ -518,31 +565,43 @@ export default function OnlineStudentStudy() {
                 {/* Documents Section */}
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-3">Tài liệu ôn tập đính kèm</h4>
-                  {activeLesson.document_url ? (
-                    <div className="flex items-center justify-between p-4 bg-[#0B0A13] border border-[#8C87A2]/20 rounded-xl hover:border-[#C18CFF] transition-colors">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 shrink-0 rounded-lg bg-[#C18CFF]/10 flex items-center justify-center text-[#C18CFF]">
-                          <FileText className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-[#F1EDF9] truncate">Tài liệu đính kèm bài giảng</p>
-                          <p className="text-xs text-[#8C87A2] font-mono truncate mt-0.5">{activeLesson.document_url}</p>
-                        </div>
+                  {(() => {
+                    const docsToDisplay = (activeLesson.documents && activeLesson.documents.length > 0)
+                      ? activeLesson.documents
+                      : (activeLesson.document_url ? [{ title: "Tài liệu học tập", url: activeLesson.document_url }] : [])
+
+                    if (docsToDisplay.length === 0) {
+                      return <p className="text-xs text-[#8C87A2] italic pl-2">Không có tài liệu đính kèm cho bài học này.</p>
+                    }
+
+                    return (
+                      <div className="space-y-2">
+                        {docsToDisplay.map((doc, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-4 bg-[#0B0A13] border border-[#8C87A2]/20 rounded-xl hover:border-[#C18CFF] transition-colors">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="h-10 w-10 shrink-0 rounded-lg bg-[#C18CFF]/10 flex items-center justify-center text-[#C18CFF]">
+                                <FileText className="h-5 w-5" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-[#F1EDF9] truncate">{doc.title || `Tài liệu ôn tập ${idx + 1}`}</p>
+                                <p className="text-xs text-[#8C87A2] font-mono truncate mt-0.5">{doc.url}</p>
+                              </div>
+                            </div>
+                            <a 
+                              href={doc.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="ml-4 shrink-0"
+                            >
+                              <Button className="rounded-lg bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold text-xs py-2 px-4 flex items-center gap-1.5 transition-transform active:scale-95">
+                                <Download className="h-3.5 w-3.5" /> Xem / Tải về <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </a>
+                          </div>
+                        ))}
                       </div>
-                      <a 
-                        href={activeLesson.document_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="ml-4"
-                      >
-                        <Button className="rounded-lg bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold text-xs py-2 px-4 flex items-center gap-1.5 shrink-0 transition-transform active:scale-95">
-                          <Download className="h-3.5 w-3.5" /> Xem / Tải về <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      </a>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-[#8C87A2] italic pl-2">Không có tài liệu đính kèm cho bài học này.</p>
-                  )}
+                    )
+                  })()}
                 </div>
 
               </section>
@@ -620,8 +679,16 @@ export default function OnlineStudentStudy() {
                                   <span className="text-[8px] font-mono text-[#8C87A2]">Bài giảng {lesson.order_index}</span>
                                   <h5 className="font-bold text-xs text-[#F1EDF9] truncate leading-tight mt-0.5">{lesson.title}</h5>
                                   <div className="flex gap-2 mt-2">
-                                    {lesson.video_url && <span className="text-[8px] uppercase font-bold text-[#C18CFF] bg-[#C18CFF]/10 px-1.5 rounded">Video</span>}
-                                    {lesson.document_url && <span className="text-[8px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-1.5 rounded">Tài liệu</span>}
+                                    {(lesson.videos && lesson.videos.length > 0) || lesson.video_url ? (
+                                      <span className="text-[8px] uppercase font-bold text-[#C18CFF] bg-[#C18CFF]/10 px-1.5 rounded">
+                                        Video ({lesson.videos?.length || 1})
+                                      </span>
+                                    ) : null}
+                                    {(lesson.documents && lesson.documents.length > 0) || lesson.document_url ? (
+                                      <span className="text-[8px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-1.5 rounded">
+                                        Tài liệu ({lesson.documents?.length || 1})
+                                      </span>
+                                    ) : null}
                                   </div>
                                 </div>
                               </div>
@@ -640,8 +707,12 @@ export default function OnlineStudentStudy() {
                                   <span className="text-xs font-semibold text-[#F1EDF9] truncate">{lesson.title}</span>
                                   <span className="text-[9px] font-mono text-[#8C87A2]">Bài: {lesson.order_index}</span>
                                   <div className="flex gap-1.5 shrink-0">
-                                    {lesson.video_url && <Video className="h-3 w-3 text-[#C18CFF]" />}
-                                    {lesson.document_url && <FileText className="h-3 w-3 text-emerald-400" />}
+                                    {((lesson.videos && lesson.videos.length > 0) || lesson.video_url) && (
+                                      <Video className="h-3 w-3 text-[#C18CFF]" />
+                                    )}
+                                    {((lesson.documents && lesson.documents.length > 0) || lesson.document_url) && (
+                                      <FileText className="h-3 w-3 text-emerald-400" />
+                                    )}
                                   </div>
                                 </div>
                                 <ChevronRight className="h-4 w-4 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />

@@ -130,6 +130,8 @@ export default function TeacherOnlineStudyPage() {
   const [lessonDocUrl, setLessonDocUrl] = useState("")
   const [lessonOrder, setLessonOrder] = useState(1)
   const [targetFolderId, setTargetFolderId] = useState("")
+  const [lessonVideos, setLessonVideos] = useState<Array<{ title: string; url: string }>>([])
+  const [lessonDocuments, setLessonDocuments] = useState<Array<{ title: string; url: string }>>([])
 
   // Check auth
   useEffect(() => {
@@ -315,13 +317,18 @@ export default function TeacherOnlineStudyPage() {
     setFormError(null)
 
     try {
+      const filteredVideos = lessonVideos.filter(v => v.url.trim() !== "")
+      const filteredDocuments = lessonDocuments.filter(d => d.url.trim() !== "")
+
       const body = {
         id: editingItem?.type === "lesson" ? editingItem.id : undefined,
         folder_id: targetFolderId,
         title: lessonTitle.trim(),
         description: lessonDesc.trim() || null,
-        video_url: lessonVideoUrl.trim() || null,
-        document_url: lessonDocUrl.trim() || null,
+        video_url: filteredVideos[0]?.url || null,
+        document_url: filteredDocuments[0]?.url || null,
+        videos: filteredVideos,
+        documents: filteredDocuments,
         order_index: Number(lessonOrder)
       }
 
@@ -449,6 +456,17 @@ export default function TeacherOnlineStudyPage() {
     setLessonVideoUrl(lesson.video_url || "")
     setLessonDocUrl(lesson.document_url || "")
     setLessonOrder(lesson.order_index)
+
+    const initialVideos = lesson.videos && lesson.videos.length > 0
+      ? lesson.videos
+      : (lesson.video_url ? [{ title: "Video bài học", url: lesson.video_url }] : [{ title: "", url: "" }])
+
+    const initialDocs = lesson.documents && lesson.documents.length > 0
+      ? lesson.documents
+      : (lesson.document_url ? [{ title: "Tài liệu ôn tập", url: lesson.document_url }] : [{ title: "", url: "" }])
+
+    setLessonVideos(initialVideos)
+    setLessonDocuments(initialDocs)
     setActiveModal("lesson")
   }
 
@@ -471,6 +489,8 @@ export default function TeacherOnlineStudyPage() {
     setLessonVideoUrl("")
     setLessonDocUrl("")
     setLessonOrder(1)
+    setLessonVideos([])
+    setLessonDocuments([])
     setFormError(null)
 
     setSelectedStudentForPermission(null)
@@ -605,6 +625,8 @@ export default function TeacherOnlineStudyPage() {
                     setLessonVideoUrl("")
                     setLessonDocUrl("")
                     setLessonOrder(currentLessons.length + 1)
+                    setLessonVideos([{ title: "", url: "" }])
+                    setLessonDocuments([{ title: "", url: "" }])
                     setActiveModal("lesson")
                   }}
                   size="sm"
@@ -1107,7 +1129,7 @@ export default function TeacherOnlineStudyPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-lg rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-6 shadow-2xl z-10"
+              className="relative w-full max-w-xl rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-6 shadow-2xl z-10"
             >
               <button onClick={closeModal} className="absolute right-4 top-4 text-[#8C87A2] hover:text-[#F1EDF9]">
                 <X className="h-5 w-5" />
@@ -1140,26 +1162,120 @@ export default function TeacherOnlineStudyPage() {
                   />
                 </div>
 
-                <div>
-                  <Label className="text-xs text-[#8C87A2] font-mono">Đường dẫn Video bài giảng (Bunny.net hoặc YouTube)</Label>
-                  <Input 
-                    value={lessonVideoUrl}
-                    onChange={(e) => setLessonVideoUrl(e.target.value)}
-                    placeholder="VD: https://iframe.mediadelivery.net/embed/... hoặc YouTube Link"
-                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
-                  />
-                  <p className="text-[10px] text-[#8C87A2] mt-1 italic">Hỗ trợ các link video stream MP4, HLS (m3u8), YouTube, Bunny.net embed.</p>
+                {/* Dynamic Video list */}
+                <div className="space-y-2 border-t border-[#8C87A2]/10 pt-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold text-[#C18CFF] uppercase font-mono">Danh sách Video ({lessonVideos.length})</Label>
+                    <Button 
+                      type="button" 
+                      onClick={() => setLessonVideos([...lessonVideos, { title: "", url: "" }])}
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-[10px] text-[#C18CFF] hover:bg-[#C18CFF]/10 font-bold rounded-lg border border-[#C18CFF]/20"
+                    >
+                      + Thêm Video
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                    {lessonVideos.map((video, idx) => (
+                      <div key={idx} className="flex gap-2 items-start bg-[#0B0A13]/40 p-2 rounded-xl border border-[#8C87A2]/10">
+                        <div className="flex-1 space-y-1.5 min-w-0">
+                          <Input 
+                            value={video.title}
+                            onChange={(e) => {
+                              const updated = [...lessonVideos]
+                              updated[idx].title = e.target.value
+                              setLessonVideos(updated)
+                            }}
+                            placeholder="Tiêu đề (VD: Video Lý thuyết)"
+                            className="h-8 text-xs bg-[#0B0A13] border-[#8C87A2]/20 text-[#F1EDF9] focus:ring-[#C18CFF]"
+                            required
+                          />
+                          <Input 
+                            value={video.url}
+                            onChange={(e) => {
+                              const updated = [...lessonVideos]
+                              updated[idx].url = e.target.value
+                              setLessonVideos(updated)
+                            }}
+                            placeholder="Link video stream / YouTube / Bunny"
+                            className="h-8 text-xs bg-[#0B0A13] border-[#8C87A2]/20 text-[#F1EDF9] focus:ring-[#C18CFF]"
+                            required
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setLessonVideos(lessonVideos.filter((_, i) => i !== idx))}
+                          className="h-8 w-8 text-red-400 hover:text-red-500 hover:bg-red-500/10 shrink-0 self-center rounded-xl"
+                          disabled={lessonVideos.length <= 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                <div>
-                  <Label className="text-xs text-[#8C87A2] font-mono">Đường dẫn Tài liệu bài giảng (Bunny.net PDF / Files)</Label>
-                  <Input 
-                    value={lessonDocUrl}
-                    onChange={(e) => setLessonDocUrl(e.target.value)}
-                    placeholder="VD: https://mydomain.bunny.storage/files/doc.pdf"
-                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
-                  />
-                  <p className="text-[10px] text-[#8C87A2] mt-1 italic">Dán link tài liệu học tập của bài được lưu trữ trên Bunny.net.</p>
+                {/* Dynamic Document list */}
+                <div className="space-y-2 border-t border-[#8C87A2]/10 pt-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold text-emerald-400 uppercase font-mono">Tài liệu ôn tập ({lessonDocuments.length})</Label>
+                    <Button 
+                      type="button" 
+                      onClick={() => setLessonDocuments([...lessonDocuments, { title: "", url: "" }])}
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-[10px] text-emerald-400 hover:bg-emerald-500/10 font-bold rounded-lg border border-emerald-500/20"
+                    >
+                      + Thêm Tài liệu
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                    {lessonDocuments.map((doc, idx) => (
+                      <div key={idx} className="flex gap-2 items-start bg-[#0B0A13]/40 p-2 rounded-xl border border-[#8C87A2]/10">
+                        <div className="flex-1 space-y-1.5 min-w-0">
+                          <Input 
+                            value={doc.title}
+                            onChange={(e) => {
+                              const updated = [...lessonDocuments]
+                              updated[idx].title = e.target.value
+                              setLessonDocuments(updated)
+                            }}
+                            placeholder="Tiêu đề (VD: Đề tự luyện PDF)"
+                            className="h-8 text-xs bg-[#0B0A13] border-[#8C87A2]/20 text-[#F1EDF9] focus:ring-[#C18CFF]"
+                            required
+                          />
+                          <Input 
+                            value={doc.url}
+                            onChange={(e) => {
+                              const updated = [...lessonDocuments]
+                              updated[idx].url = e.target.value
+                              setLessonDocuments(updated)
+                            }}
+                            placeholder="Link tài liệu (Bunny PDF / Storage)"
+                            className="h-8 text-xs bg-[#0B0A13] border-[#8C87A2]/20 text-[#F1EDF9] focus:ring-[#C18CFF]"
+                            required
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setLessonDocuments(lessonDocuments.filter((_, i) => i !== idx))}
+                          className="h-8 w-8 text-red-400 hover:text-red-500 hover:bg-red-500/10 shrink-0 self-center rounded-xl"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    {lessonDocuments.length === 0 && (
+                      <p className="text-[10px] text-[#8C87A2] italic text-center py-2">Không có tài liệu đính kèm.</p>
+                    )}
+                  </div>
                 </div>
 
                 <div>

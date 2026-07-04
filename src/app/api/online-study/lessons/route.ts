@@ -52,7 +52,7 @@ async function handlePOST(request: NextRequest) {
   await requireRole(supabase, user.id, ["teacher", "admin"])
 
   const body = await request.json()
-  const { id, folder_id, title, description, video_url, document_url, order_index } = body as {
+  const { id, folder_id, title, description, video_url, document_url, order_index, videos, documents } = body as {
     id?: string
     folder_id: string
     title: string
@@ -60,11 +60,28 @@ async function handlePOST(request: NextRequest) {
     video_url?: string | null
     document_url?: string | null
     order_index?: number
+    videos?: Array<{ title: string; url: string }>
+    documents?: Array<{ title: string; url: string }>
   }
 
   if (!folder_id || !title) {
     throw new ApiError("BAD_REQUEST", "Thiếu thông tin bắt buộc (folder_id, title)", 400)
   }
+
+  // Backwards compatibility logic
+  let finalVideos = videos || []
+  if (finalVideos.length === 0 && video_url) {
+    finalVideos = [{ title: "Video bài học", url: video_url }]
+  }
+
+  let finalDocuments = documents || []
+  if (finalDocuments.length === 0 && document_url) {
+    finalDocuments = [{ title: "Tài liệu bài học", url: document_url }]
+  }
+
+  // Primary video/document urls to keep old columns in sync
+  const primaryVideoUrl = finalVideos[0]?.url || video_url || null
+  const primaryDocumentUrl = finalDocuments[0]?.url || document_url || null
 
   let dbResult
   if (id) {
@@ -75,8 +92,10 @@ async function handlePOST(request: NextRequest) {
         folder_id,
         title,
         description: description || null,
-        video_url: video_url || null,
-        document_url: document_url || null,
+        video_url: primaryVideoUrl,
+        document_url: primaryDocumentUrl,
+        videos: finalVideos,
+        documents: finalDocuments,
         order_index: order_index || 1,
         teacher_id: user.id
       })
@@ -94,8 +113,10 @@ async function handlePOST(request: NextRequest) {
         folder_id,
         title,
         description: description || null,
-        video_url: video_url || null,
-        document_url: document_url || null,
+        video_url: primaryVideoUrl,
+        document_url: primaryDocumentUrl,
+        videos: finalVideos,
+        documents: finalDocuments,
         order_index: order_index || 1,
         teacher_id: user.id
       })
