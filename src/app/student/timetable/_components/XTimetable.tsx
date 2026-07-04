@@ -118,7 +118,7 @@ export function XTimetable() {
       }
 
       // Chỉ cho phép học sinh X
-      if (profileData.role !== "student" || profileData.nickname !== "X") {
+      if ((profileData.role !== "student" && profileData.role !== "online_student") || profileData.nickname !== "X") {
         router.push("/student/dashboard")
         return
       }

@@ -352,19 +352,16 @@ export default function StudentDashboard() {
                   {profile?.nickname === "X" ? "Làm đề giao riêng" : "Luyện tập ngay"}
                 </Button>
               </a>
-              {profile?.nickname === "X" ? (
-                <Link href="/student/timetable">
-                  <Button variant="outline" className="rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent px-5 py-4 transition-all">
-                    Xem thời khóa biểu
-                  </Button>
-                </Link>
-              ) : (
-                <Link href="/student/analytics">
-                  <Button variant="outline" className="rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent px-5 py-4 transition-all">
-                    Xem chi tiết tiến độ
-                  </Button>
-                </Link>
-              )}
+              <Link href="/student/timetable">
+                <Button variant="outline" className="rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent px-5 py-4 transition-all">
+                  Xem thời khóa biểu
+                </Button>
+              </Link>
+              <Link href="/student/analytics">
+                <Button variant="outline" className="rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent px-5 py-4 transition-all">
+                  Xem chi tiết tiến độ
+                </Button>
+              </Link>
             </div>
           </div>
 
@@ -660,21 +657,14 @@ export default function StudentDashboard() {
               <h3 className={cn("text-2xl text-[#F1EDF9] font-normal mb-4", instrumentSerif.className)}>Công cụ học tập</h3>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { href: "/resources", label: "Tài liệu", icon: BookOpen },
-                  { href: "/arena", label: "Đấu trường", icon: Swords },
-                  { href: "https://theieltsdictionary.com/", label: "IELTS", icon: GraduationCap, isExternal: true },
-                  { href: "/student/achievements", label: "Thành tích", icon: Award },
-                  ...(profile?.nickname === "X"
-                    ? [
-                        { href: "/student/timetable", label: "Lịch học X", icon: Calendar },
-                        { href: "/student/checklist", label: "Nhiệm vụ X", icon: ListTodo }
-                      ]
-                    : [
-                        { href: "/student/checklist", label: "Checklist / Planner", icon: ListTodo }
-                      ]
-                  ),
-                  { href: "/student/co-study", label: profile?.nickname === "X" ? "Pomodoro" : "Pomodoro YPT", icon: Timer },
-                  { href: "/live", label: profile?.nickname === "X" ? "Học Live" : "Lớp Live", icon: Video },
+                  { href: "/resources", label: "Tài liệu học tập", icon: BookOpen },
+                  { href: "/arena", label: "Đấu trường thi đấu", icon: Swords },
+                  { href: "https://theieltsdictionary.com/", label: "Từ điển IELTS", icon: GraduationCap, isExternal: true },
+                  { href: "/student/achievements", label: "Bảng thành tích", icon: Award },
+                  { href: "/student/timetable", label: "Thời khóa biểu", icon: Calendar },
+                  { href: "/student/checklist", label: "Checklist / Nhiệm vụ", icon: ListTodo },
+                  { href: "/student/co-study", label: "Pomodoro học tập", icon: Timer },
+                  { href: "/live", label: "Lớp học trực tiếp", icon: Video },
                   ...((profile?.role as string) === "online_student"
                     ? [
                         { href: "/online-student/dashboard", label: "Học Online 🌐", icon: Globe2 }
