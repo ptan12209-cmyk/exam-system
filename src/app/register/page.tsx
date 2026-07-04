@@ -63,7 +63,7 @@ export default function RegisterPage() {
       return
     }
 
-    router.push(role === "teacher" ? "/teacher/dashboard" : "/student/dashboard")
+    router.push(role === "teacher" ? "/teacher/dashboard" : "/student/portal")
   }
 
   const inputClasses = "w-full bg-transparent text-sm outline-none placeholder:text-[hsl(var(--muted-foreground))]"

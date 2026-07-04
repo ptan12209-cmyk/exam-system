@@ -95,7 +95,7 @@ export async function middleware(request: NextRequest) {
         // Accessing teacher routes without being a teacher
         if (pathname.startsWith('/teacher') && profile.role !== 'teacher') {
           const redirectUrl = request.nextUrl.clone()
-          redirectUrl.pathname = profile.role === 'online_student' ? '/online-student/dashboard' : '/student/dashboard'
+          redirectUrl.pathname = '/student/portal'
           return NextResponse.redirect(redirectUrl)
         }
         // Accessing student routes without being a student/online_student
@@ -107,7 +107,7 @@ export async function middleware(request: NextRequest) {
         // Accessing online student routes without being an online student
         if (pathname.startsWith('/online-student') && profile.role !== 'online_student') {
           const redirectUrl = request.nextUrl.clone()
-          redirectUrl.pathname = '/student/dashboard'
+          redirectUrl.pathname = '/student/portal'
           return NextResponse.redirect(redirectUrl)
         }
       }
