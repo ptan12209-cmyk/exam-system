@@ -1259,7 +1259,7 @@ export default function TeacherOnlineStudyPage() {
 
                   <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1 border border-[#8C87A2]/10 rounded-xl p-3 bg-[#0B0A13]/20 custom-scrollbar">
                     {ONLINE_SUBJECTS.map(subject => {
-                      const isChecked = tempSelectedSubjects.includes("all") || tempSelectedSubjects.includes(subject.value)
+                      const isChecked = tempSelectedSubjects.includes("all") || tempSelectedSubjects.includes(subject.value as string)
                       const isDisabled = tempSelectedSubjects.includes("all")
 
                       return (
@@ -1278,8 +1278,8 @@ export default function TeacherOnlineStudyPage() {
                           <input
                             type="checkbox"
                             checked={isChecked}
-                            disabled={isDisabled && subject.value !== "all"}
-                            onChange={() => handleToggleSubjectCheckbox(subject.value)}
+                            disabled={isDisabled && (subject.value as string) !== "all"}
+                            onChange={() => handleToggleSubjectCheckbox(subject.value as string)}
                             className="h-3.5 w-3.5 rounded border-[#8C87A2]/40 bg-[#0B0A13] text-[#C18CFF] focus:ring-[#C18CFF] accent-[#C18CFF] cursor-pointer disabled:opacity-50"
                           />
                         </label>
