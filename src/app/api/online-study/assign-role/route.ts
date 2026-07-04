@@ -3,43 +3,63 @@ import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { requireAuth, requireRole } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
 
-// POST /api/online-study/assign-role
+// POST /api/online-study/assign-role (Cấp quyền các môn học được chọn hoặc toàn bộ)
 async function handlePOST(request: NextRequest) {
   const supabase = await createClient()
   const user = await requireAuth(supabase)
   
-  // Only teachers or admins can change student roles
+  // Only teachers or admins can edit permissions
   await requireRole(supabase, user.id, ["teacher", "admin"])
 
   const body = await request.json()
-  const { student_id, role } = body as {
+  const { student_id, subjects } = body as {
     student_id: string
-    role: "student" | "online_student"
+    subjects: string[] // e.g., ['math', 'physics'] or ['all'] or []
   }
 
-  if (!student_id || !role) {
-    throw new ApiError("BAD_REQUEST", "Thiếu thông tin bắt buộc (student_id, role)", 400)
+  if (!student_id || !Array.isArray(subjects)) {
+    throw new ApiError("BAD_REQUEST", "Thiếu thông tin bắt buộc (student_id, subjects[])", 400)
   }
 
-  if (role !== "student" && role !== "online_student") {
-    throw new ApiError("BAD_REQUEST", "Vai trò không hợp lệ", 400)
-  }
-
-  // Use createAdminClient to bypass RLS when editing profiles table
   const adminSupabase = createAdminClient()
-  const { data: updatedProfile, error } = await adminSupabase
+
+  // 1. Delete all existing assigned subjects for this student
+  const { error: deleteError } = await adminSupabase
+    .from("student_online_subjects")
+    .delete()
+    .eq("student_id", student_id)
+
+  if (deleteError) throw deleteError
+
+  // 2. Insert new subjects if array is not empty
+  if (subjects.length > 0) {
+    const recordsToInsert = subjects.map(sub => ({
+      student_id,
+      subject: sub,
+      assigned_by: user.id
+    }))
+
+    const { error: insertError } = await adminSupabase
+      .from("student_online_subjects")
+      .insert(recordsToInsert)
+
+    if (insertError) throw insertError
+  }
+
+  // 3. Keep profiles.role in sync with e-learning access
+  // If student has at least one assigned subject, set role to 'online_student'. Otherwise, set to 'student'.
+  const targetRole = subjects.length > 0 ? "online_student" : "student"
+  const { error: profileError } = await adminSupabase
     .from("profiles")
-    .update({ role })
+    .update({ role: targetRole })
     .eq("id", student_id)
-    .select("id, full_name, email, role")
-    .single()
 
-  if (error) throw error
+  if (profileError) throw profileError
 
-  return NextResponse.json(successResponse(updatedProfile))
+  return NextResponse.json(successResponse({ student_id, role: targetRole, subjects }))
 }
 
-// GET /api/online-study/assign-role (Lấy danh sách tất cả học sinh để hiển thị trong panel cấp quyền)
+// GET /api/online-study/assign-role (Lấy danh sách học sinh và các môn học được cấp quyền tương ứng)
 async function handleGET(request: NextRequest) {
   const supabase = await createClient()
   const user = await requireAuth(supabase)
@@ -47,8 +67,9 @@ async function handleGET(request: NextRequest) {
 
   const search = request.nextUrl.searchParams.get("search") || ""
 
-  // Use createAdminClient to read profiles safely to ensure teachers can see all students
   const adminSupabase = createAdminClient()
+
+  // Fetch profiles
   let query = adminSupabase
     .from("profiles")
     .select("id, full_name, email, role, class")
@@ -59,10 +80,36 @@ async function handleGET(request: NextRequest) {
     query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`)
   }
 
-  const { data: students, error } = await query
-  if (error) throw error
+  const { data: students, error: studentsError } = await query
+  if (studentsError) throw studentsError
 
-  return NextResponse.json(successResponse(students || []))
+  // Fetch all assigned subjects for these students
+  const studentIds = (students || []).map(s => s.id)
+  let assignedSubjects: { student_id: string; subject: string }[] = []
+
+  if (studentIds.length > 0) {
+    const { data: subjectsData, error: subjectsError } = await adminSupabase
+      .from("student_online_subjects")
+      .select("student_id, subject")
+      .in("student_id", studentIds)
+
+    if (subjectsError) throw subjectsError
+    assignedSubjects = subjectsData || []
+  }
+
+  // Map subjects back to students
+  const studentsWithSubjects = (students || []).map(student => {
+    const subjects = assignedSubjects
+      .filter(s => s.student_id === student.id)
+      .map(s => s.subject)
+
+    return {
+      ...student,
+      online_subjects: subjects
+    }
+  })
+
+  return NextResponse.json(successResponse(studentsWithSubjects))
 }
 
 export const POST = withErrorHandler(handlePOST)

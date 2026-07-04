@@ -75,7 +75,7 @@ export async function middleware(request: NextRequest) {
     if (profile.role === 'teacher') {
       dashboardUrl.pathname = '/teacher/dashboard'
     } else {
-      dashboardUrl.pathname = '/student/dashboard'
+      dashboardUrl.pathname = '/student/portal'
     }
     return NextResponse.redirect(dashboardUrl)
   }

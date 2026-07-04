@@ -40,7 +40,8 @@ import {
   ChevronLeft,
   LayoutGrid,
   List,
-  Home
+  Home,
+  Sliders
 } from "lucide-react"
 
 interface DbFolder {
@@ -70,8 +71,9 @@ interface StudentProfile {
   id: string
   full_name: string | null
   email: string | null
-  role: "student" | "online_student"
+  role: string
   class: string | null
+  online_subjects: string[]
 }
 
 export default function TeacherOnlineStudyPage() {
@@ -104,9 +106,13 @@ export default function TeacherOnlineStudyPage() {
   const [students, setStudents] = useState<StudentProfile[]>([])
   const [loadingStudents, setLoadingStudents] = useState(false)
   const [searchStudentQuery, setSearchStudentQuery] = useState("")
+  
+  // Student Permission Modal Selection State
+  const [selectedStudentForPermission, setSelectedStudentForPermission] = useState<StudentProfile | null>(null)
+  const [tempSelectedSubjects, setTempSelectedSubjects] = useState<string[]>([]) // array of values or ['all']
 
   // Modals & Submitting
-  const [activeModal, setActiveModal] = useState<"folder" | "lesson" | null>(null)
+  const [activeModal, setActiveModal] = useState<"folder" | "lesson" | "permissions" | null>(null)
   const [editingItem, setEditingItem] = useState<{ type: "folder" | "lesson"; id: string } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ type: "folder" | "lesson"; id: string; title: string } | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -167,9 +173,8 @@ export default function TeacherOnlineStudyPage() {
     } catch (err) {
       console.error(err)
       toastError("Lỗi kết nối tải dữ liệu.")
-    } finally {
-      setLoadingData(false)
-    }
+    } fill-level: 50%
+    setLoadingData(false)
   }
 
   // Fetch Student List for permissions
@@ -192,13 +197,13 @@ export default function TeacherOnlineStudyPage() {
   useEffect(() => {
     if (activeTab === "lectures") {
       fetchData()
-      setSelectedFolderId(null) // reset to root when changing subjects
+      setSelectedFolderId(null)
     } else {
       fetchStudents(searchStudentQuery)
     }
   }, [selectedSubject, activeTab])
 
-  // Build Left Folder-Only Tree Structure
+  // Build Left Folder Tree
   const folderTree = useMemo(() => {
     const map = new Map<string, FolderTreeNode>()
     const roots: FolderTreeNode[] = []
@@ -221,7 +226,6 @@ export default function TeacherOnlineStudyPage() {
       }
     })
 
-    // Sort children by order_index
     map.forEach(node => {
       node.children.sort((a, b) => a.folder.order_index - b.folder.order_index)
     })
@@ -230,7 +234,7 @@ export default function TeacherOnlineStudyPage() {
     return roots
   }, [folders])
 
-  // Breadcrumbs Generator (Windows Explorer Address Bar)
+  // Breadcrumbs Generator
   const breadcrumbs = useMemo(() => {
     if (!selectedFolderId) return []
     const path: DbFolder[] = []
@@ -357,31 +361,75 @@ export default function TeacherOnlineStudyPage() {
     }
   }
 
-  // Handle Student Permission Change (Toggle role)
-  const handleToggleRole = async (studentId: string, currentRole: "student" | "online_student") => {
-    const targetRole = currentRole === "student" ? "online_student" : "student"
+  // Handle Permissions Submit (Save selected subjects for student)
+  const handlePermissionsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedStudentForPermission) return
+    setSubmitting(true)
+    setFormError(null)
+
     try {
       const res = await fetch("/api/online-study/assign-role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          student_id: studentId,
-          role: targetRole
+          student_id: selectedStudentForPermission.id,
+          subjects: tempSelectedSubjects
         })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Lỗi cập nhật quyền")
+
+      success("Đã cập nhật quyền môn học online thành công!")
       
-      success(targetRole === "online_student" ? "Đã cấp quyền học online!" : "Đã thu hồi quyền học online!")
-      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, role: targetRole } : s))
+      // Update local state list
+      setStudents(prev => prev.map(s => 
+        s.id === selectedStudentForPermission.id 
+          ? { ...s, online_subjects: tempSelectedSubjects, role: tempSelectedSubjects.length > 0 ? "online_student" : "student" } 
+          : s
+      ))
+      closeModal()
     } catch (err) {
-      toastError(err instanceof Error ? err.message : "Lỗi xử lý đổi quyền.")
+      setFormError(err instanceof Error ? err.message : "Lỗi xử lý đổi quyền")
+    } finally {
+      setSubmitting(false)
     }
   }
 
   const handleStudentSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     fetchStudents(searchStudentQuery)
+  }
+
+  // Toggle single subject check
+  const handleToggleSubjectCheckbox = (value: string) => {
+    if (value === "all") {
+      if (tempSelectedSubjects.includes("all")) {
+        setTempSelectedSubjects([])
+      } else {
+        setTempSelectedSubjects(["all"])
+      }
+      return
+    }
+
+    // If "all" was selected and now we select a specific subject, remove "all" and add this subject
+    let nextList = tempSelectedSubjects.filter(s => s !== "all")
+    if (nextList.includes(value)) {
+      nextList = nextList.filter(s => s !== value)
+    } else {
+      nextList.push(value)
+    }
+    setTempSelectedSubjects(nextList)
+  }
+
+  // Quick Select All subjects
+  const handleSelectAllSubjects = () => {
+    setTempSelectedSubjects(["all"])
+  }
+
+  // Clear all selections
+  const handleClearAllSubjects = () => {
+    setTempSelectedSubjects([])
   }
 
   // Open Edit Forms
@@ -404,6 +452,12 @@ export default function TeacherOnlineStudyPage() {
     setActiveModal("lesson")
   }
 
+  const openPermissionsModal = (student: StudentProfile) => {
+    setSelectedStudentForPermission(student)
+    setTempSelectedSubjects(student.online_subjects || [])
+    setActiveModal("permissions")
+  }
+
   const closeModal = () => {
     setActiveModal(null)
     setEditingItem(null)
@@ -418,6 +472,9 @@ export default function TeacherOnlineStudyPage() {
     setLessonDocUrl("")
     setLessonOrder(1)
     setFormError(null)
+
+    setSelectedStudentForPermission(null)
+    setTempSelectedSubjects([])
   }
 
   const handleLogout = async () => {
@@ -425,7 +482,30 @@ export default function TeacherOnlineStudyPage() {
     router.push("/login")
   }
 
-  // Left Sidebar Tree Folder Component (Only Folders, Windows Style Sidebar)
+  // Helper to translate subject values to labels
+  const getSubjectLabelsDisplay = (subjects: string[]) => {
+    if (subjects.includes("all")) {
+      return <span className="text-[#C18CFF] font-bold">Tất cả các môn</span>
+    }
+    if (subjects.length === 0) {
+      return <span className="text-[#8C87A2] italic">Chưa cấp quyền môn nào</span>
+    }
+    
+    return (
+      <div className="flex flex-wrap gap-1">
+        {subjects.map(s => {
+          const info = getOnlineSubjectInfo(s)
+          return (
+            <span key={s} className="px-1.5 py-0.5 rounded bg-[#0B0A13] border border-[#8C87A2]/20 text-[10px] text-[#F1EDF9] font-mono">
+              {info.icon} {info.label.split(" ")[0]}
+            </span>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // Left Sidebar Tree Folder Component
   const LeftFolderTreeNode = ({ node, level = 0 }: { node: FolderTreeNode; level: number }) => {
     const isExpanded = !!expandedFolders[node.folder.id]
     const hasSubfolders = node.children.length > 0
@@ -436,7 +516,7 @@ export default function TeacherOnlineStudyPage() {
         <div 
           onClick={() => {
             setSelectedFolderId(node.folder.id)
-            setExpandedFolders(prev => ({ ...prev, [node.folder.id]: true })) // auto expand on select
+            setExpandedFolders(prev => ({ ...prev, [node.folder.id]: true }))
           }}
           style={{ paddingLeft: `${level * 12 + 6}px` }}
           className={`flex items-center justify-between py-1.5 px-2 rounded-lg cursor-pointer transition-colors ${
@@ -506,7 +586,7 @@ export default function TeacherOnlineStudyPage() {
               <Button 
                 onClick={() => {
                   setFolderName("")
-                  setFolderParentId(selectedFolderId) // create subfolder inside current selected folder
+                  setFolderParentId(selectedFolderId)
                   setFolderOrder(currentSubFolders.length + 1)
                   setActiveModal("folder")
                 }}
@@ -561,11 +641,11 @@ export default function TeacherOnlineStudyPage() {
           </button>
         </div>
 
-        {/* Tab 1: Lectures Manager (Windows File Explorer Mode) */}
+        {/* Tab 1: Lectures Manager */}
         {activeTab === "lectures" && (
           <div className="space-y-4">
             
-            {/* Top Toolbar (Subject selection, Search and Address breadcrumb) */}
+            {/* Top Toolbar */}
             <div className="flex flex-col gap-3 rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/30 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
                 
@@ -584,7 +664,7 @@ export default function TeacherOnlineStudyPage() {
                   </select>
                 </div>
 
-                {/* Local search in current folder */}
+                {/* Local search */}
                 <div className="relative w-full sm:w-80">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#8C87A2]" />
                   <input
@@ -595,7 +675,7 @@ export default function TeacherOnlineStudyPage() {
                   />
                 </div>
 
-                {/* View togglers */}
+                {/* View Mode selection */}
                 <div className="flex items-center gap-1 shrink-0 bg-[#0B0A13] p-1 rounded-lg border border-[#8C87A2]/20 self-end sm:self-auto">
                   <button 
                     onClick={() => setViewMode("grid")}
@@ -617,8 +697,6 @@ export default function TeacherOnlineStudyPage() {
 
               {/* Windows Explorer Style Address Bar */}
               <div className="flex items-center gap-1.5 bg-[#0B0A13] border border-[#8C87A2]/20 rounded-xl px-3 py-2 overflow-x-auto text-xs font-mono scrollbar-none">
-                
-                {/* Back button */}
                 {selectedFolderId && (
                   <button
                     onClick={() => {
@@ -632,7 +710,6 @@ export default function TeacherOnlineStudyPage() {
                   </button>
                 )}
 
-                {/* Root link */}
                 <button
                   onClick={() => setSelectedFolderId(null)}
                   className={`flex items-center gap-1 hover:text-[#C18CFF] shrink-0 ${!selectedFolderId ? "text-[#C18CFF] font-bold" : "text-[#8C87A2]"}`}
@@ -654,19 +731,14 @@ export default function TeacherOnlineStudyPage() {
               </div>
             </div>
 
-            {/* Split Screen Panel (Left Sidebar navigation | Right File Viewpane) */}
+            {/* Split Screen Panel */}
             <div className="grid gap-4 md:grid-cols-[240px_1fr] items-start">
               
               {/* Left Pane: Folder Tree Navigation */}
               <aside className="bg-[#15131F]/30 border border-[#8C87A2]/20 rounded-2xl p-3 max-h-[500px] overflow-y-auto w-full hidden md:block">
                 <div className="pb-2 mb-2 border-b border-[#8C87A2]/10 flex items-center justify-between text-[10px] uppercase font-bold text-[#8C87A2] font-mono">
                   <span>Cây thư mục</span>
-                  <button 
-                    onClick={() => setSelectedFolderId(null)} 
-                    className="hover:text-[#C18CFF]"
-                  >
-                    Mở Root
-                  </button>
+                  <button onClick={() => setSelectedFolderId(null)} className="hover:text-[#C18CFF]">Mở Root</button>
                 </div>
                 {folderTree.length === 0 ? (
                   <p className="text-[11px] text-[#8C87A2] italic text-center py-4">Chưa có thư mục</p>
@@ -692,7 +764,7 @@ export default function TeacherOnlineStudyPage() {
                     <FolderOpenIcon className="h-12 w-12 text-[#8C87A2]/30 mb-3" />
                     <h4 className="text-sm font-bold text-[#F1EDF9]">Thư mục trống</h4>
                     <p className="text-xs text-[#8C87A2] max-w-xs mt-1">
-                      Thư mục này hiện không chứa thư mục con hay bài giảng nào. Hãy nhấn nút để thêm bài học mới.
+                      Thư mục này hiện không chứa thư mục con hay bài giảng nào. Hãy nhấn nút ở góc trên để thêm bài học.
                     </p>
                   </div>
                 ) : (
@@ -704,19 +776,16 @@ export default function TeacherOnlineStudyPage() {
                         <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-3">Thư mục con ({currentSubFolders.length})</h4>
                         
                         {viewMode === "grid" ? (
-                          /* Grid Mode folders */
                           <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                             {currentSubFolders.map(folder => (
                               <div
                                 key={folder.id}
                                 onDoubleClick={() => setSelectedFolderId(folder.id)}
-                                onClick={() => setSelectedFolderId(folder.id)} // support single click for mobile
+                                onClick={() => setSelectedFolderId(folder.id)}
                                 className="group relative p-3.5 bg-[#15131F] hover:bg-[#15131F]/80 border border-[#8C87A2]/20 hover:border-[#C18CFF] rounded-xl flex flex-col justify-between h-28 cursor-pointer select-none transition-all duration-200"
                               >
                                 <div className="flex justify-between items-start">
                                   <FolderIcon className="h-7 w-7 text-[#C18CFF]" />
-                                  
-                                  {/* Quick row hover controls */}
                                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button 
                                       onClick={(e) => { e.stopPropagation(); openEditFolder(folder); }}
@@ -742,7 +811,6 @@ export default function TeacherOnlineStudyPage() {
                             ))}
                           </div>
                         ) : (
-                          /* List Mode folders */
                           <div className="border border-[#8C87A2]/15 rounded-xl overflow-hidden divide-y divide-[#8C87A2]/10 bg-[#15131F]/10">
                             {currentSubFolders.map(folder => (
                               <div
@@ -780,13 +848,12 @@ export default function TeacherOnlineStudyPage() {
                       </div>
                     )}
 
-                    {/* Lessons list inside folder */}
+                    {/* Lessons list */}
                     {currentLessons.length > 0 && (
                       <div>
                         <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-3">Bài học ({currentLessons.length})</h4>
                         
                         {viewMode === "grid" ? (
-                          /* Grid Mode lessons */
                           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                             {currentLessons.map(lesson => (
                               <div
@@ -795,8 +862,6 @@ export default function TeacherOnlineStudyPage() {
                               >
                                 <div className="flex justify-between items-start">
                                   <PlayCircle className="h-7 w-7 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
-                                  
-                                  {/* Quick hover action buttons */}
                                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button 
                                       onClick={() => openEditLesson(lesson)}
@@ -818,7 +883,6 @@ export default function TeacherOnlineStudyPage() {
                                 <div className="min-w-0 mt-2">
                                   <span className="text-[8px] font-mono text-[#8C87A2]">Bài giảng {lesson.order_index}</span>
                                   <h5 className="font-bold text-xs text-[#F1EDF9] truncate leading-tight mt-0.5">{lesson.title}</h5>
-                                  
                                   <div className="flex gap-2 mt-2">
                                     {lesson.video_url && <span className="text-[8px] uppercase font-bold text-[#C18CFF] bg-[#C18CFF]/10 px-1 rounded">Video</span>}
                                     {lesson.document_url && <span className="text-[8px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-1 rounded">Tài liệu</span>}
@@ -828,7 +892,6 @@ export default function TeacherOnlineStudyPage() {
                             ))}
                           </div>
                         ) : (
-                          /* List Mode lessons */
                           <div className="border border-[#8C87A2]/10 rounded-xl overflow-hidden divide-y divide-[#8C87A2]/10 bg-[#0B0A13]/10">
                             {currentLessons.map(lesson => (
                               <div
@@ -875,7 +938,7 @@ export default function TeacherOnlineStudyPage() {
           </div>
         )}
 
-        {/* Tab 2: Permission Manager */}
+        {/* Tab 2: Permission Manager (Granular Subjects Assignment) */}
         {activeTab === "permissions" && (
           <div className="space-y-6">
             
@@ -896,9 +959,9 @@ export default function TeacherOnlineStudyPage() {
             {/* Students list */}
             <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/10 overflow-hidden">
               <div className="p-4 border-b border-[#8C87A2]/20 bg-[#15131F]/50 flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Danh sách học viên</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Cấp quyền học trực tuyến</span>
                 <span className="text-[10px] bg-[#0B0A13] px-2 py-0.5 rounded border border-[#8C87A2]/20 text-[#8C87A2] font-mono">
-                  {students.length} học viên tìm thấy
+                  {students.length} học viên
                 </span>
               </div>
 
@@ -914,10 +977,10 @@ export default function TeacherOnlineStudyPage() {
               ) : (
                 <div className="divide-y divide-[#8C87A2]/10 bg-[#15131F]/20">
                   {students.map(student => {
-                    const isOnline = student.role === "online_student"
+                    const isOnline = student.online_subjects && student.online_subjects.length > 0
                     return (
                       <div key={student.id} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-[#15131F]/30 transition-colors">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${
                             isOnline 
                               ? "border-[#C18CFF]/50 bg-[#C18CFF]/10 text-[#C18CFF]" 
@@ -925,48 +988,32 @@ export default function TeacherOnlineStudyPage() {
                           }`}>
                             {student.full_name?.[0]?.toUpperCase() || "H"}
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-sm text-[#F1EDF9]">{student.full_name || "Chưa đặt tên"}</h4>
+                              <h4 className="font-bold text-sm text-[#F1EDF9] truncate">{student.full_name || "Chưa đặt tên"}</h4>
                               {student.class && (
-                                <span className="rounded bg-[#0B0A13] border border-[#8C87A2]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#8C87A2] font-mono">
+                                <span className="rounded bg-[#0B0A13] border border-[#8C87A2]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#8C87A2] font-mono shrink-0">
                                   {student.class}
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-[#8C87A2] mt-0.5">{student.email}</p>
+                            <p className="text-xs text-[#8C87A2] mt-0.5 truncate">{student.email}</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-                          {/* Status Badge */}
-                          <div className={`flex items-center gap-1 px-3 py-1 rounded-full border text-xs font-medium font-mono ${
-                            isOnline 
-                              ? "bg-[#C18CFF]/10 text-[#C18CFF] border-[#C18CFF]/20" 
-                              : "bg-[#8C87A2]/5 text-[#8C87A2] border-[#8C87A2]/15"
-                          }`}>
-                            {isOnline ? (
-                              <><ShieldCheck className="h-3.5 w-3.5" /> ONLINE</>
-                            ) : (
-                              <><ShieldAlert className="h-3.5 w-3.5" /> OFFLINE</>
-                            )}
-                          </div>
+                        {/* Middle display: Assigned Subjects list */}
+                        <div className="flex-1 px-0 sm:px-6 max-w-md">
+                          <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-1">Môn học trực tuyến được cấp</div>
+                          {getSubjectLabelsDisplay(student.online_subjects || [])}
+                        </div>
 
-                          {/* Toggle Button */}
+                        <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
                           <Button
                             size="sm"
-                            onClick={() => handleToggleRole(student.id, student.role)}
-                            className={`rounded-xl font-bold text-xs py-1.5 px-4 flex items-center gap-1 transition-transform active:scale-95 ${
-                              isOnline
-                                ? "bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20"
-                                : "bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90"
-                            }`}
+                            onClick={() => openPermissionsModal(student)}
+                            className="rounded-xl font-bold text-xs py-1.5 px-4 bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 flex items-center gap-1.5 transition-transform active:scale-95"
                           >
-                            {isOnline ? (
-                              <><UserX className="h-3.5 w-3.5" /> Hủy quyền</>
-                            ) : (
-                              <><UserCheck className="h-3.5 w-3.5" /> Cấp quyền</>
-                            )}
+                            <Sliders className="h-3.5 w-3.5" /> Điều chỉnh quyền
                           </Button>
                         </div>
                       </div>
@@ -1135,6 +1182,120 @@ export default function TeacherOnlineStudyPage() {
                   </Button>
                   <Button type="submit" disabled={submitting} className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 font-bold px-6">
                     {submitting ? "Đang xử lý..." : editingItem ? "Lưu thay đổi" : "Thêm bài học"}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Granular Subjects Permission Modal ── */}
+      <AnimatePresence>
+        {activeModal === "permissions" && selectedStudentForPermission && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[#0B0A13]/80 backdrop-blur-sm"
+              onClick={closeModal}
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-lg rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-6 shadow-2xl z-10"
+            >
+              <button onClick={closeModal} className="absolute right-4 top-4 text-[#8C87A2] hover:text-[#F1EDF9]">
+                <X className="h-5 w-5" />
+              </button>
+              
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-[#F1EDF9]">Cấp quyền môn học trực tuyến</h3>
+                <p className="text-xs text-[#8C87A2] mt-1">
+                  Đang thiết lập quyền cho: <strong className="text-[#C18CFF]">{selectedStudentForPermission.full_name}</strong> ({selectedStudentForPermission.email})
+                </p>
+              </div>
+
+              <form onSubmit={handlePermissionsSubmit} className="space-y-4">
+                
+                {/* Master Switch: All subjects */}
+                <div className="p-3 bg-[#0B0A13]/40 border border-[#8C87A2]/20 rounded-xl flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-[#F1EDF9]">Cấp tất cả các môn</span>
+                    <span className="text-[10px] text-[#8C87A2] mt-0.5">Cho phép truy cập toàn bộ 12 môn học trực tuyến</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={tempSelectedSubjects.includes("all")}
+                    onChange={() => handleToggleSubjectCheckbox("all")}
+                    className="h-4 w-4 rounded border-[#8C87A2]/40 bg-[#0B0A13] text-[#C18CFF] focus:ring-[#C18CFF] accent-[#C18CFF] cursor-pointer"
+                  />
+                </div>
+
+                {/* Sub-selector: Individual subjects (disabled if "all" is checked) */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">
+                    <span>Chọn từng môn học</span>
+                    <div className="flex gap-2">
+                      <button 
+                        type="button" 
+                        onClick={handleSelectAllSubjects}
+                        className="text-[#C18CFF] hover:underline"
+                      >
+                        Chọn hết
+                      </button>
+                      <span>|</span>
+                      <button 
+                        type="button" 
+                        onClick={handleClearAllSubjects}
+                        className="text-red-400 hover:underline"
+                      >
+                        Bỏ chọn hết
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1 border border-[#8C87A2]/10 rounded-xl p-3 bg-[#0B0A13]/20 custom-scrollbar">
+                    {ONLINE_SUBJECTS.map(subject => {
+                      const isChecked = tempSelectedSubjects.includes("all") || tempSelectedSubjects.includes(subject.value)
+                      const isDisabled = tempSelectedSubjects.includes("all")
+
+                      return (
+                        <label 
+                          key={subject.value}
+                          className={`flex items-center justify-between p-2.5 rounded-lg border text-xs cursor-pointer transition-colors ${
+                            isChecked 
+                              ? "bg-[#C18CFF]/10 border-[#C18CFF]/30 text-[#F1EDF9]" 
+                              : "bg-[#0B0A13]/30 border-[#8C87A2]/10 text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#0B0A13]/55"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-base shrink-0">{subject.icon}</span>
+                            <span className="truncate font-medium">{subject.label}</span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            disabled={isDisabled && subject.value !== "all"}
+                            onChange={() => handleToggleSubjectCheckbox(subject.value)}
+                            className="h-3.5 w-3.5 rounded border-[#8C87A2]/40 bg-[#0B0A13] text-[#C18CFF] focus:ring-[#C18CFF] accent-[#C18CFF] cursor-pointer disabled:opacity-50"
+                          />
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {formError && <p className="text-xs text-red-500 mt-2">{formError}</p>}
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#8C87A2]/10">
+                  <Button type="button" variant="ghost" onClick={closeModal} className="rounded-lg border border-[#8C87A2]/20 text-[#8C87A2]">
+                    Hủy
+                  </Button>
+                  <Button type="submit" disabled={submitting} className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 font-bold px-6">
+                    {submitting ? "Đang xử lý..." : "Lưu quyền hạn"}
                   </Button>
                 </div>
               </form>

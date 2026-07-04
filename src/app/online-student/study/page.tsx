@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo, useRef } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { OnlineStudentShell } from "@/components/online-student/OnlineStudentShell"
@@ -17,8 +17,8 @@ import {
   BookOpen, 
   Download, 
   Video, 
-  ExternalLink,
-  ArrowLeft
+  ArrowLeft,
+  ShieldAlert
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -53,7 +53,6 @@ function VideoPlayer({ url }: { url: string }) {
 
   useEffect(() => {
     if (!url) return
-    // Check YouTube
     if (url.includes("youtube.com") || url.includes("youtu.be")) {
       const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
       const match = url.match(regExp)
@@ -62,9 +61,7 @@ function VideoPlayer({ url }: { url: string }) {
         return
       }
     }
-    // Check Bunny.net embed links (iframe embeds)
     if (url.includes("iframe.mediadelivery.net") || url.includes("bunny.net")) {
-      // If it's already an embed URL, use it directly
       if (url.includes("embed") || url.includes("iframe")) {
         setEmbedUrl(url)
         return
@@ -86,7 +83,6 @@ function VideoPlayer({ url }: { url: string }) {
     )
   }
 
-  // Fallback direct HTML5 video for bunny.net direct links or mp4
   return (
     <video
       src={url}
@@ -107,6 +103,7 @@ export default function OnlineStudentStudy() {
   const [profile, setProfile] = useState<{ full_name: string | null; role: string } | null>(null)
   const [loadingAuth, setLoadingAuth] = useState(true)
   const [loadingData, setLoadingData] = useState(true)
+  const [mySubjects, setMySubjects] = useState<string[]>([])
 
   // Data States
   const [folders, setFolders] = useState<DbFolder[]>([])
@@ -138,24 +135,40 @@ export default function OnlineStudentStudy() {
       }
 
       setProfile(profileData)
-      setLoadingAuth(false)
+      
+      // Fetch assigned online subjects to verify permissions
+      try {
+        const res = await fetch("/api/online-study/my-subjects")
+        const data = await res.json()
+        if (res.ok && data.success) {
+          setMySubjects(data.data || [])
+        }
+      } catch (e) {
+        console.error("Lỗi lấy môn học:", e)
+      } finally {
+        setLoadingAuth(false)
+      }
     }
 
     checkAuth()
   }, [router, supabase])
 
+  // Verify access permissions for current subject
+  const hasAccessToSubject = useMemo(() => {
+    if (loadingAuth) return true
+    return mySubjects.includes("all") || mySubjects.includes(subjectKey)
+  }, [loadingAuth, mySubjects, subjectKey])
+
   // Fetch Folders & Lessons
   useEffect(() => {
-    if (loadingAuth) return
+    if (loadingAuth || !hasAccessToSubject) return
 
     async function fetchData() {
       setLoadingData(true)
       try {
-        // Fetch folders
         const resFolders = await fetch(`/api/online-study/folders?subject=${subjectInfo.dbValue}`)
         const dataFolders = await resFolders.json()
         
-        // Fetch all lessons for this subject
         const resLessons = await fetch(`/api/online-study/lessons?subject=${subjectInfo.dbValue}`)
         const dataLessons = await resLessons.json()
 
@@ -173,7 +186,7 @@ export default function OnlineStudentStudy() {
     }
 
     fetchData()
-  }, [loadingAuth, subjectInfo.dbValue])
+  }, [loadingAuth, subjectInfo.dbValue, hasAccessToSubject])
 
   // Build recursive tree node structure
   const treeRoots = useMemo(() => {
@@ -191,12 +204,10 @@ export default function OnlineStudentStudy() {
       }
     })
 
-    // Sort lessons
     folderMap.forEach(node => {
       node.lessons.sort((a, b) => a.order_index - b.order_index)
     })
 
-    // Nest folders
     folders.forEach(f => {
       const node = folderMap.get(f.id)!
       if (f.parent_id) {
@@ -211,7 +222,6 @@ export default function OnlineStudentStudy() {
       }
     })
 
-    // Sort children
     folderMap.forEach(node => {
       node.children.sort((a, b) => a.folder.order_index - b.folder.order_index)
     })
@@ -232,14 +242,13 @@ export default function OnlineStudentStudy() {
     router.push("/login")
   }
 
-  // Recursive tree renderer component
+  // Recursive tree renderer
   const FolderTreeNode = ({ node, level = 0 }: { node: TreeNode; level: number }) => {
     const isExpanded = !!expandedFolders[node.folder.id]
     const hasChildren = node.children.length > 0 || node.lessons.length > 0
 
     return (
       <div className="space-y-1">
-        {/* Folder Header */}
         <div 
           onClick={() => toggleFolder(node.folder.id)}
           style={{ paddingLeft: `${level * 12 + 8}px` }}
@@ -258,15 +267,12 @@ export default function OnlineStudentStudy() {
           </div>
         </div>
 
-        {/* Child Folders & Lessons */}
         {isExpanded && hasChildren && (
           <div className="space-y-1 mt-0.5">
-            {/* Child Folders */}
             {node.children.map(child => (
               <FolderTreeNode key={child.folder.id} node={child} level={level + 1} />
             ))}
 
-            {/* Child Lessons */}
             {node.lessons.map(lesson => {
               const isSelected = selectedLesson?.id === lesson.id
               return (
@@ -291,11 +297,36 @@ export default function OnlineStudentStudy() {
     )
   }
 
-  if (loadingAuth || loadingData) {
+  if (loadingAuth || (loadingData && hasAccessToSubject)) {
     return (
       <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
         <Loading label="Đang tải học liệu online..." />
       </div>
+    )
+  }
+
+  // Access Denied UI if student is not assigned to this subject
+  if (!hasAccessToSubject) {
+    return (
+      <OnlineStudentShell>
+        <OnlineStudentTopbar name={profile?.full_name} onLogout={handleLogout} />
+        <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-6">
+          <div className="h-16 w-16 bg-[#15131F] border border-red-500/20 rounded-full flex items-center justify-center text-red-400 mb-4">
+            <ShieldAlert className="h-8 w-8" />
+          </div>
+          <h2 className="text-xl font-bold text-[#F1EDF9]">Không có quyền truy cập</h2>
+          <p className="text-xs text-[#8C87A2] max-w-sm mt-2 leading-relaxed">
+            Môn học trực tuyến này chưa được đăng ký hoặc cấp quyền truy cập cho tài khoản của bạn. Vui lòng liên hệ Giáo viên/Admin để đăng ký lớp học.
+          </p>
+          <div className="mt-6">
+            <Link href="/online-student/dashboard">
+              <Button className="rounded-xl border border-[#8C87A2]/20 bg-[#15131F] text-xs font-bold text-[#F1EDF9] hover:bg-[#15131F]/80 flex items-center gap-1.5 transition-transform active:scale-95">
+                <ArrowLeft className="h-3.5 w-3.5" /> Quay lại Dashboard
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </OnlineStudentShell>
     )
   }
 

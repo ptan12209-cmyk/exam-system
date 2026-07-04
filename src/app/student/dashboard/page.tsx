@@ -22,7 +22,8 @@ import {
   GraduationCap,
   Sparkles,
   Calendar,
-  Globe2
+  Globe2,
+  ArrowLeft
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
@@ -320,11 +321,19 @@ export default function StudentDashboard() {
           {/* Welcome Hero Card */}
           <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 lg:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#C18CFF]" />
-                <span className={cn("text-[9px] font-bold uppercase tracking-[0.25em] text-[#8C87A2]", jetbrainsMono.className)}>
-                  {profile?.nickname === "X" ? "Dream Engine Edition" : "ExamHub Student Panel"}
-                </span>
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#C18CFF]" />
+                  <span className={cn("text-[9px] font-bold uppercase tracking-[0.25em] text-[#8C87A2]", jetbrainsMono.className)}>
+                    {profile?.nickname === "X" ? "Dream Engine Edition" : "ExamHub Student Panel"}
+                  </span>
+                </div>
+                
+                <Link href="/student/portal">
+                  <Button variant="ghost" size="sm" className="h-8 rounded-xl border border-[#8C87A2]/20 text-[10px] font-bold hover:bg-[#0B0A13] text-[#8C87A2] hover:text-[#F1EDF9] flex items-center gap-1 shrink-0">
+                    <ArrowLeft className="h-3.5 w-3.5" /> Cổng học tập
+                  </Button>
+                </Link>
               </div>
               <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight", instrumentSerif.className)}>
                 {profile?.nickname === "X" ? "Chào mừng trở lại, X! 👋" : `Xin chào, ${profile?.full_name || "bạn"} 👋`}
