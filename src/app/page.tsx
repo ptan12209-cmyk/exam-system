@@ -220,11 +220,11 @@ export default function HomePage() {
             className="mb-6 max-w-4xl text-[clamp(2.5rem,6vw,5.5rem)] font-medium leading-[1.05] tracking-[-0.03em]"
             style={{ textWrap: "balance" }}
           >
-            Luyện thi{" "}
-            <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>nhẹ hơn</span>
+            Học trực tuyến{" "}
+            <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>tập trung</span>
             <br />
-            Kết quả{" "}
-            <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>rõ hơn</span>
+            Hiệu quả{" "}
+            <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>rõ ràng</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -235,7 +235,7 @@ export default function HomePage() {
             className="mb-10 max-w-xl text-[clamp(0.95rem,1.8vw,1.125rem)] leading-relaxed text-[#8C87A2]"
             style={{ textWrap: "pretty" }}
           >
-            Hệ thống thi trắc nghiệm & học trực tuyến tích hợp AI — giúp giáo viên tạo đề nhanh, học sinh ôn luyện hiệu quả, và nhà trường quản lý dễ dàng.
+            Hệ thống học trực tuyến thông minh — Giúp quản lý bài giảng, video lý thuyết, tài liệu tự học trực quan và hỗ trợ học sinh học tập dễ dàng, hiệu quả.
           </motion.p>
 
           {/* CTAs */}
@@ -280,30 +280,7 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* ═══════════════════════════════════════
-          STATS STRIP — horizontal, numbers-only
-          ═══════════════════════════════════════ */}
-      <section className="relative border-y border-[#e8e4f0]/[0.06] py-16 md:py-20">
-        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-8 px-6 md:grid-cols-4 md:gap-0 md:divide-x md:divide-[#e8e4f0]/[0.06]">
-          {[
-            { value: 10000, suffix: "+", label: "Học sinh sử dụng" },
-            { value: 500, suffix: "+", label: "Giáo viên tin tưởng" },
-            { value: 50000, suffix: "+", label: "Bài thi đã tạo" },
-            { value: 12, suffix: "", label: "Môn học trực tuyến" },
-          ].map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              {...reveal(i * 0.1)}
-              className="flex flex-col items-center text-center md:px-8"
-            >
-              <span className="text-[clamp(2rem,4vw,3rem)] font-semibold tracking-[-0.03em] text-[#e8e4f0]">
-                <Counter target={stat.value} suffix={stat.suffix} />
-              </span>
-              <span className="mt-1 text-[13px] text-[#8C87A2]">{stat.label}</span>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+
 
       {/* ═══════════════════════════════════════
           FEATURES — asymmetric 2-column layout
@@ -324,9 +301,9 @@ export default function HomePage() {
               className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] tracking-[-0.02em]"
               style={{ textWrap: "balance" }}
             >
-              Một hệ sinh thái{" "}
-              <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>gọn</span>{" "}
-              nhưng đủ mạnh cho mọi nhu cầu giáo dục
+              Không gian học tập{" "}
+              <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>tinh gọn</span>{" "}
+              và khoa học
             </motion.h2>
           </div>
 
@@ -336,13 +313,13 @@ export default function HomePage() {
             <div className="grid items-center gap-10 md:grid-cols-[1fr_1.2fr] md:gap-16">
               <motion.div {...reveal(0)} className="order-2 md:order-1 space-y-5">
                 <div className="inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-[12px] font-semibold" style={{ background: "oklch(0.75 0.18 290 / 0.1)", color: "oklch(0.75 0.18 290)" }}>
-                  <Play size={12} /> Kho đề thi
+                  <Play size={12} /> Thư mục học liệu
                 </div>
                 <h3 className="text-[clamp(1.25rem,2.5vw,1.75rem)] font-medium leading-snug tracking-[-0.01em]">
-                  Hàng nghìn đề thi theo chủ đề, cấp độ và mục tiêu ôn luyện
+                  Quản lý bài giảng trực quan như File Explorer
                 </h3>
                 <p className="text-[15px] leading-relaxed text-[#8C87A2]" style={{ maxWidth: "50ch" }}>
-                  Tổ chức nội dung khoa học theo cấu trúc cây thư mục — giáo viên dễ quản lý, học sinh dễ tìm kiếm. Hỗ trợ đầy đủ các môn THPT và theo chương trình mới nhất của Bộ GD&ĐT.
+                  Tổ chức học liệu thông minh theo chương trình học. Giáo viên sắp xếp thư mục lồng nhau nhiều cấp, tải lên bài giảng trực tuyến dễ nhìn, tránh rối mắt và thao tác sai.
                 </p>
               </motion.div>
               <motion.div {...revealScale(0.15)} className="order-1 md:order-2">
@@ -379,7 +356,7 @@ export default function HomePage() {
                   Bài giảng video & tài liệu ôn tập đa phương tiện
                 </h3>
                 <p className="text-[15px] leading-relaxed text-[#8C87A2]" style={{ maxWidth: "50ch" }}>
-                  Hỗ trợ nhiều video bài giảng và nhiều tài liệu đính kèm cho mỗi buổi học. Học sinh chọn xem playlist, tải tài liệu — tất cả trong một giao diện duyệt File Explorer trực quan.
+                  Hỗ trợ tích hợp nhiều video bài giảng và tài liệu ôn tập trong mỗi buổi học. Học sinh xem playlist video lý thuyết và tải tài liệu tự luyện chỉ trên một trang duy nhất.
                 </p>
               </motion.div>
             </div>
@@ -388,13 +365,13 @@ export default function HomePage() {
             <div className="grid items-center gap-10 md:grid-cols-[1fr_1.2fr] md:gap-16">
               <motion.div {...reveal(0)} className="order-2 md:order-1 space-y-5">
                 <div className="inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-[12px] font-semibold" style={{ background: "oklch(0.70 0.15 60 / 0.12)", color: "oklch(0.78 0.15 60)" }}>
-                  <Play size={12} /> AI hỗ trợ
+                  <Play size={12} /> Bài tập tự luyện
                 </div>
                 <h3 className="text-[clamp(1.25rem,2.5vw,1.75rem)] font-medium leading-snug tracking-[-0.01em]">
-                  Tạo đề thông minh với sự hỗ trợ của trí tuệ nhân tạo
+                  Làm bài tập củng cố ngay sau buổi học online
                 </h3>
                 <p className="text-[15px] leading-relaxed text-[#8C87A2]" style={{ maxWidth: "50ch" }}>
-                  Tối ưu quy trình tạo đề, phân tích kết quả và gợi ý nội dung theo ngữ cảnh thi cử. Giảm thời gian chuẩn bị, tăng chất lượng đánh giá.
+                  Kết hợp hoàn hảo giữa lý thuyết và thực hành. Hệ thống cung cấp cổng bài tập tự luyện tương ứng với mỗi bài học, giúp học sinh kiểm tra ngay khả năng tiếp thu bài.
                 </p>
               </motion.div>
               <motion.div {...revealScale(0.15)} className="order-1 md:order-2">
@@ -443,20 +420,20 @@ export default function HomePage() {
           <div className="mx-auto max-w-3xl space-y-0">
             {[
               {
-                title: "Kho đề thi có cấu trúc",
-                desc: "Tổ chức nội dung theo chủ đề, chương, cấp độ và mục tiêu ôn luyện. Hỗ trợ tìm kiếm nhanh và lọc thông minh.",
+                title: "Học tập có định hướng",
+                desc: "Tổ chức nội dung theo cây thư mục nhiều cấp, giúp phân loại rõ ràng, tránh lẫn lộn giữa các môn học.",
               },
               {
-                title: "Công cụ tạo đề tốc hành",
-                desc: "Giảm thao tác thừa, tăng tốc quy trình chuẩn bị bài thi. Hỗ trợ trắc nghiệm, tự luận và đề thi hỗn hợp.",
+                title: "Đa tài nguyên bài giảng",
+                desc: "Mỗi buổi học hỗ trợ phát nhiều video bài giảng, đính kèm không giới hạn slide, phiếu bài tập và đáp án chi tiết.",
               },
               {
-                title: "Theo dõi học tập trực quan",
-                desc: "Giúp giáo viên nhìn nhanh vào tiến độ và kết quả. Biểu đồ phân tích điểm số, thống kê tỷ lệ đúng/sai theo chủ đề.",
+                title: "Kiểm tra tiến độ thực tế",
+                desc: "Học sinh tự theo dõi trạng thái hoàn thành bài học, giáo viên nắm rõ tiến trình học tập của từng học viên.",
               },
               {
-                title: "Phân phối nội dung chính xác",
-                desc: "Đưa đúng tài liệu tới đúng người dùng, đúng thời điểm. Hệ thống phân quyền chi tiết theo lớp và môn học.",
+                title: "Cấp quyền truy cập linh hoạt",
+                desc: "Cấp quyền truy cập học trực tuyến theo từng môn học hoặc tất cả các môn dựa trên nhu cầu thực tế của từng học sinh.",
               },
             ].map((item, i) => (
               <motion.div
@@ -508,19 +485,19 @@ export default function HomePage() {
             {[
               {
                 role: "Học sinh",
-                desc: "Ôn luyện theo lộ trình cá nhân, làm đề thi thử, xem video bài giảng và theo dõi tiến độ học tập qua biểu đồ trực quan.",
+                desc: "Xem bài giảng video, tải tài liệu ôn tập, làm bài tự luyện củng cố và theo dõi lộ trình học trực tuyến của mình.",
                 accent: "oklch(0.75 0.18 290)",
                 accentBg: "oklch(0.75 0.18 290 / 0.08)",
               },
               {
                 role: "Giáo viên",
-                desc: "Tạo đề thi nhanh chóng, quản lý kho bài giảng trực tuyến dạng File Explorer, cấp quyền học sinh và theo dõi kết quả lớp học.",
+                desc: "Tạo cấu trúc thư mục học tập, đăng tải nhiều bài giảng video và tài liệu, cấp quyền môn học và theo dõi kết quả của học sinh.",
                 accent: "oklch(0.72 0.15 170)",
                 accentBg: "oklch(0.72 0.15 170 / 0.08)",
               },
               {
                 role: "Nhà trường",
-                desc: "Tổng quan toàn bộ hoạt động dạy và học, thống kê điểm số, quản lý tài khoản giáo viên và phân phối nội dung quy mô lớn.",
+                desc: "Quản lý lớp học trực tuyến, cấp quyền theo môn, cấu hình học liệu và theo dõi tổng quan hiệu quả giảng dạy.",
                 accent: "oklch(0.78 0.15 60)",
                 accentBg: "oklch(0.78 0.15 60 / 0.08)",
               },
@@ -599,8 +576,8 @@ export default function HomePage() {
             className="mb-5 max-w-2xl text-[clamp(2rem,5vw,3.5rem)] font-medium leading-[1.1] tracking-[-0.02em]"
             style={{ textWrap: "balance" }}
           >
-            Sẵn sàng{" "}
-            <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>bắt đầu</span>?
+            Trải nghiệm không gian{" "}
+            <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>học tập trực tuyến</span>
           </motion.h2>
 
           <motion.p
@@ -608,7 +585,7 @@ export default function HomePage() {
             className="mb-10 max-w-md text-[15px] leading-relaxed text-[#8C87A2]"
             style={{ textWrap: "pretty" }}
           >
-            Tham gia cùng hàng nghìn giáo viên và học sinh đã tin tưởng ExamHub cho hành trình học tập.
+            Hệ thống học tập gọn gàng, trực quan và dễ sử dụng dành cho giáo viên và học sinh.
           </motion.p>
 
           <motion.div {...reveal(0.2)} className="flex flex-col gap-3 sm:flex-row">
