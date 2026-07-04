@@ -666,7 +666,7 @@ export default function StudentDashboard() {
                   ),
                   { href: "/student/co-study", label: profile?.nickname === "X" ? "Pomodoro" : "Pomodoro YPT", icon: Timer },
                   { href: "/live", label: profile?.nickname === "X" ? "Học Live" : "Lớp Live", icon: Video },
-                  ...(profile?.role === "online_student"
+                  ...((profile?.role as string) === "online_student"
                     ? [
                         { href: "/online-student/dashboard", label: "Học Online 🌐", icon: Globe2 }
                       ]
