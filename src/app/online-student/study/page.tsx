@@ -8,8 +8,8 @@ import { OnlineStudentTopbar } from "@/components/online-student/OnlineStudentTo
 import { Loading } from "@/components/shared/Loading"
 import { getOnlineSubjectInfo } from "@/lib/subjects"
 import { 
-  Folder, 
-  FolderOpen, 
+  Folder as FolderIcon, 
+  FolderOpen as FolderOpenIcon, 
   PlayCircle, 
   FileText, 
   ChevronRight, 
@@ -18,7 +18,13 @@ import {
   Download, 
   Video, 
   ArrowLeft,
-  ShieldAlert
+  ShieldAlert,
+  Search,
+  LayoutGrid,
+  List,
+  Home,
+  ChevronLeft,
+  ExternalLink
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -41,10 +47,9 @@ interface DbLesson {
   order_index: number
 }
 
-interface TreeNode {
-  folder: DbFolder
-  children: TreeNode[]
-  lessons: DbLesson[]
+interface FolderTreeNode {
+  folder: DbFolder;
+  children: FolderTreeNode[];
 }
 
 // Helper to check and resolve video embed
@@ -108,12 +113,15 @@ export default function OnlineStudentStudy() {
   // Data States
   const [folders, setFolders] = useState<DbFolder[]>([])
   const [lessons, setLessons] = useState<DbLesson[]>([])
-  
-  // Selection
-  const [selectedLesson, setSelectedLesson] = useState<DbLesson | null>(null)
-  
-  // UI Expansion
+
+  // File Explorer Navigation States
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null) // null = Root
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({})
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [explorerSearch, setExplorerSearch] = useState("")
+
+  // Active Lesson Viewer (like double clicking a file to open viewer)
+  const [activeLesson, setActiveLesson] = useState<DbLesson | null>(null)
 
   useEffect(() => {
     async function checkAuth() {
@@ -188,30 +196,19 @@ export default function OnlineStudentStudy() {
     fetchData()
   }, [loadingAuth, subjectInfo.dbValue, hasAccessToSubject])
 
-  // Build recursive tree node structure
-  const treeRoots = useMemo(() => {
-    const folderMap = new Map<string, TreeNode>()
-    const roots: TreeNode[] = []
+  // Build Left Folder Tree
+  const folderTree = useMemo(() => {
+    const map = new Map<string, FolderTreeNode>()
+    const roots: FolderTreeNode[] = []
 
     folders.forEach(f => {
-      folderMap.set(f.id, { folder: f, children: [], lessons: [] })
-    })
-
-    lessons.forEach(l => {
-      const node = folderMap.get(l.folder_id)
-      if (node) {
-        node.lessons.push(l)
-      }
-    })
-
-    folderMap.forEach(node => {
-      node.lessons.sort((a, b) => a.order_index - b.order_index)
+      map.set(f.id, { folder: f, children: [] })
     })
 
     folders.forEach(f => {
-      const node = folderMap.get(f.id)!
+      const node = map.get(f.id)!
       if (f.parent_id) {
-        const parentNode = folderMap.get(f.parent_id)
+        const parentNode = map.get(f.parent_id)
         if (parentNode) {
           parentNode.children.push(node)
         } else {
@@ -222,19 +219,51 @@ export default function OnlineStudentStudy() {
       }
     })
 
-    folderMap.forEach(node => {
+    map.forEach(node => {
       node.children.sort((a, b) => a.folder.order_index - b.folder.order_index)
     })
 
     roots.sort((a, b) => a.folder.order_index - b.folder.order_index)
     return roots
-  }, [folders, lessons])
+  }, [folders])
 
-  const toggleFolder = (folderId: string) => {
-    setExpandedFolders(prev => ({
-      ...prev,
-      [folderId]: !prev[folderId]
-    }))
+  // Breadcrumbs Generator
+  const breadcrumbs = useMemo(() => {
+    if (!selectedFolderId) return []
+    const path: DbFolder[] = []
+    let currentId: string | null = selectedFolderId
+    while (currentId) {
+      const folder = folders.find(f => f.id === currentId)
+      if (folder) {
+        path.unshift(folder)
+        currentId = folder.parent_id
+      } else {
+        break
+      }
+    }
+    return path
+  }, [selectedFolderId, folders])
+
+  // Current folder's children and lessons
+  const currentSubFolders = useMemo(() => {
+    const filtered = folders.filter(f => f.parent_id === selectedFolderId)
+    if (explorerSearch.trim()) {
+      return filtered.filter(f => f.name.toLowerCase().includes(explorerSearch.toLowerCase()))
+    }
+    return filtered.sort((a, b) => a.order_index - b.order_index)
+  }, [folders, selectedFolderId, explorerSearch])
+
+  const currentLessons = useMemo(() => {
+    const filtered = lessons.filter(l => l.folder_id === selectedFolderId)
+    if (explorerSearch.trim()) {
+      return filtered.filter(l => l.title.toLowerCase().includes(explorerSearch.toLowerCase()))
+    }
+    return filtered.sort((a, b) => a.order_index - b.order_index)
+  }, [lessons, selectedFolderId, explorerSearch])
+
+  const toggleFolderExpand = (folderId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setExpandedFolders(prev => ({ ...prev, [folderId]: !prev[folderId] }))
   }
 
   const handleLogout = async () => {
@@ -242,55 +271,50 @@ export default function OnlineStudentStudy() {
     router.push("/login")
   }
 
-  // Recursive tree renderer
-  const FolderTreeNode = ({ node, level = 0 }: { node: TreeNode; level: number }) => {
+  // Left Sidebar Tree Folder Component
+  const LeftFolderTreeNode = ({ node, level = 0 }: { node: FolderTreeNode; level: number }) => {
     const isExpanded = !!expandedFolders[node.folder.id]
-    const hasChildren = node.children.length > 0 || node.lessons.length > 0
+    const hasSubfolders = node.children.length > 0
+    const isSelected = selectedFolderId === node.folder.id
 
     return (
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         <div 
-          onClick={() => toggleFolder(node.folder.id)}
-          style={{ paddingLeft: `${level * 12 + 8}px` }}
-          className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-[#15131F]/60 cursor-pointer select-none group transition-colors"
+          onClick={() => {
+            setSelectedFolderId(node.folder.id)
+            setExpandedFolders(prev => ({ ...prev, [node.folder.id]: true }))
+            setActiveLesson(null) // Close any active lesson viewer when switching folder
+          }}
+          style={{ paddingLeft: `${level * 12 + 6}px` }}
+          className={`flex items-center justify-between py-1.5 px-2 rounded-lg cursor-pointer transition-colors ${
+            isSelected 
+              ? "bg-[#C18CFF]/15 text-[#C18CFF] font-bold" 
+              : "hover:bg-[#15131F]/50 text-[#8C87A2] hover:text-[#F1EDF9]"
+          }`}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[#8C87A2] shrink-0">
-              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span 
+              onClick={(e) => toggleFolderExpand(node.folder.id, e)}
+              className="p-0.5 rounded hover:bg-[#0B0A13] shrink-0 text-[#8C87A2]"
+            >
+              {hasSubfolders ? (
+                isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />
+              ) : (
+                <span className="w-3 block" />
+              )}
             </span>
-            <span className="text-[#C18CFF] shrink-0">
-              {isExpanded ? <FolderOpen className="h-4 w-4" /> : <Folder className="h-4 w-4" />}
+            <span className={isSelected ? "text-[#C18CFF]" : "text-[#8C87A2]"}>
+              {isExpanded ? <FolderOpenIcon className="h-3.5 w-3.5" /> : <FolderIcon className="h-3.5 w-3.5" />}
             </span>
-            <span className="text-sm font-semibold text-[#F1EDF9] truncate group-hover:text-[#C18CFF] transition-colors">
-              {node.folder.name}
-            </span>
+            <span className="text-xs truncate">{node.folder.name}</span>
           </div>
         </div>
 
-        {isExpanded && hasChildren && (
-          <div className="space-y-1 mt-0.5">
+        {isExpanded && hasSubfolders && (
+          <div className="space-y-0.5">
             {node.children.map(child => (
-              <FolderTreeNode key={child.folder.id} node={child} level={level + 1} />
+              <LeftFolderTreeNode key={child.folder.id} node={child} level={level + 1} />
             ))}
-
-            {node.lessons.map(lesson => {
-              const isSelected = selectedLesson?.id === lesson.id
-              return (
-                <div
-                  key={lesson.id}
-                  onClick={() => setSelectedLesson(lesson)}
-                  style={{ paddingLeft: `${(level + 1) * 12 + 12}px` }}
-                  className={`flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer transition-colors ${
-                    isSelected 
-                      ? "bg-[#C18CFF]/15 text-[#C18CFF]" 
-                      : "hover:bg-[#15131F]/30 text-[#8C87A2] hover:text-[#F1EDF9]"
-                  }`}
-                >
-                  <PlayCircle className={`h-4 w-4 shrink-0 ${isSelected ? "text-[#C18CFF]" : "text-[#8C87A2]"}`} />
-                  <span className="text-xs font-medium truncate">{lesson.title}</span>
-                </div>
-              )
-            })}
           </div>
         )}
       </div>
@@ -337,7 +361,7 @@ export default function OnlineStudentStudy() {
       <div className="mx-auto max-w-7xl w-full px-4 py-6 sm:px-6 lg:px-8 flex-1 flex flex-col min-h-0">
         
         {/* Back and Page title */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div className="flex items-center gap-3">
             <Link href="/online-student/dashboard">
               <Button variant="ghost" size="icon" className="rounded-xl border border-[#8C87A2]/20 text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F]">
@@ -354,47 +378,128 @@ export default function OnlineStudentStudy() {
           </div>
         </div>
 
-        {/* Layout split */}
-        <div className="grid gap-6 lg:grid-cols-[300px_1fr] flex-1 min-h-0 items-start">
-          
-          {/* Left panel: Tree Navigation */}
-          <aside className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-4 max-h-[calc(100vh-12rem)] overflow-y-auto w-full lg:sticky lg:top-24">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#8C87A2]/10">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Danh mục bài học</span>
-              <span className="text-[10px] bg-[#0B0A13] px-2 py-0.5 rounded border border-[#8C87A2]/20 text-[#8C87A2] font-mono">
-                {lessons.length} bài
-              </span>
+        {/* Address and Explorer Controls Toolbar */}
+        {!activeLesson && (
+          <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/30 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
+              
+              {/* Explorer Search inside current folder */}
+              <div className="relative w-full sm:w-80">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#8C87A2]" />
+                <input
+                  value={explorerSearch}
+                  onChange={(e) => setExplorerSearch(e.target.value)}
+                  placeholder="Tìm bài học/thư mục..."
+                  className="w-full rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13] pl-9 pr-4 py-2 text-sm text-[#F1EDF9] placeholder-[#8C87A2] outline-none focus:ring-1 focus:ring-[#C18CFF]"
+                />
+              </div>
+
+              {/* View Mode selection */}
+              <div className="flex items-center gap-1 shrink-0 bg-[#0B0A13] p-1 rounded-lg border border-[#8C87A2]/20 self-end sm:self-auto">
+                <button 
+                  onClick={() => setViewMode("grid")}
+                  className={`p-1.5 rounded transition-colors ${viewMode === "grid" ? "bg-[#C18CFF]/15 text-[#C18CFF]" : "text-[#8C87A2]"}`}
+                  title="Dạng lưới"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={() => setViewMode("list")}
+                  className={`p-1.5 rounded transition-colors ${viewMode === "list" ? "bg-[#C18CFF]/15 text-[#C18CFF]" : "text-[#8C87A2]"}`}
+                  title="Dạng danh sách"
+                >
+                  <List className="h-4 w-4" />
+                </button>
+              </div>
+
             </div>
 
-            {treeRoots.length === 0 ? (
-              <div className="text-center py-10 text-xs text-[#8C87A2]">
-                Chưa có cấu trúc thư mục nào.
-              </div>
+            {/* Address Bar */}
+            <div className="flex items-center gap-1.5 bg-[#0B0A13] border border-[#8C87A2]/20 rounded-xl px-3 py-2 overflow-x-auto text-xs font-mono scrollbar-none">
+              {selectedFolderId && (
+                <button
+                  onClick={() => {
+                    const currentFolder = folders.find(f => f.id === selectedFolderId)
+                    setSelectedFolderId(currentFolder ? currentFolder.parent_id : null)
+                  }}
+                  className="mr-1.5 p-1 rounded hover:bg-[#15131F] text-[#C18CFF] shrink-0"
+                  title="Quay lại thư mục cha"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+              )}
+
+              <button
+                onClick={() => setSelectedFolderId(null)}
+                className={`flex items-center gap-1 hover:text-[#C18CFF] shrink-0 ${!selectedFolderId ? "text-[#C18CFF] font-bold" : "text-[#8C87A2]"}`}
+              >
+                <Home className="h-3.5 w-3.5" /> Thư mục gốc
+              </button>
+
+              {breadcrumbs.map((crumb, idx) => (
+                <div key={crumb.id} className="flex items-center gap-1.5 shrink-0 text-[#8C87A2]">
+                  <ChevronRight className="h-3 w-3" />
+                  <button
+                    onClick={() => setSelectedFolderId(crumb.id)}
+                    className={`hover:text-[#C18CFF] ${idx === breadcrumbs.length - 1 ? "text-[#C18CFF] font-bold" : ""}`}
+                  >
+                    {crumb.name}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Explorer Split Layout */}
+        <div className="grid gap-4 md:grid-cols-[240px_1fr] items-start flex-1 min-h-0">
+          
+          {/* Left Pane: Folder Tree Sidebar */}
+          <aside className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-3 max-h-[500px] overflow-y-auto w-full hidden md:block lg:sticky lg:top-24">
+            <div className="pb-2 mb-2 border-b border-[#8C87A2]/10 flex items-center justify-between text-[10px] uppercase font-bold text-[#8C87A2] font-mono">
+              <span>Thư mục</span>
+              <button onClick={() => { setSelectedFolderId(null); setActiveLesson(null); }} className="hover:text-[#C18CFF]">Mở Root</button>
+            </div>
+            {folderTree.length === 0 ? (
+              <p className="text-[11px] text-[#8C87A2] italic text-center py-4">Chưa có thư mục</p>
             ) : (
-              <div className="space-y-1">
-                {treeRoots.map(root => (
-                  <FolderTreeNode key={root.folder.id} node={root} level={0} />
+              <div className="space-y-0.5">
+                {folderTree.map(root => (
+                  <LeftFolderTreeNode key={root.folder.id} node={root} level={0} />
                 ))}
               </div>
             )}
           </aside>
 
-          {/* Right panel: Lecture Content Viewer */}
-          <section className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 min-h-[400px]">
-            {selectedLesson ? (
-              <div className="space-y-6">
+          {/* Right Pane: Main Explorer Content/Lecture Viewer */}
+          <div className="flex flex-col min-h-[400px]">
+            
+            {activeLesson ? (
+              /* A. Integrated Lecture Content Viewer Mode (Opened File) */
+              <section className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 space-y-6">
                 
-                {/* 1. Header */}
+                {/* Back to current folder explorer */}
+                <div className="flex items-center">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setActiveLesson(null)} 
+                    className="rounded-xl border border-[#8C87A2]/20 text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#0B0A13] text-xs font-semibold px-4 flex items-center gap-1.5 transition-transform active:scale-95"
+                  >
+                    <ArrowLeft className="h-4 w-4" /> Quay lại Thư mục
+                  </Button>
+                </div>
+
+                {/* Title */}
                 <div>
-                  <h2 className="text-2xl font-bold text-[#F1EDF9] tracking-tight">{selectedLesson.title}</h2>
+                  <h2 className="text-2xl font-bold text-[#F1EDF9] tracking-tight">{activeLesson.title}</h2>
                   <div className="flex items-center gap-4 mt-2 text-xs text-[#8C87A2] font-mono">
                     <span className="flex items-center gap-1"><Video className="h-3.5 w-3.5" /> Bunny.net video</span>
                   </div>
                 </div>
 
-                {/* 2. Video Player */}
-                {selectedLesson.video_url ? (
-                  <VideoPlayer url={selectedLesson.video_url} />
+                {/* Video Player */}
+                {activeLesson.video_url ? (
+                  <VideoPlayer url={activeLesson.video_url} />
                 ) : (
                   <div className="aspect-video rounded-xl bg-[#0B0A13] border border-[#8C87A2]/20 flex flex-col items-center justify-center text-center p-6">
                     <PlayCircle className="h-12 w-12 text-[#8C87A2]/30 mb-3" />
@@ -402,18 +507,18 @@ export default function OnlineStudentStudy() {
                   </div>
                 )}
 
-                {/* 3. Description */}
-                {selectedLesson.description && (
+                {/* Description */}
+                {activeLesson.description && (
                   <div className="p-4 bg-[#0B0A13]/50 rounded-xl border border-[#8C87A2]/10">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-2">Mô tả bài giảng</h4>
-                    <p className="text-sm text-[#8C87A2] leading-relaxed whitespace-pre-line">{selectedLesson.description}</p>
+                    <p className="text-sm text-[#8C87A2] leading-relaxed whitespace-pre-line">{activeLesson.description}</p>
                   </div>
                 )}
 
-                {/* 4. Documents Section */}
+                {/* Documents Section */}
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-3">Tài liệu học tập đính kèm</h4>
-                  {selectedLesson.document_url ? (
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-3">Tài liệu ôn tập đính kèm</h4>
+                  {activeLesson.document_url ? (
                     <div className="flex items-center justify-between p-4 bg-[#0B0A13] border border-[#8C87A2]/20 rounded-xl hover:border-[#C18CFF] transition-colors">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="h-10 w-10 shrink-0 rounded-lg bg-[#C18CFF]/10 flex items-center justify-center text-[#C18CFF]">
@@ -421,17 +526,17 @@ export default function OnlineStudentStudy() {
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-[#F1EDF9] truncate">Tài liệu đính kèm bài giảng</p>
-                          <p className="text-xs text-[#8C87A2] font-mono truncate mt-0.5">{selectedLesson.document_url}</p>
+                          <p className="text-xs text-[#8C87A2] font-mono truncate mt-0.5">{activeLesson.document_url}</p>
                         </div>
                       </div>
                       <a 
-                        href={selectedLesson.document_url} 
+                        href={activeLesson.document_url} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="ml-4"
                       >
                         <Button className="rounded-lg bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold text-xs py-2 px-4 flex items-center gap-1.5 shrink-0 transition-transform active:scale-95">
-                          <Download className="h-3.5 w-3.5" /> Xem / Tải về
+                          <Download className="h-3.5 w-3.5" /> Xem / Tải về <ExternalLink className="h-3 w-3" />
                         </Button>
                       </a>
                     </div>
@@ -440,20 +545,118 @@ export default function OnlineStudentStudy() {
                   )}
                 </div>
 
-              </div>
+              </section>
             ) : (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="h-16 w-16 rounded-full bg-[#0B0A13] border border-[#8C87A2]/20 flex items-center justify-center text-[#C18CFF] mb-4">
-                  <BookOpen className="h-8 w-8" />
-                </div>
-                <h3 className="text-lg font-bold text-[#F1EDF9]">Vui lòng chọn bài giảng</h3>
-                <p className="text-sm text-[#8C87A2] max-w-sm mt-1">
-                  Mở các thư mục ở thanh bên trái và nhấp vào bài giảng để bắt đầu xem video bài học & ôn tập tài liệu.
-                </p>
-              </div>
-            )}
-          </section>
+              /* B. Explorer Folder Viewer Mode */
+              <section className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-5 flex-1 flex flex-col justify-start">
+                
+                {currentSubFolders.length === 0 && currentLessons.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
+                    <FolderOpenIcon className="h-12 w-12 text-[#8C87A2]/30 mb-3" />
+                    <h4 className="text-sm font-bold text-[#F1EDF9]">Thư mục trống</h4>
+                    <p className="text-xs text-[#8C87A2] max-w-xs mt-1">
+                      Thư mục này hiện không chứa thư mục con hay bài giảng nào.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    
+                    {/* Subfolders list */}
+                    {currentSubFolders.length > 0 && (
+                      <div>
+                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-3">Thư mục con ({currentSubFolders.length})</h4>
+                        
+                        {viewMode === "grid" ? (
+                          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                            {currentSubFolders.map(folder => (
+                              <div
+                                key={folder.id}
+                                onClick={() => setSelectedFolderId(folder.id)}
+                                className="group p-3.5 bg-[#15131F]/50 hover:bg-[#15131F]/90 border border-[#8C87A2]/20 hover:border-[#C18CFF] rounded-xl flex flex-col justify-between h-24 cursor-pointer select-none transition-all duration-200"
+                              >
+                                <FolderIcon className="h-7 w-7 text-[#C18CFF]" />
+                                <div className="min-w-0 mt-1">
+                                  <h5 className="font-bold text-xs text-[#F1EDF9] truncate leading-tight">{folder.name}</h5>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="border border-[#8C87A2]/15 rounded-xl overflow-hidden divide-y divide-[#8C87A2]/10 bg-[#15131F]/10">
+                            {currentSubFolders.map(folder => (
+                              <div
+                                key={folder.id}
+                                onClick={() => setSelectedFolderId(folder.id)}
+                                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-[#15131F]/50 transition-colors text-xs font-semibold text-[#F1EDF9]"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <FolderIcon className="h-4.5 w-4.5 text-[#C18CFF] shrink-0" />
+                                  <span className="truncate">{folder.name}</span>
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
+                    {/* Lessons list inside current folder */}
+                    {currentLessons.length > 0 && (
+                      <div>
+                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-3">Bài giảng ({currentLessons.length})</h4>
+                        
+                        {viewMode === "grid" ? (
+                          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                            {currentLessons.map(lesson => (
+                              <div
+                                key={lesson.id}
+                                onClick={() => setActiveLesson(lesson)}
+                                className="group p-4 bg-[#0B0A13]/30 hover:bg-[#0B0A13]/60 border border-[#8C87A2]/10 hover:border-[#C18CFF]/50 rounded-xl flex flex-col justify-between h-30 cursor-pointer transition-all duration-200"
+                              >
+                                <PlayCircle className="h-7 w-7 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
+
+                                <div className="min-w-0 mt-2">
+                                  <span className="text-[8px] font-mono text-[#8C87A2]">Bài giảng {lesson.order_index}</span>
+                                  <h5 className="font-bold text-xs text-[#F1EDF9] truncate leading-tight mt-0.5">{lesson.title}</h5>
+                                  <div className="flex gap-2 mt-2">
+                                    {lesson.video_url && <span className="text-[8px] uppercase font-bold text-[#C18CFF] bg-[#C18CFF]/10 px-1.5 rounded">Video</span>}
+                                    {lesson.document_url && <span className="text-[8px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-1.5 rounded">Tài liệu</span>}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="border border-[#8C87A2]/10 rounded-xl overflow-hidden divide-y divide-[#8C87A2]/10 bg-[#0B0A13]/10">
+                            {currentLessons.map(lesson => (
+                              <div
+                                key={lesson.id}
+                                onClick={() => setActiveLesson(lesson)}
+                                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-[#0B0A13]/30 transition-colors"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <PlayCircle className="h-4.5 w-4.5 text-[#8C87A2] shrink-0 group-hover:text-[#C18CFF] transition-colors" />
+                                  <span className="text-xs font-semibold text-[#F1EDF9] truncate">{lesson.title}</span>
+                                  <span className="text-[9px] font-mono text-[#8C87A2]">Bài: {lesson.order_index}</span>
+                                  <div className="flex gap-1.5 shrink-0">
+                                    {lesson.video_url && <Video className="h-3 w-3 text-[#C18CFF]" />}
+                                    {lesson.document_url && <FileText className="h-3 w-3 text-emerald-400" />}
+                                  </div>
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+            )}
+
+          </div>
         </div>
 
       </div>
