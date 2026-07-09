@@ -87,7 +87,7 @@ export default function TeacherOnlineStudyPage() {
   const [profile, setProfile] = useState<{ full_name: string | null } | null>(null)
   
   // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<"lectures" | "permissions">("lectures")
+  const [activeTab, setActiveTab] = useState<"lectures" | "permissions" | "payment">("lectures")
 
   // Selection States
   const [selectedSubject, setSelectedSubject] = useState("toan")
@@ -99,13 +99,77 @@ export default function TeacherOnlineStudyPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [isMobileTreeOpen, setIsMobileTreeOpen] = useState(false)
 
+  // Payment settings state
+  const [bankId, setBankId] = useState("MB")
+  const [accountNo, setAccountNo] = useState("")
+  const [accountName, setAccountName] = useState("")
+  const [subjectPrices, setSubjectPrices] = useState<Record<string, number>>({})
+  const [savingSettings, setSavingSettings] = useState(false)
+
+  // Fetch payment configurations when entering the tab
+  useEffect(() => {
+    async function loadPaymentSettings() {
+      try {
+        const res = await fetch("/api/online-study/payment-settings")
+        const data = await res.json()
+        if (res.ok && data.success) {
+          setBankId(data.data.bankId || "MB")
+          setAccountNo(data.data.accountNo || "")
+          setAccountName(data.data.accountName || "")
+          setSubjectPrices(data.data.prices || {})
+        }
+      } catch (e) {
+        console.error("Lỗi tải cấu hình thanh toán:", e)
+      }
+    }
+    if (activeTab === "payment") {
+      loadPaymentSettings()
+    }
+  }, [activeTab])
+
+  // Save payment settings handler
+  const handleSavePaymentSettings = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!accountNo.trim() || !accountName.trim()) {
+      toastError("Vui lòng nhập đầy đủ Số tài khoản và Tên tài khoản.")
+      return
+    }
+    setSavingSettings(true)
+    try {
+      const res = await fetch("/api/online-study/payment-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bankId,
+          accountNo: accountNo.trim(),
+          accountName: accountName.trim().toUpperCase(),
+          prices: subjectPrices
+        })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        success("Lưu cấu hình thanh toán và bảng giá thành công!")
+      } else {
+        throw new Error(data.error || "Lỗi lưu cấu hình")
+      }
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : "Không thể lưu cấu hình")
+    } finally {
+      setSavingSettings(false)
+    }
+  }
+
+  const handlePriceChange = (val: string, price: number) => {
+    setSubjectPrices(prev => ({ ...prev, [val]: price }))
+  }
+
   // Load states from localStorage after mounting
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedTab = localStorage.getItem("teacher_study_tab")
       const savedSubject = localStorage.getItem("teacher_study_subject")
       
-      if (savedTab === "lectures" || savedTab === "permissions") setActiveTab(savedTab)
+      if (savedTab === "lectures" || savedTab === "permissions" || savedTab === "payment") setActiveTab(savedTab)
       if (savedSubject && ONLINE_SUBJECTS.some(s => s.value === savedSubject)) {
         setSelectedSubject(savedSubject)
       }
@@ -260,7 +324,7 @@ export default function TeacherOnlineStudyPage() {
       } else {
         setSelectedFolderId(null)
       }
-    } else {
+    } else if (activeTab === "permissions") {
       fetchStudents(searchStudentQuery)
     }
   }, [selectedSubject, activeTab])
@@ -721,6 +785,16 @@ export default function TeacherOnlineStudyPage() {
           >
             Cấp quyền học sinh
           </button>
+          <button
+            onClick={() => setActiveTab("payment")}
+            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors ${
+              activeTab === "payment" 
+                ? "border-[#C18CFF] text-[#C18CFF]" 
+                : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
+            }`}
+          >
+            Cấu hình thanh toán & Bảng giá
+          </button>
         </div>
 
         {/* Tab 1: Lectures Manager */}
@@ -1111,6 +1185,116 @@ export default function TeacherOnlineStudyPage() {
               )}
             </div>
           </div>
+        )}
+
+        {/* Tab 3: Payment Configurations */}
+        {activeTab === "payment" && (
+          <form onSubmit={handleSavePaymentSettings} className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-[1fr_1.5fr] items-start">
+              
+              {/* Left pane: Bank details */}
+              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 space-y-4">
+                <div className="pb-3 border-b border-[#8C87A2]/10">
+                  <h3 className="text-sm font-bold text-[#F1EDF9] font-mono tracking-wide">THÔNG TIN THỤ HƯỞNG</h3>
+                  <p className="text-[11px] text-[#8C87A2] mt-1">Cấu hình tài khoản ngân hàng để học sinh chuyển khoản trực tiếp về ví của bạn.</p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-xs text-[#8C87A2] font-mono">Chọn Ngân hàng (VietQR)</Label>
+                    <select
+                      value={bankId}
+                      onChange={(e) => setBankId(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#C18CFF] text-[#F1EDF9] h-9 font-sans"
+                    >
+                      <option value="MB">MB Bank (Ngân hàng Quân Đội)</option>
+                      <option value="VCB">Vietcombank (Ngoại Thương)</option>
+                      <option value="TCB">Techcombank (Kỹ Thương)</option>
+                      <option value="BIDV">BIDV (Đầu tư & Phát triển)</option>
+                      <option value="ICB">VietinBank (Công Thương)</option>
+                      <option value="ACB">ACB (Á Châu)</option>
+                      <option value="TPB">TPBank (Tiên Phong)</option>
+                      <option value="VPB">VPBank (Thịnh Vượng)</option>
+                      <option value="STB">Sacombank (Sài Gòn Thương Tín)</option>
+                      <option value="VBA">Agribank (Nông nghiệp)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-[#8C87A2] font-mono">Số tài khoản ngân hàng</Label>
+                    <Input 
+                      value={accountNo}
+                      onChange={(e) => setAccountNo(e.target.value)}
+                      placeholder="VD: 0348574888"
+                      className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9] font-mono"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-[#8C87A2] font-mono">Tên chủ tài khoản (Không dấu)</Label>
+                    <Input 
+                      value={accountName}
+                      onChange={(e) => setAccountName(e.target.value)}
+                      placeholder="VD: NGUYEN VAN A"
+                      className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9] uppercase"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right pane: Price lists */}
+              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 space-y-4">
+                <div className="pb-3 border-b border-[#8C87A2]/10">
+                  <h3 className="text-sm font-bold text-[#F1EDF9] font-mono tracking-wide">CẤU HÌNH GIÁ MÔN HỌC</h3>
+                  <p className="text-[11px] text-[#8C87A2] mt-1">Điều chỉnh giá mở khóa từng môn học trực tuyến đối với học sinh.</p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {ONLINE_SUBJECTS.map((sub) => {
+                    const currentPrice = subjectPrices[sub.value] !== undefined 
+                      ? subjectPrices[sub.value] 
+                      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                      // @ts-ignore
+                      : (sub.price || 299000)
+                    
+                    return (
+                      <div key={sub.value} className="flex items-center justify-between p-3 rounded-xl border border-[#8C87A2]/10 bg-[#0B0A13]/30">
+                        <div className="flex items-center gap-2 min-w-0 mr-2">
+                          <span className="text-lg shrink-0">{sub.icon}</span>
+                          <span className="text-xs font-semibold text-[#F1EDF9] truncate">{sub.label}</span>
+                        </div>
+                        <div className="relative w-32 shrink-0">
+                          <input 
+                            type="number"
+                            value={currentPrice}
+                            onChange={(e) => handlePriceChange(sub.value, Number(e.target.value))}
+                            className="w-full rounded-lg border border-[#8C87A2]/25 bg-[#0B0A13] pr-7 pl-2.5 py-1 text-right text-xs text-[#F1EDF9] placeholder-[#8C87A2] outline-none focus:ring-1 focus:ring-[#C18CFF] font-mono"
+                            min={0}
+                            required
+                          />
+                          <span className="absolute right-2 top-1.5 text-[10px] text-[#8C87A2] font-mono">đ</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+            </div>
+
+            <div className="flex items-center justify-end">
+              <Button 
+                type="submit" 
+                disabled={savingSettings}
+                className="rounded-xl bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 font-bold px-8 py-2.5 transition-transform active:scale-95 flex items-center gap-1.5"
+              >
+                {savingSettings && <Loader2 className="h-4 w-4 animate-spin" />}
+                Lưu cấu hình thanh toán
+              </Button>
+            </div>
+          </form>
         )}
 
       </main>
