@@ -101,8 +101,8 @@ export default function OnlineStudentDashboard() {
               <h1 className="text-4xl sm:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight font-serif-italic">
                 Chào mừng, {profile?.full_name || "Học viên"}!
               </h1>
-              <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] italic max-w-2xl">
-                "Hành trình vạn dặm bắt đầu từ một bước chân. Hãy chọn môn học trực tuyến đã đăng ký để bắt đầu bài học."
+              <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] max-w-2xl">
+                Hệ thống học tập qua bài giảng video và tài liệu tự học trực tuyến. Hãy lựa chọn môn học bên dưới để bắt đầu bài giảng của bạn.
               </p>
             </div>
           </div>

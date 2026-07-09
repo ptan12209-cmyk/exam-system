@@ -10,13 +10,13 @@ import NextTopLoader from "nextjs-toploader";
 
 
 export const metadata: Metadata = {
-  title: "ExamHub - Hệ thống thi trắc nghiệm online",
-  description: "Nền tảng thi trắc nghiệm thông minh - Tạo đề nhanh, chấm điểm tự động",
+  title: "StudyHub - Hệ thống học tập & bài giảng online",
+  description: "Nền tảng học trực tuyến thông minh - Xem video bài giảng, ôn tập tài liệu hiệu quả",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "ExamHub",
+    title: "StudyHub",
   },
 };
 

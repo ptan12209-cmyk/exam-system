@@ -134,10 +134,10 @@ export default function HomePage() {
 
         <Link href="/" className="flex items-center gap-2.5">
           <div className="relative flex h-8 w-8 items-center justify-center">
-            <div className="absolute inset-0 rounded-lg bg-[oklch(0.75_0.18_290)]" style={{ opacity: 0.15 }} />
-            <span className="text-base font-bold tracking-tight" style={{ color: "oklch(0.75 0.18 290)" }}>E</span>
+            <div className="absolute inset-0 rounded-lg bg-[oklch(0.75 0.18 290)]" style={{ opacity: 0.15 }} />
+            <span className="text-base font-bold tracking-tight" style={{ color: "oklch(0.75 0.18 290)" }}>S</span>
           </div>
-          <span className="text-[15px] font-semibold tracking-[-0.02em]">ExamHub</span>
+          <span className="text-[15px] font-semibold tracking-[-0.02em]">StudyHub</span>
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">
@@ -208,7 +208,7 @@ export default function HomePage() {
           >
             <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: "oklch(0.75 0.18 290)" }} />
             <span className="text-[12px] font-medium tracking-wide" style={{ color: "oklch(0.75 0.18 290)" }}>
-              Nền tảng ôn thi thế hệ mới
+              Nền tảng học trực tuyến thế hệ mới
             </span>
           </motion.div>
 
@@ -615,19 +615,19 @@ export default function HomePage() {
           <div className="flex items-center gap-2.5">
             <div className="relative flex h-7 w-7 items-center justify-center">
               <div className="absolute inset-0 rounded-md" style={{ background: "oklch(0.75 0.18 290 / 0.12)" }} />
-              <span className="text-sm font-bold" style={{ color: "oklch(0.75 0.18 290)" }}>E</span>
+              <span className="text-sm font-bold" style={{ color: "oklch(0.75 0.18 290)" }}>S</span>
             </div>
-            <span className="text-[14px] font-semibold tracking-tight">ExamHub</span>
+            <span className="text-[14px] font-semibold tracking-tight">StudyHub</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[13px] text-[#8C87A2]">
-            <Link href="/tra-cuu-diem" className="transition-colors hover:text-[#e8e4f0]">Tra cứu điểm thi</Link>
+            <Link href="/login" className="transition-colors hover:text-[#e8e4f0]">Cổng học tập</Link>
             <Link href="/login" className="transition-colors hover:text-[#e8e4f0]">Đăng nhập</Link>
             <Link href="/register" className="transition-colors hover:text-[#e8e4f0]">Đăng ký</Link>
           </div>
 
           <p className="text-[12px] text-[#8C87A2]/60">
-            © {new Date().getFullYear()} ExamHub. All rights reserved.
+            © {new Date().getFullYear()} StudyHub. All rights reserved.
           </p>
         </div>
       </footer>
