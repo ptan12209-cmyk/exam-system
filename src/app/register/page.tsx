@@ -36,14 +36,15 @@ export default function RegisterPage() {
     }
 
     const normalizedEmail = email.toLowerCase().trim()
-    if (role === "teacher") {
+    // Whitelist check cho giáo viên (TẠM ẨN)
+    /* if (role === "teacher") {
       const { data: whitelistCheck } = await supabase.from("teacher_whitelist").select("id").eq("email", normalizedEmail).single()
       if (!whitelistCheck) {
         setError("Email này chưa được cấp quyền Giáo viên. Vui lòng liên hệ quản trị viên.")
         setLoading(false)
         return
       }
-    }
+    } */
 
     const { data: authData, error: authError } = await supabase.auth.signUp({ email: normalizedEmail, password })
     if (authError || !authData.user) {
@@ -63,7 +64,7 @@ export default function RegisterPage() {
       return
     }
 
-    router.push(role === "teacher" ? "/teacher/dashboard" : "/student/portal")
+    router.push(role === "teacher" ? "/teacher/online-study" : "/online-student/dashboard")
   }
 
   const inputClasses = "w-full bg-transparent text-sm outline-none placeholder:text-[hsl(var(--muted-foreground))]"
@@ -82,7 +83,7 @@ export default function RegisterPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[hsl(var(--border))]/60">
               <GraduationCap className="h-4 w-4" />
             </div>
-            <span className="text-lg font-semibold tracking-tight">ExamHub</span>
+            <span className="text-lg font-semibold tracking-tight">StudyHub</span>
           </Link>
           <Link href="/login" className="text-sm text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]">
             Đăng nhập
@@ -94,7 +95,7 @@ export default function RegisterPage() {
         <div className="grid w-full gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16">
           <section className="flex flex-col justify-center">
             <span className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 px-3 py-1 text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
-              <Sparkles className="h-3.5 w-3.5" /> Tạo tài khoản test trong vài phút
+              <Sparkles className="h-3.5 w-3.5" /> Đăng ký tài khoản học tập trực tuyến
             </span>
             <h1 className="max-w-2xl text-5xl font-medium tracking-[-2px] md:text-7xl lg:text-8xl">
               Đăng ký
@@ -110,13 +111,14 @@ export default function RegisterPage() {
           <section className="rounded-2xl p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)] md:p-8">
             <div className="mb-6">
               <h2 className="text-2xl font-semibold tracking-tight">Đăng ký</h2>
-              <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Điền thông tin để tạo tài khoản test.</p>
+              <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Điền thông tin của bạn để bắt đầu học ngay hôm nay.</p>
             </div>
 
             <form onSubmit={handleRegister} className="space-y-4">
               {error && <div className="rounded-2xl border border-red-500/20 bg-red-500/8 px-4 py-3 text-sm text-red-500">{error}</div>}
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* Grid chọn Role (TẠM ẨN - Mặc định học sinh) */}
+              {/* <div className="grid grid-cols-2 gap-3">
                 {[
                   { value: "student" as Role, label: "Học sinh", icon: BookOpen },
                   { value: "teacher" as Role, label: "Giáo viên", icon: Users },
@@ -134,7 +136,7 @@ export default function RegisterPage() {
                     <span className="text-sm font-medium">{item.label}</span>
                   </button>
                 ))}
-              </div>
+              </div> */}
 
               <label className="block space-y-2">
                 <span className="text-sm font-medium">Họ và tên</span>

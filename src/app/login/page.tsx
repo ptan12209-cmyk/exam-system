@@ -46,9 +46,9 @@ export default function LoginPage() {
 
     const { data: profile } = await supabase.from("profiles").select("role, nickname").eq("id", data.user.id).single()
     if (profile?.role === "teacher") {
-      router.push("/teacher/dashboard")
+      router.push("/teacher/online-study")
     } else {
-      router.push("/student/portal")
+      router.push("/online-student/dashboard")
     }
   }
 
@@ -66,7 +66,7 @@ export default function LoginPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[hsl(var(--border))]/60">
               <GraduationCap className="h-4 w-4" />
             </div>
-            <span className="text-lg font-semibold tracking-tight">ExamHub</span>
+            <span className="text-lg font-semibold tracking-tight">StudyHub</span>
           </Link>
           <Link href="/register" className="text-sm text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]">
             Đăng ký
