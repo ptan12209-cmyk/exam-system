@@ -75,14 +75,10 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
 
     const menuItems = role === "student" ? [
         { href: "/student/profile", icon: User, label: "Hồ sơ của tôi" },
-        { href: "/student/analytics", icon: BarChart3, label: "Thống kê" },
-        { href: "/arena", icon: Swords, label: "Đấu trường" },
-        { href: "/student/rewards", icon: Gift, label: "Phần thưởng" },
+        { href: "/online-student/dashboard", icon: BarChart3, label: "Học online" },
     ] : [
         { href: "/teacher/profile", icon: User, label: "Hồ sơ của tôi" },
-        { href: "/teacher/analytics", icon: BarChart3, label: "Thống kê" },
-        { href: "/teacher/arena", icon: Swords, label: "Đấu trường" },
-        { href: "/teacher/exam-bank", icon: Settings, label: "Ngân hàng ĐT" },
+        { href: "/teacher/study", icon: BarChart3, label: "Quản lý học liệu" },
     ]
 
     const initials = userName

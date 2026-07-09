@@ -188,7 +188,7 @@ export function XTimetable() {
           dbSlots.forEach((row: any) => {
             let timeKey = ''
             if (row.start_time.startsWith('11:30')) timeKey = 'sang'
-            else if (row.start_time.startsWith('14:30') || row.start_time.startsWith('15:00') || row.start_time.startsWith('17:30')) timeKey = 'chieu1'
+            else if (row.start_time.startsWith('14:30' ) || row.start_time.startsWith('15:00') || row.start_time.startsWith('17:30')) timeKey = 'chieu1'
             else if (row.start_time.startsWith('20:00') || row.start_time.startsWith('20:30')) timeKey = 'chieu2'
             else if (row.start_time.startsWith('23:00')) timeKey = 'toi'
 

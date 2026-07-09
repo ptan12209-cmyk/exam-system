@@ -142,7 +142,7 @@ export default function OnlineStudentStudy() {
         .eq("id", user.id)
         .single()
 
-      if (!profileData || profileData.role !== "online_student") {
+      if (!profileData || (profileData.role !== "online_student" && profileData.role !== "student")) {
         router.push("/login")
         return
       }

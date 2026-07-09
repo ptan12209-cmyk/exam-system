@@ -33,7 +33,7 @@ export default function OnlineStudentDashboard() {
         .eq("id", user.id)
         .single()
 
-      if (!profileData || profileData.role !== "online_student") {
+      if (!profileData || (profileData.role !== "online_student" && profileData.role !== "student")) {
         router.push("/login")
         return
       }
@@ -96,12 +96,7 @@ export default function OnlineStudentDashboard() {
                   </span>
                 </div>
                 
-                {/* Back to Portal selection */}
-                <Link href="/student/portal">
-                  <Button variant="ghost" size="sm" className="h-8 rounded-xl border border-[#8C87A2]/20 text-[10px] font-bold hover:bg-[#0B0A13] text-[#8C87A2] hover:text-[#F1EDF9] flex items-center gap-1">
-                    <ArrowLeft className="h-3 w-3" /> Cổng học tập
-                  </Button>
-                </Link>
+
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight font-serif-italic">
                 Chào mừng, {profile?.full_name || "Học viên"}!

@@ -73,9 +73,9 @@ export async function middleware(request: NextRequest) {
 
     const dashboardUrl = request.nextUrl.clone()
     if (profile.role === 'teacher') {
-      dashboardUrl.pathname = '/teacher/dashboard'
+      dashboardUrl.pathname = '/teacher/study'
     } else {
-      dashboardUrl.pathname = '/student/portal'
+      dashboardUrl.pathname = '/online-student/dashboard'
     }
     return NextResponse.redirect(dashboardUrl)
   }
@@ -92,23 +92,44 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (profile) {
-        // Accessing teacher routes without being a teacher
-        if (pathname.startsWith('/teacher') && profile.role !== 'teacher') {
-          const redirectUrl = request.nextUrl.clone()
-          redirectUrl.pathname = '/student/portal'
-          return NextResponse.redirect(redirectUrl)
+        // Accessing teacher routes
+        if (pathname.startsWith('/teacher')) {
+          if (profile.role !== 'teacher') {
+            const redirectUrl = request.nextUrl.clone()
+            redirectUrl.pathname = '/online-student/dashboard'
+            return NextResponse.redirect(redirectUrl)
+          }
+          // Redirect teacher dashboard to study management
+          if (pathname === '/teacher/dashboard') {
+            const redirectUrl = request.nextUrl.clone()
+            redirectUrl.pathname = '/teacher/study'
+            return NextResponse.redirect(redirectUrl)
+          }
         }
-        // Accessing student routes without being a student/online_student
-        if (pathname.startsWith('/student') && profile.role !== 'student' && profile.role !== 'online_student') {
-          const redirectUrl = request.nextUrl.clone()
-          redirectUrl.pathname = '/teacher/dashboard'
-          return NextResponse.redirect(redirectUrl)
+
+        // Accessing student routes
+        if (pathname.startsWith('/student')) {
+          if (profile.role !== 'student' && profile.role !== 'online_student') {
+            const redirectUrl = request.nextUrl.clone()
+            redirectUrl.pathname = '/teacher/study'
+            return NextResponse.redirect(redirectUrl)
+          }
+          // Protect profile page but redirect all other student routes to online dashboard
+          const isProfilePage = pathname === '/student/profile'
+          if (!isProfilePage) {
+            const redirectUrl = request.nextUrl.clone()
+            redirectUrl.pathname = '/online-student/dashboard'
+            return NextResponse.redirect(redirectUrl)
+          }
         }
-        // Accessing online student routes without being an online student
-        if (pathname.startsWith('/online-student') && profile.role !== 'online_student') {
-          const redirectUrl = request.nextUrl.clone()
-          redirectUrl.pathname = '/student/portal'
-          return NextResponse.redirect(redirectUrl)
+
+        // Accessing online student routes - allow both student and online_student roles
+        if (pathname.startsWith('/online-student')) {
+          if (profile.role !== 'online_student' && profile.role !== 'student') {
+            const redirectUrl = request.nextUrl.clone()
+            redirectUrl.pathname = '/login'
+            return NextResponse.redirect(redirectUrl)
+          }
         }
       }
     }

@@ -16,28 +16,10 @@ interface NavItem {
 
 const studentNavItems: NavItem[] = [
     {
-        href: "/student/dashboard",
+        href: "/online-student/dashboard",
         label: "Trang chủ",
         icon: Home,
-        activePattern: /^\/student\/dashboard/
-    },
-    {
-        href: "/student/exams",
-        label: "Đề thi",
-        icon: FileText,
-        activePattern: /^\/student\/exams/
-    },
-    {
-        href: "/arena",
-        label: "Đấu trường",
-        icon: Swords,
-        activePattern: /^\/arena/
-    },
-    {
-        href: "/student/timetable",
-        label: "TKB",
-        icon: CalendarDays,
-        activePattern: /^\/student\/timetable/
+        activePattern: /^\/online-student\/dashboard/
     },
     {
         href: "/student/profile",
@@ -49,28 +31,10 @@ const studentNavItems: NavItem[] = [
 
 const teacherNavItems: NavItem[] = [
     {
-        href: "/teacher/dashboard",
+        href: "/teacher/study",
         label: "Trang chủ",
         icon: Home,
-        activePattern: /^\/teacher\/dashboard/
-    },
-    {
-        href: "/teacher/exams/create",
-        label: "Tạo đề",
-        icon: FileText,
-        activePattern: /^\/teacher\/exams\/create/
-    },
-    {
-        href: "/teacher/arena",
-        label: "Đấu trường",
-        icon: Swords,
-        activePattern: /^\/teacher\/arena/
-    },
-    {
-        href: "/teacher/monitor",
-        label: "Giám sát",
-        icon: Eye,
-        activePattern: /^\/teacher\/monitor/
+        activePattern: /^\/teacher\/study/
     },
     {
         href: "/teacher/profile",
@@ -88,7 +52,7 @@ export function MobileNav() {
     if (!pathname) return null
 
     // Only show on logged-in areas (student or teacher subpaths, or arena/resources)
-    const isStudentArea = pathname.startsWith("/student") || pathname.startsWith("/arena") || pathname.startsWith("/resources")
+    const isStudentArea = pathname.startsWith("/student") || pathname.startsWith("/online-student") || pathname.startsWith("/arena") || pathname.startsWith("/resources")
     const isTeacherArea = pathname.startsWith("/teacher")
 
     useEffect(() => {
