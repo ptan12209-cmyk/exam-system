@@ -33,19 +33,19 @@ interface TeacherSidebarProps {
 }
 
 const NAV_ITEMS = [
-  { href: "/teacher/dashboard", label: "Tổng quan", icon: LayoutDashboard },
-  { href: "/teacher/exams", label: "Đề thi", icon: FileText },
-  { href: "/teacher/exams/create", label: "Tạo đề mới", icon: Plus },
+  // { href: "/teacher/dashboard", label: "Tổng quan", icon: LayoutDashboard },
+  // { href: "/teacher/exams", label: "Đề thi", icon: FileText },
+  // { href: "/teacher/exams/create", label: "Tạo đề mới", icon: Plus },
+  { href: "/teacher/online-study", label: "Học liệu online", icon: Globe2 },
 ]
 
 const MANAGE_ITEMS = [
   { href: "/teacher/profile", label: "Hồ sơ giáo viên", icon: UserCircle },
-  { href: "/teacher/monitor", label: "Giám sát học tập", icon: Activity },
-  { href: "/teacher/study", label: "Quản lý bài học", icon: BookOpen },
-  { href: "/teacher/online-study", label: "Quản lý bài online", icon: Globe2 },
-  { href: "/teacher/exam-bank", label: "Ngân hàng đề", icon: Database },
-  { href: "/teacher/arena", label: "Đấu trường", icon: Swords },
-  { href: "/teacher/analytics", label: "Thống kê chi tiết", icon: PieChart },
+  // { href: "/teacher/monitor", label: "Giám sát học tập", icon: Activity },
+  // { href: "/teacher/study", label: "Quản lý bài học", icon: BookOpen },
+  // { href: "/teacher/exam-bank", label: "Ngân hàng đề", icon: Database },
+  // { href: "/teacher/arena", label: "Đấu trường", icon: Swords },
+  // { href: "/teacher/analytics", label: "Thống kê chi tiết", icon: PieChart },
 ]
 
 function SidebarLink({ 

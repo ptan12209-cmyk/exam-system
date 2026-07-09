@@ -134,12 +134,12 @@ export default function ProfilePage() {
               Hồ sơ cá nhân
             </h1>
             <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] max-w-2xl">
-              Quản lý thông tin tài khoản cá nhân, theo dõi tiến trình thăng cấp và bộ sưu tập huy hiệu đạt được.
+              Quản lý thông tin tài khoản cá nhân và hồ sơ tự học trực tuyến của bạn.
             </p>
           </div>
 
-          {/* XP Summary Box */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
+          {/* XP Summary Box (TẠM ẨN) */}
+          {/* <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
             <span className="text-[10px] text-[#8C87A2] uppercase font-mono">XP tích lũy hiện tại</span>
             <div className="mt-2 text-3xl font-bold font-mono text-[#F1EDF9]">{(stats?.xp || 0).toLocaleString()} XP</div>
             
@@ -155,12 +155,23 @@ export default function ProfilePage() {
                 <span>Còn {xpProgress.nextTotal - (stats?.xp || 0)} XP để lên cấp {(stats?.level || 1) + 1}</span>
               </div>
             </div>
-          </div>
+          </div> */}
         </section>
 
         {/* Quick Links Grid */}
-        <section className="mt-8 grid gap-4 grid-cols-2 lg:grid-cols-4">
-          {quickLinks.map((item) => (
+        <section className="mt-8 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <Link 
+            href="/online-student/dashboard" 
+            className="flex items-center gap-3 rounded-xl border border-[#8C87A2]/20 bg-[#15131F] p-4 hover:border-[#C18CFF]/50 transition-colors group"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#8C87A2]/20 bg-[#0B0A13] text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors">
+              <BookOpen className="h-4 w-4" />
+            </div>
+            <span className="text-xs font-bold text-[#F1EDF9]">Học trực tuyến (Video bài giảng)</span>
+          </Link>
+
+          {/* Các Quick Link cũ (TẠM ẨN) */}
+          {/* {quickLinks.map((item) => (
             <Link 
               key={item.href} 
               href={item.href} 
@@ -171,14 +182,13 @@ export default function ProfilePage() {
               </div>
               <span className="text-xs font-bold text-[#F1EDF9]">{item.label}</span>
             </Link>
-          ))}
+          ))} */}
         </section>
 
         {/* Main Details Section */}
         <section className="mt-8 grid gap-6 lg:grid-cols-[1.35fr_0.65fr] lg:items-start">
           
           <div className="space-y-6">
-            
             {/* Profile Detail Card */}
             <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-6 shadow-sm">
               <div className="flex flex-col gap-6 md:flex-row md:items-center">
@@ -199,8 +209,8 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Stats Cards (Dream Engine Solid Borders) */}
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {/* Stats Cards (TẠM ẨN) */}
+            {/* <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               <StatsCard 
                 label="Bài đã làm" 
                 value={stats?.exams_completed || 0} 
@@ -233,10 +243,10 @@ export default function ProfilePage() {
                 iconBgColor="bg-amber-500/10 border border-amber-500/25" 
                 className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-5 shadow-none hover:border-[#C18CFF]/30 transition-colors"
               />
-            </div>
+            </div> */}
 
-            {/* Badges Panel */}
-            <section className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]">
+            {/* Badges Panel (TẠM ẨN) */}
+            {/* <section className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]">
               <div className="border-b border-[#8C87A2]/20 p-5 bg-[#0B0A13]/30">
                 <h3 className="flex items-center gap-2 text-base font-bold text-[#F1EDF9]">
                   <Award className="h-5 w-5 text-[#C18CFF]" /> Badge đã đạt
@@ -249,10 +259,10 @@ export default function ProfilePage() {
                   <p className="py-8 text-center text-xs text-[#8C87A2]">Hoàn thành bài thi để nhận huy hiệu đầu tiên.</p>
                 )}
               </div>
-            </section>
+            </section> */}
 
-            {/* Titles Panel */}
-            <section className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]">
+            {/* Titles Panel (TẠM ẨN) */}
+            {/* <section className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]">
               <div className="border-b border-[#8C87A2]/20 p-5 bg-[#0B0A13]/30">
                 <h3 className="flex items-center gap-2 text-base font-bold text-[#F1EDF9]">
                   <Star className="h-5 w-5 text-[#C18CFF]" /> Danh hiệu trang bị
@@ -261,10 +271,10 @@ export default function ProfilePage() {
               <div className="p-5">
                 <TitleSelector />
               </div>
-            </section>
+            </section> */}
 
-            {/* Achievements Grid Panel */}
-            <section className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]">
+            {/* Achievements Grid Panel (TẠM ẨN) */}
+            {/* <section className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]">
               <div className="border-b border-[#8C87A2]/20 p-5 bg-[#0B0A13]/30">
                 <h3 className="flex items-center gap-2 text-base font-bold text-[#F1EDF9]">
                   <Award className="h-5 w-5 text-[#C18CFF]" /> Cột mốc thành tựu
@@ -273,7 +283,7 @@ export default function ProfilePage() {
               <div className="p-5">
                 <AchievementsGrid />
               </div>
-            </section>
+            </section> */}
           </div>
 
           <aside className="space-y-6">
@@ -291,10 +301,10 @@ export default function ProfilePage() {
               <PWAInstallButton />
             </div>
 
-            {/* Leaderboard Card */}
-            <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-5 shadow-sm">
+            {/* Leaderboard Card (TẠM ẨN) */}
+            {/* <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-5 shadow-sm">
               <LeaderboardCard currentUserId={userId || undefined} />
-            </div>
+            </div> */}
           </aside>
         </section>
       </main>

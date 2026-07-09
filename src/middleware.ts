@@ -73,7 +73,7 @@ export async function middleware(request: NextRequest) {
 
     const dashboardUrl = request.nextUrl.clone()
     if (profile.role === 'teacher') {
-      dashboardUrl.pathname = '/teacher/study'
+      dashboardUrl.pathname = '/teacher/online-study'
     } else {
       dashboardUrl.pathname = '/online-student/dashboard'
     }
@@ -82,7 +82,12 @@ export async function middleware(request: NextRequest) {
 
   // Role-based access control for authenticated users
   if (user && isProtected) {
-    const needsRoleCheck = pathname.startsWith('/teacher') || pathname.startsWith('/student') || pathname.startsWith('/online-student')
+    const needsRoleCheck = 
+      pathname.startsWith('/teacher') || 
+      pathname.startsWith('/student') || 
+      pathname.startsWith('/online-student') || 
+      pathname.startsWith('/arena') || 
+      pathname.startsWith('/live')
     
     if (needsRoleCheck) {
       const { data: profile } = await supabase
@@ -99,10 +104,15 @@ export async function middleware(request: NextRequest) {
             redirectUrl.pathname = '/online-student/dashboard'
             return NextResponse.redirect(redirectUrl)
           }
-          // Redirect teacher dashboard to study management
-          if (pathname === '/teacher/dashboard') {
+          // Redirect all deprecated teacher pages to online study management
+          // Allow only: /teacher/online-study, /teacher/profile (and their subpaths)
+          const isAllowedTeacherPath = 
+            pathname.startsWith('/teacher/online-study') || 
+            pathname.startsWith('/teacher/profile')
+            
+          if (!isAllowedTeacherPath) {
             const redirectUrl = request.nextUrl.clone()
-            redirectUrl.pathname = '/teacher/study'
+            redirectUrl.pathname = '/teacher/online-study'
             return NextResponse.redirect(redirectUrl)
           }
         }
@@ -111,11 +121,11 @@ export async function middleware(request: NextRequest) {
         if (pathname.startsWith('/student')) {
           if (profile.role !== 'student' && profile.role !== 'online_student') {
             const redirectUrl = request.nextUrl.clone()
-            redirectUrl.pathname = '/teacher/study'
+            redirectUrl.pathname = '/teacher/online-study'
             return NextResponse.redirect(redirectUrl)
           }
           // Protect profile page but redirect all other student routes to online dashboard
-          const isProfilePage = pathname === '/student/profile'
+          const isProfilePage = pathname.startsWith('/student/profile')
           if (!isProfilePage) {
             const redirectUrl = request.nextUrl.clone()
             redirectUrl.pathname = '/online-student/dashboard'
@@ -130,6 +140,17 @@ export async function middleware(request: NextRequest) {
             redirectUrl.pathname = '/login'
             return NextResponse.redirect(redirectUrl)
           }
+        }
+
+        // Accessing deprecated public/shared protected routes (like arena or live)
+        if (pathname.startsWith('/arena') || pathname.startsWith('/live')) {
+          const redirectUrl = request.nextUrl.clone()
+          if (profile.role === 'teacher') {
+            redirectUrl.pathname = '/teacher/online-study'
+          } else {
+            redirectUrl.pathname = '/online-student/dashboard'
+          }
+          return NextResponse.redirect(redirectUrl)
         }
       }
     }

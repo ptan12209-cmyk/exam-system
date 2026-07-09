@@ -78,7 +78,7 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
         { href: "/online-student/dashboard", icon: BarChart3, label: "Học online" },
     ] : [
         { href: "/teacher/profile", icon: User, label: "Hồ sơ của tôi" },
-        { href: "/teacher/study", icon: BarChart3, label: "Quản lý học liệu" },
+        { href: "/teacher/online-study", icon: BarChart3, label: "Quản lý học liệu" },
     ]
 
     const initials = userName
