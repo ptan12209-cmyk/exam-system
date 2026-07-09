@@ -68,7 +68,15 @@ function VideoPlayer({ url }: { url: string }) {
         return
       }
     }
-    if (url.includes("iframe.mediadelivery.net") || url.includes("bunny.net")) {
+    if (url.includes("mediadelivery.net") || url.includes("bunny.net")) {
+      // Tự động chuyển dạng play/ sang embed/
+      if (url.includes("/play/")) {
+        const parts = url.split("/play/")
+        if (parts.length === 2) {
+          setEmbedUrl(`https://iframe.mediadelivery.net/embed/${parts[1]}`)
+          return
+        }
+      }
       if (url.includes("embed") || url.includes("iframe")) {
         setEmbedUrl(url)
         return
