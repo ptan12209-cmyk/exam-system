@@ -97,6 +97,59 @@ export default function TeacherOnlineStudyPage() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null) // null means Root
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({})
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [isMobileTreeOpen, setIsMobileTreeOpen] = useState(false)
+
+  // Load states from localStorage after mounting
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTab = localStorage.getItem("teacher_study_tab")
+      const savedSubject = localStorage.getItem("teacher_study_subject")
+      
+      if (savedTab === "lectures" || savedTab === "permissions") setActiveTab(savedTab)
+      if (savedSubject && ONLINE_SUBJECTS.some(s => s.value === savedSubject)) {
+        setSelectedSubject(savedSubject)
+      }
+      
+      const targetSub = savedSubject || "toan"
+      const savedFolder = localStorage.getItem(`teacher_folder_${targetSub}`)
+      const savedExpanded = localStorage.getItem(`teacher_expanded_${targetSub}`)
+      if (savedFolder) setSelectedFolderId(savedFolder)
+      if (savedExpanded) {
+        try {
+          setExpandedFolders(JSON.parse(savedExpanded))
+        } catch (e){}
+      }
+    }
+  }, [])
+
+  // Save states to localStorage on changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("teacher_study_tab", activeTab)
+    }
+  }, [activeTab])
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("teacher_study_subject", selectedSubject)
+    }
+  }, [selectedSubject])
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (selectedFolderId) {
+        localStorage.setItem(`teacher_folder_${selectedSubject}`, selectedFolderId)
+      } else {
+        localStorage.removeItem(`teacher_folder_${selectedSubject}`)
+      }
+    }
+  }, [selectedFolderId, selectedSubject])
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`teacher_expanded_${selectedSubject}`, JSON.stringify(expandedFolders))
+    }
+  }, [expandedFolders, selectedSubject])
 
   // Data States (Lectures)
   const [folders, setFolders] = useState<DbFolder[]>([])
@@ -201,7 +254,12 @@ export default function TeacherOnlineStudyPage() {
   useEffect(() => {
     if (activeTab === "lectures") {
       fetchData()
-      setSelectedFolderId(null)
+      if (typeof window !== "undefined") {
+        const savedFolder = localStorage.getItem(`teacher_folder_${selectedSubject}`)
+        setSelectedFolderId(savedFolder || null)
+      } else {
+        setSelectedFolderId(null)
+      }
     } else {
       fetchStudents(searchStudentQuery)
     }
@@ -673,12 +731,18 @@ export default function TeacherOnlineStudyPage() {
             <div className="flex flex-col gap-3 rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/30 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
                 
-                {/* Subject Selector */}
-                <div className="w-full sm:w-64">
+                {/* Subject Selector & Mobile Tree Button */}
+                <div className="flex items-center gap-2 w-full sm:w-64 shrink-0">
+                  <Button
+                    onClick={() => setIsMobileTreeOpen(true)}
+                    className="md:hidden shrink-0 rounded-xl border border-[#8C87A2]/30 bg-[#15131F] text-xs font-bold text-[#F1EDF9] hover:bg-[#15131F]/80 flex items-center gap-1.5 px-3 h-9"
+                  >
+                    <FolderIcon className="h-4 w-4 text-[#C18CFF]" /> Cây thư mục
+                  </Button>
                   <select
                     value={selectedSubject}
                     onChange={(e) => setSelectedSubject(e.target.value)}
-                    className="w-full rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                    className="w-full rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#C18CFF] text-[#F1EDF9] h-9"
                   >
                     {ONLINE_SUBJECTS.map((s) => (
                       <option key={s.value} value={s.value}>
@@ -1432,6 +1496,37 @@ export default function TeacherOnlineStudyPage() {
         confirmText="Xác nhận xóa"
         cancelText="Hủy bỏ"
       />
+
+      {/* Mobile Folder Tree Drawer */}
+      {isMobileTreeOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden bg-black/60 backdrop-blur-sm transition-all duration-300">
+          <div className="w-80 max-w-[85%] bg-[#0B0A13] border-r border-[#8C87A2]/20 h-full flex flex-col p-4 shadow-2xl relative animate-in slide-in-from-left duration-300">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#8C87A2]/10">
+              <span className="text-sm font-bold text-[#F1EDF9] font-mono tracking-wide">CÂY THƯ MỤC</span>
+              <button 
+                onClick={() => setIsMobileTreeOpen(false)} 
+                className="p-1.5 rounded-lg border border-[#8C87A2]/20 text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F] transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto pr-1">
+              {folderTree.length === 0 ? (
+                <p className="text-xs text-[#8C87A2] italic text-center py-4">Chưa có thư mục</p>
+              ) : (
+                <div className="space-y-0.5">
+                  {folderTree.map(root => (
+                    <div key={root.folder.id} onClick={() => setIsMobileTreeOpen(false)}>
+                      <LeftFolderTreeNode node={root} level={0} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex-1" onClick={() => setIsMobileTreeOpen(false)} />
+        </div>
+      )}
     </TeacherShell>
   )
 }

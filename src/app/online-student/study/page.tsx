@@ -24,7 +24,8 @@ import {
   List,
   Home,
   ChevronLeft,
-  ExternalLink
+  ExternalLink,
+  X
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -87,7 +88,13 @@ function VideoPlayer({ url }: { url: string }) {
 
   if (embedUrl) {
     return (
-      <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-[#8C87A2]/20 bg-black">
+      <div 
+        className="relative w-full aspect-video rounded-xl overflow-hidden border border-[#8C87A2]/20 bg-black"
+        onContextMenu={(e) => {
+          e.preventDefault()
+          alert("Hệ thống bảo mật StudyHub: Mọi hành vi lấy mã nhúng hoặc sao chép bài giảng video đều bị nghiêm cấm.")
+        }}
+      >
         <iframe
           src={embedUrl}
           className="absolute inset-0 w-full h-full"
@@ -103,6 +110,10 @@ function VideoPlayer({ url }: { url: string }) {
       src={url}
       controls
       controlsList="nodownload"
+      onContextMenu={(e) => {
+        e.preventDefault()
+        alert("Hệ thống bảo mật StudyHub: Hành vi tải video trái phép hoặc kiểm tra mã nguồn bị chặn để bảo vệ bản quyền.")
+      }}
       className="w-full aspect-video rounded-xl bg-black border border-[#8C87A2]/20"
     />
   )
@@ -129,9 +140,100 @@ export default function OnlineStudentStudy() {
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({})
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [explorerSearch, setExplorerSearch] = useState("")
+  const [isMobileTreeOpen, setIsMobileTreeOpen] = useState(false)
 
   // Active Lesson Viewer (like double clicking a file to open viewer)
   const [activeLesson, setActiveLesson] = useState<DbLesson | null>(null)
+
+  // DevTools detection state
+  const [isDevToolsOpen, setIsDevToolsOpen] = useState(false)
+
+  // 1. DevTools detection (window size change & developer controls check)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    
+    const threshold = 160
+    const checkDevTools = () => {
+      const widthDev = window.outerWidth - window.innerWidth > threshold
+      const heightDev = window.outerHeight - window.innerHeight > threshold
+      if (widthDev || heightDev) {
+        setIsDevToolsOpen(true)
+      }
+    }
+    
+    window.addEventListener("resize", checkDevTools)
+    const interval = setInterval(checkDevTools, 1000)
+    
+    return () => {
+      window.removeEventListener("resize", checkDevTools)
+      clearInterval(interval)
+    }
+  }, [])
+
+  // 2. Keyboard shortcut blocking
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "F12") {
+        e.preventDefault()
+        alert("Hệ thống bảo mật StudyHub: Bảng điều khiển nhà phát triển đã bị khóa để bảo vệ bản quyền nội dung.")
+        return
+      }
+      if (e.ctrlKey && (e.shiftKey && (e.key === "I" || e.key === "C" || e.key === "J") || e.key === "u" || e.key === "s")) {
+        e.preventDefault()
+        alert("Hệ thống bảo mật StudyHub: Thao tác này đã bị chặn để bảo vệ bản quyền video bài giảng.")
+        return
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
+
+  // 3. Load folder tree state from localStorage on mount/subject change
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const savedFolder = localStorage.getItem(`student_folder_${subjectKey}`)
+    const savedExpanded = localStorage.getItem(`student_expanded_${subjectKey}`)
+    const savedLesson = localStorage.getItem(`student_lesson_${subjectKey}`)
+
+    if (savedFolder) setSelectedFolderId(savedFolder)
+    if (savedExpanded) {
+      try {
+        setExpandedFolders(JSON.parse(savedExpanded))
+      } catch (e) {}
+    }
+    if (savedLesson) {
+      try {
+        setActiveLesson(JSON.parse(savedLesson))
+      } catch (e) {}
+    }
+  }, [subjectKey])
+
+  // 4. Save folder tree state to localStorage on changes
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (selectedFolderId) {
+      localStorage.setItem(`student_folder_${subjectKey}`, selectedFolderId)
+    } else {
+      localStorage.removeItem(`student_folder_${subjectKey}`)
+    }
+  }, [selectedFolderId, subjectKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    localStorage.setItem(`student_expanded_${subjectKey}`, JSON.stringify(expandedFolders))
+  }, [expandedFolders, subjectKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (activeLesson) {
+      localStorage.setItem(`student_lesson_${subjectKey}`, JSON.stringify(activeLesson))
+    } else {
+      localStorage.removeItem(`student_lesson_${subjectKey}`)
+    }
+  }, [activeLesson, subjectKey])
   
   // Selected Video Player State
   const [activeVideo, setActiveVideo] = useState<{ title: string; url: string } | null>(null)
@@ -345,6 +447,26 @@ export default function OnlineStudentStudy() {
     )
   }
 
+  if (isDevToolsOpen) {
+    return (
+      <div className="min-h-screen bg-[#0B0A13] flex flex-col items-center justify-center text-center p-6 select-none">
+        <div className="h-16 w-16 bg-[#15131F] border border-red-500/20 rounded-full flex items-center justify-center text-red-400 mb-4 animate-pulse">
+          <ShieldAlert className="h-8 w-8 text-red-500" />
+        </div>
+        <h1 className="text-2xl font-bold text-[#F1EDF9]">Cảnh báo bảo mật hệ thống</h1>
+        <p className="text-sm text-[#8C87A2] max-w-md mt-3 leading-relaxed">
+          Phát hiện hành vi mở DevTools hoặc kiểm tra mã nguồn. Vui lòng đóng bảng điều khiển lập trình (F12) và tải lại trang để tiếp tục học tập. Hành vi cố tình bắt link tải video bài giảng sẽ được ghi lại trên tài khoản hệ thống.
+        </p>
+        <Button 
+          onClick={() => window.location.reload()} 
+          className="mt-6 rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-bold text-xs px-6 py-2.5 transition-all"
+        >
+          Tải lại trang
+        </Button>
+      </div>
+    )
+  }
+
   if (loadingAuth || (loadingData && hasAccessToSubject)) {
     return (
       <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
@@ -385,21 +507,28 @@ export default function OnlineStudentStudy() {
       <div className="mx-auto max-w-7xl w-full px-4 py-6 sm:px-6 lg:px-8 flex-1 flex flex-col min-h-0">
         
         {/* Back and Page title */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Link href="/online-student/dashboard">
-              <Button variant="ghost" size="icon" className="rounded-xl border border-[#8C87A2]/20 text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F]">
+        <div className="flex items-center justify-between mb-4 gap-4 w-full">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/online-student/dashboard" className="shrink-0">
+              <Button variant="ghost" size="icon" className="rounded-xl border border-[#8C87A2]/20 text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F] h-10 w-10">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-xl">{subjectInfo.icon}</span>
-                <h1 className="text-2xl font-bold text-[#F1EDF9] tracking-tight">{subjectInfo.label} học online</h1>
+                <span className="text-xl shrink-0">{subjectInfo.icon}</span>
+                <h1 className="text-xl sm:text-2xl font-bold text-[#F1EDF9] tracking-tight truncate">{subjectInfo.label} học online</h1>
               </div>
-              <p className="text-xs text-[#8C87A2] mt-0.5 font-mono">ExamHub E-learning Portal</p>
+              <p className="text-[10px] sm:text-xs text-[#8C87A2] mt-0.5 font-mono">StudyHub E-learning Portal</p>
             </div>
           </div>
+
+          <Button
+            onClick={() => setIsMobileTreeOpen(true)}
+            className="md:hidden shrink-0 rounded-xl border border-[#8C87A2]/30 bg-[#15131F] text-xs font-bold text-[#F1EDF9] hover:bg-[#15131F]/80 flex items-center gap-1.5 px-3 h-10 transition-transform active:scale-95"
+          >
+            <FolderIcon className="h-4 w-4 text-[#C18CFF]" /> Danh mục
+          </Button>
         </div>
 
         {/* Address and Explorer Controls Toolbar */}
@@ -739,6 +868,37 @@ export default function OnlineStudentStudy() {
         </div>
 
       </div>
+
+      {/* Mobile Folder Tree Drawer */}
+      {isMobileTreeOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden bg-black/60 backdrop-blur-sm transition-all duration-300">
+          <div className="w-80 max-w-[85%] bg-[#0B0A13] border-r border-[#8C87A2]/20 h-full flex flex-col p-4 shadow-2xl relative animate-in slide-in-from-left duration-300">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#8C87A2]/10">
+              <span className="text-sm font-bold text-[#F1EDF9] font-mono tracking-wide">DANH MỤC BÀI HỌC</span>
+              <button 
+                onClick={() => setIsMobileTreeOpen(false)} 
+                className="p-1.5 rounded-lg border border-[#8C87A2]/20 text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F] transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto pr-1">
+              {folderTree.length === 0 ? (
+                <p className="text-xs text-[#8C87A2] italic text-center py-4">Chưa có thư mục</p>
+              ) : (
+                <div className="space-y-0.5">
+                  {folderTree.map(root => (
+                    <div key={root.folder.id} onClick={() => setIsMobileTreeOpen(false)}>
+                      <LeftFolderTreeNode node={root} level={0} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex-1" onClick={() => setIsMobileTreeOpen(false)} />
+        </div>
+      )}
     </OnlineStudentShell>
   )
 }
