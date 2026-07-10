@@ -282,11 +282,18 @@ export default function OnlineStudentStudy() {
     checkAuth()
   }, [router, supabase])
 
-  // Verify access permissions for current subject
+  // UX gate only — real enforcement is API + RLS
   const hasAccessToSubject = useMemo(() => {
     if (loadingAuth) return true
     return mySubjects.includes("all") || mySubjects.includes(subjectKey)
   }, [loadingAuth, mySubjects, subjectKey])
+
+  // Redirect if locked after subjects load
+  useEffect(() => {
+    if (!loadingAuth && !hasAccessToSubject) {
+      router.replace("/online-student/dashboard")
+    }
+  }, [loadingAuth, hasAccessToSubject, router])
 
   // Fetch lesson completion progress
   const fetchProgress = async () => {
@@ -348,6 +355,11 @@ export default function OnlineStudentStudy() {
         
         const resLessons = await fetch(`/api/online-study/lessons?subject=${subjectInfo.dbValue}`)
         const dataLessons = await resLessons.json()
+
+        if (resFolders.status === 403 || resLessons.status === 403) {
+          router.replace("/online-student/dashboard")
+          return
+        }
 
         if (resFolders.ok && dataFolders.success) {
           setFolders(dataFolders.data || [])

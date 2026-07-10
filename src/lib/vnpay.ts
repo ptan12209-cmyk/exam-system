@@ -1,20 +1,30 @@
 import { VNPay, ignoreLogger, ProductCode, VnpLocale, HashAlgorithm } from "vnpay"
 
-// VNPay configuration
-// Get these from https://sandbox.vnpayment.vn/
+const isProduction = process.env.NODE_ENV === "production"
+const tmnCode = process.env.VNPAY_TMN_CODE || ""
+const secureSecret = process.env.VNPAY_SECURE_SECRET || process.env.VNPAY_HASH_SECRET || ""
+const vnpayHost =
+  process.env.VNPAY_HOST ||
+  (isProduction ? "https://vnpayment.vn" : "https://sandbox.vnpayment.vn")
+const testMode = !isProduction || process.env.VNPAY_TEST_MODE === "true"
+
+if (isProduction && (!tmnCode || !secureSecret)) {
+  console.error("[VNPay] VNPAY_TMN_CODE / VNPAY_SECURE_SECRET missing in production")
+}
+
+// No hardcoded sandbox secrets — fail closed in production if unset
 const vnpayConfig = {
-    tmnCode: process.env.VNPAY_TMN_CODE || "CGXZLS0Z", // Sandbox TMN Code
-    secureSecret: process.env.VNPAY_SECURE_SECRET || "RAOEXHYVSDDIIENYWSLDIIENMJVGPLZP", // Sandbox Secret
-    vnpayHost: "https://sandbox.vnpayment.vn",
-    testMode: true,
+    tmnCode: tmnCode || (isProduction ? "" : "CGXZLS0Z"),
+    secureSecret: secureSecret || (isProduction ? "" : "RAOEXHYVSDDIIENYWSLDIIENMJVGPLZP"),
+    vnpayHost,
+    testMode,
     hashAlgorithm: HashAlgorithm.SHA512,
 }
 
-// Initialize VNPay instance
 const vnpay = new VNPay({
     ...vnpayConfig,
-    enableLog: true,
-    loggerFn: ignoreLogger, // Use default logger in production
+    enableLog: !isProduction,
+    loggerFn: ignoreLogger,
 })
 
 export interface CreatePaymentParams {
@@ -86,7 +96,7 @@ export async function createPaymentUrl(params: CreatePaymentParams): Promise<Pay
 }
 
 /**
- * Verify VNPay return URL parameters
+ * Verify VNPay return URL parameters (browser redirect)
  */
 export function verifyReturnUrl(query: VerifyReturnParams): VerifyResult {
     try {
@@ -96,7 +106,7 @@ export function verifyReturnUrl(query: VerifyReturnParams): VerifyResult {
             isSuccess: verifyResult.isSuccess,
             isValidSignature: verifyResult.isVerified,
             orderId: query.vnp_TxnRef,
-            amount: parseInt(query.vnp_Amount) / 100, // VNPay sends amount * 100
+            amount: parseInt(query.vnp_Amount, 10) / 100, // VNPay sends amount * 100
             transactionNo: query.vnp_TransactionNo,
             responseCode: query.vnp_ResponseCode,
             message: getResponseMessage(query.vnp_ResponseCode),
@@ -112,6 +122,54 @@ export function verifyReturnUrl(query: VerifyReturnParams): VerifyResult {
             responseCode: "99",
             message: "Lỗi xác thực thanh toán",
         }
+    }
+}
+
+/**
+ * Verify VNPay IPN (server-to-server). Same field shape as return URL.
+ */
+export function verifyIpnCall(query: VerifyReturnParams): VerifyResult {
+    try {
+        const verifyResult = vnpay.verifyIpnCall(query)
+
+        return {
+            isSuccess: verifyResult.isSuccess,
+            isValidSignature: verifyResult.isVerified,
+            orderId: query.vnp_TxnRef,
+            amount: parseInt(query.vnp_Amount, 10) / 100,
+            transactionNo: query.vnp_TransactionNo,
+            responseCode: query.vnp_ResponseCode,
+            message: getResponseMessage(query.vnp_ResponseCode),
+        }
+    } catch (error) {
+        console.error("[VNPay] Verify IPN error:", error)
+        return {
+            isSuccess: false,
+            isValidSignature: false,
+            orderId: query.vnp_TxnRef || "",
+            amount: 0,
+            transactionNo: "",
+            responseCode: "99",
+            message: "Lỗi xác thực IPN",
+        }
+    }
+}
+
+/** Build VerifyReturnParams from URLSearchParams (return or IPN) */
+export function vnpayParamsFromSearchParams(searchParams: URLSearchParams): VerifyReturnParams {
+    return {
+        vnp_Amount: searchParams.get("vnp_Amount") || "",
+        vnp_BankCode: searchParams.get("vnp_BankCode") || "",
+        vnp_BankTranNo: searchParams.get("vnp_BankTranNo") || undefined,
+        vnp_CardType: searchParams.get("vnp_CardType") || undefined,
+        vnp_OrderInfo: searchParams.get("vnp_OrderInfo") || "",
+        vnp_PayDate: searchParams.get("vnp_PayDate") || "",
+        vnp_ResponseCode: searchParams.get("vnp_ResponseCode") || "",
+        vnp_TmnCode: searchParams.get("vnp_TmnCode") || "",
+        vnp_TransactionNo: searchParams.get("vnp_TransactionNo") || "",
+        vnp_TransactionStatus: searchParams.get("vnp_TransactionStatus") || "",
+        vnp_TxnRef: searchParams.get("vnp_TxnRef") || "",
+        vnp_SecureHash: searchParams.get("vnp_SecureHash") || "",
     }
 }
 

@@ -11,6 +11,17 @@ function PaymentResultContent() {
     const searchParams = useSearchParams()
     const success = searchParams.get("success") === "true"
     const message = searchParams.get("message") || (success ? "Thanh toán thành công!" : "Thanh toán thất bại")
+    const flow = searchParams.get("flow")
+    const subject = searchParams.get("subject")
+    const isOnlineStudy = flow === "online-study"
+    const dashboardHref = isOnlineStudy
+        ? (success && subject
+            ? `/online-student/study?subject=${encodeURIComponent(subject)}`
+            : "/online-student/dashboard")
+        : "/student/dashboard"
+    const dashboardLabel = isOnlineStudy
+        ? (success && subject ? "Vào học ngay" : "Về trang học online")
+        : "Dashboard"
 
     return (
         <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] selection:bg-[hsl(var(--foreground))] selection:text-[hsl(var(--background))]">
@@ -50,9 +61,13 @@ function PaymentResultContent() {
 
                         {success && (
                             <div className="mb-8 rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/10 p-5 text-left">
-                                <p className="mb-1 font-medium">Cảm ơn bạn đã sử dụng ExamHub!</p>
+                                <p className="mb-1 font-medium">
+                                    {isOnlineStudy ? "Cảm ơn bạn đã mua khóa học!" : "Cảm ơn bạn đã sử dụng ExamHub!"}
+                                </p>
                                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                                    Gói dịch vụ của bạn đã được kích hoạt. Bạn có thể bắt đầu sử dụng ngay bây giờ.
+                                    {isOnlineStudy
+                                        ? "Môn học đã được mở khóa tự động. Bạn có thể bắt đầu học ngay."
+                                        : "Gói dịch vụ của bạn đã được kích hoạt. Bạn có thể bắt đầu sử dụng ngay bây giờ."}
                                 </p>
                             </div>
                         )}
@@ -67,9 +82,9 @@ function PaymentResultContent() {
                                     <ArrowLeft className="mr-2 h-4 w-4" />Thử lại
                                 </Button>
                             )}
-                            <Link href="/student/dashboard" className="flex-1">
+                            <Link href={dashboardHref} className="flex-1">
                                 <Button className="w-full rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90">
-                                    <Home className="mr-2 h-4 w-4" />Dashboard
+                                    <Home className="mr-2 h-4 w-4" />{dashboardLabel}
                                 </Button>
                             </Link>
                         </div>

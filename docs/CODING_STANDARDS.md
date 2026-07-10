@@ -75,6 +75,19 @@ async function handlePOST(request: NextRequest) {
 }
 ```
 
+### Online Study (product surface chính)
+
+| Quy tắc | Lý do |
+|---|---|
+| **PUT `/api/online-study/orders` chỉ teacher/admin** | Học viên không được tự `status: success` |
+| **VNPay return + IPN auto-unlock** | `verifyReturnUrl` / `verifyIpnCall` + khớp amount → `fulfillOnlineOrderSuccess` |
+| **IPN URL** | `/api/online-study/payments/ipn` (server-to-server, cấu hình portal VNPay) |
+| **Giá + memo chỉ server-side** | Không tin `amount`/`memo` từ client |
+| **Checkout free-unlock bị cấm** | `POST /checkout` trả 403 |
+| **Entitlement: `requireOnlineSubject` + RLS** | Chỉ môn đã mua/gán mới đọc folder/lesson |
+| **Register luôn role `student`** | Không cho client set `teacher` |
+| **Không hardcode Discord/VNPay secrets** | Fail closed nếu thiếu env |
+
 ---
 
 ## 2. Database & API Design

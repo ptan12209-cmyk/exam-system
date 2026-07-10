@@ -115,6 +115,7 @@ export default function TeacherOnlineStudyPage() {
   const [revenue, setRevenue] = useState(0)
   const [loadingOrders, setLoadingOrders] = useState(false)
   const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null)
+  const [approveTarget, setApproveTarget] = useState<{ id: string; label: string } | null>(null)
 
   // Create student states
   const [isCreateStudentOpen, setIsCreateStudentOpen] = useState(false)
@@ -203,7 +204,7 @@ export default function TeacherOnlineStudyPage() {
     }
   }
 
-  // Handle manual order approval
+  // Handle manual order approval (after confirm dialog)
   const handleApproveOrder = async (orderId: string) => {
     setApprovingOrderId(orderId)
     try {
@@ -218,12 +219,14 @@ export default function TeacherOnlineStudyPage() {
         fetchOrders()
         fetchStudents(searchStudentQuery)
       } else {
-        throw new Error(data.error || "Lỗi duyệt đơn hàng")
+        const msg = data?.error?.message || data?.error || "Lỗi duyệt đơn hàng"
+        throw new Error(typeof msg === "string" ? msg : "Lỗi duyệt đơn hàng")
       }
     } catch (err) {
       toastError(err instanceof Error ? err.message : "Duyệt đơn hàng thất bại")
     } finally {
       setApprovingOrderId(null)
+      setApproveTarget(null)
     }
   }
 
@@ -1530,7 +1533,16 @@ export default function TeacherOnlineStudyPage() {
                                 <Button
                                   size="sm"
                                   disabled={approvingOrderId === order.id}
-                                  onClick={() => handleApproveOrder(order.id)}
+                                  onClick={() => {
+                                    const studentName =
+                                      (order.student as { full_name?: string } | null)?.full_name ||
+                                      "học viên"
+                                    const subj = getOnlineSubjectInfo(order.subject_key)
+                                    setApproveTarget({
+                                      id: order.id,
+                                      label: `${studentName} · ${subj.label} · ${new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.amount)}`,
+                                    })
+                                  }}
                                   className="rounded-lg bg-emerald-500 text-[#0B0A13] hover:bg-emerald-400 text-[10px] font-bold px-3 py-1 transition-transform active:scale-95 flex items-center justify-center gap-1 ml-auto"
                                 >
                                   {approvingOrderId === order.id ? (
@@ -2023,6 +2035,20 @@ export default function TeacherOnlineStudyPage() {
         description={`Bạn có chắc chắn muốn xóa ${deleteTarget?.type === "folder" ? "thư mục" : "bài giảng"}: "${deleteTarget?.title}"? Hành động này sẽ không thể khôi phục và sẽ xóa toàn bộ nội dung con liên quan.`}
         confirmText="Xác nhận xóa"
         cancelText="Hủy bỏ"
+      />
+
+      {/* ── Confirm approve order (bank transfer fallback) ── */}
+      <ConfirmDialog
+        isOpen={approveTarget !== null}
+        onClose={() => setApproveTarget(null)}
+        onConfirm={async () => {
+          if (approveTarget) await handleApproveOrder(approveTarget.id)
+        }}
+        title="Xác nhận duyệt đơn hàng"
+        description={`Mở khóa môn cho: ${approveTarget?.label || ""}. Chỉ duyệt khi đã nhận đủ tiền chuyển khoản.`}
+        confirmText="Duyệt & mở khóa"
+        cancelText="Hủy"
+        variant="success"
       />
 
       {/* Mobile Folder Tree Drawer */}

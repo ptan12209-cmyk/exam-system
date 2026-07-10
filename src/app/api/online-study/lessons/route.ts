@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { requireAuth, requireRole } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
+import { requireOnlineSubject, isValidOnlineSubjectAny } from "@/lib/online-study-auth"
 
-// GET /api/online-study/lessons?folder_id=uuid OR ?subject=math
+// GET /api/online-study/lessons?folder_id=uuid OR ?subject=math|toan
 async function handleGET(request: NextRequest) {
   const supabase = await createClient()
   const user = await requireAuth(supabase)
@@ -16,9 +17,27 @@ async function handleGET(request: NextRequest) {
     throw new ApiError("BAD_REQUEST", "Thiếu tham số folder_id hoặc subject", 400)
   }
 
+  // Reject unscoped lesson list (was used to enumerate all content)
+  if (!folderId && !subject) {
+    throw new ApiError("BAD_REQUEST", "Thiếu tham số folder_id hoặc subject", 400)
+  }
+
   let lessonsData = []
 
   if (folderId) {
+    const { data: folder, error: folderError } = await supabase
+      .from("online_folders")
+      .select("id, subject")
+      .eq("id", folderId)
+      .maybeSingle()
+
+    if (folderError) throw folderError
+    if (!folder) {
+      throw new ApiError("NOT_FOUND", "Không tìm thấy thư mục", 404)
+    }
+
+    await requireOnlineSubject(supabase, user.id, folder.subject)
+
     const { data: lessons, error } = await supabase
       .from("online_lessons")
       .select("*")
@@ -28,7 +47,11 @@ async function handleGET(request: NextRequest) {
     if (error) throw error
     lessonsData = lessons || []
   } else if (subject) {
-    // Get all lessons for all folders in the subject
+    if (!isValidOnlineSubjectAny(subject)) {
+      throw new ApiError("BAD_REQUEST", "Mã môn học không hợp lệ", 400)
+    }
+    await requireOnlineSubject(supabase, user.id, subject)
+
     const { data: lessons, error } = await supabase
       .from("online_lessons")
       .select(`

@@ -99,6 +99,25 @@ const datTimetable = [
 ]
 
 export async function GET(request: NextRequest) {
+  // Hard-disable in production — this route uses service_role and hardcodes user IDs
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { success: false, error: "Not available" },
+      { status: 404 }
+    )
+  }
+
+  const seedSecret = process.env.SEED_ROUTE_SECRET
+  const provided =
+    request.headers.get("x-seed-secret") ||
+    request.nextUrl.searchParams.get("secret")
+  if (!seedSecret || provided !== seedSecret) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized" },
+      { status: 401 }
+    )
+  }
+
   if (!supabaseServiceKey) {
     return NextResponse.json({
       success: false,

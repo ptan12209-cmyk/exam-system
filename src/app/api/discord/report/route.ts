@@ -11,8 +11,8 @@ export async function GET(req: NextRequest) {
     const secret_token = searchParams.get("secret_token") || req.headers.get("Authorization")?.replace("Bearer ", "")
 
     // 1. Authenticate secret token
-    const expectedToken = process.env.DISCORD_SYNC_SECRET || "discord_sync_secret_token_2026"
-    if (secret_token !== expectedToken) {
+    const expectedToken = process.env.DISCORD_SYNC_SECRET
+    if (!expectedToken || !secret_token || secret_token !== expectedToken) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 401 })
     }
 

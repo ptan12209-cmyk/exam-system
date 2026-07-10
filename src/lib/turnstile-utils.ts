@@ -74,3 +74,43 @@ export function logTurnstileWarnings(): void {
     console.warn('[Turnstile] Development config notices:', warnings.join(' | '))
   }
 }
+
+/**
+ * Server-side Turnstile token verification.
+ * In production, missing secret or failed verify → false.
+ * In development without secret, allows through (with warning).
+ */
+export async function verifyTurnstileToken(token: string | null | undefined): Promise<boolean> {
+  if (!token || typeof token !== 'string' || token.length < 10) {
+    return false
+  }
+
+  const secretKey = process.env.TURNSTILE_SECRET_KEY
+  const isProduction = process.env.NODE_ENV === 'production'
+
+  if (!secretKey) {
+    if (isProduction) {
+      console.error('[Turnstile] TURNSTILE_SECRET_KEY missing in production')
+      return false
+    }
+    console.warn('[Turnstile] TURNSTILE_SECRET_KEY not set, skipping verification (dev only)')
+    return true
+  }
+
+  try {
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        secret: secretKey,
+        response: token,
+      }),
+    })
+
+    const data = (await response.json()) as { success?: boolean }
+    return data.success === true
+  } catch (error) {
+    console.error('[Turnstile] verification failed:', error)
+    return false
+  }
+}

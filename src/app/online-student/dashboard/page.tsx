@@ -238,11 +238,14 @@ export default function OnlineStudentDashboard() {
 
   const [totalProgressPercent, setTotalProgressPercent] = useState(0)
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null)
+  const [orderMemo, setOrderMemo] = useState("")
+  const [orderAmount, setOrderAmount] = useState(0)
+  const [creatingOrder, setCreatingOrder] = useState(false)
+  const [checkingStatus, setCheckingStatus] = useState(false)
 
-  // Checkout flows
+  // Checkout: VietQR → pending (teacher approve) → success
   const [checkoutSubject, setCheckoutSubject] = useState<typeof ONLINE_SUBJECTS[number] | null>(null)
-  const [checkoutStep, setCheckoutStep] = useState<"qr" | "verifying" | "success">("qr")
-  const [verifyStepIndex, setVerifyStepIndex] = useState(0)
+  const [checkoutStep, setCheckoutStep] = useState<"qr" | "pending" | "success">("qr")
 
   useEffect(() => {
     async function checkAuth() {
@@ -283,17 +286,8 @@ export default function OnlineStudentDashboard() {
 
       // Fetch progress and calculate percent
       try {
-        const resProg = await fetch("/api/online-study/progress")
-        const dataProg = await resProg.json()
-        const resLessons = await fetch("/api/online-study/lessons")
-        const dataLessons = await resLessons.json()
-        
-        if (resProg.ok && dataProg.success && resLessons.ok && dataLessons.success) {
-          const completedCount = (dataProg.data || []).filter((p: any) => p.completed).length
-          const totalCount = (dataLessons.data || []).length
-          const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
-          setTotalProgressPercent(percent)
-        }
+        // Progress percent requires per-subject lesson totals; avoid unscoped lesson enumeration
+        setTotalProgressPercent(0)
       } catch (e) {
         console.error("Lỗi tính tiến độ học tập:", e)
       }
@@ -337,81 +331,83 @@ export default function OnlineStudentDashboard() {
       : defaultPrice
   }
 
-  // Handle checkout initialization (create invoice pending record first)
+  // Create pending invoice — amount & memo server-side; VietQR only (no VNPay)
   const handleOpenCheckout = async (subject: typeof ONLINE_SUBJECTS[number]) => {
     setCheckoutSubject(subject)
     setCheckoutStep("qr")
-    
-    // Generate transfer details
-    const activePrice = getSubjectPrice(subject.value, subject.price)
-    const memo = `STUDYHUB ${(profile?.email || "HV").split("@")[0].toUpperCase()} ${subject.value.toUpperCase()}`
-    
+    setCreatedOrderId(null)
+    setOrderMemo("")
+    setOrderAmount(getSubjectPrice(subject.value, subject.price))
+    setCreatingOrder(true)
+
     try {
       const res = await fetch("/api/online-study/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subjectKey: subject.value,
-          amount: activePrice,
-          memo
-        })
+        body: JSON.stringify({ subjectKey: subject.value }),
       })
       const data = await res.json()
-      if (res.ok && data.success) {
+      if (res.ok && data.success && data.data) {
         setCreatedOrderId(data.data.id)
+        setOrderMemo(data.data.memo || "")
+        setOrderAmount(Number(data.data.amount) || getSubjectPrice(subject.value, subject.price))
+
+        if (data.data.unlocked || data.data.status === "success" || data.data.free) {
+          setMySubjects((prev) =>
+            prev.includes(subject.value) ? prev : [...prev, subject.value]
+          )
+          setCheckoutStep("success")
+        }
+      } else {
+        const msg = data?.error?.message || data?.error || "Không tạo được đơn hàng"
+        alert(typeof msg === "string" ? msg : "Không tạo được đơn hàng")
+        setCheckoutSubject(null)
       }
     } catch (e) {
       console.error("Lỗi tạo đơn hàng:", e)
+      alert("Lỗi kết nối khi tạo đơn hàng.")
+      setCheckoutSubject(null)
+    } finally {
+      setCreatingOrder(false)
     }
   }
 
-  // Handle simulated auto verification
-  const handleConfirmPayment = async () => {
-    if (!checkoutSubject || !profile || !createdOrderId) return
-    setCheckoutStep("verifying")
-    setVerifyStepIndex(0)
+  const handleConfirmBankTransfer = async () => {
+    if (!checkoutSubject || !createdOrderId) return
+    setCheckoutStep("pending")
+  }
 
-    // Step 1: Wait 1s
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setVerifyStepIndex(1)
-
-    // Step 2: Wait 1.2s
-    await new Promise(resolve => setTimeout(resolve, 1200))
-    setVerifyStepIndex(2)
-
-    // Step 3: Wait 1s
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
+  const handleCheckOrderStatus = async () => {
+    if (!checkoutSubject || !createdOrderId) return
+    setCheckingStatus(true)
     try {
-      const res = await fetch("/api/online-study/orders", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: createdOrderId, status: "success" })
-      })
+      const res = await fetch("/api/online-study/orders")
       const data = await res.json()
-      if (res.ok && data.success) {
-        setMySubjects(prev => [...prev, checkoutSubject.value])
-        setCheckoutStep("success")
-        
-        // Recalculate progress percent after subject unlocked
-        try {
-          const resProg = await fetch("/api/online-study/progress")
-          const dataProg = await resProg.json()
-          const resLessons = await fetch("/api/online-study/lessons")
-          const dataLessons = await resLessons.json()
-          if (resProg.ok && dataProg.success && resLessons.ok && dataLessons.success) {
-            const completedCount = (dataProg.data || []).filter((p: any) => p.completed).length
-            const totalCount = (dataLessons.data || []).length
-            setTotalProgressPercent(totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0)
-          }
-        } catch (e) {}
-      } else {
-        alert(data.error || "Giao dịch chưa được cập nhật từ ngân hàng, vui lòng thử lại sau ít phút.")
-        setCheckoutStep("qr")
+      if (!res.ok || !data.success) {
+        alert("Không kiểm tra được trạng thái đơn hàng.")
+        return
       }
-    } catch (e) {
-      alert("Lỗi kết nối đối soát cổng thanh toán.")
-      setCheckoutStep("qr")
+      const orders = data.data?.orders || data.data || []
+      const list = Array.isArray(orders) ? orders : []
+      const mine = list.find((o: { id: string }) => o.id === createdOrderId)
+
+      if (mine?.status === "success") {
+        setMySubjects((prev) =>
+          prev.includes(checkoutSubject.value) ? prev : [...prev, checkoutSubject.value]
+        )
+        setCheckoutStep("success")
+        return
+      }
+      if (mine?.status === "failed") {
+        alert("Đơn hàng bị từ chối. Vui lòng liên hệ giáo viên.")
+        setCheckoutStep("qr")
+        return
+      }
+      alert("Đơn vẫn đang chờ giáo viên xác nhận chuyển khoản. Vui lòng thử lại sau.")
+    } catch {
+      alert("Lỗi kết nối khi kiểm tra đơn hàng.")
+    } finally {
+      setCheckingStatus(false)
     }
   }
 
@@ -423,16 +419,13 @@ export default function OnlineStudentDashboard() {
     )
   }
 
-  // Generate unique transfer details
-  const memoText = checkoutSubject && profile
-    ? `STUDYHUB ${(profile.email || "HV").split("@")[0].toUpperCase()} ${checkoutSubject.value.toUpperCase()}`
-    : ""
-  
-  const activePrice = checkoutSubject 
-    ? getSubjectPrice(checkoutSubject.value, checkoutSubject.price) 
-    : 0
+  // Transfer details from server-created order (fallback only while loading)
+  const memoText = orderMemo
+  const activePrice = orderAmount || (checkoutSubject
+    ? getSubjectPrice(checkoutSubject.value, checkoutSubject.price)
+    : 0)
 
-  const qrCodeUrl = checkoutSubject
+  const qrCodeUrl = checkoutSubject && memoText
     ? `https://img.vietqr.io/image/${bankSettings.bankId}-${bankSettings.accountNo}-print.png?amount=${activePrice}&addInfo=${encodeURIComponent(memoText)}&accountName=${encodeURIComponent(bankSettings.accountName)}`
     : ""
 
@@ -594,11 +587,8 @@ export default function OnlineStudentDashboard() {
                 <span className="text-sm font-bold text-[#F1EDF9] font-mono tracking-wide">MỞ KHÓA MÔN HỌC</span>
               </div>
               <button 
-                onClick={() => {
-                  if (checkoutStep !== "verifying") setCheckoutSubject(null)
-                }}
-                disabled={checkoutStep === "verifying"}
-                className="p-1.5 rounded-lg border border-[#8C87A2]/20 text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F] transition-colors disabled:opacity-30"
+                onClick={() => setCheckoutSubject(null)}
+                className="p-1.5 rounded-lg border border-[#8C87A2]/20 text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F] transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -609,108 +599,115 @@ export default function OnlineStudentDashboard() {
               <div className="p-6 space-y-5">
                 <div className="text-center">
                   <h3 className="text-lg font-bold text-[#F1EDF9]">{checkoutSubject.label}</h3>
-                  <p className="text-xs text-[#8C87A2] mt-1">Quét mã VietQR chuyển khoản ngân hàng tự động mở khóa</p>
+                  <p className="text-xs text-[#8C87A2] mt-1">
+                    Quét VietQR chuyển khoản đúng nội dung
+                  </p>
+                  <p className="text-sm font-mono font-bold text-[#C18CFF] mt-2">
+                    {formatPrice(activePrice)}
+                  </p>
                 </div>
 
-                {/* QR Code Image Card */}
-                <div className="relative mx-auto w-48 aspect-square rounded-2xl bg-white p-2.5 border border-[#8C87A2]/20 shadow-lg overflow-hidden flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={qrCodeUrl} alt="VietQR Code" className="w-full h-full object-contain" />
-                  <div className="absolute -bottom-1 -right-1 p-1 bg-[#0057B8] rounded-tl-lg">
-                    <QrCode className="h-4 w-4 text-white" />
+                {creatingOrder || !qrCodeUrl ? (
+                  <div className="flex flex-col items-center gap-3 py-10">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#C18CFF]" />
+                    <p className="text-xs text-[#8C87A2]">Đang tạo đơn hàng...</p>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="relative mx-auto w-48 aspect-square rounded-2xl bg-white p-2.5 border border-[#8C87A2]/20 shadow-lg overflow-hidden flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={qrCodeUrl} alt="VietQR Code" className="w-full h-full object-contain" />
+                      <div className="absolute -bottom-1 -right-1 p-1 bg-[#0057B8] rounded-tl-lg">
+                        <QrCode className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
 
-                {/* Bank Account Details */}
-                <div className="bg-[#15131F] rounded-2xl p-4 border border-[#8C87A2]/10 space-y-2 text-xs font-mono">
-                  <div className="flex justify-between">
-                    <span className="text-[#8C87A2]">Ngân hàng:</span>
-                    <span className="text-[#F1EDF9] font-bold">{bankSettings.bankId}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#8C87A2]">Số tài khoản:</span>
-                    <span className="text-[#F1EDF9] font-bold">{bankSettings.accountNo}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#8C87A2]">Chủ tài khoản:</span>
-                    <span className="text-[#F1EDF9] font-bold uppercase">{bankSettings.accountName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#8C87A2]">Số tiền chuyển:</span>
-                    <span className="text-[#C18CFF] font-bold">{formatPrice(activePrice)}</span>
-                  </div>
-                  <div className="flex flex-col gap-1 pt-1.5 border-t border-[#8C87A2]/10">
-                    <span className="text-[#8C87A2]">Nội dung chuyển khoản (Memo):</span>
-                    <span className="text-center py-2 px-3 rounded-lg bg-[#0B0A13] border border-[#C18CFF]/30 text-[#C18CFF] font-bold select-all">
-                      {memoText}
-                    </span>
-                  </div>
-                </div>
+                    <div className="bg-[#15131F] rounded-2xl p-4 border border-[#8C87A2]/10 space-y-2 text-xs font-mono">
+                      <div className="flex justify-between">
+                        <span className="text-[#8C87A2]">Ngân hàng:</span>
+                        <span className="text-[#F1EDF9] font-bold">{bankSettings.bankId}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#8C87A2]">Số tài khoản:</span>
+                        <span className="text-[#F1EDF9] font-bold">{bankSettings.accountNo}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#8C87A2]">Chủ tài khoản:</span>
+                        <span className="text-[#F1EDF9] font-bold uppercase">{bankSettings.accountName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#8C87A2]">Số tiền:</span>
+                        <span className="text-[#C18CFF] font-bold">{formatPrice(activePrice)}</span>
+                      </div>
+                      <div className="flex flex-col gap-1 pt-1.5 border-t border-[#8C87A2]/10">
+                        <span className="text-[#8C87A2]">Nội dung CK (bắt buộc đúng):</span>
+                        <span className="text-center py-2 px-3 rounded-lg bg-[#0B0A13] border border-[#C18CFF]/30 text-[#C18CFF] font-bold select-all">
+                          {memoText}
+                        </span>
+                      </div>
+                    </div>
 
-                <div className="text-[10px] text-[#8C87A2] bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 leading-relaxed">
-                  ⚠️ <strong>Lưu ý quan trọng:</strong> Vui lòng quét mã QR hoặc nhập chính xác mã nội dung chuyển khoản ở trên để hệ thống ghi nhận giao dịch và kích hoạt tự động sau 3 giây.
-                </div>
+                    <div className="text-[10px] text-[#8C87A2] bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 leading-relaxed">
+                      ⚠️ Chuyển đúng số tiền + nội dung. Giáo viên duyệt trên tab <strong>Đơn hàng</strong> sau khi nhận tiền — môn sẽ được mở khóa.
+                    </div>
 
-                <Button
-                  onClick={handleConfirmPayment}
-                  className="w-full rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-bold text-xs py-3.5 transition-transform active:scale-95 flex items-center justify-center gap-1.5"
-                >
-                  Tôi đã chuyển khoản thành công
-                </Button>
+                    <Button
+                      onClick={handleConfirmBankTransfer}
+                      disabled={!createdOrderId}
+                      className="w-full rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-bold text-xs py-3.5 transition-transform active:scale-95 flex items-center justify-center gap-1.5"
+                    >
+                      Tôi đã chuyển khoản — chờ duyệt
+                    </Button>
+                  </>
+                )}
               </div>
             )}
 
-            {checkoutStep === "verifying" && (
+            {checkoutStep === "pending" && (
               <div className="p-10 text-center space-y-6">
-                <Loader2 className="h-10 w-10 animate-spin text-[#C18CFF] mx-auto" />
-                
-                <div className="space-y-1">
-                  <h3 className="text-base font-bold text-[#F1EDF9]">Đang xác thực thanh toán</h3>
-                  <p className="text-xs text-[#8C87A2]">Đang kết nối luồng đối soát tự động từ Ngân hàng...</p>
+                <div className="h-14 w-14 mx-auto rounded-full bg-[#C18CFF]/10 border border-[#C18CFF]/30 flex items-center justify-center">
+                  <CreditCard className="h-7 w-7 text-[#C18CFF]" />
                 </div>
 
-                {/* Progress Verification list */}
-                <div className="max-w-xs mx-auto text-left space-y-3 bg-[#15131F] rounded-2xl p-4 border border-[#8C87A2]/10 text-xs font-mono">
-                  <div className="flex items-center gap-2.5">
-                    {verifyStepIndex >= 1 ? (
-                      <CheckCircle className="h-4.5 w-4.5 text-emerald-400 shrink-0" />
-                    ) : (
-                      <Loader2 className="h-4 w-4 animate-spin text-[#C18CFF] shrink-0" />
-                    )}
-                    <span className={cn(verifyStepIndex >= 1 ? "text-emerald-400 font-bold" : "text-[#8C87A2]")}>
-                      Kết nối cổng thanh toán VietQR...
-                    </span>
-                  </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-[#F1EDF9]">Đang chờ xác nhận</h3>
+                  <p className="text-xs text-[#8C87A2] leading-relaxed max-w-xs mx-auto">
+                    Đã ghi nhận. Giáo viên sẽ duyệt khi đối soát được chuyển khoản VietQR. Bạn có thể đóng cửa sổ và bấm kiểm tra lại sau.
+                  </p>
+                </div>
 
-                  <div className="flex items-center gap-2.5">
-                    {verifyStepIndex >= 2 ? (
-                      <CheckCircle className="h-4.5 w-4.5 text-emerald-400 shrink-0" />
-                    ) : (
-                      verifyStepIndex === 1 ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-[#C18CFF] shrink-0" />
-                      ) : (
-                        <span className="w-4.5 h-4.5 block border border-dashed border-[#8C87A2]/40 rounded-full shrink-0" />
-                      )
-                    )}
-                    <span className={cn(verifyStepIndex >= 2 ? "text-emerald-400 font-bold" : "text-[#8C87A2]")}>
-                      Đối soát giao dịch chuyển khoản...
-                    </span>
+                <div className="bg-[#15131F] rounded-2xl p-4 border border-[#8C87A2]/10 text-xs font-mono text-left space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-[#8C87A2]">Môn:</span>
+                    <span className="text-[#F1EDF9] font-bold">{checkoutSubject.label}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#8C87A2]">Trạng thái:</span>
+                    <span className="text-amber-400 font-bold">pending</span>
+                  </div>
+                </div>
 
-                  <div className="flex items-center gap-2.5">
-                    {verifyStepIndex >= 3 ? (
-                      <CheckCircle className="h-4.5 w-4.5 text-emerald-400 shrink-0" />
+                <div className="flex flex-col gap-2">
+                  <Button
+                    onClick={handleCheckOrderStatus}
+                    disabled={checkingStatus}
+                    className="w-full rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-bold text-xs py-3.5"
+                  >
+                    {checkingStatus ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Đang kiểm tra...
+                      </span>
                     ) : (
-                      verifyStepIndex === 2 ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-[#C18CFF] shrink-0" />
-                      ) : (
-                        <span className="w-4.5 h-4.5 block border border-dashed border-[#8C87A2]/40 rounded-full shrink-0" />
-                      )
+                      "Kiểm tra trạng thái đơn"
                     )}
-                    <span className={cn(verifyStepIndex >= 3 ? "text-emerald-400 font-bold" : "text-[#8C87A2]")}>
-                      Kích hoạt học tập môn học...
-                    </span>
-                  </div>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCheckoutSubject(null)}
+                    className="w-full rounded-xl border-[#8C87A2]/30 text-[#F1EDF9] text-xs py-3"
+                  >
+                    Đóng
+                  </Button>
                 </div>
               </div>
             )}

@@ -14,9 +14,9 @@ export async function GET(req: NextRequest) {
     const authHeader = req.headers.get("authorization")
     const token = authHeader?.replace("Bearer ", "")
 
-    const expectedToken = process.env.DISCORD_SYNC_SECRET || "discord_sync_secret_token_2026"
+    const expectedToken = process.env.DISCORD_SYNC_SECRET
     
-    if (token === expectedToken) {
+    if (expectedToken && token && token === expectedToken) {
       isAuthorized = true
     } else {
       // Try cookie-based session auth

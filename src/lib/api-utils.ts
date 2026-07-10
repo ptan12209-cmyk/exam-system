@@ -78,8 +78,14 @@ export function handleApiError(error: unknown): { response: ApiResponse<never>; 
     };
   }
 
-  // Fallback
-  const message = error instanceof Error ? error.message : 'Internal server error';
+  // Fallback — never leak internal details to clients in production
+  const isProd = process.env.NODE_ENV === 'production';
+  const message =
+    isProd
+      ? 'Internal server error'
+      : error instanceof Error
+        ? error.message
+        : 'Internal server error';
   return {
     response: { success: false, error: { code: 'INTERNAL_ERROR', message } },
     status: 500,

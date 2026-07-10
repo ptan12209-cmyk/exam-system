@@ -16,6 +16,37 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const securityHeaders = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      {
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=(), payment=()',
+      },
+      {
+        key: 'Strict-Transport-Security',
+        value: 'max-age=63072000; includeSubDomains; preload',
+      },
+      {
+        key: 'Content-Security-Policy',
+        value: [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' data: blob: https://*.supabase.co https://img.vietqr.io https://*.youtube.com https://i.ytimg.com",
+          "font-src 'self' data:",
+          "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://img.vietqr.io",
+          "frame-src 'self' https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://iframe.mediadelivery.net https://*.mediadelivery.net https://challenges.cloudflare.com",
+          "media-src 'self' blob: https://*.supabase.co https://*.mediadelivery.net",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "form-action 'self'",
+          "frame-ancestors 'none'",
+        ].join('; '),
+      },
+    ];
+
     return [
       {
         // Only apply no-cache to HTML pages, not static assets
@@ -33,6 +64,7 @@ const nextConfig: NextConfig = {
             key: 'Expires',
             value: '0',
           },
+          ...securityHeaders,
         ],
       },
     ];

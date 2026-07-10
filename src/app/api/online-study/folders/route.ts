@@ -2,19 +2,25 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { requireAuth, requireRole } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
+import { requireOnlineSubject, isValidOnlineSubjectAny } from "@/lib/online-study-auth"
 
-// GET /api/online-study/folders?subject=math
+// GET /api/online-study/folders?subject=math|toan
 async function handleGET(request: NextRequest) {
   const supabase = await createClient()
   const user = await requireAuth(supabase)
   
-  // require student, online_student, teacher, or admin to access
   await requireRole(supabase, user.id, ["student", "online_student", "teacher", "admin"])
 
   const subject = request.nextUrl.searchParams.get("subject")
   if (!subject) {
     throw new ApiError("BAD_REQUEST", "Thiếu tham số môn học (subject)", 400)
   }
+  if (!isValidOnlineSubjectAny(subject)) {
+    throw new ApiError("BAD_REQUEST", "Mã môn học không hợp lệ", 400)
+  }
+
+  // Defense in depth — also enforced by RLS after migration
+  await requireOnlineSubject(supabase, user.id, subject)
 
   const { data: folders, error } = await supabase
     .from("online_folders")

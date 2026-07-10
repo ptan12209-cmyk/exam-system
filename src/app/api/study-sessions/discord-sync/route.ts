@@ -19,9 +19,9 @@ export async function POST(req: Request) {
       secret_token 
     } = body
 
-    // 1. Authenticate webhook secret
-    const expectedToken = process.env.DISCORD_SYNC_SECRET || "discord_sync_secret_token_2026"
-    if (secret_token !== expectedToken) {
+    // 1. Authenticate webhook secret — no hardcoded fallback
+    const expectedToken = process.env.DISCORD_SYNC_SECRET
+    if (!expectedToken || !secret_token || secret_token !== expectedToken) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 401 })
     }
 

@@ -3,17 +3,11 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import { Captcha, useCaptcha } from "@/components/Captcha"
-import { ArrowRight, BookOpen, Eye, EyeOff, GraduationCap, Lock, Mail, Phone, Sparkles, User, Users } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-type Role = "student" | "teacher"
+import { ArrowRight, BookOpen, Eye, EyeOff, GraduationCap, Lock, Mail, Phone, Sparkles, User } from "lucide-react"
 
 export default function RegisterPage() {
   const router = useRouter()
-  const supabase = createClient()
-  const [role, setRole] = useState<Role>("student")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [fullName, setFullName] = useState("")
@@ -22,49 +16,53 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { verified: captchaVerified, onVerify, onExpire } = useCaptcha()
+  const { verified: captchaVerified, token: captchaToken, onVerify, onExpire } = useCaptcha()
 
   const handleRegister = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
     setError(null)
 
-    if (!captchaVerified) {
+    if (!captchaVerified || !captchaToken) {
       setError("Vui lòng xác nhận bạn không phải robot")
       setLoading(false)
       return
     }
 
-    const normalizedEmail = email.toLowerCase().trim()
-    // Whitelist check cho giáo viên (TẠM ẨN)
-    /* if (role === "teacher") {
-      const { data: whitelistCheck } = await supabase.from("teacher_whitelist").select("id").eq("email", normalizedEmail).single()
-      if (!whitelistCheck) {
-        setError("Email này chưa được cấp quyền Giáo viên. Vui lòng liên hệ quản trị viên.")
-        setLoading(false)
-        return
+    if (password.length < 8) {
+      setError("Mật khẩu tối thiểu 8 ký tự")
+      setLoading(false)
+      return
+    }
+
+    try {
+      // Role is NEVER sent — server always assigns student
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.toLowerCase().trim(),
+          password,
+          fullName: fullName.trim(),
+          phone: phone.trim() || null,
+          studentClass: className.trim() || null,
+          captchaToken,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        const msg =
+          data?.error?.message ||
+          data?.error ||
+          "Có lỗi xảy ra khi tạo tài khoản"
+        throw new Error(typeof msg === "string" ? msg : "Đăng ký thất bại")
       }
-    } */
-
-    const { data: authData, error: authError } = await supabase.auth.signUp({ email: normalizedEmail, password })
-    if (authError || !authData.user) {
-      setError(authError?.message || "Có lỗi xảy ra khi tạo tài khoản")
+      router.push("/login?registered=1")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Đăng ký thất bại")
+    } finally {
       setLoading(false)
-      return
     }
-
-    const { error: profileError } = await supabase.from("profiles").upsert(
-      { id: authData.user.id, role, full_name: fullName, class: role === "student" ? className : null, phone },
-      { onConflict: "id" }
-    )
-
-    if (profileError) {
-      setError(profileError.message)
-      setLoading(false)
-      return
-    }
-
-    router.push(role === "teacher" ? "/teacher/online-study" : "/online-student/dashboard")
   }
 
   const inputClasses = "w-full bg-transparent text-sm outline-none placeholder:text-[hsl(var(--muted-foreground))]"
@@ -146,15 +144,13 @@ export default function RegisterPage() {
                 </div>
               </label>
 
-              {role === "student" && (
-                <label className="block space-y-2">
-                  <span className="text-sm font-medium">Lớp</span>
-                  <div className="flex items-center gap-3 rounded-2xl border border-[hsl(var(--border))]/60 px-4 py-3 transition-colors focus-within:border-[hsl(var(--foreground))]/60">
-                    <BookOpen className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
-                    <input value={className} onChange={(e) => setClassName(e.target.value)} placeholder="12A1" className={inputClasses} />
-                  </div>
-                </label>
-              )}
+              <label className="block space-y-2">
+                <span className="text-sm font-medium">Lớp</span>
+                <div className="flex items-center gap-3 rounded-2xl border border-[hsl(var(--border))]/60 px-4 py-3 transition-colors focus-within:border-[hsl(var(--foreground))]/60">
+                  <BookOpen className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                  <input value={className} onChange={(e) => setClassName(e.target.value)} placeholder="12A1" className={inputClasses} />
+                </div>
+              </label>
 
               <label className="block space-y-2">
                 <span className="text-sm font-medium">Email</span>
@@ -172,8 +168,8 @@ export default function RegisterPage() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Tối thiểu 6 ký tự"
-                    minLength={6}
+                    placeholder="Tối thiểu 8 ký tự"
+                    minLength={8}
                     className={inputClasses}
                     required
                   />

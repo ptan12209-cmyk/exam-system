@@ -34,7 +34,10 @@ export async function POST(req: NextRequest) {
 
     // Gửi yêu cầu đến Express server của Bot Discord
     const botApiUrl = process.env.DISCORD_BOT_API_URL || "http://localhost:8080"
-    const botSecret = process.env.DISCORD_SYNC_SECRET || "discord_sync_secret_token_2026"
+    const botSecret = process.env.DISCORD_SYNC_SECRET
+    if (!botSecret) {
+      return NextResponse.json({ error: "Discord bot secret chưa được cấu hình" }, { status: 500 })
+    }
 
     const botResponse = await fetch(`${botApiUrl}/api/send-ping`, {
       method: "POST",
