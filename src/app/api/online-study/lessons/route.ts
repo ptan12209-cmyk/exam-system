@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server"
 import { requireAuth, requireRole } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
 import { requireOnlineSubject, isValidOnlineSubjectAny } from "@/lib/online-study-auth"
+import {
+  sanitizeLessonForCatalog,
+  type LessonMediaRow,
+} from "@/lib/lesson-media"
 
 // GET /api/online-study/lessons?folder_id=uuid OR ?subject=math|toan
 async function handleGET(request: NextRequest) {
@@ -17,12 +21,15 @@ async function handleGET(request: NextRequest) {
     throw new ApiError("BAD_REQUEST", "Thiếu tham số folder_id hoặc subject", 400)
   }
 
-  // Reject unscoped lesson list (was used to enumerate all content)
-  if (!folderId && !subject) {
-    throw new ApiError("BAD_REQUEST", "Thiếu tham số folder_id hoặc subject", 400)
-  }
+  // Role: students get catalog without media URLs; teachers get full rows
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+  const isStaff = profile?.role === "teacher" || profile?.role === "admin"
 
-  let lessonsData = []
+  let lessonsData: LessonMediaRow[] = []
 
   if (folderId) {
     const { data: folder, error: folderError } = await supabase
@@ -45,7 +52,7 @@ async function handleGET(request: NextRequest) {
       .order("order_index", { ascending: true })
 
     if (error) throw error
-    lessonsData = lessons || []
+    lessonsData = (lessons || []) as LessonMediaRow[]
   } else if (subject) {
     if (!isValidOnlineSubjectAny(subject)) {
       throw new ApiError("BAD_REQUEST", "Mã môn học không hợp lệ", 400)
@@ -62,7 +69,13 @@ async function handleGET(request: NextRequest) {
       .order("order_index", { ascending: true })
 
     if (error) throw error
-    lessonsData = lessons || []
+    lessonsData = (lessons || []) as LessonMediaRow[]
+  }
+
+  if (!isStaff) {
+    return NextResponse.json(
+      successResponse(lessonsData.map((l) => sanitizeLessonForCatalog(l)))
+    )
   }
 
   return NextResponse.json(successResponse(lessonsData))

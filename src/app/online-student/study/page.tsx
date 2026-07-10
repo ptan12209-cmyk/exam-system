@@ -43,16 +43,30 @@ interface DbFolder {
   order_index: number
 }
 
-interface DbLesson {
+/** Catalog row from API — no media URLs for students */
+interface CatalogLesson {
   id: string
   folder_id: string
   title: string
   description: string | null
-  video_url: string | null
-  document_url: string | null
   order_index: number
+  has_video?: boolean
+  video_count?: number
+  has_documents?: boolean
+  document_count?: number
+  // legacy full rows (teacher) — optional
+  video_url?: string | null
+  document_url?: string | null
   videos?: Array<{ title: string; url: string }>
   documents?: Array<{ title: string; url: string }>
+}
+
+interface PlaybackPayload {
+  lesson_id: string
+  title: string
+  description: string | null
+  videos: Array<{ title: string; url: string }>
+  documents: Array<{ title: string; url: string }>
 }
 
 function StudyPageInner() {
@@ -71,13 +85,15 @@ function StudyPageInner() {
   const [loadingData, setLoadingData] = useState(true)
   const [mySubjects, setMySubjects] = useState<string[]>([])
   const [folders, setFolders] = useState<DbFolder[]>([])
-  const [lessons, setLessons] = useState<DbLesson[]>([])
+  const [lessons, setLessons] = useState<CatalogLesson[]>([])
   const [completedLessons, setCompletedLessons] = useState<string[]>([])
   /** null = drive root */
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [activeLesson, setActiveLesson] = useState<DbLesson | null>(null)
+  const [activeLesson, setActiveLesson] = useState<CatalogLesson | null>(null)
+  const [playback, setPlayback] = useState<PlaybackPayload | null>(null)
+  const [loadingPlayback, setLoadingPlayback] = useState(false)
   const [activeVideo, setActiveVideo] = useState<{ title: string; url: string } | null>(null)
   const [isDevToolsOpen, setIsDevToolsOpen] = useState(false)
 
@@ -225,15 +241,15 @@ function StudyPageInner() {
         }
         const [df, dl] = await Promise.all([rf.json(), rl.json()])
         const folderList: DbFolder[] = rf.ok && df.success ? df.data || [] : []
-        const lessonList: DbLesson[] = rl.ok && dl.success ? dl.data || [] : []
+        const lessonList: CatalogLesson[] = rl.ok && dl.success ? dl.data || [] : []
         setFolders(folderList)
         setLessons(lessonList)
         const pending = (window as unknown as { __pendingLessonId?: string }).__pendingLessonId
         if (pending) {
           const found = lessonList.find((l) => l.id === pending)
           if (found) {
-            setActiveLesson(found)
             setCurrentFolderId(found.folder_id)
+            void openLesson(found)
           }
           delete (window as unknown as { __pendingLessonId?: string }).__pendingLessonId
         }
@@ -278,19 +294,31 @@ function StudyPageInner() {
     return list.sort((a, b) => a.order_index - b.order_index)
   }, [lessons, currentFolderId, search])
 
-  useEffect(() => {
-    if (!activeLesson) {
-      setActiveVideo(null)
-      return
+  const openLesson = async (lesson: CatalogLesson) => {
+    setActiveLesson(lesson)
+    setPlayback(null)
+    setActiveVideo(null)
+    setLoadingPlayback(true)
+    try {
+      const res = await fetch(`/api/online-study/lessons/${lesson.id}/playback`)
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        const msg = data?.error?.message || data?.error || "Không tải được video"
+        throw new Error(typeof msg === "string" ? msg : "Playback failed")
+      }
+      const p = data.data as PlaybackPayload
+      setPlayback(p)
+      if (p.videos && p.videos.length > 0) {
+        setActiveVideo(p.videos[0])
+      }
+    } catch (e) {
+      console.error(e)
+      alert(e instanceof Error ? e.message : "Không mở được bài học")
+      setActiveLesson(null)
+    } finally {
+      setLoadingPlayback(false)
     }
-    const initial =
-      activeLesson.videos && activeLesson.videos.length > 0
-        ? activeLesson.videos[0]
-        : activeLesson.video_url
-          ? { title: "Video bài học", url: activeLesson.video_url }
-          : null
-    setActiveVideo(initial)
-  }, [activeLesson])
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -361,6 +389,9 @@ function StudyPageInner() {
 
   // ========== LESSON PLAYER ==========
   if (activeLesson) {
+    const docs = playback?.documents || []
+    const vids = playback?.videos || []
+
     return (
       <OnlineStudentShell>
         <OnlineStudentTopbar name={profile?.full_name} onLogout={handleLogout} />
@@ -368,7 +399,11 @@ function StudyPageInner() {
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <Button
               variant="ghost"
-              onClick={() => setActiveLesson(null)}
+              onClick={() => {
+                setActiveLesson(null)
+                setPlayback(null)
+                setActiveVideo(null)
+              }}
               className="rounded-xl border border-[#8C87A2]/25 text-[#8C87A2] hover:text-[#F1EDF9] text-xs"
             >
               <ArrowLeft className="h-4 w-4 mr-1" /> Về thư mục
@@ -381,7 +416,12 @@ function StudyPageInner() {
             Nội dung bản quyền StudyHub — cấm ghi hình, tải xuống, chia sẻ trái phép.
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#F1EDF9] mb-4">{activeLesson.title}</h1>
-          {activeVideo ? (
+
+          {loadingPlayback ? (
+            <div className="aspect-video rounded-xl border border-[#8C87A2]/20 bg-[#15131F] flex items-center justify-center">
+              <Loading label="Đang tải video bảo mật…" />
+            </div>
+          ) : activeVideo ? (
             <div className="space-y-3">
               <ProtectedVideoPlayer
                 url={activeVideo.url}
@@ -397,9 +437,10 @@ function StudyPageInner() {
               Bài này chưa có video
             </div>
           )}
-          {activeLesson.videos && activeLesson.videos.length > 1 && (
+
+          {vids.length > 1 && (
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {activeLesson.videos.map((vid, idx) => (
+              {vids.map((vid, idx) => (
                 <button
                   key={idx}
                   type="button"
@@ -417,6 +458,7 @@ function StudyPageInner() {
               ))}
             </div>
           )}
+
           <div className="mt-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between rounded-xl border border-[#8C87A2]/15 bg-[#15131F] p-4">
             <p className="text-[11px] text-[#8C87A2]">Đánh dấu hoàn thành để theo dõi tiến độ.</p>
             <Button
@@ -439,46 +481,43 @@ function StudyPageInner() {
               )}
             </Button>
           </div>
-          {activeLesson.description && (
+
+          {(playback?.description || activeLesson.description) && (
             <div className="mt-4 rounded-xl border border-[#8C87A2]/15 bg-[#15131F]/50 p-4">
-              <p className="text-sm text-[#8C87A2] whitespace-pre-line">{activeLesson.description}</p>
+              <p className="text-sm text-[#8C87A2] whitespace-pre-line">
+                {playback?.description || activeLesson.description}
+              </p>
             </div>
           )}
+
           <div className="mt-6">
             <h3 className="text-[10px] font-mono uppercase text-[#8C87A2] mb-3">Tài liệu</h3>
-            {(() => {
-              const docs =
-                activeLesson.documents && activeLesson.documents.length > 0
-                  ? activeLesson.documents
-                  : activeLesson.document_url
-                    ? [{ title: "Tài liệu học tập", url: activeLesson.document_url }]
-                    : []
-              if (!docs.length)
-                return <p className="text-xs text-[#8C87A2] italic">Không có tài liệu đính kèm.</p>
-              return (
-                <div className="space-y-2">
-                  {docs.map((doc, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13] p-3"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <FileText className="h-5 w-5 text-[#C18CFF] shrink-0" />
-                        <span className="text-sm font-semibold text-[#F1EDF9] truncate">
-                          {doc.title || `Tài liệu ${idx + 1}`}
-                        </span>
-                      </div>
-                      <a href={doc.url} target="_blank" rel="noopener noreferrer">
-                        <Button className="rounded-lg bg-[#C18CFF] text-[#0B0A13] text-xs font-bold">
-                          <Download className="h-3.5 w-3.5 mr-1" /> Mở
-                        </Button>
-                      </a>
+            {docs.length === 0 ? (
+              <p className="text-xs text-[#8C87A2] italic">Không có tài liệu đính kèm.</p>
+            ) : (
+              <div className="space-y-2">
+                {docs.map((doc, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13] p-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <FileText className="h-5 w-5 text-[#C18CFF] shrink-0" />
+                      <span className="text-sm font-semibold text-[#F1EDF9] truncate">
+                        {doc.title || `Tài liệu ${idx + 1}`}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              )
-            })()}
+                    <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                      <Button className="rounded-lg bg-[#C18CFF] text-[#0B0A13] text-xs font-bold">
+                        <Download className="h-3.5 w-3.5 mr-1" /> Mở
+                      </Button>
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
           <div className="mt-8 text-center">
             <a
               href={supportZaloUrlWithText(
@@ -668,15 +707,18 @@ function StudyPageInner() {
                     {currentLessons.map((lesson) => {
                       const done = completedLessons.includes(lesson.id)
                       const hasVideo =
-                        (lesson.videos && lesson.videos.length > 0) || !!lesson.video_url
+                        lesson.has_video ||
+                        (lesson.videos && lesson.videos.length > 0) ||
+                        !!lesson.video_url
                       const hasDoc =
+                        lesson.has_documents ||
                         (lesson.documents && lesson.documents.length > 0) ||
                         !!lesson.document_url
                       return (
                         <button
                           key={lesson.id}
                           type="button"
-                          onClick={() => setActiveLesson(lesson)}
+                          onClick={() => void openLesson(lesson)}
                           className="group flex flex-col gap-3 rounded-2xl border border-[#8C87A2]/15 bg-[#0B0A13]/40 p-5 text-left hover:border-[#C18CFF]/45 hover:bg-[#0B0A13] transition-all min-h-[130px] active:scale-[0.99]"
                         >
                           <div className="flex items-start justify-between w-full">
@@ -740,7 +782,7 @@ function StudyPageInner() {
                   <button
                     key={lesson.id}
                     type="button"
-                    onClick={() => setActiveLesson(lesson)}
+                    onClick={() => void openLesson(lesson)}
                     className="w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-[#0B0A13]/50 transition-colors"
                   >
                     {done ? (

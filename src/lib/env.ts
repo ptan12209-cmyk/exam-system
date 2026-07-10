@@ -35,6 +35,8 @@ const envSchema = z.object({
   PAYOS_API_KEY: z.string().optional(),
   PAYOS_CHECKSUM_KEY: z.string().optional(),
   PAYOS_SETUP_SECRET: z.string().optional(),
+  /** Bunny Stream token security key (optional — signs embed URLs) */
+  BUNNY_STREAM_TOKEN_KEY: z.string().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>
