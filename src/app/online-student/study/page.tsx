@@ -25,10 +25,12 @@ import {
   Home,
   ChevronLeft,
   ExternalLink,
-  X
+  X,
+  CheckCircle2
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import Footer from "@/components/Footer"
 
 interface DbFolder {
   id: string
@@ -56,7 +58,7 @@ interface FolderTreeNode {
 }
 
 // Helper to check and resolve video embed
-function VideoPlayer({ url }: { url: string }) {
+function VideoPlayer({ url, onEnded }: { url: string; onEnded?: () => void }) {
   const [embedUrl, setEmbedUrl] = useState<string | null>(null)
 
   useEffect(() => {
@@ -110,6 +112,7 @@ function VideoPlayer({ url }: { url: string }) {
       src={url}
       controls
       controlsList="nodownload"
+      onEnded={onEnded}
       onContextMenu={(e) => {
         e.preventDefault()
         alert("Hệ thống bảo mật StudyHub: Hành vi tải video trái phép hoặc kiểm tra mã nguồn bị chặn để bảo vệ bản quyền.")
@@ -144,6 +147,9 @@ export default function OnlineStudentStudy() {
 
   // Active Lesson Viewer (like double clicking a file to open viewer)
   const [activeLesson, setActiveLesson] = useState<DbLesson | null>(null)
+
+  // Lesson progress tracking states
+  const [completedLessons, setCompletedLessons] = useState<string[]>([])
 
   // DevTools detection state
   const [isDevToolsOpen, setIsDevToolsOpen] = useState(false)
@@ -275,6 +281,42 @@ export default function OnlineStudentStudy() {
 
     checkAuth()
   }, [router, supabase])
+
+  // Fetch lesson completion progress
+  const fetchProgress = async () => {
+    try {
+      const res = await fetch("/api/online-study/progress")
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setCompletedLessons((data.data || []).filter((p: any) => p.completed).map((p: any) => p.lesson_id))
+      }
+    } catch (e) {
+      console.error("Lỗi lấy tiến độ:", e)
+    }
+  }
+
+  useEffect(() => {
+    if (!loadingAuth && hasAccessToSubject) {
+      fetchProgress()
+    }
+  }, [loadingAuth, subjectKey, hasAccessToSubject])
+
+  // Save lesson completion progress
+  const handleMarkCompleted = async (lessonId: string, completed: boolean = true) => {
+    try {
+      const res = await fetch("/api/online-study/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lessonId, completed })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        fetchProgress()
+      }
+    } catch (e) {
+      console.error("Lỗi ghi nhận hoàn thành bài học:", e)
+    }
+  }
 
   // Set active video playlist item when active lesson changes
   useEffect(() => {
@@ -653,10 +695,34 @@ export default function OnlineStudentStudy() {
                 {/* Video Player & Playlist Selector */}
                 {activeVideo ? (
                   <div className="space-y-4">
-                    <VideoPlayer url={activeVideo.url} />
+                    <VideoPlayer url={activeVideo.url} onEnded={() => handleMarkCompleted(activeLesson.id)} />
                     {activeVideo.title && (
                       <p className="text-xs text-[#8C87A2] font-semibold italic mt-1.5">Đang phát: {activeVideo.title}</p>
                     )}
+
+                    {/* Progress Tracking Checkbox / Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-[#0B0A13]/30 rounded-xl border border-[#8C87A2]/10 mt-4">
+                      <div className="space-y-1 mr-4 text-left">
+                        <h5 className="text-xs font-bold text-[#F1EDF9] font-mono uppercase tracking-wider">Trạng thái hoàn thành</h5>
+                        <p className="text-[11px] text-[#8C87A2]">Đánh dấu bài học này đã được hoàn thành để lưu vào tiến trình học tập của bạn.</p>
+                      </div>
+                      <Button
+                        onClick={() => handleMarkCompleted(activeLesson.id, !completedLessons.includes(activeLesson.id))}
+                        className={`rounded-lg text-xs font-bold px-4 py-2 shrink-0 transition-all duration-300 flex items-center gap-1.5 ${
+                          completedLessons.includes(activeLesson.id)
+                            ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                            : "bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13]"
+                        }`}
+                      >
+                        {completedLessons.includes(activeLesson.id) ? (
+                          <>
+                            <CheckCircle2 className="h-4 w-4" /> Đã hoàn thành
+                          </>
+                        ) : (
+                          "Đánh dấu hoàn thành"
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div className="aspect-video rounded-xl bg-[#0B0A13] border border-[#8C87A2]/20 flex flex-col items-center justify-center text-center p-6">
@@ -810,9 +876,16 @@ export default function OnlineStudentStudy() {
                                 onClick={() => setActiveLesson(lesson)}
                                 className="group p-4 bg-[#0B0A13]/30 hover:bg-[#0B0A13]/60 border border-[#8C87A2]/10 hover:border-[#C18CFF]/50 rounded-xl flex flex-col justify-between h-30 cursor-pointer transition-all duration-200"
                               >
-                                <PlayCircle className="h-7 w-7 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
+                                <div className="flex items-center justify-between w-full">
+                                  <PlayCircle className="h-7 w-7 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
+                                  {completedLessons.includes(lesson.id) && (
+                                    <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full p-0.5" title="Đã học xong">
+                                      <CheckCircle2 className="h-4 w-4" />
+                                    </span>
+                                  )}
+                                </div>
 
-                                <div className="min-w-0 mt-2">
+                                <div className="min-w-0 mt-2 text-left">
                                   <span className="text-[8px] font-mono text-[#8C87A2]">Bài giảng {lesson.order_index}</span>
                                   <h5 className="font-bold text-xs text-[#F1EDF9] truncate leading-tight mt-0.5">{lesson.title}</h5>
                                   <div className="flex gap-2 mt-2">
@@ -840,7 +913,11 @@ export default function OnlineStudentStudy() {
                                 className="group flex items-center justify-between p-3 cursor-pointer hover:bg-[#0B0A13]/30 transition-colors"
                               >
                                 <div className="flex items-center gap-3 min-w-0">
-                                  <PlayCircle className="h-4.5 w-4.5 text-[#8C87A2] shrink-0 group-hover:text-[#C18CFF] transition-colors" />
+                                  {completedLessons.includes(lesson.id) ? (
+                                    <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400 shrink-0" />
+                                  ) : (
+                                    <PlayCircle className="h-4.5 w-4.5 text-[#8C87A2] shrink-0 group-hover:text-[#C18CFF] transition-colors" />
+                                  )}
                                   <span className="text-xs font-semibold text-[#F1EDF9] truncate">{lesson.title}</span>
                                   <span className="text-[9px] font-mono text-[#8C87A2]">Bài: {lesson.order_index}</span>
                                   <div className="flex gap-1.5 shrink-0">
@@ -899,6 +976,7 @@ export default function OnlineStudentStudy() {
           <div className="flex-1" onClick={() => setIsMobileTreeOpen(false)} />
         </div>
       )}
+      <Footer />
     </OnlineStudentShell>
   )
 }

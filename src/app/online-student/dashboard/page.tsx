@@ -19,10 +19,12 @@ import {
   Loader2, 
   Sparkles, 
   X,
-  QrCode
+  QrCode,
+  GraduationCap
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import Footer from "@/components/Footer"
 
 function SubjectSvgIcon({ value, className = "h-8 w-8" }: { value: string; className?: string }) {
   switch (value) {
@@ -234,6 +236,9 @@ export default function OnlineStudentDashboard() {
     prices: {} as Record<string, number>
   })
 
+  const [totalProgressPercent, setTotalProgressPercent] = useState(0)
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null)
+
   // Checkout flows
   const [checkoutSubject, setCheckoutSubject] = useState<typeof ONLINE_SUBJECTS[number] | null>(null)
   const [checkoutStep, setCheckoutStep] = useState<"qr" | "verifying" | "success">("qr")
@@ -276,6 +281,23 @@ export default function OnlineStudentDashboard() {
         console.error("Lỗi lấy cấu hình thanh toán:", e)
       }
 
+      // Fetch progress and calculate percent
+      try {
+        const resProg = await fetch("/api/online-study/progress")
+        const dataProg = await resProg.json()
+        const resLessons = await fetch("/api/online-study/lessons")
+        const dataLessons = await resLessons.json()
+        
+        if (resProg.ok && dataProg.success && resLessons.ok && dataLessons.success) {
+          const completedCount = (dataProg.data || []).filter((p: any) => p.completed).length
+          const totalCount = (dataLessons.data || []).length
+          const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+          setTotalProgressPercent(percent)
+        }
+      } catch (e) {
+        console.error("Lỗi tính tiến độ học tập:", e)
+      }
+
       // Fetch assigned online subjects
       try {
         const res = await fetch("/api/online-study/my-subjects")
@@ -315,9 +337,37 @@ export default function OnlineStudentDashboard() {
       : defaultPrice
   }
 
+  // Handle checkout initialization (create invoice pending record first)
+  const handleOpenCheckout = async (subject: typeof ONLINE_SUBJECTS[number]) => {
+    setCheckoutSubject(subject)
+    setCheckoutStep("qr")
+    
+    // Generate transfer details
+    const activePrice = getSubjectPrice(subject.value, subject.price)
+    const memo = `STUDYHUB ${(profile?.email || "HV").split("@")[0].toUpperCase()} ${subject.value.toUpperCase()}`
+    
+    try {
+      const res = await fetch("/api/online-study/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subjectKey: subject.value,
+          amount: activePrice,
+          memo
+        })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setCreatedOrderId(data.data.id)
+      }
+    } catch (e) {
+      console.error("Lỗi tạo đơn hàng:", e)
+    }
+  }
+
   // Handle simulated auto verification
   const handleConfirmPayment = async () => {
-    if (!checkoutSubject || !profile) return
+    if (!checkoutSubject || !profile || !createdOrderId) return
     setCheckoutStep("verifying")
     setVerifyStepIndex(0)
 
@@ -333,15 +383,28 @@ export default function OnlineStudentDashboard() {
     await new Promise(resolve => setTimeout(resolve, 1000))
 
     try {
-      const res = await fetch("/api/online-study/checkout", {
-        method: "POST",
+      const res = await fetch("/api/online-study/orders", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subjectKey: checkoutSubject.value })
+        body: JSON.stringify({ orderId: createdOrderId, status: "success" })
       })
       const data = await res.json()
       if (res.ok && data.success) {
         setMySubjects(prev => [...prev, checkoutSubject.value])
         setCheckoutStep("success")
+        
+        // Recalculate progress percent after subject unlocked
+        try {
+          const resProg = await fetch("/api/online-study/progress")
+          const dataProg = await resProg.json()
+          const resLessons = await fetch("/api/online-study/lessons")
+          const dataLessons = await resLessons.json()
+          if (resProg.ok && dataProg.success && resLessons.ok && dataLessons.success) {
+            const completedCount = (dataProg.data || []).filter((p: any) => p.completed).length
+            const totalCount = (dataLessons.data || []).length
+            setTotalProgressPercent(totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0)
+          }
+        } catch (e) {}
       } else {
         alert(data.error || "Giao dịch chưa được cập nhật từ ngân hàng, vui lòng thử lại sau ít phút.")
         setCheckoutStep("qr")
@@ -401,6 +464,25 @@ export default function OnlineStudentDashboard() {
               <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] max-w-2xl">
                 Hệ thống học tập qua bài giảng video và tài liệu tự học trực tuyến. Hãy lựa chọn môn học bên dưới để bắt đầu bài giảng của bạn.
               </p>
+
+              {/* Progress bar */}
+              <div className="mt-6 max-w-md bg-[#0B0A13]/40 border border-[#8C87A2]/10 rounded-2xl p-4 flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex justify-between items-center text-xs font-mono text-[#8C87A2] mb-1.5">
+                    <span>TIẾN ĐỘ HỌC TẬP TỔNG THỂ</span>
+                    <span className="text-[#C18CFF] font-bold">{totalProgressPercent}%</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-[#0B0A13] overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-[#C18CFF] to-[#3B82F6] rounded-full transition-all duration-500" 
+                      style={{ width: `${totalProgressPercent}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-[#C18CFF]/10 border border-[#C18CFF]/20 flex items-center justify-center text-[#C18CFF]">
+                  <GraduationCap className="h-5 w-5 animate-pulse" />
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -462,10 +544,7 @@ export default function OnlineStudentDashboard() {
                 return (
                   <div 
                     key={subject.value}
-                    onClick={() => {
-                      setCheckoutSubject(subject)
-                      setCheckoutStep("qr")
-                    }}
+                    onClick={() => handleOpenCheckout(subject)}
                     className={cn(
                       "group flex flex-col justify-between p-5 h-48 bg-[#15131F]/40 border border-[#8C87A2]/10 rounded-2xl cursor-pointer relative overflow-hidden select-none transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-[#15131F]/70",
                       theme.border,
@@ -678,6 +757,7 @@ export default function OnlineStudentDashboard() {
           </div>
         </div>
       )}
+      <Footer />
     </OnlineStudentShell>
   )
 }

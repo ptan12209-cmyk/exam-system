@@ -12,6 +12,7 @@ import { UserMenu } from "@/components/UserMenu"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
 import { ONLINE_SUBJECTS, getOnlineSubjectInfo } from "@/lib/subjects"
+import Footer from "@/components/Footer"
 import { AnimatePresence, motion } from "framer-motion"
 import { 
   Plus, 
@@ -37,11 +38,14 @@ import {
   ShieldCheck,
   UserCheck,
   UserX,
+  UserPlus,
   ChevronLeft,
   LayoutGrid,
   List,
   Home,
-  Sliders
+  Sliders,
+  BadgeDollarSign,
+  CreditCard
 } from "lucide-react"
 
 interface DbFolder {
@@ -87,7 +91,7 @@ export default function TeacherOnlineStudyPage() {
   const [profile, setProfile] = useState<{ full_name: string | null } | null>(null)
   
   // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<"lectures" | "permissions" | "payment">("lectures")
+  const [activeTab, setActiveTab] = useState<"lectures" | "permissions" | "payment" | "orders">("lectures")
 
   // Selection States
   const [selectedSubject, setSelectedSubject] = useState("toan")
@@ -105,6 +109,58 @@ export default function TeacherOnlineStudyPage() {
   const [accountName, setAccountName] = useState("")
   const [subjectPrices, setSubjectPrices] = useState<Record<string, number>>({})
   const [savingSettings, setSavingSettings] = useState(false)
+
+  // Orders and Revenue States
+  const [orders, setOrders] = useState<any[]>([])
+  const [revenue, setRevenue] = useState(0)
+  const [loadingOrders, setLoadingOrders] = useState(false)
+  const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null)
+
+  // Create student states
+  const [isCreateStudentOpen, setIsCreateStudentOpen] = useState(false)
+  const [newStudentName, setNewStudentName] = useState("")
+  const [newStudentEmail, setNewStudentEmail] = useState("")
+  const [newStudentPassword, setNewStudentPassword] = useState("")
+  const [newStudentClass, setNewStudentClass] = useState("")
+  const [creatingStudent, setCreatingStudent] = useState(false)
+
+  // Handle direct student account creation submit
+  const handleCreateStudentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newStudentName.trim() || !newStudentEmail.trim() || !newStudentPassword.trim()) {
+      toastError("Vui lòng nhập đầy đủ Họ tên, Email và Mật khẩu.")
+      return
+    }
+    setCreatingStudent(true)
+    try {
+      const res = await fetch("/api/online-study/create-student", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: newStudentEmail.trim(),
+          fullName: newStudentName.trim(),
+          password: newStudentPassword.trim(),
+          studentClass: newStudentClass.trim() || null
+        })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        success("Đã cấp tài khoản học viên trực tiếp thành công!")
+        setIsCreateStudentOpen(false)
+        setNewStudentName("")
+        setNewStudentEmail("")
+        setNewStudentPassword("")
+        setNewStudentClass("")
+        fetchStudents(searchStudentQuery)
+      } else {
+        throw new Error(data.error || "Lỗi tạo tài khoản")
+      }
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : "Tạo tài khoản thất bại.")
+    } finally {
+      setCreatingStudent(false)
+    }
+  }
 
   // Fetch payment configurations when entering the tab
   useEffect(() => {
@@ -124,8 +180,52 @@ export default function TeacherOnlineStudyPage() {
     }
     if (activeTab === "payment") {
       loadPaymentSettings()
+    } else if (activeTab === "orders") {
+      fetchOrders()
     }
   }, [activeTab])
+
+  // Fetch orders and revenue
+  const fetchOrders = async () => {
+    setLoadingOrders(true)
+    try {
+      const res = await fetch("/api/online-study/orders")
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setOrders(data.data.orders || [])
+        setRevenue(data.data.revenue || 0)
+      }
+    } catch (err) {
+      console.error(err)
+      toastError("Không thể tải danh sách đơn hàng.")
+    } finally {
+      setLoadingOrders(false)
+    }
+  }
+
+  // Handle manual order approval
+  const handleApproveOrder = async (orderId: string) => {
+    setApprovingOrderId(orderId)
+    try {
+      const res = await fetch("/api/online-study/orders", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status: "success" })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        success("Đã duyệt đơn hàng và mở khóa môn học thành công!")
+        fetchOrders()
+        fetchStudents(searchStudentQuery)
+      } else {
+        throw new Error(data.error || "Lỗi duyệt đơn hàng")
+      }
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : "Duyệt đơn hàng thất bại")
+    } finally {
+      setApprovingOrderId(null)
+    }
+  }
 
   // Save payment settings handler
   const handleSavePaymentSettings = async (e: React.FormEvent) => {
@@ -169,7 +269,7 @@ export default function TeacherOnlineStudyPage() {
       const savedTab = localStorage.getItem("teacher_study_tab")
       const savedSubject = localStorage.getItem("teacher_study_subject")
       
-      if (savedTab === "lectures" || savedTab === "permissions" || savedTab === "payment") setActiveTab(savedTab)
+      if (savedTab === "lectures" || savedTab === "permissions" || savedTab === "payment" || savedTab === "orders") setActiveTab(savedTab as any)
       if (savedSubject && ONLINE_SUBJECTS.some(s => s.value === savedSubject)) {
         setSelectedSubject(savedSubject)
       }
@@ -703,11 +803,11 @@ export default function TeacherOnlineStudyPage() {
       <header className="fixed top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[#8C87A2]/20 bg-[#0B0A13]/85 px-4 backdrop-blur-xl lg:hidden safe-top">
         <div className="flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-[#C18CFF]" />
-          <span className="text-lg font-bold tracking-tight">Học Online</span>
+          <span className="text-lg font-bold tracking-tight">Quản trị Học Online</span>
         </div>
         <div className="flex items-center gap-2">
           <NotificationBell />
-          <UserMenu userName={profile?.full_name || ""} role="teacher" onLogout={handleLogout} />
+          <UserMenu userName={profile?.full_name || ""} role="admin" onLogout={handleLogout} />
         </div>
       </header>
 
@@ -717,10 +817,10 @@ export default function TeacherOnlineStudyPage() {
         <section className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/40 px-3 py-1 text-[10px] font-semibold text-[#8C87A2] uppercase tracking-widest font-mono">
-              <GraduationCap className="h-3.5 w-3.5 text-[#C18CFF]" /> E-learning portal
+              <Shield className="h-3.5 w-3.5 text-[#C18CFF]" /> Admin control panel
             </div>
             <h1 className="text-4xl font-normal tracking-tight md:text-5xl lg:text-6xl font-serif-italic">
-              Quản trị Học Online
+              Quản trị Hệ thống Học tập
             </h1>
           </div>
 
@@ -764,10 +864,10 @@ export default function TeacherOnlineStudyPage() {
         </section>
 
         {/* Tab Selection */}
-        <div className="mb-6 flex gap-2 border-b border-[#8C87A2]/20 pb-px">
+        <div className="mb-6 flex gap-2 border-b border-[#8C87A2]/20 pb-px overflow-x-auto">
           <button
             onClick={() => setActiveTab("lectures")}
-            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors ${
+            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
               activeTab === "lectures" 
                 ? "border-[#C18CFF] text-[#C18CFF]" 
                 : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
@@ -777,7 +877,7 @@ export default function TeacherOnlineStudyPage() {
           </button>
           <button
             onClick={() => setActiveTab("permissions")}
-            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors ${
+            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
               activeTab === "permissions" 
                 ? "border-[#C18CFF] text-[#C18CFF]" 
                 : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
@@ -787,13 +887,23 @@ export default function TeacherOnlineStudyPage() {
           </button>
           <button
             onClick={() => setActiveTab("payment")}
-            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors ${
+            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
               activeTab === "payment" 
                 ? "border-[#C18CFF] text-[#C18CFF]" 
                 : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
             }`}
           >
             Cấu hình thanh toán & Bảng giá
+          </button>
+          <button
+            onClick={() => setActiveTab("orders")}
+            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === "orders" 
+                ? "border-[#C18CFF] text-[#C18CFF]" 
+                : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
+            }`}
+          >
+            Quản lý đơn hàng & Doanh thu
           </button>
         </div>
 
@@ -1104,19 +1214,27 @@ export default function TeacherOnlineStudyPage() {
         {activeTab === "permissions" && (
           <div className="space-y-6">
             
-            {/* Search toolbar */}
-            <form onSubmit={handleStudentSearchSubmit} className="flex items-center gap-2 rounded-xl border border-[#8C87A2]/20 bg-[#15131F]/30 px-3 py-2">
-              <Search className="h-4 w-4 text-[#8C87A2]" />
-              <input
-                value={searchStudentQuery}
-                onChange={(e) => setSearchStudentQuery(e.target.value)}
-                placeholder="Tìm học sinh theo tên hoặc email..."
-                className="bg-transparent text-sm w-full outline-none text-[#F1EDF9] placeholder-[#8C87A2] --webkit-appearance-none"
-              />
-              <Button type="submit" size="sm" className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 text-xs font-bold px-4 py-1.5">
-                Tìm kiếm
+            {/* Search toolbar and Add student button */}
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <form onSubmit={handleStudentSearchSubmit} className="flex-1 flex items-center gap-2 rounded-xl border border-[#8C87A2]/20 bg-[#15131F]/30 px-3 py-2 w-full">
+                <Search className="h-4 w-4 text-[#8C87A2]" />
+                <input
+                  value={searchStudentQuery}
+                  onChange={(e) => setSearchStudentQuery(e.target.value)}
+                  placeholder="Tìm học sinh theo tên hoặc email..."
+                  className="bg-transparent text-sm w-full outline-none text-[#F1EDF9] placeholder-[#8C87A2] --webkit-appearance-none"
+                />
+                <Button type="submit" size="sm" className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 text-xs font-bold px-4 py-1.5 shrink-0">
+                  Tìm kiếm
+                </Button>
+              </form>
+              <Button
+                onClick={() => setIsCreateStudentOpen(true)}
+                className="w-full sm:w-auto rounded-xl bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 text-xs font-bold px-4 py-2.5 flex items-center justify-center gap-1.5 transition-transform active:scale-95 shrink-0"
+              >
+                <UserPlus className="h-4 w-4" /> Cấp tài khoản mới
               </Button>
-            </form>
+            </div>
 
             {/* Students list */}
             <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/10 overflow-hidden">
@@ -1158,6 +1276,9 @@ export default function TeacherOnlineStudyPage() {
                                   {student.class}
                                 </span>
                               )}
+                              <span className="rounded bg-[#C18CFF]/10 border border-[#C18CFF]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#C18CFF] font-mono shrink-0">
+                                Đã học: {(student as any).progress_percent || 0}%
+                              </span>
                             </div>
                             <p className="text-xs text-[#8C87A2] mt-0.5 truncate">{student.email}</p>
                           </div>
@@ -1297,7 +1418,230 @@ export default function TeacherOnlineStudyPage() {
           </form>
         )}
 
+        {/* Tab 4: Orders & Revenue Management */}
+        {activeTab === "orders" && (
+          <div className="space-y-6">
+            
+            {/* Revenue Analytics Cards */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 relative overflow-hidden shadow-sm flex items-center justify-between">
+                <div className="absolute -right-24 -top-24 w-60 h-60 rounded-full bg-[#C18CFF]/5 blur-[65px] pointer-events-none" />
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">TỔNG DOANH THU ĐÃ NHẬN</span>
+                  <h3 className="text-3xl sm:text-4xl font-bold text-[#C18CFF] font-mono mt-2">{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(revenue)}</h3>
+                </div>
+                <div className="h-12 w-12 rounded-xl bg-[#C18CFF]/10 border border-[#C18CFF]/20 flex items-center justify-center text-[#C18CFF]">
+                  <BadgeDollarSign className="h-6 w-6" />
+                </div>
+              </div>
+
+              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 relative overflow-hidden shadow-sm flex items-center justify-between">
+                <div className="absolute -right-24 -top-24 w-60 h-60 rounded-full bg-emerald-500/5 blur-[65px] pointer-events-none" />
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">TỔNG ĐƠN HÀNG THÀNH CÔNG</span>
+                  <h3 className="text-3xl sm:text-4xl font-bold text-emerald-400 font-mono mt-2">
+                    {orders.filter(o => o.status === "success").length} <span className="text-xs text-[#8C87A2] font-normal">đơn</span>
+                  </h3>
+                </div>
+                <div className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <CreditCard className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+
+            {/* Orders list */}
+            <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/10 overflow-hidden">
+              <div className="p-4 border-b border-[#8C87A2]/20 bg-[#15131F]/50 flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Danh sách giao dịch học viên</span>
+                <span className="text-[10px] bg-[#0B0A13] px-2 py-0.5 rounded border border-[#8C87A2]/20 text-[#8C87A2] font-mono">
+                  {orders.length} giao dịch
+                </span>
+              </div>
+
+              {loadingOrders ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#C18CFF]" />
+                  <p className="mt-2 text-xs text-[#8C87A2]">Đang tải danh sách đơn hàng...</p>
+                </div>
+              ) : orders.length === 0 ? (
+                <div className="text-center py-20 text-sm text-[#8C87A2] italic">
+                  Chưa có giao dịch mua khóa học nào được ghi nhận.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-[#8C87A2]/10 bg-[#0B0A13]/30 text-[#8C87A2] uppercase font-mono tracking-wider">
+                        <th className="p-4 font-bold">Ngày giao dịch</th>
+                        <th className="p-4 font-bold">Học viên</th>
+                        <th className="p-4 font-bold">Môn học</th>
+                        <th className="p-4 font-bold text-right">Số tiền</th>
+                        <th className="p-4 font-bold">Nội dung Memo</th>
+                        <th className="p-4 font-bold text-center">Trạng thái</th>
+                        <th className="p-4 font-bold text-right">Hành động</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#8C87A2]/10 bg-[#15131F]/10">
+                      {orders.map(order => {
+                        const studentName = order.student?.full_name || "Học viên ẩn danh"
+                        const studentEmail = order.student?.email || "unknown@student.com"
+                        const subjectInfo = getOnlineSubjectInfo(order.subject_key)
+                        
+                        return (
+                          <tr key={order.id} className="hover:bg-[#15131F]/30 transition-colors">
+                            <td className="p-4 text-[#8C87A2] font-mono whitespace-nowrap">
+                              {new Date(order.created_at).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
+                            </td>
+                            <td className="p-4 min-w-[150px]">
+                              <p className="font-bold text-[#F1EDF9]">{studentName}</p>
+                              <p className="text-[10px] text-[#8C87A2] mt-0.5">{studentEmail}</p>
+                            </td>
+                            <td className="p-4">
+                              <span className="px-2 py-1 rounded bg-[#0B0A13] border border-[#8C87A2]/25 text-[#F1EDF9] inline-flex items-center gap-1 font-mono">
+                                <span>{subjectInfo.icon}</span>
+                                <span>{subjectInfo.label}</span>
+                              </span>
+                            </td>
+                            <td className="p-4 text-right font-bold text-[#F1EDF9] font-mono">
+                              {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.amount)}
+                            </td>
+                            <td className="p-4">
+                              <span className="px-2 py-0.5 rounded bg-[#0B0A13] border border-[#C18CFF]/20 text-[#C18CFF] font-bold font-mono">
+                                {order.memo}
+                              </span>
+                            </td>
+                            <td className="p-4 text-center whitespace-nowrap">
+                              {order.status === "success" ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono">
+                                  ✓ Thành công
+                                </span>
+                              ) : order.status === "failed" ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full font-mono">
+                                  ✗ Lỗi / Hủy
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-2 py-0.5 rounded-full font-mono animate-pulse">
+                                  ⏳ Chờ duyệt
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-4 text-right">
+                              {order.status === "pending" && (
+                                <Button
+                                  size="sm"
+                                  disabled={approvingOrderId === order.id}
+                                  onClick={() => handleApproveOrder(order.id)}
+                                  className="rounded-lg bg-emerald-500 text-[#0B0A13] hover:bg-emerald-400 text-[10px] font-bold px-3 py-1 transition-transform active:scale-95 flex items-center justify-center gap-1 ml-auto"
+                                >
+                                  {approvingOrderId === order.id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    "Duyệt thủ công"
+                                  )}
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
       </main>
+      <Footer />
+
+      {/* ── Create Student Modal ── */}
+      <AnimatePresence>
+        {isCreateStudentOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[#0B0A13]/80 backdrop-blur-sm"
+              onClick={() => setIsCreateStudentOpen(false)}
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-6 shadow-2xl z-10"
+            >
+              <button onClick={() => setIsCreateStudentOpen(false)} className="absolute right-4 top-4 text-[#8C87A2] hover:text-[#F1EDF9]">
+                <X className="h-5 w-5" />
+              </button>
+              
+              <h3 className="text-xl font-bold text-[#F1EDF9] mb-4 font-mono uppercase tracking-wide text-sm">
+                Cấp Tài Khoản Học Viên Mới
+              </h3>
+
+              <form onSubmit={handleCreateStudentSubmit} className="space-y-4 text-left">
+                <div>
+                  <Label className="text-xs text-[#8C87A2] font-mono">Họ và tên học viên</Label>
+                  <Input 
+                    value={newStudentName}
+                    onChange={(e) => setNewStudentName(e.target.value)}
+                    placeholder="VD: Nguyễn Văn A"
+                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs text-[#8C87A2] font-mono">Email đăng nhập</Label>
+                  <Input 
+                    type="email"
+                    value={newStudentEmail}
+                    onChange={(e) => setNewStudentEmail(e.target.value)}
+                    placeholder="VD: nguyenvana@gmail.com"
+                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs text-[#8C87A2] font-mono">Mật khẩu đăng nhập</Label>
+                  <Input 
+                    type="password"
+                    value={newStudentPassword}
+                    onChange={(e) => setNewStudentPassword(e.target.value)}
+                    placeholder="Tối thiểu 6 ký tự"
+                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                    minLength={6}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs text-[#8C87A2] font-mono">Lớp học (Tùy chọn)</Label>
+                  <Input 
+                    value={newStudentClass}
+                    onChange={(e) => setNewStudentClass(e.target.value)}
+                    placeholder="VD: 12A1"
+                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <Button type="button" variant="ghost" onClick={() => setIsCreateStudentOpen(false)} className="rounded-lg border border-[#8C87A2]/20 text-[#8C87A2]">
+                    Hủy
+                  </Button>
+                  <Button type="submit" disabled={creatingStudent} className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 font-bold px-6 flex items-center gap-1.5">
+                    {creatingStudent && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Cấp tài khoản
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ── Folder Modal ── */}
       <AnimatePresence>

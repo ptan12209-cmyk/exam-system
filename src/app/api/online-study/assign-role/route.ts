@@ -97,19 +97,51 @@ async function handleGET(request: NextRequest) {
     assignedSubjects = subjectsData || []
   }
 
-  // Map subjects back to students
-  const studentsWithSubjects = (students || []).map(student => {
+  // Get total lessons count in database
+  let totalLessonsCount = 0
+  try {
+    const { count, error: countError } = await adminSupabase
+      .from("online_lessons")
+      .select("*", { count: "exact", head: true })
+    if (!countError && count !== null) {
+      totalLessonsCount = count
+    }
+  } catch (e) {
+    console.error("Lỗi đếm số bài giảng:", e)
+  }
+
+  // Fetch all lesson progress records for these students
+  let progresses: { student_id: string; completed: boolean }[] = []
+  if (studentIds.length > 0) {
+    try {
+      const { data: progressData } = await adminSupabase
+        .from("student_lesson_progress")
+        .select("student_id, completed")
+        .in("student_id", studentIds)
+        .eq("completed", true)
+      progresses = progressData || []
+    } catch (e) {
+      console.error("Lỗi lấy tiến độ bài giảng:", e)
+    }
+  }
+
+  // Map subjects and progress back to students
+  const studentsWithData = (students || []).map(student => {
     const subjects = assignedSubjects
       .filter(s => s.student_id === student.id)
       .map(s => s.subject)
 
+    const completedCount = progresses.filter(p => p.student_id === student.id).length
+    const progressPercent = totalLessonsCount > 0 ? Math.round((completedCount / totalLessonsCount) * 100) : 0
+
     return {
       ...student,
-      online_subjects: subjects
+      online_subjects: subjects,
+      progress_percent: progressPercent
     }
   })
 
-  return NextResponse.json(successResponse(studentsWithSubjects))
+  return NextResponse.json(successResponse(studentsWithData))
 }
 
 export const POST = withErrorHandler(handlePOST)
