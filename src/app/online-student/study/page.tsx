@@ -282,6 +282,12 @@ export default function OnlineStudentStudy() {
     checkAuth()
   }, [router, supabase])
 
+  // Verify access permissions for current subject
+  const hasAccessToSubject = useMemo(() => {
+    if (loadingAuth) return true
+    return mySubjects.includes("all") || mySubjects.includes(subjectKey)
+  }, [loadingAuth, mySubjects, subjectKey])
+
   // Fetch lesson completion progress
   const fetchProgress = async () => {
     try {
@@ -329,12 +335,6 @@ export default function OnlineStudentStudy() {
       setActiveVideo(null)
     }
   }, [activeLesson])
-
-  // Verify access permissions for current subject
-  const hasAccessToSubject = useMemo(() => {
-    if (loadingAuth) return true
-    return mySubjects.includes("all") || mySubjects.includes(subjectKey)
-  }, [loadingAuth, mySubjects, subjectKey])
 
   // Fetch Folders & Lessons
   useEffect(() => {
