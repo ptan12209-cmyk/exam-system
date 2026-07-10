@@ -281,13 +281,14 @@ async function handlePOST(request: NextRequest) {
       orderCode,
       amount: Math.round(Number(order.amount)),
       description: shortDesc,
-      returnUrl: `${baseUrl}/payment/result?flow=online-study&success=true&subject=${encodeURIComponent(subjectKey)}`,
-      cancelUrl: `${baseUrl}/payment/result?flow=online-study&success=false`,
+      // Stay on our full payment page (do not send users to payOS hosted UI)
+      returnUrl: `${baseUrl}/online-student/payment?subject=${encodeURIComponent(subjectKey)}`,
+      cancelUrl: `${baseUrl}/online-student/dashboard`,
       buyerName: profile?.full_name || undefined,
       buyerEmail: profile?.email || user.email || undefined,
     })
 
-    if (payos.success) {
+    if (payos.success && payos.qrCode) {
       if (payos.paymentLinkId) {
         await adminSupabase
           .from("online_orders")
@@ -299,22 +300,13 @@ async function handlePOST(request: NextRequest) {
           .eq("id", order.id)
       }
 
-      // VietQR image from payOS bank account if available
-      let vietQrUrl: string | null = null
-      if (payos.bin && payos.accountNumber) {
-        const addInfo = encodeURIComponent(payos.description || shortDesc)
-        const accName = encodeURIComponent(payos.accountName || "")
-        vietQrUrl = `https://img.vietqr.io/image/${payos.bin}-${payos.accountNumber}-print.png?amount=${payos.amount || order.amount}&addInfo=${addInfo}&accountName=${accName}`
-      }
-
       return NextResponse.json(
         successResponse({
           ...order,
           payment_order_code: orderCode,
           paymentMethod: "payos",
-          checkoutUrl: payos.checkoutUrl || null,
-          qrCode: payos.qrCode || null,
-          vietQrUrl,
+          // Only payOS EMV QR payload — rendered locally on full payment page
+          qrCode: payos.qrCode,
           accountNumber: payos.accountNumber || null,
           accountName: payos.accountName || null,
           bin: payos.bin || null,
@@ -323,15 +315,18 @@ async function handlePOST(request: NextRequest) {
       )
     }
 
-    console.warn("[orders] payOS create failed, fallback VietQR", payos.error)
+    console.error("[orders] payOS create failed", payos.error)
+    throw new ApiError(
+      "PAYOS_FAILED",
+      payos.error || "Không tạo được mã QR payOS. Vui lòng thử lại sau.",
+      502
+    )
   }
 
-  // Fallback: teacher bank settings + manual / Casso path
-  return NextResponse.json(
-    successResponse({
-      ...order,
-      paymentMethod: "vietqr",
-    })
+  throw new ApiError(
+    "PAYOS_NOT_CONFIGURED",
+    "Cổng payOS chưa được cấu hình trên server (PAYOS_CLIENT_ID / API_KEY / CHECKSUM_KEY).",
+    503
   )
 }
 
