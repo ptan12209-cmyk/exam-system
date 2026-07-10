@@ -814,7 +814,7 @@ export default function TeacherOnlineStudyPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-2 pb-24 pt-24 md:px-4 lg:pt-28">
+      <main className="mx-auto max-w-7xl w-full px-3 pb-24 pt-24 sm:px-6 lg:px-8 lg:pt-28">
         
         {/* Header Section */}
         <section className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -876,7 +876,7 @@ export default function TeacherOnlineStudyPage() {
                 : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
             }`}
           >
-            Quản lý bài giảng (File Explorer)
+            Quản lý bài giảng (Drive)
           </button>
           <button
             onClick={() => setActiveTab("permissions")}
@@ -914,22 +914,19 @@ export default function TeacherOnlineStudyPage() {
         {activeTab === "lectures" && (
           <div className="space-y-4">
             
-            {/* Top Toolbar */}
-            <div className="flex flex-col gap-3 rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/30 p-4">
+            {/* Drive-style toolbar (full width, no side tree) */}
+            <div className="flex flex-col gap-3 rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-4 sm:p-5 shadow-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
                 
-                {/* Subject Selector & Mobile Tree Button */}
-                <div className="flex items-center gap-2 w-full sm:w-64 shrink-0">
-                  <Button
-                    onClick={() => setIsMobileTreeOpen(true)}
-                    className="md:hidden shrink-0 rounded-xl border border-[#8C87A2]/30 bg-[#15131F] text-xs font-bold text-[#F1EDF9] hover:bg-[#15131F]/80 flex items-center gap-1.5 px-3 h-9"
-                  >
-                    <FolderIcon className="h-4 w-4 text-[#C18CFF]" /> Cây thư mục
-                  </Button>
+                {/* Subject Selector */}
+                <div className="flex items-center gap-2 w-full sm:w-72 shrink-0">
                   <select
                     value={selectedSubject}
-                    onChange={(e) => setSelectedSubject(e.target.value)}
-                    className="w-full rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#C18CFF] text-[#F1EDF9] h-9"
+                    onChange={(e) => {
+                      setSelectedSubject(e.target.value)
+                      setSelectedFolderId(null)
+                    }}
+                    className="w-full rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13] px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#C18CFF] text-[#F1EDF9] h-11"
                   >
                     {ONLINE_SUBJECTS.map((s) => (
                       <option key={s.value} value={s.value}>
@@ -940,13 +937,13 @@ export default function TeacherOnlineStudyPage() {
                 </div>
 
                 {/* Local search */}
-                <div className="relative w-full sm:w-80">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#8C87A2]" />
+                <div className="relative w-full sm:flex-1 sm:max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C87A2]" />
                   <input
                     value={explorerSearch}
                     onChange={(e) => setExplorerSearch(e.target.value)}
                     placeholder="Tìm trong thư mục hiện tại..."
-                    className="w-full rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13] pl-9 pr-4 py-2 text-sm text-[#F1EDF9] placeholder-[#8C87A2] outline-none focus:ring-1 focus:ring-[#C18CFF]"
+                    className="w-full rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13] pl-9 pr-4 py-2.5 text-sm text-[#F1EDF9] placeholder-[#8C87A2] outline-none focus:ring-1 focus:ring-[#C18CFF] h-11"
                   />
                 </div>
 
@@ -970,34 +967,34 @@ export default function TeacherOnlineStudyPage() {
 
               </div>
 
-              {/* Windows Explorer Style Address Bar */}
-              <div className="flex items-center gap-1.5 bg-[#0B0A13] border border-[#8C87A2]/20 rounded-xl px-3 py-2 overflow-x-auto text-xs font-mono scrollbar-none">
+              {/* Drive breadcrumb path */}
+              <div className="flex items-center gap-1 bg-[#0B0A13] border border-[#8C87A2]/20 rounded-xl px-2 sm:px-3 py-2 overflow-x-auto text-sm scrollbar-none">
                 {selectedFolderId && (
                   <button
                     onClick={() => {
                       const currentFolder = folders.find(f => f.id === selectedFolderId)
                       setSelectedFolderId(currentFolder ? currentFolder.parent_id : null)
                     }}
-                    className="mr-1.5 p-1 rounded hover:bg-[#15131F] text-[#C18CFF] shrink-0"
-                    title="Quay lại thư mục cha"
+                    className="mr-1 p-2 rounded-lg hover:bg-[#15131F] text-[#C18CFF] shrink-0"
+                    title="Lên một cấp"
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-5 w-5" />
                   </button>
                 )}
 
                 <button
                   onClick={() => setSelectedFolderId(null)}
-                  className={`flex items-center gap-1 hover:text-[#C18CFF] shrink-0 ${!selectedFolderId ? "text-[#C18CFF] font-bold" : "text-[#8C87A2]"}`}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shrink-0 font-semibold text-xs sm:text-sm ${!selectedFolderId ? "bg-[#C18CFF]/15 text-[#C18CFF]" : "text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F]"}`}
                 >
-                  <Home className="h-3.5 w-3.5" /> Thư mục gốc
+                  <Home className="h-4 w-4" /> Gốc
                 </button>
 
                 {breadcrumbs.map((crumb, idx) => (
-                  <div key={crumb.id} className="flex items-center gap-1.5 shrink-0 text-[#8C87A2]">
-                    <ChevronRight className="h-3 w-3" />
+                  <div key={crumb.id} className="flex items-center gap-1 shrink-0 text-[#8C87A2]">
+                    <ChevronRight className="h-4 w-4 opacity-50" />
                     <button
                       onClick={() => setSelectedFolderId(crumb.id)}
-                      className={`hover:text-[#C18CFF] ${idx === breadcrumbs.length - 1 ? "text-[#C18CFF] font-bold" : ""}`}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold max-w-[180px] truncate ${idx === breadcrumbs.length - 1 ? "bg-[#C18CFF]/15 text-[#C18CFF]" : "hover:text-[#F1EDF9] hover:bg-[#15131F]"}`}
                     >
                       {crumb.name}
                     </button>
@@ -1006,81 +1003,61 @@ export default function TeacherOnlineStudyPage() {
               </div>
             </div>
 
-            {/* Split Screen Panel */}
-            <div className="grid gap-4 md:grid-cols-[240px_1fr] items-start">
-              
-              {/* Left Pane: Folder Tree Navigation */}
-              <aside className="bg-[#15131F]/30 border border-[#8C87A2]/20 rounded-2xl p-3 max-h-[500px] overflow-y-auto w-full hidden md:block">
-                <div className="pb-2 mb-2 border-b border-[#8C87A2]/10 flex items-center justify-between text-[10px] uppercase font-bold text-[#8C87A2] font-mono">
-                  <span>Cây thư mục</span>
-                  <button onClick={() => setSelectedFolderId(null)} className="hover:text-[#C18CFF]">Mở Root</button>
-                </div>
-                {folderTree.length === 0 ? (
-                  <p className="text-[11px] text-[#8C87A2] italic text-center py-4">Chưa có thư mục</p>
-                ) : (
-                  <div className="space-y-0.5">
-                    {folderTree.map(root => (
-                      <LeftFolderTreeNode key={root.folder.id} node={root} level={0} />
-                    ))}
-                  </div>
-                )}
-              </aside>
-
-              {/* Right Pane: Main Files Explorer View */}
-              <section className="bg-[#15131F]/15 border border-[#8C87A2]/20 rounded-2xl p-5 min-h-[400px] flex flex-col">
+            {/* Full-page drive canvas (no side tree) */}
+            <div className="w-full">
+              <section className="bg-[#15131F]/50 border border-[#8C87A2]/20 rounded-2xl p-4 sm:p-6 min-h-[60vh] flex flex-col">
                 
                 {loadingData ? (
-                  <div className="flex-1 flex flex-col items-center justify-center py-20">
+                  <div className="flex-1 flex flex-col items-center justify-center py-24">
                     <Loader2 className="h-10 w-10 animate-spin text-[#C18CFF]" />
                     <p className="mt-3 text-xs text-[#8C87A2]">Đang đọc dữ liệu thư mục...</p>
                   </div>
                 ) : currentSubFolders.length === 0 && currentLessons.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
-                    <FolderOpenIcon className="h-12 w-12 text-[#8C87A2]/30 mb-3" />
-                    <h4 className="text-sm font-bold text-[#F1EDF9]">Thư mục trống</h4>
-                    <p className="text-xs text-[#8C87A2] max-w-xs mt-1">
-                      Thư mục này hiện không chứa thư mục con hay bài giảng nào. Hãy nhấn nút ở góc trên để thêm bài học.
+                  <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
+                    <FolderOpenIcon className="h-16 w-16 text-[#8C87A2]/30 mb-4" />
+                    <h4 className="text-base font-bold text-[#F1EDF9]">Thư mục trống</h4>
+                    <p className="text-sm text-[#8C87A2] max-w-sm mt-2">
+                      Thêm thư mục con hoặc bài học bằng nút góc trên. Điều hướng bằng thanh đường dẫn như Google Drive.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-6 flex-1">
+                  <div className="space-y-8 flex-1">
                     
                     {/* Subfolders list */}
                     {currentSubFolders.length > 0 && (
                       <div>
-                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-3">Thư mục con ({currentSubFolders.length})</h4>
+                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-4">Thư mục ({currentSubFolders.length})</h4>
                         
                         {viewMode === "grid" ? (
-                          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
                             {currentSubFolders.map(folder => (
                               <div
                                 key={folder.id}
                                 onDoubleClick={() => setSelectedFolderId(folder.id)}
                                 onClick={() => setSelectedFolderId(folder.id)}
-                                className="group relative p-3.5 bg-[#15131F] hover:bg-[#15131F]/80 border border-[#8C87A2]/20 hover:border-[#C18CFF] rounded-xl flex flex-col justify-between h-28 cursor-pointer select-none transition-all duration-200"
+                                className="group relative p-4 bg-[#0B0A13]/60 hover:bg-[#0B0A13] border border-[#8C87A2]/15 hover:border-[#C18CFF] rounded-2xl flex flex-col justify-between min-h-[128px] cursor-pointer select-none transition-all duration-200"
                               >
                                 <div className="flex justify-between items-start">
-                                  <FolderIcon className="h-7 w-7 text-[#C18CFF]" />
-                                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <FolderIcon className="h-10 w-10 text-[#C18CFF]" />
+                                  <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button 
                                       onClick={(e) => { e.stopPropagation(); openEditFolder(folder); }}
-                                      className="p-1 rounded bg-[#0B0A13] text-[#8C87A2] hover:text-[#C18CFF] border border-[#8C87A2]/20"
+                                      className="p-1.5 rounded-lg bg-[#15131F] text-[#8C87A2] hover:text-[#C18CFF] border border-[#8C87A2]/20"
                                       title="Sửa tên"
                                     >
-                                      <Edit3 className="h-2.5 w-2.5" />
+                                      <Edit3 className="h-3.5 w-3.5" />
                                     </button>
                                     <button 
                                       onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "folder", id: folder.id, title: folder.name }); }}
-                                      className="p-1 rounded bg-[#0B0A13] text-red-400 hover:text-red-500 border border-[#8C87A2]/20"
+                                      className="p-1.5 rounded-lg bg-[#15131F] text-red-400 hover:text-red-500 border border-[#8C87A2]/20"
                                       title="Xóa"
                                     >
-                                      <Trash2 className="h-2.5 w-2.5" />
+                                      <Trash2 className="h-3.5 w-3.5" />
                                     </button>
                                   </div>
                                 </div>
-                                <div className="min-w-0">
-                                  <span className="text-[8px] font-mono text-[#8C87A2]">Order: {folder.order_index}</span>
-                                  <h5 className="font-bold text-xs text-[#F1EDF9] truncate leading-tight mt-0.5">{folder.name}</h5>
+                                <div className="min-w-0 mt-2">
+                                  <h5 className="font-bold text-sm text-[#F1EDF9] line-clamp-2 leading-snug">{folder.name}</h5>
                                 </div>
                               </div>
                             ))}
@@ -1126,41 +1103,40 @@ export default function TeacherOnlineStudyPage() {
                     {/* Lessons list */}
                     {currentLessons.length > 0 && (
                       <div>
-                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-3">Bài học ({currentLessons.length})</h4>
+                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-4">Bài giảng ({currentLessons.length})</h4>
                         
                         {viewMode === "grid" ? (
-                          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {currentLessons.map(lesson => (
                               <div
                                 key={lesson.id}
-                                className="group relative p-4 bg-[#0B0A13]/30 hover:bg-[#0B0A13]/60 border border-[#8C87A2]/10 hover:border-[#C18CFF]/50 rounded-xl flex flex-col justify-between h-32 transition-all duration-200"
+                                className="group relative p-5 bg-[#0B0A13]/50 hover:bg-[#0B0A13] border border-[#8C87A2]/15 hover:border-[#C18CFF]/50 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all duration-200"
                               >
                                 <div className="flex justify-between items-start">
-                                  <PlayCircle className="h-7 w-7 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
-                                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <PlayCircle className="h-9 w-9 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
+                                  <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button 
                                       onClick={() => openEditLesson(lesson)}
-                                      className="p-1 rounded bg-[#15131F] text-[#8C87A2] hover:text-[#C18CFF] border border-[#8C87A2]/20"
+                                      className="p-1.5 rounded-lg bg-[#15131F] text-[#8C87A2] hover:text-[#C18CFF] border border-[#8C87A2]/20"
                                       title="Sửa bài giảng"
                                     >
-                                      <Edit3 className="h-2.5 w-2.5" />
+                                      <Edit3 className="h-3.5 w-3.5" />
                                     </button>
                                     <button 
                                       onClick={() => setDeleteTarget({ type: "lesson", id: lesson.id, title: lesson.title })}
-                                      className="p-1 rounded bg-[#15131F] text-red-400 hover:text-red-500 border border-[#8C87A2]/20"
+                                      className="p-1.5 rounded-lg bg-[#15131F] text-red-400 hover:text-red-500 border border-[#8C87A2]/20"
                                       title="Xóa"
                                     >
-                                      <Trash2 className="h-2.5 w-2.5" />
+                                      <Trash2 className="h-3.5 w-3.5" />
                                     </button>
                                   </div>
                                 </div>
 
-                                <div className="min-w-0 mt-2">
-                                  <span className="text-[8px] font-mono text-[#8C87A2]">Bài giảng {lesson.order_index}</span>
-                                  <h5 className="font-bold text-xs text-[#F1EDF9] truncate leading-tight mt-0.5">{lesson.title}</h5>
-                                  <div className="flex gap-2 mt-2">
-                                    {lesson.video_url && <span className="text-[8px] uppercase font-bold text-[#C18CFF] bg-[#C18CFF]/10 px-1 rounded">Video</span>}
-                                    {lesson.document_url && <span className="text-[8px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-1 rounded">Tài liệu</span>}
+                                <div className="min-w-0 mt-3">
+                                  <h5 className="font-bold text-sm text-[#F1EDF9] line-clamp-2 leading-snug">{lesson.title}</h5>
+                                  <div className="flex gap-2 mt-2 flex-wrap">
+                                    {(lesson.video_url || (lesson.videos && lesson.videos.length > 0)) && <span className="text-[10px] uppercase font-bold text-[#C18CFF] bg-[#C18CFF]/10 px-2 py-0.5 rounded-md">Video</span>}
+                                    {(lesson.document_url || (lesson.documents && lesson.documents.length > 0)) && <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">Tài liệu</span>}
                                   </div>
                                 </div>
                               </div>

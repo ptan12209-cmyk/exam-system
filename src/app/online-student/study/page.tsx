@@ -11,9 +11,12 @@ import { SupportFab } from "@/components/support/SupportFab"
 import { getOnlineSubjectInfo } from "@/lib/subjects"
 import { supportZaloUrlWithText } from "@/lib/support"
 import {
+  Folder as FolderIcon,
+  FolderOpen as FolderOpenIcon,
   PlayCircle,
   FileText,
   ChevronRight,
+  ChevronLeft,
   BookOpen,
   Download,
   Video,
@@ -21,8 +24,9 @@ import {
   ShieldAlert,
   Search,
   CheckCircle2,
-  Layers,
-  ListChecks,
+  Home,
+  LayoutGrid,
+  List,
   MessageCircle,
   ExternalLink,
 } from "lucide-react"
@@ -69,13 +73,14 @@ function StudyPageInner() {
   const [folders, setFolders] = useState<DbFolder[]>([])
   const [lessons, setLessons] = useState<DbLesson[]>([])
   const [completedLessons, setCompletedLessons] = useState<string[]>([])
-  const [selectedChapterId, setSelectedChapterId] = useState<string | "all">("all")
+  /** null = drive root */
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [activeLesson, setActiveLesson] = useState<DbLesson | null>(null)
   const [activeVideo, setActiveVideo] = useState<{ title: string; url: string } | null>(null)
   const [isDevToolsOpen, setIsDevToolsOpen] = useState(false)
 
-  // Lightweight anti-devtools (deterrent only)
   useEffect(() => {
     if (typeof window === "undefined") return
     const threshold = 160
@@ -98,10 +103,7 @@ function StudyPageInner() {
   useEffect(() => {
     if (typeof window === "undefined") return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "F12") {
-        e.preventDefault()
-        return
-      }
+      if (e.key === "F12") e.preventDefault()
       if (
         e.ctrlKey &&
         (e.key === "u" ||
@@ -115,33 +117,34 @@ function StudyPageInner() {
     return () => window.removeEventListener("keydown", onKey)
   }, [])
 
-  // Restore only IDs (never full lesson with video URLs)
   useEffect(() => {
     if (typeof window === "undefined") return
-    const ch = localStorage.getItem(`study_chapter_${subjectKey}`)
-    if (ch) setSelectedChapterId(ch === "all" ? "all" : ch)
-    const lid = localStorage.getItem(`study_lesson_id_${subjectKey}`)
+    const f = localStorage.getItem(`drive_folder_${subjectKey}`)
+    if (f) setCurrentFolderId(f)
+    else setCurrentFolderId(null)
+    const lid = localStorage.getItem(`drive_lesson_id_${subjectKey}`)
     if (lid) {
-      // will resolve after lessons load
       ;(window as unknown as { __pendingLessonId?: string }).__pendingLessonId = lid
     }
+    const vm = localStorage.getItem(`drive_view_${subjectKey}`)
+    if (vm === "list" || vm === "grid") setViewMode(vm)
   }, [subjectKey])
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    localStorage.setItem(
-      `study_chapter_${subjectKey}`,
-      selectedChapterId === "all" ? "all" : selectedChapterId
-    )
-  }, [selectedChapterId, subjectKey])
+    if (currentFolderId) localStorage.setItem(`drive_folder_${subjectKey}`, currentFolderId)
+    else localStorage.removeItem(`drive_folder_${subjectKey}`)
+  }, [currentFolderId, subjectKey])
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    if (activeLesson) {
-      localStorage.setItem(`study_lesson_id_${subjectKey}`, activeLesson.id)
-    } else {
-      localStorage.removeItem(`study_lesson_id_${subjectKey}`)
-    }
+    localStorage.setItem(`drive_view_${subjectKey}`, viewMode)
+  }, [viewMode, subjectKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (activeLesson) localStorage.setItem(`drive_lesson_id_${subjectKey}`, activeLesson.id)
+    else localStorage.removeItem(`drive_lesson_id_${subjectKey}`)
   }, [activeLesson, subjectKey])
 
   useEffect(() => {
@@ -184,9 +187,7 @@ function StudyPageInner() {
   }, [loadingAuth, mySubjects, subjectKey])
 
   useEffect(() => {
-    if (!loadingAuth && !hasAccess) {
-      router.replace("/online-student/dashboard")
-    }
+    if (!loadingAuth && !hasAccess) router.replace("/online-student/dashboard")
   }, [loadingAuth, hasAccess, router])
 
   const fetchProgress = async () => {
@@ -227,11 +228,13 @@ function StudyPageInner() {
         const lessonList: DbLesson[] = rl.ok && dl.success ? dl.data || [] : []
         setFolders(folderList)
         setLessons(lessonList)
-
         const pending = (window as unknown as { __pendingLessonId?: string }).__pendingLessonId
         if (pending) {
           const found = lessonList.find((l) => l.id === pending)
-          if (found) setActiveLesson(found)
+          if (found) {
+            setActiveLesson(found)
+            setCurrentFolderId(found.folder_id)
+          }
           delete (window as unknown as { __pendingLessonId?: string }).__pendingLessonId
         }
       } catch (e) {
@@ -242,32 +245,28 @@ function StudyPageInner() {
     })()
   }, [loadingAuth, hasAccess, subjectInfo.dbValue, router])
 
-  // Top-level chapters only (flat navigation — no deep tree)
-  const chapters = useMemo(() => {
-    return folders
-      .filter((f) => !f.parent_id)
-      .sort((a, b) => a.order_index - b.order_index)
-  }, [folders])
-
-  // All folder ids under a root chapter (including nested)
-  const folderIdsUnderChapter = useMemo(() => {
-    const map = new Map<string, string[]>()
-    const childrenOf = (id: string): string[] => {
-      const kids = folders.filter((f) => f.parent_id === id).map((f) => f.id)
-      return [id, ...kids.flatMap(childrenOf)]
+  const breadcrumbs = useMemo(() => {
+    if (!currentFolderId) return [] as DbFolder[]
+    const path: DbFolder[] = []
+    let id: string | null = currentFolderId
+    while (id) {
+      const f = folders.find((x) => x.id === id)
+      if (!f) break
+      path.unshift(f)
+      id = f.parent_id
     }
-    chapters.forEach((c) => {
-      map.set(c.id, childrenOf(c.id))
-    })
-    return map
-  }, [folders, chapters])
+    return path
+  }, [currentFolderId, folders])
 
-  const visibleLessons = useMemo(() => {
-    let list = [...lessons]
-    if (selectedChapterId !== "all") {
-      const ids = folderIdsUnderChapter.get(selectedChapterId) || [selectedChapterId]
-      list = list.filter((l) => ids.includes(l.folder_id))
-    }
+  const currentFolders = useMemo(() => {
+    let list = folders.filter((f) => f.parent_id === currentFolderId)
+    const q = search.trim().toLowerCase()
+    if (q) list = list.filter((f) => f.name.toLowerCase().includes(q))
+    return list.sort((a, b) => a.order_index - b.order_index)
+  }, [folders, currentFolderId, search])
+
+  const currentLessons = useMemo(() => {
+    let list = lessons.filter((l) => l.folder_id === currentFolderId)
     const q = search.trim().toLowerCase()
     if (q) {
       list = list.filter(
@@ -276,13 +275,8 @@ function StudyPageInner() {
           (l.description || "").toLowerCase().includes(q)
       )
     }
-    return list.sort((a, b) => a.order_index - b.order_index || a.title.localeCompare(b.title))
-  }, [lessons, selectedChapterId, folderIdsUnderChapter, search])
-
-  const completedInView = useMemo(
-    () => visibleLessons.filter((l) => completedLessons.includes(l.id)).length,
-    [visibleLessons, completedLessons]
-  )
+    return list.sort((a, b) => a.order_index - b.order_index)
+  }, [lessons, currentFolderId, search])
 
   useEffect(() => {
     if (!activeLesson) {
@@ -316,8 +310,14 @@ function StudyPageInner() {
     }
   }
 
+  const goUp = () => {
+    if (!currentFolderId) return
+    const cur = folders.find((f) => f.id === currentFolderId)
+    setCurrentFolderId(cur?.parent_id ?? null)
+  }
+
   const watermark = profile
-    ? `${profile.full_name || "HV"} · ${(profile.email || "").split("@")[0] || profile.full_name || ""}`
+    ? `${profile.full_name || "HV"} · ${(profile.email || "").split("@")[0] || ""}`
     : "StudyHub"
 
   if (isDevToolsOpen) {
@@ -326,12 +326,9 @@ function StudyPageInner() {
         <ShieldAlert className="h-10 w-10 text-red-400 mb-4" />
         <h1 className="text-xl font-bold text-[#F1EDF9]">Cảnh báo bảo mật</h1>
         <p className="text-sm text-[#8C87A2] max-w-md mt-3">
-          Phát hiện DevTools. Đóng bảng điều khiển và tải lại trang để tiếp tục. Nội dung video thuộc bản quyền StudyHub.
+          Phát hiện DevTools. Đóng bảng điều khiển và tải lại trang để tiếp tục.
         </p>
-        <Button
-          onClick={() => window.location.reload()}
-          className="mt-6 rounded-xl bg-[#C18CFF] text-[#0B0A13] font-bold"
-        >
+        <Button onClick={() => window.location.reload()} className="mt-6 rounded-xl bg-[#C18CFF] text-[#0B0A13] font-bold">
           Tải lại trang
         </Button>
       </div>
@@ -362,7 +359,7 @@ function StudyPageInner() {
     )
   }
 
-  // —— Lesson player view ——
+  // ========== LESSON PLAYER ==========
   if (activeLesson) {
     return (
       <OnlineStudentShell>
@@ -374,21 +371,18 @@ function StudyPageInner() {
               onClick={() => setActiveLesson(null)}
               className="rounded-xl border border-[#8C87A2]/25 text-[#8C87A2] hover:text-[#F1EDF9] text-xs"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" /> Danh sách bài
+              <ArrowLeft className="h-4 w-4 mr-1" /> Về thư mục
             </Button>
             <span className="text-[10px] font-mono text-[#8C87A2]">
               {subjectInfo.icon} {subjectInfo.label}
             </span>
           </div>
-
           <div className="mb-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-200/90">
-            Nội dung bản quyền StudyHub — cấm ghi hình, tải xuống, chia sẻ trái phép. Vi phạm có thể khóa tài khoản.
+            Nội dung bản quyền StudyHub — cấm ghi hình, tải xuống, chia sẻ trái phép.
           </div>
-
           <h1 className="text-xl sm:text-2xl font-bold text-[#F1EDF9] mb-4">{activeLesson.title}</h1>
-
           {activeVideo ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <ProtectedVideoPlayer
                 url={activeVideo.url}
                 watermarkText={watermark}
@@ -403,7 +397,6 @@ function StudyPageInner() {
               Bài này chưa có video
             </div>
           )}
-
           {activeLesson.videos && activeLesson.videos.length > 1 && (
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {activeLesson.videos.map((vid, idx) => (
@@ -412,10 +405,10 @@ function StudyPageInner() {
                   type="button"
                   onClick={() => setActiveVideo(vid)}
                   className={cn(
-                    "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition-colors",
+                    "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-semibold",
                     activeVideo?.url === vid.url
                       ? "border-[#C18CFF]/40 bg-[#C18CFF]/10 text-[#C18CFF]"
-                      : "border-[#8C87A2]/20 bg-[#15131F] text-[#8C87A2] hover:text-[#F1EDF9]"
+                      : "border-[#8C87A2]/20 bg-[#15131F] text-[#8C87A2]"
                   )}
                 >
                   <PlayCircle className="h-4 w-4 shrink-0" />
@@ -424,11 +417,8 @@ function StudyPageInner() {
               ))}
             </div>
           )}
-
           <div className="mt-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between rounded-xl border border-[#8C87A2]/15 bg-[#15131F] p-4">
-            <p className="text-[11px] text-[#8C87A2]">
-              Đánh dấu hoàn thành để theo dõi tiến độ học tập.
-            </p>
+            <p className="text-[11px] text-[#8C87A2]">Đánh dấu hoàn thành để theo dõi tiến độ.</p>
             <Button
               onClick={() =>
                 handleMarkCompleted(activeLesson.id, !completedLessons.includes(activeLesson.id))
@@ -449,15 +439,11 @@ function StudyPageInner() {
               )}
             </Button>
           </div>
-
           {activeLesson.description && (
             <div className="mt-4 rounded-xl border border-[#8C87A2]/15 bg-[#15131F]/50 p-4">
-              <h3 className="text-[10px] font-mono uppercase text-[#8C87A2] mb-2">Mô tả</h3>
               <p className="text-sm text-[#8C87A2] whitespace-pre-line">{activeLesson.description}</p>
             </div>
           )}
-
-          {/* Documents — hide raw URL in UI */}
           <div className="mt-6">
             <h3 className="text-[10px] font-mono uppercase text-[#8C87A2] mb-3">Tài liệu</h3>
             {(() => {
@@ -467,9 +453,8 @@ function StudyPageInner() {
                   : activeLesson.document_url
                     ? [{ title: "Tài liệu học tập", url: activeLesson.document_url }]
                     : []
-              if (docs.length === 0) {
+              if (!docs.length)
                 return <p className="text-xs text-[#8C87A2] italic">Không có tài liệu đính kèm.</p>
-              }
               return (
                 <div className="space-y-2">
                   {docs.map((doc, idx) => (
@@ -483,7 +468,7 @@ function StudyPageInner() {
                           {doc.title || `Tài liệu ${idx + 1}`}
                         </span>
                       </div>
-                      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                      <a href={doc.url} target="_blank" rel="noopener noreferrer">
                         <Button className="rounded-lg bg-[#C18CFF] text-[#0B0A13] text-xs font-bold">
                           <Download className="h-3.5 w-3.5 mr-1" /> Mở
                         </Button>
@@ -494,17 +479,16 @@ function StudyPageInner() {
               )
             })()}
           </div>
-
           <div className="mt-8 text-center">
             <a
               href={supportZaloUrlWithText(
-                `Báo lỗi video — môn ${subjectInfo.label} — bài: ${activeLesson.title}`
+                `Báo lỗi video — ${subjectInfo.label} — ${activeLesson.title}`
               )}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-xs text-[#C18CFF] hover:underline"
             >
-              <MessageCircle className="h-4 w-4" /> Báo lỗi video / tài liệu qua Zalo
+              <MessageCircle className="h-4 w-4" /> Báo lỗi qua Zalo
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
@@ -515,151 +499,264 @@ function StudyPageInner() {
     )
   }
 
-  // —— Catalog view (flat chapters + lesson list) ——
+  // ========== DRIVE EXPLORER (full page) ==========
+  const empty = currentFolders.length === 0 && currentLessons.length === 0
+
   return (
     <OnlineStudentShell>
       <OnlineStudentTopbar name={profile?.full_name} onLogout={handleLogout} />
 
-      <div className="mx-auto max-w-3xl w-full px-4 py-6 sm:px-6 flex-1">
-        <div className="flex items-start gap-3 mb-6">
-          <Link href="/online-student/dashboard" className="shrink-0 mt-0.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-xl border border-[#8C87A2]/25 h-10 w-10 text-[#8C87A2]"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">{subjectInfo.icon}</span>
-              <h1 className="text-xl sm:text-2xl font-bold text-[#F1EDF9] truncate">
-                {subjectInfo.label}
+      <div className="mx-auto max-w-6xl w-full px-3 sm:px-6 py-5 flex-1 flex flex-col min-h-0">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/online-student/dashboard" className="shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-xl border border-[#8C87A2]/25 h-10 w-10 text-[#8C87A2]"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-[#F1EDF9] truncate flex items-center gap-2">
+                <span>{subjectInfo.icon}</span> {subjectInfo.label}
               </h1>
+              <p className="text-[11px] text-[#8C87A2] font-mono mt-0.5">
+                Kho bài giảng · {folders.length} thư mục · {lessons.length} bài
+              </p>
             </div>
-            <p className="text-xs text-[#8C87A2] mt-1 flex items-center gap-2">
-              <ListChecks className="h-3.5 w-3.5" />
-              {completedInView}/{visibleLessons.length} bài đã hoàn thành
-              {selectedChapterId !== "all" ? " (trong chương đang chọn)" : ""}
-            </p>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <div className="flex bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-1">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  viewMode === "grid" ? "bg-[#C18CFF]/15 text-[#C18CFF]" : "text-[#8C87A2]"
+                )}
+                title="Lưới"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  viewMode === "list" ? "bg-[#C18CFF]/15 text-[#C18CFF]" : "text-[#8C87A2]"
+                )}
+                title="Danh sách"
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Search */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C87A2]" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm tên bài giảng…"
-            className="w-full rounded-2xl border border-[#8C87A2]/25 bg-[#15131F] pl-10 pr-4 py-3 text-sm text-[#F1EDF9] placeholder-[#8C87A2] outline-none focus:ring-1 focus:ring-[#C18CFF]"
-          />
-        </div>
-
-        {/* Chapter chips — no nested tree */}
-        <div className="mb-5">
-          <div className="flex items-center gap-2 mb-2 text-[10px] font-mono uppercase tracking-wider text-[#8C87A2]">
-            <Layers className="h-3.5 w-3.5" /> Chương / phần
+        {/* Toolbar: search + path (Drive style) */}
+        <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-3 sm:p-4 mb-4 space-y-3 shadow-sm">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C87A2]" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm trong thư mục hiện tại…"
+              className="w-full rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13] pl-10 pr-4 py-2.5 text-sm text-[#F1EDF9] placeholder-[#8C87A2] outline-none focus:ring-1 focus:ring-[#C18CFF]"
+            />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+
+          <div className="flex items-center gap-1 overflow-x-auto text-sm scrollbar-none py-1">
+            {currentFolderId && (
+              <button
+                type="button"
+                onClick={goUp}
+                className="mr-1 p-2 rounded-lg hover:bg-[#0B0A13] text-[#C18CFF] shrink-0"
+                title="Lên một cấp"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => setSelectedChapterId("all")}
+              onClick={() => setCurrentFolderId(null)}
               className={cn(
-                "shrink-0 rounded-full px-4 py-2 text-xs font-bold border transition-colors",
-                selectedChapterId === "all"
-                  ? "bg-[#C18CFF] border-[#C18CFF] text-[#0B0A13]"
-                  : "bg-[#15131F] border-[#8C87A2]/20 text-[#8C87A2] hover:text-[#F1EDF9]"
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shrink-0 font-semibold text-xs sm:text-sm",
+                !currentFolderId
+                  ? "bg-[#C18CFF]/15 text-[#C18CFF]"
+                  : "text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#0B0A13]"
               )}
             >
-              Tất cả ({lessons.length})
+              <Home className="h-4 w-4" /> Gốc
             </button>
-            {chapters.map((ch) => {
-              const count = (folderIdsUnderChapter.get(ch.id) || []).reduce(
-                (n, fid) => n + lessons.filter((l) => l.folder_id === fid).length,
-                0
-              )
-              return (
+            {breadcrumbs.map((crumb, idx) => (
+              <div key={crumb.id} className="flex items-center gap-1 shrink-0">
+                <ChevronRight className="h-4 w-4 text-[#8C87A2]/50" />
                 <button
-                  key={ch.id}
                   type="button"
-                  onClick={() => setSelectedChapterId(ch.id)}
+                  onClick={() => setCurrentFolderId(crumb.id)}
                   className={cn(
-                    "shrink-0 rounded-full px-4 py-2 text-xs font-semibold border transition-colors max-w-[200px] truncate",
-                    selectedChapterId === ch.id
-                      ? "bg-[#C18CFF]/20 border-[#C18CFF]/50 text-[#C18CFF]"
-                      : "bg-[#15131F] border-[#8C87A2]/20 text-[#8C87A2] hover:text-[#F1EDF9]"
+                    "px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold max-w-[160px] truncate",
+                    idx === breadcrumbs.length - 1
+                      ? "bg-[#C18CFF]/15 text-[#C18CFF]"
+                      : "text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#0B0A13]"
                   )}
-                  title={ch.name}
                 >
-                  {ch.name}
-                  <span className="opacity-70 ml-1">({count})</span>
+                  {crumb.name}
                 </button>
-              )
-            })}
+              </div>
+            ))}
           </div>
-          {chapters.length === 0 && (
-            <p className="text-[11px] text-[#8C87A2] italic mt-1">
-              Chưa có chương — hiển thị toàn bộ bài giảng.
-            </p>
-          )}
         </div>
 
-        {/* Lesson list — single column, easy taps */}
-        <div className="space-y-2">
-          {visibleLessons.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[#8C87A2]/25 bg-[#15131F]/40 py-16 text-center">
-              <BookOpen className="h-10 w-10 text-[#8C87A2]/40 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-[#F1EDF9]">Không có bài giảng</p>
-              <p className="text-xs text-[#8C87A2] mt-1">Thử chọn chương khác hoặc xóa bộ lọc tìm kiếm.</p>
+        {/* Full-page content area */}
+        <div className="flex-1 min-h-[55vh] rounded-2xl border border-[#8C87A2]/15 bg-[#15131F]/40 p-4 sm:p-6">
+          {empty ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <FolderOpenIcon className="h-14 w-14 text-[#8C87A2]/30 mb-3" />
+              <p className="text-base font-bold text-[#F1EDF9]">Thư mục trống</p>
+              <p className="text-xs text-[#8C87A2] mt-1 max-w-xs">
+                {search
+                  ? "Không có kết quả phù hợp."
+                  : "Chưa có thư mục con hoặc bài giảng trong vị trí này."}
+              </p>
+              {currentFolderId && (
+                <Button
+                  onClick={goUp}
+                  variant="outline"
+                  className="mt-4 rounded-xl border-[#8C87A2]/30 text-[#F1EDF9] text-xs"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Lên thư mục cha
+                </Button>
+              )}
+            </div>
+          ) : viewMode === "grid" ? (
+            <div className="space-y-8">
+              {currentFolders.length > 0 && (
+                <div>
+                  <h3 className="text-[11px] font-mono uppercase tracking-wider text-[#8C87A2] mb-3">
+                    Thư mục ({currentFolders.length})
+                  </h3>
+                  <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                    {currentFolders.map((folder) => (
+                      <button
+                        key={folder.id}
+                        type="button"
+                        onClick={() => {
+                          setSearch("")
+                          setCurrentFolderId(folder.id)
+                        }}
+                        className="group flex flex-col items-start gap-3 rounded-2xl border border-[#8C87A2]/15 bg-[#0B0A13]/50 p-4 min-h-[120px] text-left hover:border-[#C18CFF]/50 hover:bg-[#0B0A13] transition-all active:scale-[0.98]"
+                      >
+                        <FolderIcon className="h-10 w-10 text-[#C18CFF] group-hover:scale-105 transition-transform" />
+                        <span className="text-sm font-bold text-[#F1EDF9] line-clamp-2 leading-snug w-full">
+                          {folder.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {currentLessons.length > 0 && (
+                <div>
+                  <h3 className="text-[11px] font-mono uppercase tracking-wider text-[#8C87A2] mb-3">
+                    Bài giảng ({currentLessons.length})
+                  </h3>
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    {currentLessons.map((lesson) => {
+                      const done = completedLessons.includes(lesson.id)
+                      const hasVideo =
+                        (lesson.videos && lesson.videos.length > 0) || !!lesson.video_url
+                      const hasDoc =
+                        (lesson.documents && lesson.documents.length > 0) ||
+                        !!lesson.document_url
+                      return (
+                        <button
+                          key={lesson.id}
+                          type="button"
+                          onClick={() => setActiveLesson(lesson)}
+                          className="group flex flex-col gap-3 rounded-2xl border border-[#8C87A2]/15 bg-[#0B0A13]/40 p-5 text-left hover:border-[#C18CFF]/45 hover:bg-[#0B0A13] transition-all min-h-[130px] active:scale-[0.99]"
+                        >
+                          <div className="flex items-start justify-between w-full">
+                            {done ? (
+                              <CheckCircle2 className="h-9 w-9 text-emerald-400" />
+                            ) : (
+                              <PlayCircle className="h-9 w-9 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
+                            )}
+                            <ChevronRight className="h-5 w-5 text-[#8C87A2] group-hover:text-[#C18CFF]" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-[#F1EDF9] line-clamp-2 leading-snug">
+                              {lesson.title}
+                            </p>
+                            <div className="flex gap-2 mt-2 flex-wrap">
+                              {hasVideo && (
+                                <span className="text-[10px] font-bold uppercase text-[#C18CFF] bg-[#C18CFF]/10 px-2 py-0.5 rounded-md">
+                                  Video
+                                </span>
+                              )}
+                              {hasDoc && (
+                                <span className="text-[10px] font-bold uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                                  Tài liệu
+                                </span>
+                              )}
+                              {done && (
+                                <span className="text-[10px] font-mono text-emerald-400/80">Đã học</span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
-            visibleLessons.map((lesson, idx) => {
-              const done = completedLessons.includes(lesson.id)
-              const hasVideo =
-                (lesson.videos && lesson.videos.length > 0) || !!lesson.video_url
-              const hasDoc =
-                (lesson.documents && lesson.documents.length > 0) || !!lesson.document_url
-              return (
+            <div className="rounded-xl border border-[#8C87A2]/15 overflow-hidden divide-y divide-[#8C87A2]/10">
+              {currentFolders.map((folder) => (
                 <button
-                  key={lesson.id}
+                  key={folder.id}
                   type="button"
-                  onClick={() => setActiveLesson(lesson)}
-                  className="w-full flex items-center gap-3 rounded-2xl border border-[#8C87A2]/15 bg-[#15131F] p-4 text-left hover:border-[#C18CFF]/40 hover:bg-[#15131F]/90 transition-all active:scale-[0.99]"
+                  onClick={() => {
+                    setSearch("")
+                    setCurrentFolderId(folder.id)
+                  }}
+                  className="w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-[#0B0A13]/50 transition-colors"
                 >
-                  <div
-                    className={cn(
-                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-sm font-mono font-bold",
-                      done
-                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                        : "border-[#C18CFF]/25 bg-[#C18CFF]/10 text-[#C18CFF]"
-                    )}
-                  >
-                    {done ? <CheckCircle2 className="h-5 w-5" /> : idx + 1}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-[#F1EDF9] truncate">{lesson.title}</p>
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {hasVideo && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-[#C18CFF] bg-[#C18CFF]/10 px-1.5 py-0.5 rounded">
-                          <Video className="h-3 w-3" /> Video
-                        </span>
-                      )}
-                      {hasDoc && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                          <FileText className="h-3 w-3" /> Tài liệu
-                        </span>
-                      )}
-                      {done && (
-                        <span className="text-[10px] font-mono text-emerald-400/80">Đã học</span>
-                      )}
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-[#8C87A2] shrink-0" />
+                  <FolderIcon className="h-6 w-6 text-[#C18CFF] shrink-0" />
+                  <span className="flex-1 text-sm font-semibold text-[#F1EDF9] truncate">
+                    {folder.name}
+                  </span>
+                  <span className="text-[10px] text-[#8C87A2] font-mono shrink-0">Thư mục</span>
+                  <ChevronRight className="h-4 w-4 text-[#8C87A2]" />
                 </button>
-              )
-            })
+              ))}
+              {currentLessons.map((lesson) => {
+                const done = completedLessons.includes(lesson.id)
+                return (
+                  <button
+                    key={lesson.id}
+                    type="button"
+                    onClick={() => setActiveLesson(lesson)}
+                    className="w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-[#0B0A13]/50 transition-colors"
+                  >
+                    {done ? (
+                      <CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0" />
+                    ) : (
+                      <PlayCircle className="h-6 w-6 text-[#8C87A2] shrink-0" />
+                    )}
+                    <span className="flex-1 text-sm font-semibold text-[#F1EDF9] truncate">
+                      {lesson.title}
+                    </span>
+                    <span className="text-[10px] text-[#8C87A2] font-mono shrink-0">Bài giảng</span>
+                    <ChevronRight className="h-4 w-4 text-[#8C87A2]" />
+                  </button>
+                )
+              })}
+            </div>
           )}
         </div>
       </div>
@@ -675,7 +772,7 @@ export default function OnlineStudentStudyPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
-          <Loading label="Đang mở trang học…" />
+          <Loading label="Đang mở kho bài giảng…" />
         </div>
       }
     >
