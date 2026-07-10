@@ -77,11 +77,59 @@ export async function getServerSubjectPrice(
 }
 
 /**
- * Build transfer memo server-side so clients cannot forge unlock references.
+ * Short unique code for bank transfer matching (Casso webhook).
+ * Letters+digits only so banks keep it in description.
  */
-export function buildOrderMemo(email: string | null | undefined, subjectKey: string): string {
-  const local = (email || 'HV').split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 24) || 'HV'
-  return `STUDYHUB ${local} ${subjectKey.toUpperCase()}`
+export function generatePaymentCode(length = 6): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  let out = ''
+  for (let i = 0; i < length; i++) {
+    out += alphabet[Math.floor(Math.random() * alphabet.length)]
+  }
+  return out
+}
+
+/**
+ * Build transfer memo server-side so clients cannot forge unlock references.
+ * Format: STUDYHUB {EMAIL_LOCAL} {SUBJECT} {CODE}
+ * Casso matches description containing this memo + exact amount.
+ */
+export function buildOrderMemo(
+  email: string | null | undefined,
+  subjectKey: string,
+  paymentCode?: string
+): string {
+  const local =
+    (email || 'HV').split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20) || 'HV'
+  const subj = subjectKey.toUpperCase().replace(/[^A-Z0-9_]/g, '')
+  const code = (paymentCode || generatePaymentCode()).toUpperCase().replace(/[^A-Z0-9]/g, '')
+  return `STUDYHUB ${local} ${subj} ${code}`.trim()
+}
+
+/** Normalize bank description / memo for comparison */
+export function normalizeBankText(text: string): string {
+  return text
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * True if bank description contains the order memo tokens
+ * (banks often prepend extra text to the transfer content).
+ */
+export function descriptionMatchesMemo(description: string, memo: string): boolean {
+  const desc = normalizeBankText(description)
+  const mem = normalizeBankText(memo)
+  if (!desc || !mem) return false
+  if (desc.includes(mem)) return true
+  // All memo tokens must appear in description (order may vary slightly)
+  const tokens = mem.split(' ').filter((t) => t.length >= 2)
+  if (tokens.length === 0) return false
+  return tokens.every((t) => desc.includes(t))
 }
 
 /**

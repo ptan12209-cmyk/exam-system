@@ -28,6 +28,13 @@ const envSchema = z.object({
   UPSTASH_REDIS_REST_URL: z.string().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   SEED_ROUTE_SECRET: z.string().optional(),
+  /** Casso webhook header secure-token (legacy) */
+  CASSO_SECURE_TOKEN: z.string().optional(),
+  /** payOS (Casso) merchant keys */
+  PAYOS_CLIENT_ID: z.string().optional(),
+  PAYOS_API_KEY: z.string().optional(),
+  PAYOS_CHECKSUM_KEY: z.string().optional(),
+  PAYOS_SETUP_SECRET: z.string().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>

@@ -31,9 +31,11 @@ describe('online-study-auth helpers', () => {
   })
 
   it('builds server-side memo without client input', () => {
-    const memo = buildOrderMemo('student.name@gmail.com', 'toan')
-    expect(memo).toBe('STUDYHUB STUDENTNAME TOAN')
-    expect(buildOrderMemo(null, 'ly')).toMatch(/^STUDYHUB HV LY$/)
+    const memo = buildOrderMemo('student.name@gmail.com', 'toan', 'AB12CD')
+    expect(memo).toBe('STUDYHUB STUDENTNAME TOAN AB12CD')
+    expect(buildOrderMemo(null, 'ly', 'XY99ZZ')).toBe('STUDYHUB HV LY XY99ZZ')
+    // Without code arg, still generates a trailing payment code
+    expect(buildOrderMemo('a@b.com', 'toan')).toMatch(/^STUDYHUB A TOAN [A-Z0-9]{6}$/)
   })
 
   it('compares secrets in constant time', () => {

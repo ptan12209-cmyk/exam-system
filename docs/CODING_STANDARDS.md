@@ -80,8 +80,10 @@ async function handlePOST(request: NextRequest) {
 | Quy tắc | Lý do |
 |---|---|
 | **PUT `/api/online-study/orders` chỉ teacher/admin** | Học viên không được tự `status: success` |
-| **VNPay return + IPN auto-unlock** | `verifyReturnUrl` / `verifyIpnCall` + khớp amount → `fulfillOnlineOrderSuccess` |
-| **IPN URL** | `/api/online-study/payments/ipn` (server-to-server, cấu hình portal VNPay) |
+| **VNPay return + IPN auto-unlock** | Optional / not used when VietQR+Casso is primary |
+| **Casso bank webhook auto-unlock** | `POST /api/online-study/payments/casso` + header `secure-token` = `CASSO_SECURE_TOKEN` |
+| **Casso match rule** | `amount` exact + bank `description` contains order `memo` tokens |
+| **Manual approve** | Teacher PUT orders still works as backup |
 | **Giá + memo chỉ server-side** | Không tin `amount`/`memo` từ client |
 | **Checkout free-unlock bị cấm** | `POST /checkout` trả 403 |
 | **Entitlement: `requireOnlineSubject` + RLS** | Chỉ môn đã mua/gán mới đọc folder/lesson |

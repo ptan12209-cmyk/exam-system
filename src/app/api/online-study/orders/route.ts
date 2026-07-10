@@ -5,10 +5,16 @@ import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
 import { checkRateLimit, getClientIP, rateLimitResponse } from "@/lib/rate-limit"
 import {
   buildOrderMemo,
+  generatePaymentCode,
   getServerSubjectPrice,
   isValidOnlineSubjectKey,
 } from "@/lib/online-study-auth"
 import { fulfillOnlineOrderSuccess } from "@/lib/online-order-fulfill"
+import {
+  createPayosPaymentLink,
+  generatePayosOrderCode,
+  getPayosConfig,
+} from "@/lib/payos"
 
 // GET /api/online-study/orders
 async function handleGET(request: NextRequest) {
@@ -107,43 +113,123 @@ async function handlePOST(request: NextRequest) {
   }
 
   // Pending order for same subject?
-  const { data: pending } = await adminSupabase
-    .from("online_orders")
-    .select("id, subject_key, amount, memo, status, created_at")
-    .eq("student_id", user.id)
-    .eq("subject_key", subjectKey)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  let pending: {
+    id: string
+    subject_key: string
+    amount: number
+    memo: string
+    status: string
+    created_at: string
+    payment_order_code?: number | null
+    payment_link_id?: string | null
+    payment_provider?: string | null
+  } | null = null
+
+  {
+    const withCols = await adminSupabase
+      .from("online_orders")
+      .select(
+        "id, subject_key, amount, memo, status, created_at, payment_order_code, payment_link_id, payment_provider"
+      )
+      .eq("student_id", user.id)
+      .eq("subject_key", subjectKey)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (withCols.error) {
+      const plain = await adminSupabase
+        .from("online_orders")
+        .select("id, subject_key, amount, memo, status, created_at")
+        .eq("student_id", user.id)
+        .eq("subject_key", subjectKey)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      pending = plain.data
+    } else {
+      pending = withCols.data
+    }
+  }
 
   const amount = await getServerSubjectPrice(adminSupabase, subjectKey)
 
   const { data: profile } = await adminSupabase
     .from("profiles")
-    .select("email")
+    .select("email, full_name")
     .eq("id", user.id)
     .single()
 
-  const memo = buildOrderMemo(profile?.email || user.email, subjectKey)
-
-  let order = pending
+  let order = pending as {
+    id: string
+    subject_key: string
+    amount: number
+    memo: string
+    status: string
+    created_at: string
+    payment_order_code?: number | null
+    payment_link_id?: string | null
+    payment_provider?: string | null
+  } | null
 
   if (!order) {
+    const paymentCode = generatePaymentCode(6)
+    const memo = buildOrderMemo(profile?.email || user.email, subjectKey, paymentCode)
+    const paymentOrderCode = generatePayosOrderCode()
+
+    const insertPayload: Record<string, unknown> = {
+      student_id: user.id,
+      subject_key: subjectKey,
+      amount,
+      memo,
+      status: "pending",
+      payment_order_code: paymentOrderCode,
+      payment_provider: getPayosConfig().configured ? "payos" : "vietqr",
+    }
+
     const { data: created, error } = await adminSupabase
       .from("online_orders")
-      .insert({
-        student_id: user.id,
-        subject_key: subjectKey,
-        amount,
-        memo,
-        status: "pending",
-      })
-      .select("id, subject_key, amount, memo, status, created_at")
+      .insert(insertPayload)
+      .select(
+        "id, subject_key, amount, memo, status, created_at, payment_order_code, payment_link_id, payment_provider"
+      )
       .single()
 
-    if (error) throw error
-    order = created
+    // If migration not applied yet, retry without payOS columns
+    if (error) {
+      console.warn("[orders] insert with payOS columns failed, retry plain", error.message)
+      const { data: created2, error: err2 } = await adminSupabase
+        .from("online_orders")
+        .insert({
+          student_id: user.id,
+          subject_key: subjectKey,
+          amount,
+          memo,
+          status: "pending",
+        })
+        .select("id, subject_key, amount, memo, status, created_at")
+        .single()
+      if (err2) throw err2
+      order = created2 as {
+        id: string
+        subject_key: string
+        amount: number
+        memo: string
+        status: string
+        created_at: string
+        payment_order_code?: number | null
+        payment_link_id?: string | null
+        payment_provider?: string | null
+      }
+    } else {
+      order = created
+    }
+  }
+
+  if (!order) {
+    throw new ApiError("INTERNAL_ERROR", "Không tạo được đơn hàng", 500)
   }
 
   // Free subject → unlock immediately
@@ -165,8 +251,82 @@ async function handlePOST(request: NextRequest) {
     )
   }
 
-  // Paid: VietQR bank transfer only (VNPay temporarily disabled for online-study).
-  // Teacher approves via PUT when transfer is confirmed.
+  // payOS auto-unlock via webhook (preferred)
+  const baseUrl = (
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://luyende.id.vn"
+  ).replace(/\/$/, "")
+
+  const payosCfg = getPayosConfig()
+  if (payosCfg.configured) {
+    let orderCode = order.payment_order_code
+      ? Number(order.payment_order_code)
+      : generatePayosOrderCode()
+
+    if (!order.payment_order_code) {
+      await adminSupabase
+        .from("online_orders")
+        .update({
+          payment_order_code: orderCode,
+          payment_provider: "payos",
+        })
+        .eq("id", order.id)
+    }
+
+    // Short description (payOS limit ~9 for some bank links)
+    const shortDesc = (order.memo.split(" ").pop() || generatePaymentCode(6)).slice(0, 9)
+
+    const payos = await createPayosPaymentLink({
+      orderCode,
+      amount: Math.round(Number(order.amount)),
+      description: shortDesc,
+      returnUrl: `${baseUrl}/payment/result?flow=online-study&success=true&subject=${encodeURIComponent(subjectKey)}`,
+      cancelUrl: `${baseUrl}/payment/result?flow=online-study&success=false`,
+      buyerName: profile?.full_name || undefined,
+      buyerEmail: profile?.email || user.email || undefined,
+    })
+
+    if (payos.success) {
+      if (payos.paymentLinkId) {
+        await adminSupabase
+          .from("online_orders")
+          .update({
+            payment_link_id: payos.paymentLinkId,
+            payment_provider: "payos",
+            payment_order_code: orderCode,
+          })
+          .eq("id", order.id)
+      }
+
+      // VietQR image from payOS bank account if available
+      let vietQrUrl: string | null = null
+      if (payos.bin && payos.accountNumber) {
+        const addInfo = encodeURIComponent(payos.description || shortDesc)
+        const accName = encodeURIComponent(payos.accountName || "")
+        vietQrUrl = `https://img.vietqr.io/image/${payos.bin}-${payos.accountNumber}-print.png?amount=${payos.amount || order.amount}&addInfo=${addInfo}&accountName=${accName}`
+      }
+
+      return NextResponse.json(
+        successResponse({
+          ...order,
+          payment_order_code: orderCode,
+          paymentMethod: "payos",
+          checkoutUrl: payos.checkoutUrl || null,
+          qrCode: payos.qrCode || null,
+          vietQrUrl,
+          accountNumber: payos.accountNumber || null,
+          accountName: payos.accountName || null,
+          bin: payos.bin || null,
+          payosDescription: payos.description || shortDesc,
+        })
+      )
+    }
+
+    console.warn("[orders] payOS create failed, fallback VietQR", payos.error)
+  }
+
+  // Fallback: teacher bank settings + manual / Casso path
   return NextResponse.json(
     successResponse({
       ...order,

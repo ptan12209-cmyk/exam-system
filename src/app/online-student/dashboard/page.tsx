@@ -242,8 +242,16 @@ export default function OnlineStudentDashboard() {
   const [orderAmount, setOrderAmount] = useState(0)
   const [creatingOrder, setCreatingOrder] = useState(false)
   const [checkingStatus, setCheckingStatus] = useState(false)
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
+  const [payosQrData, setPayosQrData] = useState<string | null>(null)
+  const [payosVietQrUrl, setPayosVietQrUrl] = useState<string | null>(null)
+  const [payosAccount, setPayosAccount] = useState<{
+    number?: string | null
+    name?: string | null
+    description?: string | null
+  }>({})
 
-  // Checkout: VietQR → pending (teacher approve) → success
+  // Checkout: payOS / VietQR → pending (auto webhook) → success
   const [checkoutSubject, setCheckoutSubject] = useState<typeof ONLINE_SUBJECTS[number] | null>(null)
   const [checkoutStep, setCheckoutStep] = useState<"qr" | "pending" | "success">("qr")
 
@@ -331,12 +339,16 @@ export default function OnlineStudentDashboard() {
       : defaultPrice
   }
 
-  // Create pending invoice — amount & memo server-side; VietQR only (no VNPay)
+  // Create pending invoice — payOS (auto unlock) or VietQR fallback
   const handleOpenCheckout = async (subject: typeof ONLINE_SUBJECTS[number]) => {
     setCheckoutSubject(subject)
     setCheckoutStep("qr")
     setCreatedOrderId(null)
     setOrderMemo("")
+    setCheckoutUrl(null)
+    setPayosQrData(null)
+    setPayosVietQrUrl(null)
+    setPayosAccount({})
     setOrderAmount(getSubjectPrice(subject.value, subject.price))
     setCreatingOrder(true)
 
@@ -349,8 +361,16 @@ export default function OnlineStudentDashboard() {
       const data = await res.json()
       if (res.ok && data.success && data.data) {
         setCreatedOrderId(data.data.id)
-        setOrderMemo(data.data.memo || "")
+        setOrderMemo(data.data.payosDescription || data.data.memo || "")
         setOrderAmount(Number(data.data.amount) || getSubjectPrice(subject.value, subject.price))
+        setCheckoutUrl(data.data.checkoutUrl || null)
+        setPayosQrData(data.data.qrCode || null)
+        setPayosVietQrUrl(data.data.vietQrUrl || null)
+        setPayosAccount({
+          number: data.data.accountNumber,
+          name: data.data.accountName,
+          description: data.data.payosDescription || data.data.memo,
+        })
 
         if (data.data.unlocked || data.data.status === "success" || data.data.free) {
           setMySubjects((prev) =>
@@ -419,15 +439,26 @@ export default function OnlineStudentDashboard() {
     )
   }
 
-  // Transfer details from server-created order (fallback only while loading)
-  const memoText = orderMemo
+  // Transfer details: prefer payOS QR / account, else teacher bank VietQR
+  const memoText = orderMemo || payosAccount.description || ""
   const activePrice = orderAmount || (checkoutSubject
     ? getSubjectPrice(checkoutSubject.value, checkoutSubject.price)
     : 0)
 
-  const qrCodeUrl = checkoutSubject && memoText
-    ? `https://img.vietqr.io/image/${bankSettings.bankId}-${bankSettings.accountNo}-print.png?amount=${activePrice}&addInfo=${encodeURIComponent(memoText)}&accountName=${encodeURIComponent(bankSettings.accountName)}`
-    : ""
+  const fallbackVietQr =
+    checkoutSubject && memoText
+      ? `https://img.vietqr.io/image/${bankSettings.bankId}-${bankSettings.accountNo}-print.png?amount=${activePrice}&addInfo=${encodeURIComponent(memoText)}&accountName=${encodeURIComponent(bankSettings.accountName)}`
+      : ""
+
+  const qrCodeUrl =
+    payosVietQrUrl ||
+    (payosQrData
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(payosQrData)}`
+      : fallbackVietQr)
+
+  const displayAccountNo = payosAccount.number || bankSettings.accountNo
+  const displayAccountName = payosAccount.name || bankSettings.accountName
+  const displayBankId = payosAccount.number ? "payOS" : bankSettings.bankId
 
   return (
     <OnlineStudentShell>
@@ -600,7 +631,7 @@ export default function OnlineStudentDashboard() {
                 <div className="text-center">
                   <h3 className="text-lg font-bold text-[#F1EDF9]">{checkoutSubject.label}</h3>
                   <p className="text-xs text-[#8C87A2] mt-1">
-                    Quét VietQR chuyển khoản đúng nội dung
+                    Quét QR / mở payOS — chuyển khoản đúng nội dung
                   </p>
                   <p className="text-sm font-mono font-bold text-[#C18CFF] mt-2">
                     {formatPrice(activePrice)}
@@ -610,13 +641,13 @@ export default function OnlineStudentDashboard() {
                 {creatingOrder || !qrCodeUrl ? (
                   <div className="flex flex-col items-center gap-3 py-10">
                     <Loader2 className="h-8 w-8 animate-spin text-[#C18CFF]" />
-                    <p className="text-xs text-[#8C87A2]">Đang tạo đơn hàng...</p>
+                    <p className="text-xs text-[#8C87A2]">Đang tạo đơn thanh toán...</p>
                   </div>
                 ) : (
                   <>
                     <div className="relative mx-auto w-48 aspect-square rounded-2xl bg-white p-2.5 border border-[#8C87A2]/20 shadow-lg overflow-hidden flex items-center justify-center">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={qrCodeUrl} alt="VietQR Code" className="w-full h-full object-contain" />
+                      <img src={qrCodeUrl} alt="Payment QR" className="w-full h-full object-contain" />
                       <div className="absolute -bottom-1 -right-1 p-1 bg-[#0057B8] rounded-tl-lg">
                         <QrCode className="h-4 w-4 text-white" />
                       </div>
@@ -624,16 +655,16 @@ export default function OnlineStudentDashboard() {
 
                     <div className="bg-[#15131F] rounded-2xl p-4 border border-[#8C87A2]/10 space-y-2 text-xs font-mono">
                       <div className="flex justify-between">
-                        <span className="text-[#8C87A2]">Ngân hàng:</span>
-                        <span className="text-[#F1EDF9] font-bold">{bankSettings.bankId}</span>
+                        <span className="text-[#8C87A2]">Ngân hàng / cổng:</span>
+                        <span className="text-[#F1EDF9] font-bold">{displayBankId}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#8C87A2]">Số tài khoản:</span>
-                        <span className="text-[#F1EDF9] font-bold">{bankSettings.accountNo}</span>
+                        <span className="text-[#F1EDF9] font-bold">{displayAccountNo}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#8C87A2]">Chủ tài khoản:</span>
-                        <span className="text-[#F1EDF9] font-bold uppercase">{bankSettings.accountName}</span>
+                        <span className="text-[#F1EDF9] font-bold uppercase">{displayAccountName}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#8C87A2]">Số tiền:</span>
@@ -647,16 +678,30 @@ export default function OnlineStudentDashboard() {
                       </div>
                     </div>
 
-                    <div className="text-[10px] text-[#8C87A2] bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 leading-relaxed">
-                      ⚠️ Chuyển đúng số tiền + nội dung. Giáo viên duyệt trên tab <strong>Đơn hàng</strong> sau khi nhận tiền — môn sẽ được mở khóa.
+                    <div className="text-[10px] text-[#8C87A2] bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 leading-relaxed">
+                      ✅ Chuyển <strong>đúng số tiền + nội dung</strong>. payOS sẽ <strong>tự mở khóa</strong> khi nhận tiền (thường vài phút). Sau đó bấm kiểm tra trạng thái hoặc vào lại dashboard.
                     </div>
+
+                    {checkoutUrl && (
+                      <Button
+                        onClick={() => { window.location.href = checkoutUrl }}
+                        className="w-full rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-bold text-xs py-3.5"
+                      >
+                        Mở trang thanh toán payOS
+                      </Button>
+                    )}
 
                     <Button
                       onClick={handleConfirmBankTransfer}
                       disabled={!createdOrderId}
-                      className="w-full rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-bold text-xs py-3.5 transition-transform active:scale-95 flex items-center justify-center gap-1.5"
+                      variant={checkoutUrl ? "outline" : "default"}
+                      className={
+                        checkoutUrl
+                          ? "w-full rounded-xl border-[#8C87A2]/30 text-[#F1EDF9] text-xs py-3"
+                          : "w-full rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-bold text-xs py-3.5"
+                      }
                     >
-                      Tôi đã chuyển khoản — chờ duyệt
+                      Tôi đã chuyển khoản — kiểm tra sau
                     </Button>
                   </>
                 )}
@@ -672,7 +717,7 @@ export default function OnlineStudentDashboard() {
                 <div className="space-y-1">
                   <h3 className="text-base font-bold text-[#F1EDF9]">Đang chờ xác nhận</h3>
                   <p className="text-xs text-[#8C87A2] leading-relaxed max-w-xs mx-auto">
-                    Đã ghi nhận. Giáo viên sẽ duyệt khi đối soát được chuyển khoản VietQR. Bạn có thể đóng cửa sổ và bấm kiểm tra lại sau.
+                    Đã ghi nhận. Khi payOS báo thanh toán thành công, môn sẽ tự mở khóa. Bấm &quot;Kiểm tra trạng thái&quot; sau 1–2 phút.
                   </p>
                 </div>
 

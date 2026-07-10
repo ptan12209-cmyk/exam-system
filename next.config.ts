@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
           "default-src 'self'",
           "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
           "style-src 'self' 'unsafe-inline'",
-          "img-src 'self' data: blob: https://*.supabase.co https://img.vietqr.io https://*.youtube.com https://i.ytimg.com",
+          "img-src 'self' data: blob: https://*.supabase.co https://img.vietqr.io https://api.qrserver.com https://*.youtube.com https://i.ytimg.com",
           "font-src 'self' data:",
           "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://img.vietqr.io",
           "frame-src 'self' https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://iframe.mediadelivery.net https://*.mediadelivery.net https://challenges.cloudflare.com",
