@@ -807,7 +807,7 @@ export default function TeacherOnlineStudyPage() {
         </div>
         <div className="flex items-center gap-2">
           <NotificationBell />
-          <UserMenu userName={profile?.full_name || ""} role="admin" onLogout={handleLogout} />
+          <UserMenu userName={profile?.full_name || ""} userClass="Quản trị viên" role="teacher" onLogout={handleLogout} />
         </div>
       </header>
 
