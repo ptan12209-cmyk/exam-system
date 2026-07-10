@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
 import { requireOnlineSubject } from "@/lib/online-study-auth"
 import { buildPlaybackPayload, type LessonMediaRow } from "@/lib/lesson-media"
+import { signDocumentList } from "@/lib/document-sign"
 import { checkRateLimit, getClientIP, rateLimitResponse } from "@/lib/rate-limit"
 
 /**
@@ -71,9 +72,18 @@ async function handleGET(
 
   const payload = buildPlaybackPayload(lesson as unknown as LessonMediaRow)
 
+  // V4b: short-lived signed URLs for Supabase Storage documents
+  const admin = createAdminClient()
+  const signedDocs = await signDocumentList(admin, payload.documents, 3600)
+  const responsePayload = {
+    ...payload,
+    documents: signedDocs.documents.map(({ title, url }) => ({ title, url })),
+    document_expires_in: signedDocs.expires_in,
+    expires_in: payload.expires_in ?? signedDocs.expires_in,
+  }
+
   // Fire-and-forget audit (service role)
   try {
-    const admin = createAdminClient()
     void admin.from("content_access_logs").insert({
       user_id: user.id,
       lesson_id: lessonId,
@@ -82,15 +92,16 @@ async function handleGET(
       user_agent: request.headers.get("user-agent")?.slice(0, 300) || null,
       meta: {
         subject: folderSubject,
-        video_count: payload.videos.length,
-        document_count: payload.documents.length,
+        video_count: responsePayload.videos.length,
+        document_count: responsePayload.documents.length,
+        docs_signed: signedDocs.any_signed,
       },
     })
   } catch {
     /* table may not exist yet */
   }
 
-  return NextResponse.json(successResponse(payload))
+  return NextResponse.json(successResponse(responsePayload))
 }
 
 export const GET = withErrorHandler(handleGET)

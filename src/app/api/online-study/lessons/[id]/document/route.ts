@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
 import { requireOnlineSubject } from "@/lib/online-study-auth"
 import { buildPlaybackPayload, type LessonMediaRow } from "@/lib/lesson-media"
+import { maybeSignDocumentUrl } from "@/lib/document-sign"
 import { checkRateLimit, getClientIP, rateLimitResponse } from "@/lib/rate-limit"
 
 /**
@@ -78,10 +79,15 @@ async function handleGET(
     throw new ApiError("NOT_FOUND", "Không tìm thấy tài liệu", 404)
   }
 
+  // V4b: re-sign Supabase Storage URL at open time (short TTL)
+  const admin = createAdminClient()
+  const signed = await maybeSignDocumentUrl(admin, doc.url, 1800)
+  const finalUrl = signed.url
+
   // Only allow http(s) redirects (block javascript: etc.)
   let safeUrl: URL
   try {
-    safeUrl = new URL(doc.url)
+    safeUrl = new URL(finalUrl)
     if (safeUrl.protocol !== "http:" && safeUrl.protocol !== "https:") {
       throw new Error("bad protocol")
     }
@@ -90,7 +96,6 @@ async function handleGET(
   }
 
   try {
-    const admin = createAdminClient()
     void admin.from("content_access_logs").insert({
       user_id: user.id,
       lesson_id: lessonId,
@@ -101,6 +106,7 @@ async function handleGET(
         subject: folderSubject,
         index,
         title: doc.title,
+        signed: signed.signed,
       },
     })
   } catch {
@@ -112,7 +118,13 @@ async function handleGET(
   }
 
   return NextResponse.json(
-    successResponse({ title: doc.title, url: doc.url, index })
+    successResponse({
+      title: doc.title,
+      url: safeUrl.toString(),
+      index,
+      signed: signed.signed,
+      expires_in: signed.expires_in,
+    })
   )
 }
 

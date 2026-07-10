@@ -13,6 +13,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
 import { ONLINE_SUBJECTS, getOnlineSubjectInfo } from "@/lib/subjects"
 import Footer from "@/components/Footer"
+import { AccessSecurityPanel } from "@/components/teacher/AccessSecurityPanel"
 import { AnimatePresence, motion } from "framer-motion"
 import { 
   Plus, 
@@ -45,7 +46,9 @@ import {
   Home,
   Sliders,
   BadgeDollarSign,
-  CreditCard
+  CreditCard,
+  Activity,
+  RefreshCw,
 } from "lucide-react"
 
 interface DbFolder {
@@ -91,7 +94,8 @@ export default function TeacherOnlineStudyPage() {
   const [profile, setProfile] = useState<{ full_name: string | null } | null>(null)
   
   // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<"lectures" | "permissions" | "payment" | "orders">("lectures")
+  const [activeTab, setActiveTab] = useState<"lectures" | "permissions" | "payment" | "orders" | "security">("lectures")
+  const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "pending" | "success" | "failed">("all")
 
   // Selection States
   const [selectedSubject, setSelectedSubject] = useState("toan")
@@ -272,7 +276,15 @@ export default function TeacherOnlineStudyPage() {
       const savedTab = localStorage.getItem("teacher_study_tab")
       const savedSubject = localStorage.getItem("teacher_study_subject")
       
-      if (savedTab === "lectures" || savedTab === "permissions" || savedTab === "payment" || savedTab === "orders") setActiveTab(savedTab as any)
+      if (
+        savedTab === "lectures" ||
+        savedTab === "permissions" ||
+        savedTab === "payment" ||
+        savedTab === "orders" ||
+        savedTab === "security"
+      ) {
+        setActiveTab(savedTab)
+      }
       if (savedSubject && ONLINE_SUBJECTS.some(s => s.value === savedSubject)) {
         setSelectedSubject(savedSubject)
       }
@@ -974,6 +986,16 @@ export default function TeacherOnlineStudyPage() {
           >
             Quản lý đơn hàng & Doanh thu
           </button>
+          <button
+            onClick={() => setActiveTab("security")}
+            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === "security" 
+                ? "border-[#C18CFF] text-[#C18CFF]" 
+                : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
+            }`}
+          >
+            Bảo mật & Logs
+          </button>
         </div>
 
         {/* Tab 1: Lectures Manager */}
@@ -1464,43 +1486,88 @@ export default function TeacherOnlineStudyPage() {
         )}
 
         {/* Tab 4: Orders & Revenue Management */}
-        {activeTab === "orders" && (
+        {activeTab === "orders" && (() => {
+          const successOrders = orders.filter((o) => o.status === "success")
+          const pendingOrders = orders.filter((o) => o.status === "pending")
+          const monthStart = new Date()
+          monthStart.setDate(1)
+          monthStart.setHours(0, 0, 0, 0)
+          const monthRevenue = successOrders
+            .filter((o) => new Date(o.created_at) >= monthStart)
+            .reduce((sum, o) => sum + (Number(o.amount) || 0), 0)
+          const filteredOrders =
+            orderStatusFilter === "all"
+              ? orders
+              : orders.filter((o) => o.status === orderStatusFilter)
+
+          return (
           <div className="space-y-6">
             
             {/* Revenue Analytics Cards */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 relative overflow-hidden shadow-sm flex items-center justify-between">
-                <div className="absolute -right-24 -top-24 w-60 h-60 rounded-full bg-[#C18CFF]/5 blur-[65px] pointer-events-none" />
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">TỔNG DOANH THU ĐÃ NHẬN</span>
-                  <h3 className="text-3xl sm:text-4xl font-bold text-[#C18CFF] font-mono mt-2">{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(revenue)}</h3>
-                </div>
-                <div className="h-12 w-12 rounded-xl bg-[#C18CFF]/10 border border-[#C18CFF]/20 flex items-center justify-center text-[#C18CFF]">
-                  <BadgeDollarSign className="h-6 w-6" />
-                </div>
+            <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-5 relative overflow-hidden shadow-sm">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Tổng DT đã nhận</span>
+                <h3 className="text-2xl sm:text-3xl font-bold text-[#C18CFF] font-mono mt-2">
+                  {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(revenue)}
+                </h3>
+                <BadgeDollarSign className="absolute right-4 top-4 h-5 w-5 text-[#C18CFF]/40" />
               </div>
 
-              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 relative overflow-hidden shadow-sm flex items-center justify-between">
-                <div className="absolute -right-24 -top-24 w-60 h-60 rounded-full bg-emerald-500/5 blur-[65px] pointer-events-none" />
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">TỔNG ĐƠN HÀNG THÀNH CÔNG</span>
-                  <h3 className="text-3xl sm:text-4xl font-bold text-emerald-400 font-mono mt-2">
-                    {orders.filter(o => o.status === "success").length} <span className="text-xs text-[#8C87A2] font-normal">đơn</span>
-                  </h3>
-                </div>
-                <div className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  <CreditCard className="h-6 w-6" />
-                </div>
+              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-5 relative overflow-hidden shadow-sm">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">DT tháng này</span>
+                <h3 className="text-2xl sm:text-3xl font-bold text-[#F1EDF9] font-mono mt-2">
+                  {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(monthRevenue)}
+                </h3>
+                <Activity className="absolute right-4 top-4 h-5 w-5 text-[#8C87A2]/40" />
+              </div>
+
+              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-5 relative overflow-hidden shadow-sm">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Đơn thành công</span>
+                <h3 className="text-2xl sm:text-3xl font-bold text-emerald-400 font-mono mt-2">
+                  {successOrders.length}
+                </h3>
+                <CreditCard className="absolute right-4 top-4 h-5 w-5 text-emerald-400/40" />
+              </div>
+
+              <div className="bg-[#15131F] border border-yellow-500/20 rounded-2xl p-5 relative overflow-hidden shadow-sm">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Chờ duyệt</span>
+                <h3 className="text-2xl sm:text-3xl font-bold text-yellow-400 font-mono mt-2">
+                  {pendingOrders.length}
+                </h3>
+                <ShieldAlert className="absolute right-4 top-4 h-5 w-5 text-yellow-400/40" />
               </div>
             </div>
 
             {/* Orders list */}
             <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/10 overflow-hidden">
-              <div className="p-4 border-b border-[#8C87A2]/20 bg-[#15131F]/50 flex items-center justify-between">
+              <div className="p-4 border-b border-[#8C87A2]/20 bg-[#15131F]/50 flex flex-wrap items-center justify-between gap-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Danh sách giao dịch học viên</span>
-                <span className="text-[10px] bg-[#0B0A13] px-2 py-0.5 rounded border border-[#8C87A2]/20 text-[#8C87A2] font-mono">
-                  {orders.length} giao dịch
-                </span>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={orderStatusFilter}
+                    onChange={(e) =>
+                      setOrderStatusFilter(e.target.value as typeof orderStatusFilter)
+                    }
+                    className="h-8 rounded-lg border border-[#8C87A2]/25 bg-[#0B0A13] px-2 text-[10px] text-[#F1EDF9] font-mono"
+                  >
+                    <option value="all">Tất cả</option>
+                    <option value="pending">Chờ duyệt</option>
+                    <option value="success">Thành công</option>
+                    <option value="failed">Lỗi / Hủy</option>
+                  </select>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => void fetchOrders()}
+                    className="h-8 rounded-lg border border-[#8C87A2]/25 text-[#8C87A2] text-[10px]"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" /> Làm mới
+                  </Button>
+                  <span className="text-[10px] bg-[#0B0A13] px-2 py-0.5 rounded border border-[#8C87A2]/20 text-[#8C87A2] font-mono">
+                    {filteredOrders.length}/{orders.length}
+                  </span>
+                </div>
               </div>
 
               {loadingOrders ? (
@@ -1508,9 +1575,11 @@ export default function TeacherOnlineStudyPage() {
                   <Loader2 className="h-8 w-8 animate-spin text-[#C18CFF]" />
                   <p className="mt-2 text-xs text-[#8C87A2]">Đang tải danh sách đơn hàng...</p>
                 </div>
-              ) : orders.length === 0 ? (
+              ) : filteredOrders.length === 0 ? (
                 <div className="text-center py-20 text-sm text-[#8C87A2] italic">
-                  Chưa có giao dịch mua khóa học nào được ghi nhận.
+                  {orders.length === 0
+                    ? "Chưa có giao dịch mua khóa học nào được ghi nhận."
+                    : "Không có đơn khớp bộ lọc."}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -1527,7 +1596,7 @@ export default function TeacherOnlineStudyPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#8C87A2]/10 bg-[#15131F]/10">
-                      {orders.map(order => {
+                      {filteredOrders.map(order => {
                         const studentName = order.student?.full_name || "Học viên ẩn danh"
                         const studentEmail = order.student?.email || "unknown@student.com"
                         const subjectInfo = getOnlineSubjectInfo(order.subject_key)
@@ -1605,7 +1674,11 @@ export default function TeacherOnlineStudyPage() {
             </div>
 
           </div>
-        )}
+          )
+        })()}
+
+        {/* Tab 5: Security logs + anomalies */}
+        {activeTab === "security" && <AccessSecurityPanel />}
 
       </main>
       <Footer />
