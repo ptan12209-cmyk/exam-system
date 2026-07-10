@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Footer from "@/components/Footer"
+import { SupportFab } from "@/components/support/SupportFab"
 
 function SubjectSvgIcon({ value, className = "h-8 w-8" }: { value: string; className?: string }) {
   switch (value) {
@@ -462,6 +463,7 @@ export default function OnlineStudentDashboard() {
       </main>
 
       <Footer />
+      <SupportFab />
     </OnlineStudentShell>
   )
 }

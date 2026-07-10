@@ -20,6 +20,7 @@ import {
   ShieldCheck,
 } from "lucide-react"
 import Footer from "@/components/Footer"
+import { SupportFab } from "@/components/support/SupportFab"
 
 type PayState = "loading" | "ready" | "polling" | "success" | "error"
 
@@ -400,6 +401,7 @@ function PaymentPageInner() {
         )}
       </main>
       <Footer />
+      <SupportFab />
     </OnlineStudentShell>
   )
 }
