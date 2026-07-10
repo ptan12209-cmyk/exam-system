@@ -39,6 +39,53 @@ export function sanitizeLessonForCatalog(lesson: LessonMediaRow) {
 }
 
 /**
+ * Normalize media URL for storage:
+ * - Bunny play → embed
+ * - strip token/expires so server can re-sign on playback
+ */
+export function normalizeMediaUrlForStorage(url: string): string {
+  if (!url || typeof url !== 'string') return url
+  const trimmed = url.trim()
+  if (!trimmed) return trimmed
+
+  try {
+    let working = trimmed
+
+    if (working.includes('mediadelivery.net') || working.includes('bunny.net')) {
+      if (working.includes('/play/')) {
+        const parts = working.split('/play/')
+        if (parts.length === 2) {
+          const rest = parts[1].split('?')[0]
+          working = `https://iframe.mediadelivery.net/embed/${rest}`
+        }
+      }
+
+      const u = new URL(working.startsWith('http') ? working : `https://${working}`)
+      u.searchParams.delete('token')
+      u.searchParams.delete('expires')
+      // Prefer clean embed base + non-auth query (autoplay etc.)
+      return u.toString()
+    }
+
+    return trimmed
+  } catch {
+    return trimmed
+  }
+}
+
+export function normalizeMediaItemsForStorage(
+  items: MediaItem[] | null | undefined
+): MediaItem[] {
+  if (!Array.isArray(items)) return []
+  return items
+    .filter((i) => i && typeof i.url === 'string' && i.url.trim())
+    .map((i) => ({
+      title: (i.title || '').trim() || 'Media',
+      url: normalizeMediaUrlForStorage(i.url),
+    }))
+}
+
+/**
  * Optional Bunny Stream token auth.
  * Env: BUNNY_STREAM_TOKEN_KEY (security key from library)
  * If set, embed URLs for mediadelivery.net get token+expires.
@@ -49,11 +96,13 @@ export function maybeSignBunnyEmbedUrl(url: string, ttlSeconds = 3600): string {
   if (!key || !url) return url
 
   try {
-    // .../embed/{libraryId}/{videoId} or /play/
     let path = url
     if (url.includes('/play/')) {
       const parts = url.split('/play/')
-      if (parts.length === 2) path = `https://iframe.mediadelivery.net/embed/${parts[1]}`
+      if (parts.length === 2) {
+        const rest = parts[1].split('?')[0]
+        path = `https://iframe.mediadelivery.net/embed/${rest}`
+      }
     }
     const m = path.match(
       /iframe\.mediadelivery\.net\/embed\/(\d+)\/([a-f0-9-]+)/i

@@ -8,8 +8,12 @@ interface ProtectedVideoPlayerProps {
   onEnded?: () => void
 }
 
+/**
+ * Build embed URL while preserving auth query (token, expires for Bunny).
+ */
 function toEmbedUrl(url: string): string | null {
   if (!url) return null
+
   if (url.includes("youtube.com") || url.includes("youtu.be")) {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
     const match = url.match(regExp)
@@ -17,23 +21,41 @@ function toEmbedUrl(url: string): string | null {
       return `https://www.youtube.com/embed/${match[2]}?modestbranding=1&rel=0&iv_load_policy=3`
     }
   }
+
   if (url.includes("mediadelivery.net") || url.includes("bunny.net")) {
-    if (url.includes("/play/")) {
-      const parts = url.split("/play/")
-      if (parts.length === 2) {
-        return `https://iframe.mediadelivery.net/embed/${parts[1]}?autoplay=false&preload=true`
+    try {
+      // Already embed/iframe — keep full URL (incl. signed token)
+      if (url.includes("/embed/") || url.includes("iframe.mediadelivery.net")) {
+        return url
       }
-    }
-    if (url.includes("embed") || url.includes("iframe")) {
-      return url
+      if (url.includes("/play/")) {
+        const u = new URL(url.startsWith("http") ? url : `https://${url}`)
+        const afterPlay = u.pathname.split("/play/")[1]
+        if (afterPlay) {
+          const embed = new URL(
+            `https://iframe.mediadelivery.net/embed/${afterPlay.replace(/^\//, "")}`
+          )
+          u.searchParams.forEach((v, k) => embed.searchParams.set(k, v))
+          if (!embed.searchParams.has("autoplay")) {
+            embed.searchParams.set("autoplay", "false")
+          }
+          if (!embed.searchParams.has("preload")) {
+            embed.searchParams.set("preload", "true")
+          }
+          return embed.toString()
+        }
+      }
+    } catch {
+      if (url.includes("embed") || url.includes("iframe")) return url
     }
   }
+
   return null
 }
 
 /**
  * Video player with lightweight copyright deterrents (watermark, no context menu).
- * Not full DRM — reduces raw URL exposure is handled separately (playback API phase).
+ * Not full DRM — raw URL exposure reduced via playback API + optional Bunny token.
  */
 export function ProtectedVideoPlayer({
   url,

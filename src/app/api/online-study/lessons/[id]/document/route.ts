@@ -7,9 +7,9 @@ import { buildPlaybackPayload, type LessonMediaRow } from "@/lib/lesson-media"
 import { checkRateLimit, getClientIP, rateLimitResponse } from "@/lib/rate-limit"
 
 /**
- * GET /api/online-study/lessons/[id]/playback
- * Entitled students only — returns video/document URLs (optionally Bunny-signed).
- * V3: media rows loaded via service role after entitlement (students have no table SELECT).
+ * GET /api/online-study/lessons/[id]/document?index=0
+ * Entitled open of a lesson document URL + audit log.
+ * Prefer this over raw doc URLs when linking from the study UI.
  */
 async function handleGET(
   request: NextRequest,
@@ -20,7 +20,7 @@ async function handleGET(
   await requireRole(supabase, user.id, ["student", "online_student", "teacher", "admin"])
 
   const ip = getClientIP(request)
-  const rate = await checkRateLimit(`playback:${user.id}:${ip}`, 60, 60)
+  const rate = await checkRateLimit(`doc:${user.id}:${ip}`, 60, 60)
   if (!rate.allowed) {
     return rateLimitResponse({
       success: false,
@@ -31,11 +31,14 @@ async function handleGET(
   }
 
   const { id: lessonId } = await context.params
+  const indexRaw = request.nextUrl.searchParams.get("index")
+  const index = Math.max(0, parseInt(indexRaw || "0", 10) || 0)
+  const redirect = request.nextUrl.searchParams.get("redirect") === "1"
+
   if (!lessonId) {
     throw new ApiError("BAD_REQUEST", "Thiếu lesson id", 400)
   }
 
-  // Staff can read via user JWT; students need admin after entitlement
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
@@ -70,27 +73,47 @@ async function handleGET(
   await requireOnlineSubject(supabase, user.id, folderSubject)
 
   const payload = buildPlaybackPayload(lesson as unknown as LessonMediaRow)
+  const doc = payload.documents[index]
+  if (!doc?.url) {
+    throw new ApiError("NOT_FOUND", "Không tìm thấy tài liệu", 404)
+  }
 
-  // Fire-and-forget audit (service role)
+  // Only allow http(s) redirects (block javascript: etc.)
+  let safeUrl: URL
+  try {
+    safeUrl = new URL(doc.url)
+    if (safeUrl.protocol !== "http:" && safeUrl.protocol !== "https:") {
+      throw new Error("bad protocol")
+    }
+  } catch {
+    throw new ApiError("BAD_REQUEST", "URL tài liệu không hợp lệ", 400)
+  }
+
   try {
     const admin = createAdminClient()
     void admin.from("content_access_logs").insert({
       user_id: user.id,
       lesson_id: lessonId,
-      action: "playback",
+      action: "document",
       ip,
       user_agent: request.headers.get("user-agent")?.slice(0, 300) || null,
       meta: {
         subject: folderSubject,
-        video_count: payload.videos.length,
-        document_count: payload.documents.length,
+        index,
+        title: doc.title,
       },
     })
   } catch {
-    /* table may not exist yet */
+    /* ignore */
   }
 
-  return NextResponse.json(successResponse(payload))
+  if (redirect) {
+    return NextResponse.redirect(safeUrl.toString(), 302)
+  }
+
+  return NextResponse.json(
+    successResponse({ title: doc.title, url: doc.url, index })
+  )
 }
 
 export const GET = withErrorHandler(handleGET)

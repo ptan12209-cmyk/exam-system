@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { requireAuth, requireRole } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
 import { requireOnlineSubject, isValidOnlineSubjectAny } from "@/lib/online-study-auth"
 import {
   sanitizeLessonForCatalog,
+  normalizeMediaItemsForStorage,
+  normalizeMediaUrlForStorage,
   type LessonMediaRow,
+  type MediaItem,
 } from "@/lib/lesson-media"
 
 // GET /api/online-study/lessons?folder_id=uuid OR ?subject=math|toan
@@ -29,6 +32,9 @@ async function handleGET(request: NextRequest) {
     .single()
   const isStaff = profile?.role === "teacher" || profile?.role === "admin"
 
+  // V3: students cannot SELECT online_lessons (RLS). After entitlement, use admin.
+  const dataClient = isStaff ? supabase : createAdminClient()
+
   let lessonsData: LessonMediaRow[] = []
 
   if (folderId) {
@@ -45,7 +51,7 @@ async function handleGET(request: NextRequest) {
 
     await requireOnlineSubject(supabase, user.id, folder.subject)
 
-    const { data: lessons, error } = await supabase
+    const { data: lessons, error } = await dataClient
       .from("online_lessons")
       .select("*")
       .eq("folder_id", folderId)
@@ -59,7 +65,7 @@ async function handleGET(request: NextRequest) {
     }
     await requireOnlineSubject(supabase, user.id, subject)
 
-    const { data: lessons, error } = await supabase
+    const { data: lessons, error } = await dataClient
       .from("online_lessons")
       .select(`
         *,
@@ -104,24 +110,33 @@ async function handlePOST(request: NextRequest) {
     throw new ApiError("BAD_REQUEST", "Thiếu thông tin bắt buộc (folder_id, title)", 400)
   }
 
-  // Backwards compatibility logic
-  let finalVideos = videos || []
+  // Backwards compatibility + normalize Bunny URLs (strip tokens for re-sign)
+  let finalVideos: MediaItem[] = normalizeMediaItemsForStorage(videos || [])
   if (finalVideos.length === 0 && video_url) {
-    finalVideos = [{ title: "Video bài học", url: video_url }]
+    finalVideos = [
+      {
+        title: "Video bài học",
+        url: normalizeMediaUrlForStorage(video_url),
+      },
+    ]
   }
 
-  let finalDocuments = documents || []
+  let finalDocuments: MediaItem[] = normalizeMediaItemsForStorage(documents || [])
   if (finalDocuments.length === 0 && document_url) {
-    finalDocuments = [{ title: "Tài liệu bài học", url: document_url }]
+    finalDocuments = [
+      {
+        title: "Tài liệu bài học",
+        url: document_url.trim(),
+      },
+    ]
   }
 
   // Primary video/document urls to keep old columns in sync
-  const primaryVideoUrl = finalVideos[0]?.url || video_url || null
-  const primaryDocumentUrl = finalDocuments[0]?.url || document_url || null
+  const primaryVideoUrl = finalVideos[0]?.url || null
+  const primaryDocumentUrl = finalDocuments[0]?.url || null
 
   let dbResult
   if (id) {
-    // Update existing lesson
     const { data, error } = await supabase
       .from("online_lessons")
       .update({
@@ -133,7 +148,7 @@ async function handlePOST(request: NextRequest) {
         videos: finalVideos,
         documents: finalDocuments,
         order_index: order_index || 1,
-        teacher_id: user.id
+        teacher_id: user.id,
       })
       .eq("id", id)
       .select()
@@ -142,7 +157,6 @@ async function handlePOST(request: NextRequest) {
     if (error) throw error
     dbResult = data
   } else {
-    // Create new lesson
     const { data, error } = await supabase
       .from("online_lessons")
       .insert({
@@ -154,7 +168,7 @@ async function handlePOST(request: NextRequest) {
         videos: finalVideos,
         documents: finalDocuments,
         order_index: order_index || 1,
-        teacher_id: user.id
+        teacher_id: user.id,
       })
       .select()
       .single()

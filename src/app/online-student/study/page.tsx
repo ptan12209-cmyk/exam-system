@@ -507,7 +507,11 @@ function StudyPageInner() {
                         {doc.title || `Tài liệu ${idx + 1}`}
                       </span>
                     </div>
-                    <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={`/api/online-study/lessons/${activeLesson.id}/document?index=${idx}&redirect=1`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <Button className="rounded-lg bg-[#C18CFF] text-[#0B0A13] text-xs font-bold">
                         <Download className="h-3.5 w-3.5 mr-1" /> Mở
                       </Button>

@@ -67,8 +67,9 @@ async function handlePOST(request: NextRequest) {
     throw new ApiError("BAD_REQUEST", "Thiếu lessonId", 400)
   }
 
-  // Resolve lesson → folder subject and enforce entitlement
-  const { data: lesson, error: lessonError } = await supabase
+  // V3: students cannot SELECT online_lessons — resolve subject via admin
+  const admin = createAdminClient()
+  const { data: lesson, error: lessonError } = await admin
     .from("online_lessons")
     .select("id, folder_id, online_folders!inner(subject)")
     .eq("id", lessonId)
