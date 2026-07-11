@@ -95,6 +95,56 @@ html {
 }
 
 /* ============================================
+   Online Study tokens (Dream Violet portal)
+   Use via: bg-[var(--os-bg)] text-[var(--os-fg)] etc.
+   ============================================ */
+:root {
+  --os-bg: #0b0a13;
+  --os-card: #15131f;
+  --os-card-elevated: #1c1a2d;
+  --os-fg: #f1edf9;
+  --os-muted: #8c87a2;
+  --os-accent: #c18cff;
+  --os-accent-fg: #0b0a13;
+  --os-border: color-mix(in srgb, #8c87a2 25%, transparent);
+  --os-success: #34d399;
+  --os-warning: #fbbf24;
+  --os-danger: #f87171;
+}
+
+.os-portal {
+  background-color: var(--os-bg);
+  color: var(--os-fg);
+}
+
+.os-skeleton {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--os-card) 100%, transparent) 0%,
+    color-mix(in srgb, var(--os-muted) 18%, var(--os-card)) 50%,
+    color-mix(in srgb, var(--os-card) 100%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: os-shimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .os-skeleton {
+    animation: none;
+    background: var(--os-card);
+  }
+}
+
+@keyframes os-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ============================================
    Custom Scrollbar - Minimal & Modern
    ============================================ */
 ::-webkit-scrollbar {

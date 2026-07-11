@@ -49,11 +49,15 @@ export function MobileNav() {
     const supabase = useMemo(() => createClient(), [])
     const [unsubmittedCount, setUnsubmittedCount] = useState(0)
 
-    if (!pathname) return null
-
+    // Online portal has its own OnlineStudentBottomNav — avoid double bars
+    const isOnlineStudent = !!pathname?.startsWith("/online-student")
     // Only show on logged-in areas (student or teacher subpaths, or arena/resources)
-    const isStudentArea = pathname.startsWith("/student") || pathname.startsWith("/online-student") || pathname.startsWith("/arena") || pathname.startsWith("/resources")
-    const isTeacherArea = pathname.startsWith("/teacher")
+    const isStudentArea =
+        !!pathname &&
+        (pathname.startsWith("/student") ||
+            pathname.startsWith("/arena") ||
+            pathname.startsWith("/resources"))
+    const isTeacherArea = !!pathname?.startsWith("/teacher")
 
     useEffect(() => {
         let active = true
@@ -116,6 +120,8 @@ export function MobileNav() {
             active = false
         }
     }, [isStudentArea, supabase])
+
+    if (!pathname || isOnlineStudent) return null
 
     if (!isStudentArea && !isTeacherArea) {
         return null

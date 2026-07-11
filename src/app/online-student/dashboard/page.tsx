@@ -12,11 +12,15 @@ import {
   BookOpen, 
   ChevronRight, 
   Lock, 
-  GraduationCap
+  GraduationCap,
+  PlayCircle,
+  ShoppingCart,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Footer from "@/components/Footer"
 import { SupportFab } from "@/components/support/SupportFab"
+import { getOnlineSubjectInfo } from "@/lib/subjects"
+import { Button } from "@/components/ui/button"
 
 function SubjectSvgIcon({ value, className = "h-8 w-8" }: { value: string; className?: string }) {
   switch (value) {
@@ -229,6 +233,20 @@ export default function OnlineStudentDashboard() {
   })
 
   const [totalProgressPercent, setTotalProgressPercent] = useState(0)
+  const [completedCount, setCompletedCount] = useState(0)
+  const [continueStudy, setContinueStudy] = useState<{
+    subject: string
+    lessonId: string | null
+  } | null>(null)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const last = localStorage.getItem("drive_last_subject")
+    if (last) {
+      const lessonId = localStorage.getItem(`drive_lesson_id_${last}`)
+      setContinueStudy({ subject: last, lessonId })
+    }
+  }, [])
 
   useEffect(() => {
     async function checkAuth() {
@@ -251,15 +269,17 @@ export default function OnlineStudentDashboard() {
 
       setProfile(profileData)
 
-      // Parallel load: prices + unlocked subjects
+      // Parallel load: prices + unlocked subjects + progress
       try {
-        const [resSettings, resSubjects] = await Promise.all([
+        const [resSettings, resSubjects, resProgress] = await Promise.all([
           fetch("/api/online-study/payment-settings"),
           fetch("/api/online-study/my-subjects"),
+          fetch("/api/online-study/progress"),
         ])
-        const [dataSettings, dataSubjects] = await Promise.all([
+        const [dataSettings, dataSubjects, dataProgress] = await Promise.all([
           resSettings.json(),
           resSubjects.json(),
+          resProgress.json(),
         ])
 
         if (resSettings.ok && dataSettings.success) {
@@ -273,7 +293,17 @@ export default function OnlineStudentDashboard() {
         if (resSubjects.ok && dataSubjects.success) {
           setMySubjects(dataSubjects.data || [])
         }
-        setTotalProgressPercent(0)
+        if (resProgress.ok && dataProgress.success) {
+          const rows = (dataProgress.data || []) as { completed?: boolean }[]
+          const done = rows.filter((r) => r.completed).length
+          setCompletedCount(done)
+          // Soft %: assume ~20 lessons/subject unlocked as soft target for bar UX
+          const unlockedN = (dataSubjects.data || []).includes("all")
+            ? ONLINE_SUBJECTS.length
+            : (dataSubjects.data || []).length
+          const softTotal = Math.max(unlockedN * 12, done, 1)
+          setTotalProgressPercent(Math.min(100, Math.round((done / softTotal) * 100)))
+        }
       } catch (e) {
         console.error("Lỗi tải dashboard:", e)
       } finally {
@@ -342,30 +372,73 @@ export default function OnlineStudentDashboard() {
                 Chào mừng, {profile?.full_name || "Học viên"}!
               </h1>
               <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] max-w-2xl">
-                Hệ thống học tập qua bài giảng video và tài liệu tự học trực tuyến. Hãy lựa chọn môn học bên dưới để bắt đầu bài giảng của bạn.
+                {mySubjects.length === 0
+                  ? "Chưa có môn nào được mở khóa. Chọn môn bên dưới và thanh toán để bắt đầu học."
+                  : "Tiếp tục bài giảng video và tài liệu — chọn môn đã mở khóa bên dưới."}
               </p>
 
               {/* Progress bar */}
               <div className="mt-6 max-w-md bg-[#0B0A13]/40 border border-[#8C87A2]/10 rounded-2xl p-4 flex items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex justify-between items-center text-xs font-mono text-[#8C87A2] mb-1.5">
-                    <span>TIẾN ĐỘ HỌC TẬP TỔNG THỂ</span>
+                    <span>ĐÃ HOÀN THÀNH {completedCount} BÀI</span>
                     <span className="text-[#C18CFF] font-bold">{totalProgressPercent}%</span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-[#0B0A13] overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-[#C18CFF] to-[#3B82F6] rounded-full transition-all duration-500" 
                       style={{ width: `${totalProgressPercent}%` }}
+                      role="progressbar"
+                      aria-valuenow={totalProgressPercent}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
                     />
                   </div>
                 </div>
                 <div className="h-10 w-10 shrink-0 rounded-xl bg-[#C18CFF]/10 border border-[#C18CFF]/20 flex items-center justify-center text-[#C18CFF]">
-                  <GraduationCap className="h-5 w-5 animate-pulse" />
+                  <GraduationCap className="h-5 w-5" />
                 </div>
               </div>
             </div>
           </div>
         </section>
+
+        {/* Continue learning */}
+        {continueStudy &&
+          (mySubjects.includes("all") || mySubjects.includes(continueStudy.subject)) && (
+            <section className="mb-8">
+              <div className="rounded-2xl border border-[#C18CFF]/30 bg-gradient-to-r from-[#C18CFF]/10 to-transparent p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="h-11 w-11 shrink-0 rounded-xl bg-[#C18CFF]/15 border border-[#C18CFF]/30 flex items-center justify-center text-[#C18CFF]">
+                    <PlayCircle className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-[#8C87A2]">
+                      Tiếp tục học
+                    </p>
+                    <p className="text-base font-bold text-[#F1EDF9] truncate">
+                      {getOnlineSubjectInfo(continueStudy.subject).icon}{" "}
+                      {getOnlineSubjectInfo(continueStudy.subject).label}
+                    </p>
+                    <p className="text-[11px] text-[#8C87A2] mt-0.5">
+                      {continueStudy.lessonId
+                        ? "Mở lại bài bạn đang xem dở"
+                        : "Vào thư mục môn học gần nhất"}
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href={`/online-student/study?subject=${encodeURIComponent(continueStudy.subject)}`}
+                  className="shrink-0"
+                >
+                  <Button className="w-full sm:w-auto rounded-xl bg-[#C18CFF] text-[#0B0A13] font-bold text-sm h-11 min-w-[140px]">
+                    Vào học ngay
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
+            </section>
+          )}
 
         {/* Subjects Grid */}
         <section>
@@ -448,8 +521,9 @@ export default function OnlineStudentDashboard() {
                         <span className="text-xs font-semibold text-[#C18CFF] font-mono">
                           {formatPrice(getSubjectPrice(subject.value, subject.price))}
                         </span>
-                        <span className="text-[10px] font-bold text-[#0B0A13] bg-[#C18CFF] group-hover:bg-[#C18CFF]/90 px-2 py-1 rounded-lg transition-colors">
-                          Mở khóa
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#0B0A13] bg-[#C18CFF] group-hover:bg-[#C18CFF]/90 px-2 py-1 rounded-lg transition-colors">
+                          <ShoppingCart className="h-3 w-3" />
+                          Mua khóa
                         </span>
                       </div>
                     </div>

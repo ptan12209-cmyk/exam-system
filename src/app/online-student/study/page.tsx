@@ -32,6 +32,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/toast"
 import Footer from "@/components/Footer"
 import { cn } from "@/lib/utils"
 
@@ -73,6 +74,7 @@ function StudyPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
+  const { error: toastError, success: toastSuccess } = useToast()
   const subjectKey = searchParams.get("subject") || "toan"
   const subjectInfo = getOnlineSubjectInfo(subjectKey)
 
@@ -135,6 +137,7 @@ function StudyPageInner() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    localStorage.setItem("drive_last_subject", subjectKey)
     const f = localStorage.getItem(`drive_folder_${subjectKey}`)
     if (f) setCurrentFolderId(f)
     else setCurrentFolderId(null)
@@ -313,7 +316,9 @@ function StudyPageInner() {
       }
     } catch (e) {
       console.error(e)
-      alert(e instanceof Error ? e.message : "Không mở được bài học")
+      toastError(
+        e instanceof Error ? e.message : "Không mở được bài học. Thử lại sau."
+      )
       setActiveLesson(null)
     } finally {
       setLoadingPlayback(false)
@@ -332,9 +337,15 @@ function StudyPageInner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lessonId, completed }),
       })
-      if (res.ok) fetchProgress()
+      if (res.ok) {
+        fetchProgress()
+        toastSuccess(completed ? "Đã đánh dấu hoàn thành" : "Đã bỏ hoàn thành")
+      } else {
+        toastError("Không lưu được tiến độ")
+      }
     } catch (e) {
       console.error(e)
+      toastError("Không lưu được tiến độ")
     }
   }
 
