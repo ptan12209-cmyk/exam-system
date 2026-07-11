@@ -52,17 +52,14 @@ const nextConfig: NextConfig = {
         // Only apply no-cache to HTML pages, not static assets
         source: '/((?!_next/static|_next/image|icons|fonts|favicon\\.ico|manifest\\.json|sw\\.js).*)',
         headers: [
+          // private + must-revalidate: browser may revalidate without public CDN caching auth HTML
           {
             key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate, max-age=0',
+            value: 'private, no-cache, must-revalidate',
           },
           {
             key: 'Pragma',
             value: 'no-cache',
-          },
-          {
-            key: 'Expires',
-            value: '0',
           },
           ...securityHeaders,
         ],

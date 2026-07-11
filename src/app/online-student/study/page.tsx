@@ -1,13 +1,26 @@
 "use client"
 
 import { useEffect, useState, useMemo, Suspense } from "react"
+import dynamic from "next/dynamic"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { OnlineStudentShell } from "@/components/online-student/OnlineStudentShell"
 import { OnlineStudentTopbar } from "@/components/online-student/OnlineStudentTopbar"
 import { Loading } from "@/components/shared/Loading"
-import { ProtectedVideoPlayer } from "@/components/exam/ProtectedVideoPlayer"
 import { SupportFab } from "@/components/support/SupportFab"
+
+const ProtectedVideoPlayer = dynamic(
+  () =>
+    import("@/components/exam/ProtectedVideoPlayer").then((m) => m.ProtectedVideoPlayer),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="aspect-video rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] flex items-center justify-center">
+        <Loading label="Đang tải trình phát…" />
+      </div>
+    ),
+  }
+)
 import { getOnlineSubjectInfo } from "@/lib/subjects"
 import { supportZaloUrlWithText } from "@/lib/support"
 import {
@@ -35,6 +48,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import Footer from "@/components/Footer"
 import { cn } from "@/lib/utils"
+import { cacheGet, cacheSet } from "@/lib/client-swr-cache"
 
 interface DbFolder {
   id: string
@@ -233,6 +247,16 @@ function StudyPageInner() {
     if (loadingAuth || !hasAccess) return
     ;(async () => {
       setLoadingData(true)
+      const cacheKey = `catalog:${subjectInfo.dbValue}`
+      const cached = cacheGet<{ folders: DbFolder[]; lessons: CatalogLesson[] }>(
+        cacheKey,
+        45_000
+      )
+      if (cached) {
+        setFolders(cached.folders)
+        setLessons(cached.lessons)
+        setLoadingData(false)
+      }
       try {
         const [rf, rl] = await Promise.all([
           fetch(`/api/online-study/folders?subject=${subjectInfo.dbValue}`),
@@ -247,6 +271,7 @@ function StudyPageInner() {
         const lessonList: CatalogLesson[] = rl.ok && dl.success ? dl.data || [] : []
         setFolders(folderList)
         setLessons(lessonList)
+        cacheSet(cacheKey, { folders: folderList, lessons: lessonList })
         const pending = (window as unknown as { __pendingLessonId?: string }).__pendingLessonId
         if (pending) {
           const found = lessonList.find((l) => l.id === pending)

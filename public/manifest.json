@@ -1,11 +1,11 @@
 {
-  "name": "ExamHub - Hệ thống thi trắc nghiệm",
-  "short_name": "ExamHub",
-  "description": "Nền tảng thi trắc nghiệm thông minh - Tạo đề nhanh, chấm điểm tự động",
-  "start_url": "/",
+  "name": "StudyHub - Học online",
+  "short_name": "StudyHub",
+  "description": "Nền tảng học trực tuyến - Video bài giảng, tài liệu và mở khóa môn học",
+  "start_url": "/online-student/dashboard",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#3b82f6",
+  "background_color": "#0B0A13",
+  "theme_color": "#0B0A13",
   "orientation": "portrait-primary",
   "icons": [
     {

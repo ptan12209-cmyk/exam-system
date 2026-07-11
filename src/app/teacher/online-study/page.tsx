@@ -13,7 +13,22 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
 import { ONLINE_SUBJECTS, getOnlineSubjectInfo } from "@/lib/subjects"
 import Footer from "@/components/Footer"
-import { AccessSecurityPanel } from "@/components/teacher/AccessSecurityPanel"
+import dynamic from "next/dynamic"
+
+const LazyAccessSecurityPanel = dynamic(
+  () =>
+    import("@/components/teacher/AccessSecurityPanel").then(
+      (m) => m.AccessSecurityPanel
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex justify-center py-16 text-[#8C87A2] text-xs font-mono">
+        Đang tải panel bảo mật…
+      </div>
+    ),
+  }
+)
 import { AnimatePresence, motion } from "framer-motion"
 import { 
   Plus, 
@@ -1677,8 +1692,8 @@ export default function TeacherOnlineStudyPage() {
           )
         })()}
 
-        {/* Tab 5: Security logs + anomalies */}
-        {activeTab === "security" && <AccessSecurityPanel />}
+        {/* Tab 5: Security logs + anomalies (lazy) */}
+        {activeTab === "security" && <LazyAccessSecurityPanel />}
 
       </main>
       <Footer />
