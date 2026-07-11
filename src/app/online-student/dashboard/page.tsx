@@ -340,8 +340,8 @@ export default function OnlineStudentDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
-        <Loading label="Khởi động không gian học tập trực tuyến..." />
+      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
+        <Loading label="Khởi động không gian học tập…" />
       </div>
     )
   }
@@ -465,8 +465,9 @@ export default function OnlineStudentDashboard() {
                   <Link 
                     key={subject.value}
                     href={`/online-student/study?subject=${subject.value}`}
+                    aria-label={`Vào học ${subject.label}`}
                     className={cn(
-                      "group flex flex-col justify-between p-5 h-48 bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl transition-all duration-300 relative overflow-hidden",
+                      "group flex flex-col justify-between p-5 h-48 bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl transition-all duration-300 relative overflow-hidden focus-visible:ring-2 focus-visible:ring-[#C18CFF]/50",
                       theme.border,
                       theme.glow
                     )}
@@ -497,9 +498,18 @@ export default function OnlineStudentDashboard() {
                 return (
                   <div 
                     key={subject.value}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Mua khóa ${subject.label}`}
                     onClick={() => goToPayment(subject)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        goToPayment(subject)
+                      }
+                    }}
                     className={cn(
-                      "group flex flex-col justify-between p-5 h-48 bg-[#15131F]/40 border border-[#8C87A2]/10 rounded-2xl cursor-pointer relative overflow-hidden select-none transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-[#15131F]/70",
+                      "group flex flex-col justify-between p-5 h-48 bg-[#15131F]/40 border border-[#8C87A2]/10 rounded-2xl cursor-pointer relative overflow-hidden select-none transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-[#15131F]/70 focus-visible:ring-2 focus-visible:ring-[#C18CFF]/50",
                       theme.border,
                       theme.glow
                     )}
