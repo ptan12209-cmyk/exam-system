@@ -14,6 +14,11 @@ import { useToast } from "@/components/ui/toast"
 import { ONLINE_SUBJECTS, getOnlineSubjectInfo } from "@/lib/subjects"
 import Footer from "@/components/Footer"
 import dynamic from "next/dynamic"
+import { BunnySecurityChecklist } from "@/components/teacher/online-study/BunnySecurityChecklist"
+import {
+  OrdersRevenuePanel,
+  type TeacherOrder,
+} from "@/components/teacher/online-study/OrdersRevenuePanel"
 
 const LazyAccessSecurityPanel = dynamic(
   () =>
@@ -51,7 +56,6 @@ import {
   Search,
   Shield,
   ShieldAlert,
-  ShieldCheck,
   UserCheck,
   UserX,
   UserPlus,
@@ -60,10 +64,6 @@ import {
   List,
   Home,
   Sliders,
-  BadgeDollarSign,
-  CreditCard,
-  Activity,
-  RefreshCw,
 } from "lucide-react"
 
 interface DbFolder {
@@ -130,11 +130,13 @@ export default function TeacherOnlineStudyPage() {
   const [savingSettings, setSavingSettings] = useState(false)
 
   // Orders and Revenue States
-  const [orders, setOrders] = useState<any[]>([])
+  const [orders, setOrders] = useState<TeacherOrder[]>([])
   const [revenue, setRevenue] = useState(0)
   const [loadingOrders, setLoadingOrders] = useState(false)
   const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null)
   const [approveTarget, setApproveTarget] = useState<{ id: string; label: string } | null>(null)
+  const [pendingOrderCount, setPendingOrderCount] = useState(0)
+  const [anomalyCount, setAnomalyCount] = useState(0)
 
   // Create student states
   const [isCreateStudentOpen, setIsCreateStudentOpen] = useState(false)
@@ -212,8 +214,10 @@ export default function TeacherOnlineStudyPage() {
       const res = await fetch("/api/online-study/orders")
       const data = await res.json()
       if (res.ok && data.success) {
-        setOrders(data.data.orders || [])
+        const list = (data.data.orders || []) as TeacherOrder[]
+        setOrders(list)
         setRevenue(data.data.revenue || 0)
+        setPendingOrderCount(list.filter((o) => o.status === "pending").length)
       }
     } catch (err) {
       console.error(err)
@@ -222,6 +226,36 @@ export default function TeacherOnlineStudyPage() {
       setLoadingOrders(false)
     }
   }
+
+  // Prefetch badge counts (ops UX)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const [ro, ra] = await Promise.all([
+          fetch("/api/online-study/orders"),
+          fetch("/api/online-study/access-logs?limit=1&hours=24"),
+        ])
+        const [do_, da] = await Promise.all([ro.json(), ra.json()])
+        if (cancelled) return
+        if (ro.ok && do_.success) {
+          const list = (do_.data.orders || []) as TeacherOrder[]
+          setPendingOrderCount(list.filter((o) => o.status === "pending").length)
+          // Warm orders if user opens tab soon
+          setOrders(list)
+          setRevenue(do_.data.revenue || 0)
+        }
+        if (ra.ok && da.success) {
+          setAnomalyCount(Number(da.data.anomaly_count) || 0)
+        }
+      } catch {
+        /* ignore badge errors */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Handle manual order approval (after confirm dialog)
   const handleApproveOrder = async (orderId: string) => {
@@ -893,124 +927,86 @@ export default function TeacherOnlineStudyPage() {
           )}
         </section>
 
-        {/* V3: Bunny / video security checklist (ops) */}
-        <section className="mb-6 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4 sm:p-5">
-          <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10">
-              <ShieldCheck className="h-5 w-5 text-amber-300" />
-            </div>
-            <div className="min-w-0 flex-1 space-y-2">
-              <h2 className="text-sm font-bold text-[#F1EDF9]">
-                Checklist bảo mật video Bunny (V3)
-              </h2>
-              <p className="text-[11px] text-[#8C87A2] leading-relaxed">
-                Cấu hình trên{" "}
-                <a
-                  href="https://dash.bunny.net"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#C18CFF] underline underline-offset-2"
-                >
-                  Bunny dashboard
-                </a>
-                {" "}— app chỉ cấp URL có quyền qua playback API. Domain site:{" "}
-                <code className="rounded bg-[#0B0A13] px-1.5 py-0.5 font-mono text-[10px] text-amber-200">
-                  luyende.id.vn
-                </code>
-              </p>
-              <ul className="grid gap-1.5 text-[11px] text-[#C8C4D8] sm:grid-cols-2">
-                <li className="flex gap-2">
-                  <span className="text-amber-400 shrink-0">1.</span>
-                  <span>
-                    Stream library → <strong className="text-[#F1EDF9]">Security</strong> → bật{" "}
-                    <strong className="text-[#F1EDF9]">Token Authentication</strong>
-                  </span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-amber-400 shrink-0">2.</span>
-                  <span>
-                    Copy <strong className="text-[#F1EDF9]">Token security key</strong> → Vercel env{" "}
-                    <code className="font-mono text-[10px] text-amber-200">BUNNY_STREAM_TOKEN_KEY</code>
-                  </span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-amber-400 shrink-0">3.</span>
-                  <span>
-                    Allowed referrers / domains:{" "}
-                    <code className="font-mono text-[10px] text-amber-200">luyende.id.vn</code>
-                    {" "}+ localhost (dev)
-                  </span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-amber-400 shrink-0">4.</span>
-                  <span>
-                    Tắt download / block hotlink nếu Bunny hỗ trợ trên library
-                  </span>
-                </li>
-                <li className="flex gap-2 sm:col-span-2">
-                  <span className="text-amber-400 shrink-0">5.</span>
-                  <span>
-                    Dán link <strong className="text-[#F1EDF9]">embed</strong> hoặc play Bunny vào bài học
-                    (app tự chuẩn hóa, bỏ token cũ khi lưu)
-                  </span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </section>
+        <BunnySecurityChecklist />
 
-        {/* Tab Selection */}
-        <div className="mb-6 flex gap-2 border-b border-[#8C87A2]/20 pb-px overflow-x-auto">
-          <button
-            onClick={() => setActiveTab("lectures")}
-            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === "lectures" 
-                ? "border-[#C18CFF] text-[#C18CFF]" 
-                : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
-            }`}
+        {/* Tabs: mobile select + desktop bar with badges */}
+        <div className="mb-6">
+          <label className="sr-only" htmlFor="teacher-os-tab">
+            Chọn tab quản trị
+          </label>
+          <select
+            id="teacher-os-tab"
+            value={activeTab}
+            onChange={(e) =>
+              setActiveTab(
+                e.target.value as
+                  | "lectures"
+                  | "permissions"
+                  | "payment"
+                  | "orders"
+                  | "security"
+              )
+            }
+            className="w-full sm:hidden h-11 rounded-xl border border-[#8C87A2]/25 bg-[#15131F] px-3 text-sm text-[#F1EDF9] mb-3"
           >
-            Quản lý bài giảng (Drive)
-          </button>
-          <button
-            onClick={() => setActiveTab("permissions")}
-            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === "permissions" 
-                ? "border-[#C18CFF] text-[#C18CFF]" 
-                : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
-            }`}
+            <option value="lectures">Bài giảng (Drive)</option>
+            <option value="permissions">Cấp quyền HV</option>
+            <option value="payment">Thanh toán & giá</option>
+            <option value="orders">
+              Đơn hàng{pendingOrderCount > 0 ? ` (${pendingOrderCount} chờ)` : ""}
+            </option>
+            <option value="security">
+              Bảo mật{anomalyCount > 0 ? ` (${anomalyCount} cảnh báo)` : ""}
+            </option>
+          </select>
+
+          <div
+            className="hidden sm:flex gap-1 border-b border-[#8C87A2]/20 pb-px overflow-x-auto"
+            role="tablist"
+            aria-label="Quản trị học online"
           >
-            Cấp quyền học sinh
-          </button>
-          <button
-            onClick={() => setActiveTab("payment")}
-            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === "payment" 
-                ? "border-[#C18CFF] text-[#C18CFF]" 
-                : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
-            }`}
-          >
-            Cấu hình thanh toán & Bảng giá
-          </button>
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === "orders" 
-                ? "border-[#C18CFF] text-[#C18CFF]" 
-                : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
-            }`}
-          >
-            Quản lý đơn hàng & Doanh thu
-          </button>
-          <button
-            onClick={() => setActiveTab("security")}
-            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === "security" 
-                ? "border-[#C18CFF] text-[#C18CFF]" 
-                : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
-            }`}
-          >
-            Bảo mật & Logs
-          </button>
+            {(
+              [
+                { id: "lectures" as const, label: "Bài giảng (Drive)" },
+                { id: "permissions" as const, label: "Cấp quyền HV" },
+                { id: "payment" as const, label: "Thanh toán & giá" },
+                {
+                  id: "orders" as const,
+                  label: "Đơn hàng",
+                  badge: pendingOrderCount,
+                  badgeClass: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+                },
+                {
+                  id: "security" as const,
+                  label: "Bảo mật",
+                  badge: anomalyCount,
+                  badgeClass: "bg-red-500/20 text-red-300 border-red-500/30",
+                },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`pb-3 px-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap inline-flex items-center gap-1.5 min-h-[44px] ${
+                  activeTab === tab.id
+                    ? "border-[#C18CFF] text-[#C18CFF]"
+                    : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
+                }`}
+              >
+                {tab.label}
+                {"badge" in tab && tab.badge > 0 && (
+                  <span
+                    className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full border ${tab.badgeClass}`}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Tab 1: Lectures Manager */}
@@ -1500,197 +1496,29 @@ export default function TeacherOnlineStudyPage() {
           </form>
         )}
 
-        {/* Tab 4: Orders & Revenue Management */}
-        {activeTab === "orders" && (() => {
-          const successOrders = orders.filter((o) => o.status === "success")
-          const pendingOrders = orders.filter((o) => o.status === "pending")
-          const monthStart = new Date()
-          monthStart.setDate(1)
-          monthStart.setHours(0, 0, 0, 0)
-          const monthRevenue = successOrders
-            .filter((o) => new Date(o.created_at) >= monthStart)
-            .reduce((sum, o) => sum + (Number(o.amount) || 0), 0)
-          const filteredOrders =
-            orderStatusFilter === "all"
-              ? orders
-              : orders.filter((o) => o.status === orderStatusFilter)
-
-          return (
-          <div className="space-y-6">
-            
-            {/* Revenue Analytics Cards */}
-            <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-5 relative overflow-hidden shadow-sm">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Tổng DT đã nhận</span>
-                <h3 className="text-2xl sm:text-3xl font-bold text-[#C18CFF] font-mono mt-2">
-                  {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(revenue)}
-                </h3>
-                <BadgeDollarSign className="absolute right-4 top-4 h-5 w-5 text-[#C18CFF]/40" />
-              </div>
-
-              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-5 relative overflow-hidden shadow-sm">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">DT tháng này</span>
-                <h3 className="text-2xl sm:text-3xl font-bold text-[#F1EDF9] font-mono mt-2">
-                  {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(monthRevenue)}
-                </h3>
-                <Activity className="absolute right-4 top-4 h-5 w-5 text-[#8C87A2]/40" />
-              </div>
-
-              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-5 relative overflow-hidden shadow-sm">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Đơn thành công</span>
-                <h3 className="text-2xl sm:text-3xl font-bold text-emerald-400 font-mono mt-2">
-                  {successOrders.length}
-                </h3>
-                <CreditCard className="absolute right-4 top-4 h-5 w-5 text-emerald-400/40" />
-              </div>
-
-              <div className="bg-[#15131F] border border-yellow-500/20 rounded-2xl p-5 relative overflow-hidden shadow-sm">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Chờ duyệt</span>
-                <h3 className="text-2xl sm:text-3xl font-bold text-yellow-400 font-mono mt-2">
-                  {pendingOrders.length}
-                </h3>
-                <ShieldAlert className="absolute right-4 top-4 h-5 w-5 text-yellow-400/40" />
-              </div>
-            </div>
-
-            {/* Orders list */}
-            <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/10 overflow-hidden">
-              <div className="p-4 border-b border-[#8C87A2]/20 bg-[#15131F]/50 flex flex-wrap items-center justify-between gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Danh sách giao dịch học viên</span>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={orderStatusFilter}
-                    onChange={(e) =>
-                      setOrderStatusFilter(e.target.value as typeof orderStatusFilter)
-                    }
-                    className="h-8 rounded-lg border border-[#8C87A2]/25 bg-[#0B0A13] px-2 text-[10px] text-[#F1EDF9] font-mono"
-                  >
-                    <option value="all">Tất cả</option>
-                    <option value="pending">Chờ duyệt</option>
-                    <option value="success">Thành công</option>
-                    <option value="failed">Lỗi / Hủy</option>
-                  </select>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => void fetchOrders()}
-                    className="h-8 rounded-lg border border-[#8C87A2]/25 text-[#8C87A2] text-[10px]"
-                  >
-                    <RefreshCw className="h-3 w-3 mr-1" /> Làm mới
-                  </Button>
-                  <span className="text-[10px] bg-[#0B0A13] px-2 py-0.5 rounded border border-[#8C87A2]/20 text-[#8C87A2] font-mono">
-                    {filteredOrders.length}/{orders.length}
-                  </span>
-                </div>
-              </div>
-
-              {loadingOrders ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <Loader2 className="h-8 w-8 animate-spin text-[#C18CFF]" />
-                  <p className="mt-2 text-xs text-[#8C87A2]">Đang tải danh sách đơn hàng...</p>
-                </div>
-              ) : filteredOrders.length === 0 ? (
-                <div className="text-center py-20 text-sm text-[#8C87A2] italic">
-                  {orders.length === 0
-                    ? "Chưa có giao dịch mua khóa học nào được ghi nhận."
-                    : "Không có đơn khớp bộ lọc."}
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-[#8C87A2]/10 bg-[#0B0A13]/30 text-[#8C87A2] uppercase font-mono tracking-wider">
-                        <th className="p-4 font-bold">Ngày giao dịch</th>
-                        <th className="p-4 font-bold">Học viên</th>
-                        <th className="p-4 font-bold">Môn học</th>
-                        <th className="p-4 font-bold text-right">Số tiền</th>
-                        <th className="p-4 font-bold">Nội dung Memo</th>
-                        <th className="p-4 font-bold text-center">Trạng thái</th>
-                        <th className="p-4 font-bold text-right">Hành động</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#8C87A2]/10 bg-[#15131F]/10">
-                      {filteredOrders.map(order => {
-                        const studentName = order.student?.full_name || "Học viên ẩn danh"
-                        const studentEmail = order.student?.email || "unknown@student.com"
-                        const subjectInfo = getOnlineSubjectInfo(order.subject_key)
-                        
-                        return (
-                          <tr key={order.id} className="hover:bg-[#15131F]/30 transition-colors">
-                            <td className="p-4 text-[#8C87A2] font-mono whitespace-nowrap">
-                              {new Date(order.created_at).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
-                            </td>
-                            <td className="p-4 min-w-[150px]">
-                              <p className="font-bold text-[#F1EDF9]">{studentName}</p>
-                              <p className="text-[10px] text-[#8C87A2] mt-0.5">{studentEmail}</p>
-                            </td>
-                            <td className="p-4">
-                              <span className="px-2 py-1 rounded bg-[#0B0A13] border border-[#8C87A2]/25 text-[#F1EDF9] inline-flex items-center gap-1 font-mono">
-                                <span>{subjectInfo.icon}</span>
-                                <span>{subjectInfo.label}</span>
-                              </span>
-                            </td>
-                            <td className="p-4 text-right font-bold text-[#F1EDF9] font-mono">
-                              {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.amount)}
-                            </td>
-                            <td className="p-4">
-                              <span className="px-2 py-0.5 rounded bg-[#0B0A13] border border-[#C18CFF]/20 text-[#C18CFF] font-bold font-mono">
-                                {order.memo}
-                              </span>
-                            </td>
-                            <td className="p-4 text-center whitespace-nowrap">
-                              {order.status === "success" ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono">
-                                  ✓ Thành công
-                                </span>
-                              ) : order.status === "failed" ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full font-mono">
-                                  ✗ Lỗi / Hủy
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-2 py-0.5 rounded-full font-mono animate-pulse">
-                                  ⏳ Chờ duyệt
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-4 text-right">
-                              {order.status === "pending" && (
-                                <Button
-                                  size="sm"
-                                  disabled={approvingOrderId === order.id}
-                                  onClick={() => {
-                                    const studentName =
-                                      (order.student as { full_name?: string } | null)?.full_name ||
-                                      "học viên"
-                                    const subj = getOnlineSubjectInfo(order.subject_key)
-                                    setApproveTarget({
-                                      id: order.id,
-                                      label: `${studentName} · ${subj.label} · ${new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.amount)}`,
-                                    })
-                                  }}
-                                  className="rounded-lg bg-emerald-500 text-[#0B0A13] hover:bg-emerald-400 text-[10px] font-bold px-3 py-1 transition-transform active:scale-95 flex items-center justify-center gap-1 ml-auto"
-                                >
-                                  {approvingOrderId === order.id ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    "Duyệt thủ công"
-                                  )}
-                                </Button>
-                              )}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-          </div>
-          )
-        })()}
+        {/* Tab 4: Orders & Revenue */}
+        {activeTab === "orders" && (
+          <OrdersRevenuePanel
+            orders={orders}
+            revenue={revenue}
+            loading={loadingOrders}
+            statusFilter={orderStatusFilter}
+            onStatusFilterChange={setOrderStatusFilter}
+            onRefresh={() => void fetchOrders()}
+            approvingOrderId={approvingOrderId}
+            onRequestApprove={(order) => {
+              const studentName = order.student?.full_name || "học viên"
+              const subj = getOnlineSubjectInfo(order.subject_key)
+              setApproveTarget({
+                id: order.id,
+                label: `${studentName} · ${subj.label} · ${new Intl.NumberFormat("vi-VN", {
+                  style: "currency",
+                  currency: "VND",
+                }).format(order.amount)}`,
+              })
+            }}
+          />
+        )}
 
         {/* Tab 5: Security logs + anomalies (lazy) */}
         {activeTab === "security" && <LazyAccessSecurityPanel />}

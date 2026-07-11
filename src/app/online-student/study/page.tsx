@@ -49,6 +49,7 @@ import { useToast } from "@/components/ui/toast"
 import Footer from "@/components/Footer"
 import { cn } from "@/lib/utils"
 import { cacheGet, cacheSet } from "@/lib/client-swr-cache"
+import { EmptyState } from "@/components/online-student/EmptyState"
 
 interface DbFolder {
   id: string
@@ -693,24 +694,27 @@ function StudyPageInner() {
         {/* Full-page content area */}
         <div className="flex-1 min-h-[55vh] rounded-2xl border border-[#8C87A2]/15 bg-[#15131F]/40 p-4 sm:p-6">
           {empty ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <FolderOpenIcon className="h-14 w-14 text-[#8C87A2]/30 mb-3" />
-              <p className="text-base font-bold text-[#F1EDF9]">Thư mục trống</p>
-              <p className="text-xs text-[#8C87A2] mt-1 max-w-xs">
-                {search
-                  ? "Không có kết quả phù hợp."
-                  : "Chưa có thư mục con hoặc bài giảng trong vị trí này."}
-              </p>
-              {currentFolderId && (
-                <Button
-                  onClick={goUp}
-                  variant="outline"
-                  className="mt-4 rounded-xl border-[#8C87A2]/30 text-[#F1EDF9] text-xs"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Lên thư mục cha
-                </Button>
-              )}
-            </div>
+            <EmptyState
+              icon={<FolderOpenIcon />}
+              title={search ? "Không có kết quả" : "Thư mục trống"}
+              description={
+                search
+                  ? "Thử từ khóa khác hoặc xóa bộ lọc tìm kiếm."
+                  : "Chưa có thư mục con hoặc bài giảng trong vị trí này."
+              }
+              action={
+                currentFolderId ? (
+                  <Button
+                    onClick={goUp}
+                    variant="outline"
+                    className="rounded-xl border-[var(--os-border)] text-[var(--os-fg)] text-xs min-h-11"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Lên thư mục cha
+                  </Button>
+                ) : undefined
+              }
+              className="border-0 bg-transparent py-16"
+            />
           ) : viewMode === "grid" ? (
             <div className="space-y-8">
               {currentFolders.length > 0 && (
@@ -723,11 +727,12 @@ function StudyPageInner() {
                       <button
                         key={folder.id}
                         type="button"
+                        aria-label={`Mở thư mục ${folder.name}`}
                         onClick={() => {
                           setSearch("")
                           setCurrentFolderId(folder.id)
                         }}
-                        className="group flex flex-col items-start gap-3 rounded-2xl border border-[#8C87A2]/15 bg-[#0B0A13]/50 p-4 min-h-[120px] text-left hover:border-[#C18CFF]/50 hover:bg-[#0B0A13] transition-all active:scale-[0.98]"
+                        className="group flex flex-col items-start gap-3 rounded-2xl border border-[#8C87A2]/15 bg-[#0B0A13]/50 p-4 min-h-[120px] text-left hover:border-[#C18CFF]/50 hover:bg-[#0B0A13] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#C18CFF]/50"
                       >
                         <FolderIcon className="h-10 w-10 text-[#C18CFF] group-hover:scale-105 transition-transform" />
                         <span className="text-sm font-bold text-[#F1EDF9] line-clamp-2 leading-snug w-full">
@@ -758,8 +763,9 @@ function StudyPageInner() {
                         <button
                           key={lesson.id}
                           type="button"
+                          aria-label={`${done ? "Đã học · " : ""}Mở bài ${lesson.title}`}
                           onClick={() => void openLesson(lesson)}
-                          className="group flex flex-col gap-3 rounded-2xl border border-[#8C87A2]/15 bg-[#0B0A13]/40 p-5 text-left hover:border-[#C18CFF]/45 hover:bg-[#0B0A13] transition-all min-h-[130px] active:scale-[0.99]"
+                          className="group flex flex-col gap-3 rounded-2xl border border-[#8C87A2]/15 bg-[#0B0A13]/40 p-5 text-left hover:border-[#C18CFF]/45 hover:bg-[#0B0A13] transition-all min-h-[130px] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#C18CFF]/50"
                         >
                           <div className="flex items-start justify-between w-full">
                             {done ? (
