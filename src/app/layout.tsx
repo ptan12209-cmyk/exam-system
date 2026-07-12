@@ -32,13 +32,20 @@ export const viewport: Viewport = {
 const themeScript = `
   (function() {
     try {
-      const theme = localStorage.getItem('theme') || 'system';
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const resolved = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
-      document.documentElement.classList.add(resolved);
-      
-      const designTheme = localStorage.getItem('design-theme') || 'dream';
-      document.documentElement.classList.add('theme-' + designTheme);
+      var root = document.documentElement;
+      var theme = localStorage.getItem('theme') || 'system';
+      var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var resolved = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
+      if (resolved !== 'light' && resolved !== 'dark') resolved = 'dark';
+      root.classList.remove('light', 'dark');
+      root.classList.add(resolved);
+      root.dataset.mode = resolved;
+
+      var brand = localStorage.getItem('design-theme') || 'dream';
+      if (brand !== 'dream' && brand !== 'dol' && brand !== 'swiss') brand = 'dream';
+      root.classList.remove('theme-dream', 'theme-dol', 'theme-swiss');
+      root.classList.add('theme-' + brand);
+      root.dataset.design = brand;
     } catch (e) {}
   })();
 `;
@@ -49,7 +56,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" suppressHydrationWarning className="color-scheme-dark">
+    <html lang="vi" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />

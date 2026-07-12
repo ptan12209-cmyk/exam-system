@@ -149,46 +149,34 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                         ))}
                     </div>
 
-                    {/* Theme selector */}
+                    {/* Brand switcher: Dream Violet ↔ DOL Crimson (+ Swiss) */}
                     <div className="border-t border-[hsl(var(--border))]/40 py-2.5 px-3.5 space-y-2">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Giao diện thiết kế</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                            Thương hiệu
+                        </p>
                         <div className="grid grid-cols-3 gap-1 bg-muted/40 p-0.5 rounded-lg border border-[hsl(var(--border))]/10">
-                            <button
-                                onClick={() => setDesignTheme("dream")}
-                                className={cn(
-                                    "text-[10px] py-1.5 px-0.5 rounded-md transition-all font-semibold text-center truncate",
-                                    designTheme === "dream"
-                                        ? "bg-background text-foreground shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground"
-                                )}
-                                title="Dream Engine"
-                            >
-                                Dream
-                            </button>
-                            <button
-                                onClick={() => setDesignTheme("swiss")}
-                                className={cn(
-                                    "text-[10px] py-1.5 px-0.5 rounded-md transition-all font-semibold text-center truncate",
-                                    designTheme === "swiss"
-                                        ? "bg-background text-foreground shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground"
-                                )}
-                                title="Swiss Grid"
-                            >
-                                Swiss
-                            </button>
-                            <button
-                                onClick={() => setDesignTheme("dol")}
-                                className={cn(
-                                    "text-[10px] py-1.5 px-0.5 rounded-md transition-all font-semibold text-center truncate",
-                                    designTheme === "dol"
-                                        ? "bg-background text-foreground shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground"
-                                )}
-                                title="DOL English"
-                            >
-                                DOL
-                            </button>
+                            {(
+                                [
+                                    { id: "dream" as const, label: "Dream", title: "Dream Violet" },
+                                    { id: "dol" as const, label: "DOL", title: "DOL Crimson" },
+                                    { id: "swiss" as const, label: "Swiss", title: "Swiss Grid" },
+                                ] as const
+                            ).map((b) => (
+                                <button
+                                    key={b.id}
+                                    type="button"
+                                    onClick={() => setDesignTheme(b.id)}
+                                    className={cn(
+                                        "text-[10px] py-1.5 px-0.5 rounded-md transition-all font-semibold text-center truncate",
+                                        designTheme === b.id
+                                            ? "bg-background text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                    title={b.title}
+                                >
+                                    {b.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
 

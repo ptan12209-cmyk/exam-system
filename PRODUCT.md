@@ -21,8 +21,9 @@ Chuyên nghiệp, Tinh gọn, Minh bạch, Khoa học, Hướng hành động.
 
 ## Design Principles
 1. **Thông tin trực quan, hướng hành động (Actionable Insights)**: Dữ liệu thống kê phải rõ ràng, giúp giáo viên biết ngay cần hỗ trợ học sinh nào hoặc sửa đổi câu hỏi nào.
-2. **Thiết kế phẳng tối giản (Flat Obsidian & Single Accent)**: Đồng bộ với phong cách Obsidian phẳng của phân hệ học sinh, giảm thiểu gánh nặng thị giác.
+2. **Thiết kế phẳng tối giản + single accent**: Giảm gánh nặng thị giác; mỗi brand chỉ một accent chính.
 3. **Phân cấp thông tin chặt chẽ (Strong Hierarchy)**: Nhấn mạnh các số liệu mono quan trọng, nhãn phụ nhỏ hơn nhưng có độ tương phản tốt.
+4. **Dual brand linh hoạt**: Người dùng chuyển được **Dream Violet** (Obsidian + `#C18CFF`) và **DOL Crimson** (`#d14242`) độc lập với light/dark. Token qua CSS vars (`--os-*`, `--primary`). Chi tiết: `DESIGN.md`.
 
 ## Accessibility & Inclusion
 * Đạt chuẩn tương phản tối thiểu WCAG AA (chữ trên nền phải dễ đọc).

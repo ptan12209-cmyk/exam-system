@@ -88,6 +88,22 @@ html {
   color-scheme: light dark;
 }
 
+html.dark {
+  color-scheme: dark;
+}
+
+html.light {
+  color-scheme: light;
+}
+
+html.theme-dol ::selection {
+  background-color: var(--os-selection);
+}
+
+html.theme-dream ::selection {
+  background-color: var(--os-selection);
+}
+
 /* Focus ring */
 :focus-visible {
   outline: 2px solid hsl(var(--ring));
@@ -95,8 +111,10 @@ html {
 }
 
 /* ============================================
-   Online Study tokens (Dream Violet portal)
+   Online Study / brand surface tokens
    Use via: bg-[var(--os-bg)] text-[var(--os-fg)] etc.
+   Switched by html.theme-dream | theme-dol | theme-swiss
+   (see Dynamic Design Themes section below)
    ============================================ */
 :root {
   --os-bg: #0b0a13;
@@ -106,10 +124,12 @@ html {
   --os-muted: #8c87a2;
   --os-accent: #c18cff;
   --os-accent-fg: #0b0a13;
+  --os-accent-secondary: #7c6aef;
   --os-border: color-mix(in srgb, #8c87a2 25%, transparent);
   --os-success: #34d399;
   --os-warning: #fbbf24;
   --os-danger: #f87171;
+  --os-selection: color-mix(in srgb, #c18cff 35%, transparent);
 }
 
 .os-portal {
@@ -843,10 +863,23 @@ select option {
 
 /* ============================================
    Dynamic Design Themes
+   Axes: design (dream | dol | swiss) × mode (light | dark)
+   html classes: .theme-* + .light|.dark (set by ThemeProvider)
    ============================================ */
 
-/* 1. Dream Engine (obsidian surface, dream violet, seed amber) */
-.theme-dream, :root:not(.theme-swiss):not(.theme-dol) {
+/* --- 1. Dream Engine: Obsidian + Dream Violet --- */
+.theme-dream,
+:root:not(.theme-swiss):not(.theme-dol) {
+  --font-family-display: var(--font-instrument-serif);
+  --font-family-body: var(--font-inter);
+  --radius: 0.75rem;
+}
+
+/* Dream + Dark (default product) */
+.dark.theme-dream,
+.dark:not(.theme-swiss):not(.theme-dol),
+:root.theme-dream:not(.light),
+:root:not(.theme-swiss):not(.theme-dol):not(.light) {
   --background: 248 29% 6%; /* #0B0A13 */
   --foreground: 260 38% 95%; /* #F1EDF9 */
   --card: 250 24% 10%; /* #15131F */
@@ -854,21 +887,70 @@ select option {
   --popover: 250 24% 10%;
   --popover-foreground: 260 38% 95%;
   --primary: 268 100% 77%; /* #C18CFF */
-  --primary-foreground: 248 29% 6%; /* #0B0A13 */
+  --primary-foreground: 248 29% 6%;
   --secondary: 250 24% 15%; /* #1C1A2D */
   --secondary-foreground: 260 38% 95%;
   --muted: 253 11% 58% / 0.15;
   --muted-foreground: 253 11% 58%; /* #8C87A2 */
   --accent: 268 100% 77% / 0.15;
   --accent-foreground: 268 100% 77%;
-  --border: 253 11% 58% / 0.15; /* #8C87A2 mờ */
+  --border: 253 11% 58% / 0.15;
   --input: 253 11% 58% / 0.15;
   --ring: 268 100% 77%;
-  --radius: 0.75rem;
-  
-  /* Font Override */
-  --font-family-display: var(--font-instrument-serif);
-  --font-family-body: var(--font-inter);
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 0 0% 100%;
+
+  --os-bg: #0b0a13;
+  --os-card: #15131f;
+  --os-card-elevated: #1c1a2d;
+  --os-fg: #f1edf9;
+  --os-muted: #8c87a2;
+  --os-accent: #c18cff;
+  --os-accent-fg: #0b0a13;
+  --os-accent-secondary: #7c6aef;
+  --os-border: color-mix(in srgb, #8c87a2 25%, transparent);
+  --os-success: #34d399;
+  --os-warning: #fbbf24;
+  --os-danger: #f87171;
+  --os-selection: color-mix(in srgb, #c18cff 35%, transparent);
+}
+
+/* Dream + Light */
+.light.theme-dream,
+.light:not(.theme-swiss):not(.theme-dol) {
+  --background: 260 33% 98%; /* soft lilac paper */
+  --foreground: 250 24% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 250 24% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 250 24% 12%;
+  --primary: 268 72% 52%; /* violet readable on light */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 260 20% 94%;
+  --secondary-foreground: 250 24% 12%;
+  --muted: 253 11% 42% / 0.12;
+  --muted-foreground: 253 10% 40%;
+  --accent: 268 72% 52% / 0.12;
+  --accent-foreground: 268 72% 42%;
+  --border: 253 11% 42% / 0.16;
+  --input: 253 11% 42% / 0.16;
+  --ring: 268 72% 52%;
+  --destructive: 0 72% 48%;
+  --destructive-foreground: 0 0% 100%;
+
+  --os-bg: #f6f4fb;
+  --os-card: #ffffff;
+  --os-card-elevated: #f0ecf8;
+  --os-fg: #1a1528;
+  --os-muted: #6b6680;
+  --os-accent: #8b5cf6;
+  --os-accent-fg: #ffffff;
+  --os-accent-secondary: #6366f1;
+  --os-border: color-mix(in srgb, #6b6680 22%, transparent);
+  --os-success: #059669;
+  --os-warning: #d97706;
+  --os-danger: #dc2626;
+  --os-selection: color-mix(in srgb, #8b5cf6 28%, transparent);
 }
 
 .theme-dream h1,
@@ -876,40 +958,180 @@ select option {
   font-weight: 400 !important;
 }
 
-/* 2. Swiss Grid (alpine stone background, black text, Helvetica red accent, 0px border-radius) */
-.theme-swiss,
-.theme-swiss.dark {
+/* --- 2. DOL English: LMS + Crimson --- */
+.theme-dol {
+  --font-family-display: var(--font-plus-jakarta-sans);
+  --font-family-body: var(--font-inter);
+  --radius: 12px;
+  font-size: 14px;
+  line-height: 1.5715;
+}
+
+/* DOL + Light (canonical LMS) */
+.light.theme-dol,
+.theme-dol:not(.dark) {
+  --background: 0 0% 100%;
+  --foreground: 224 22% 18%; /* #242938 */
+  --card: 0 0% 100%;
+  --card-foreground: 224 22% 18%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 224 22% 18%;
+  --primary: 0 61% 54%; /* #d14242 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 6% 96%; /* #f4f4f6 */
+  --secondary-foreground: 224 22% 18%;
+  --muted: 228 5% 61% / 0.15;
+  --muted-foreground: 228 5% 45%; /* stronger than #95979f for AA */
+  --accent: 206 71% 43% / 0.12; /* tech blue wash */
+  --accent-foreground: 206 71% 38%;
+  --border: 210 7% 92%;
+  --input: 210 7% 92%;
+  --ring: 0 61% 54%;
+  --destructive: 0 72% 48%;
+  --destructive-foreground: 0 0% 100%;
+
+  --os-bg: #f4f4f6;
+  --os-card: #ffffff;
+  --os-card-elevated: #f0f1f3;
+  --os-fg: #242938;
+  --os-muted: #6b6e78;
+  --os-accent: #d14242;
+  --os-accent-fg: #ffffff;
+  --os-accent-secondary: #2074bb;
+  --os-border: #e9eaeb;
+  --os-success: #059669;
+  --os-warning: #d97706;
+  --os-danger: #dc2626;
+  --os-selection: rgba(209, 66, 66, 0.28);
+}
+
+/* DOL + Dark (slate navy night mode, same crimson brand) */
+.dark.theme-dol {
+  --background: 228 22% 10%; /* deep slate */
+  --foreground: 220 20% 96%;
+  --card: 228 18% 14%;
+  --card-foreground: 220 20% 96%;
+  --popover: 228 18% 14%;
+  --popover-foreground: 220 20% 96%;
+  --primary: 0 61% 58%; /* slightly brighter crimson on dark */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 228 14% 18%;
+  --secondary-foreground: 220 20% 96%;
+  --muted: 228 8% 55% / 0.15;
+  --muted-foreground: 228 8% 68%;
+  --accent: 206 71% 55% / 0.15;
+  --accent-foreground: 206 71% 70%;
+  --border: 228 10% 55% / 0.2;
+  --input: 228 10% 55% / 0.2;
+  --ring: 0 61% 58%;
+  --destructive: 0 62% 48%;
+  --destructive-foreground: 0 0% 100%;
+
+  --os-bg: #161822;
+  --os-card: #1e2130;
+  --os-card-elevated: #272b3d;
+  --os-fg: #f0f1f5;
+  --os-muted: #95979f;
+  --os-accent: #e05555;
+  --os-accent-fg: #ffffff;
+  --os-accent-secondary: #4d90c9;
+  --os-border: color-mix(in srgb, #95979f 28%, transparent);
+  --os-success: #34d399;
+  --os-warning: #fbbf24;
+  --os-danger: #f87171;
+  --os-selection: rgba(209, 66, 66, 0.35);
+}
+
+.theme-dol h1,
+.theme-dol .h1-style {
+  font-weight: 700 !important;
+  letter-spacing: normal !important;
+}
+
+.theme-dol ::selection {
+  background-color: var(--os-selection) !important;
+  color: inherit !important;
+}
+
+.theme-dol body {
+  font-size: 14px;
+  line-height: 1.5715;
+}
+
+/* --- 3. Swiss Grid: Alpine + Helvetica Red --- */
+.theme-swiss {
+  --font-family-display: var(--font-ibm-plex-sans);
+  --font-family-body: var(--font-ibm-plex-sans);
+  --radius: 0px;
+}
+
+.light.theme-swiss,
+.theme-swiss:not(.dark) {
   --background: 48 10% 95%; /* #F4F3EF */
-  --foreground: 0 0% 7%; /* #111111 */
-  --card: 0 0% 100%; /* #FFFFFF */
+  --foreground: 0 0% 7%;
+  --card: 0 0% 100%;
   --card-foreground: 0 0% 7%;
   --popover: 0 0% 100%;
   --popover-foreground: 0 0% 7%;
-  --primary: 0 100% 45%; /* #E60000 (Helvetica Red) */
-  --primary-foreground: 0 0% 100%; /* White */
-  --secondary: 48 10% 90%; /* Alpine Stone Darker */
+  --primary: 0 100% 45%; /* #E60000 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 48 10% 90%;
   --secondary-foreground: 0 0% 7%;
   --muted: 0 0% 40% / 0.15;
-  --muted-foreground: 0 0% 40%; /* #666666 */
-  --accent: 0 100% 45% / 0.15;
-  --accent-foreground: 0 100% 45%;
+  --muted-foreground: 0 0% 40%;
+  --accent: 0 100% 45% / 0.12;
+  --accent-foreground: 0 100% 40%;
   --border: 0 0% 7% / 0.15;
   --input: 0 0% 7% / 0.15;
   --ring: 0 100% 45%;
-  
-  /* Font Override */
-  --font-family-display: var(--font-ibm-plex-sans);
-  --font-family-body: var(--font-ibm-plex-sans);
-  
-  /* Radius Override for Tailwind */
-  --radius: 0px !important;
-  --radius-xs: 0px !important;
-  --radius-sm: 0px !important;
-  --radius-md: 0px !important;
-  --radius-lg: 0px !important;
-  --radius-xl: 0px !important;
-  --radius-2xl: 0px !important;
-  --radius-3xl: 0px !important;
+
+  --os-bg: #f4f3ef;
+  --os-card: #ffffff;
+  --os-card-elevated: #ebe9e3;
+  --os-fg: #111111;
+  --os-muted: #666666;
+  --os-accent: #e60000;
+  --os-accent-fg: #ffffff;
+  --os-accent-secondary: #111111;
+  --os-border: color-mix(in srgb, #111111 15%, transparent);
+  --os-success: #0f766e;
+  --os-warning: #b45309;
+  --os-danger: #b91c1c;
+  --os-selection: color-mix(in srgb, #e60000 25%, transparent);
+}
+
+.dark.theme-swiss {
+  --background: 0 0% 8%;
+  --foreground: 48 10% 95%;
+  --card: 0 0% 12%;
+  --card-foreground: 48 10% 95%;
+  --popover: 0 0% 12%;
+  --popover-foreground: 48 10% 95%;
+  --primary: 0 100% 52%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 16%;
+  --secondary-foreground: 48 10% 95%;
+  --muted: 0 0% 60% / 0.15;
+  --muted-foreground: 0 0% 65%;
+  --accent: 0 100% 52% / 0.15;
+  --accent-foreground: 0 100% 65%;
+  --border: 0 0% 100% / 0.12;
+  --input: 0 0% 100% / 0.12;
+  --ring: 0 100% 52%;
+
+  --os-bg: #141414;
+  --os-card: #1e1e1e;
+  --os-card-elevated: #2a2a2a;
+  --os-fg: #f4f3ef;
+  --os-muted: #999999;
+  --os-accent: #ff2a2a;
+  --os-accent-fg: #ffffff;
+  --os-accent-secondary: #f4f3ef;
+  --os-border: color-mix(in srgb, #f4f3ef 14%, transparent);
+  --os-success: #34d399;
+  --os-warning: #fbbf24;
+  --os-danger: #f87171;
+  --os-selection: color-mix(in srgb, #ff2a2a 30%, transparent);
 }
 
 .theme-swiss h1,
@@ -918,12 +1140,10 @@ select option {
   letter-spacing: -0.04em !important;
 }
 
-/* Force border radius to 0 for Swiss Grid (except avatar and perfect circles) */
 .theme-swiss *:not(.rounded-full):not(svg):not(path) {
   border-radius: 0px !important;
 }
 
-/* Disable box shadows and gradients for Swiss Grid */
 .theme-swiss .card-elevated,
 .theme-swiss .card-interactive,
 .theme-swiss .glass-card,
@@ -942,78 +1162,41 @@ select option {
 .theme-swiss .gradient-primary-soft {
   background: hsl(var(--secondary)) !important;
 }
-.theme-swiss .gradient-bg {
-  background: hsl(var(--background)) !important;
-}
+.theme-swiss .gradient-bg,
 .theme-swiss .gradient-mesh {
   background: hsl(var(--background)) !important;
 }
 
-/* 3. DOL English (friendly round UI, Slate Navy text, Crimson Brand Red, base font 14px) */
-.theme-dol,
-.theme-dol.dark {
-  --background: 0 0% 100%; /* #FFFFFF */
-  --foreground: 224 22% 18%; /* #242938 (Deep Slate Navy) */
-  --card: 0 0% 100%; /* #FFFFFF */
-  --card-foreground: 224 22% 18%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 224 22% 18%;
-  --primary: 0 61% 54%; /* #d14242 (Crimson Brand Red) */
-  --primary-foreground: 0 0% 100%; /* White */
-  --secondary: 240 6% 96%; /* #f4f4f6 (bg-neutral) */
-  --secondary-foreground: 224 22% 18%;
-  --muted: 228 5% 61% / 0.15;
-  --muted-foreground: 228 5% 61%; /* #95979f */
-  --accent: 206 71% 43%; /* #2074bb (LMS Tech Blue) */
-  --accent-foreground: 206 71% 43%;
-  --border: 210 7% 92%; /* #e9eaeb (border-light) */
-  --input: 210 7% 92%;
-  --ring: 0 61% 54%;
-  
-  /* Font Override */
-  --font-family-display: var(--font-plus-jakarta-sans);
-  --font-family-body: var(--font-inter);
-  
-  /* Radius Override for Tailwind */
-  --radius: 12px !important;
-  --radius-xs: 10px !important;
-  --radius-sm: 10px !important;
-  --radius-md: 12px !important;
-  --radius-lg: 16px !important;
-  --radius-xl: 16px !important;
-  --radius-2xl: 16px !important;
-  --radius-3xl: 16px !important;
+/* Brand-aware glass surfaces (use token hues, not fixed slate) */
+.dark.theme-dream .glass-nav,
+.dark:not(.theme-swiss):not(.theme-dol) .glass-nav {
+  background: color-mix(in srgb, var(--os-bg) 85%, transparent);
+  border-bottom-color: var(--os-border);
+}
+.dark.theme-dol .glass-nav {
+  background: color-mix(in srgb, var(--os-bg) 88%, transparent);
+  border-bottom-color: var(--os-border);
+}
+.dark.theme-dream .glass-nav-bottom,
+.dark:not(.theme-swiss):not(.theme-dol) .glass-nav-bottom {
+  background: color-mix(in srgb, var(--os-bg) 80%, transparent);
+  border-top-color: color-mix(in srgb, var(--os-accent) 12%, transparent);
 }
 
-.theme-dol h1,
-.theme-dol .h1-style {
-  font-weight: 700 !important;
-  letter-spacing: normal !important;
+/* Utility: brand primary fill for CTAs that should track design theme */
+.btn-brand {
+  background: var(--os-accent);
+  color: var(--os-accent-fg);
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  transition: opacity 0.2s ease, transform 0.15s ease;
 }
-
-/* Custom Text Selection for DOL English (#edb3b366 selection bg) */
-.theme-dol ::selection {
-  background-color: rgba(209, 66, 66, 0.4) !important;
-  color: inherit !important;
+.btn-brand:hover {
+  opacity: 0.92;
 }
-
-/* Apply 14px base font density and 1.5715 line height to DOL English body and containers */
-.theme-dol,
-.theme-dol body {
-  font-size: 14px !important;
-  line-height: 1.5715 !important;
-}
-
-/* Align scrollbar colors to DOL style */
-.theme-dol ::-webkit-scrollbar-track {
-  background: #fafafa !important;
-}
-.theme-dol ::-webkit-scrollbar-thumb {
-  background: #c1c1c1 !important;
-  border-radius: 16px !important;
-}
-.theme-dol ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1 !important;
+.btn-brand:active {
+  transform: scale(0.98);
 }
 
 /* ============================================

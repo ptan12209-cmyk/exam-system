@@ -508,7 +508,7 @@ export default function OnlineStudentPaymentPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
+        <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
           <Loading label="Đang mở trang thanh toán…" />
         </div>
       }

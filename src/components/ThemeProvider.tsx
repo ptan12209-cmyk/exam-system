@@ -1,23 +1,58 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useRef } from "react"
+import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react"
+import type { DesignBrand } from "@/lib/online-study-theme"
 
 type Theme = "dark" | "light" | "system"
-type DesignTheme = "dream" | "swiss" | "dol"
+/** @deprecated Use DesignBrand from online-study-theme */
+export type DesignTheme = DesignBrand
+
+const DESIGN_THEMES: DesignBrand[] = ["dream", "dol", "swiss"]
+
+function isDesignTheme(v: string | null): v is DesignBrand {
+    return v === "dream" || v === "dol" || v === "swiss"
+}
 
 interface ThemeContextType {
     theme: Theme
     setTheme: (theme: Theme) => void
     resolvedTheme: "dark" | "light"
-    designTheme: DesignTheme
-    setDesignTheme: (theme: DesignTheme) => void
+    designTheme: DesignBrand
+    setDesignTheme: (theme: DesignBrand) => void
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
+function getSystemTheme(): "dark" | "light" {
+    if (typeof window === "undefined") return "dark"
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+}
+
+function applyDocumentTheme(mode: Theme, brand: DesignBrand): "dark" | "light" {
+    const root = document.documentElement
+    const resolved = mode === "system" ? getSystemTheme() : mode
+
+    root.classList.remove("light", "dark")
+    root.classList.add(resolved)
+
+    root.classList.remove("theme-dream", "theme-swiss", "theme-dol")
+    root.classList.add(`theme-${brand}`)
+    root.dataset.design = brand
+    root.dataset.mode = resolved
+
+    // Keep meta theme-color roughly in sync with brand surface
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) {
+        const bg = getComputedStyle(root).getPropertyValue("--os-bg").trim()
+        if (bg) meta.setAttribute("content", bg)
+    }
+
+    return resolved
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = useState<Theme>("system")
-    const [designTheme, setDesignThemeState] = useState<DesignTheme>("dream")
+    const [designTheme, setDesignThemeState] = useState<DesignBrand>("dream")
     const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("dark")
     const [mounted, setMounted] = useState(false)
 
@@ -28,54 +63,39 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         designThemeRef.current = designTheme
     }, [theme, designTheme])
 
-    // Get system preference
-    const getSystemTheme = (): "dark" | "light" => {
-        if (typeof window === "undefined") return "dark"
-        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-    }
-
-    // Apply theme to document
-    const applyTheme = (theme: Theme, dTheme: DesignTheme) => {
-        const root = document.documentElement
-        const resolved = theme === "system" ? getSystemTheme() : theme
-
-        root.classList.remove("light", "dark")
-        root.classList.add(resolved)
+    const applyTheme = useCallback((mode: Theme, brand: DesignBrand) => {
+        const resolved = applyDocumentTheme(mode, brand)
         setResolvedTheme(resolved)
+    }, [])
 
-        // Apply design theme classes
-        root.classList.remove("theme-dream", "theme-swiss", "theme-dol")
-        root.classList.add(`theme-${dTheme}`)
-    }
-
-    // Set theme and persist
-    const setTheme = (newTheme: Theme) => {
+    const setTheme = useCallback((newTheme: Theme) => {
         setThemeState(newTheme)
         localStorage.setItem("theme", newTheme)
-        applyTheme(newTheme, designTheme)
-    }
+        applyTheme(newTheme, designThemeRef.current)
+    }, [applyTheme])
 
-    // Set design theme and persist
-    const setDesignTheme = (newDTheme: DesignTheme) => {
-        setDesignThemeState(newDTheme)
-        localStorage.setItem("design-theme", newDTheme)
-        applyTheme(theme, newDTheme)
-    }
+    const setDesignTheme = useCallback((newBrand: DesignBrand) => {
+        if (!DESIGN_THEMES.includes(newBrand)) return
+        setDesignThemeState(newBrand)
+        localStorage.setItem("design-theme", newBrand)
+        applyTheme(themeRef.current, newBrand)
+    }, [applyTheme])
 
-    // Initialize on mount
     useEffect(() => {
         const savedTheme = localStorage.getItem("theme") as Theme | null
-        const initialTheme = savedTheme || "system"
+        const initialTheme: Theme =
+            savedTheme === "light" || savedTheme === "dark" || savedTheme === "system"
+                ? savedTheme
+                : "system"
         setThemeState(initialTheme)
 
-        const savedDTheme = localStorage.getItem("design-theme") as DesignTheme | null
-        const initialDTheme = savedDTheme || "dream"
-        setDesignThemeState(initialDTheme)
+        const savedBrand = localStorage.getItem("design-theme")
+        const initialBrand: DesignBrand = isDesignTheme(savedBrand) ? savedBrand : "dream"
+        setDesignThemeState(initialBrand)
 
-        applyTheme(initialTheme, initialDTheme)
+        applyTheme(initialTheme, initialBrand)
         setMounted(true)
 
-        // Listen for system theme changes
         const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
         const handleChange = () => {
             if (themeRef.current === "system") {
@@ -84,14 +104,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
         mediaQuery.addEventListener("change", handleChange)
         return () => mediaQuery.removeEventListener("change", handleChange)
-    }, [])
+    }, [applyTheme])
 
-    // Re-apply when theme state changes
     useEffect(() => {
         if (mounted) {
             applyTheme(theme, designTheme)
         }
-    }, [theme, designTheme, mounted])
+    }, [theme, designTheme, mounted, applyTheme])
 
     return (
         <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme, designTheme, setDesignTheme }}>

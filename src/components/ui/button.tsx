@@ -21,6 +21,8 @@ const buttonVariants = cva(
                 link: "text-[hsl(var(--foreground))] underline-offset-4 hover:underline",
                 success:
                     "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700",
+                brand:
+                    "bg-[var(--os-accent)] text-[var(--os-accent-fg)] shadow-sm hover:opacity-90 active:scale-[0.98]",
             },
             size: {
                 default: "h-10 px-4 py-2.5",

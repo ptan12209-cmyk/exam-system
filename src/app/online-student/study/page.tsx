@@ -387,13 +387,13 @@ function StudyPageInner() {
 
   if (isDevToolsOpen) {
     return (
-      <div className="min-h-screen bg-[#0B0A13] flex flex-col items-center justify-center text-center p-6 select-none">
+      <div className="min-h-screen bg-[var(--os-bg)] flex flex-col items-center justify-center text-center p-6 select-none">
         <ShieldAlert className="h-10 w-10 text-red-400 mb-4" />
-        <h1 className="text-xl font-bold text-[#F1EDF9]">Cảnh báo bảo mật</h1>
-        <p className="text-sm text-[#8C87A2] max-w-md mt-3">
+        <h1 className="text-xl font-bold text-[var(--os-fg)]">Cảnh báo bảo mật</h1>
+        <p className="text-sm text-[var(--os-muted)] max-w-md mt-3">
           Phát hiện DevTools. Đóng bảng điều khiển và tải lại trang để tiếp tục.
         </p>
-        <Button onClick={() => window.location.reload()} className="mt-6 rounded-xl bg-[#C18CFF] text-[#0B0A13] font-bold">
+        <Button onClick={() => window.location.reload()} className="mt-6 rounded-xl bg-[var(--os-accent)] text-[var(--os-accent-fg)] font-bold">
           Tải lại trang
         </Button>
       </div>
@@ -402,7 +402,7 @@ function StudyPageInner() {
 
   if (loadingAuth || (loadingData && hasAccess)) {
     return (
-      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
         <Loading label="Đang tải học liệu…" />
       </div>
     )
@@ -414,9 +414,9 @@ function StudyPageInner() {
         <OnlineStudentTopbar name={profile?.full_name} onLogout={handleLogout} />
         <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
           <ShieldAlert className="h-10 w-10 text-red-400 mb-3" />
-          <h2 className="text-lg font-bold text-[#F1EDF9]">Chưa có quyền môn này</h2>
+          <h2 className="text-lg font-bold text-[var(--os-fg)]">Chưa có quyền môn này</h2>
           <Link href="/online-student/dashboard" className="mt-4">
-            <Button className="rounded-xl bg-[#C18CFF] text-[#0B0A13] font-bold">Về dashboard</Button>
+            <Button className="rounded-xl bg-[var(--os-accent)] text-[var(--os-accent-fg)] font-bold">Về dashboard</Button>
           </Link>
         </div>
         <SupportFab />
@@ -441,21 +441,21 @@ function StudyPageInner() {
                 setPlayback(null)
                 setActiveVideo(null)
               }}
-              className="rounded-xl border border-[#8C87A2]/25 text-[#8C87A2] hover:text-[#F1EDF9] text-xs"
+              className="rounded-xl border border-[var(--os-muted)]/25 text-[var(--os-muted)] hover:text-[var(--os-fg)] text-xs"
             >
               <ArrowLeft className="h-4 w-4 mr-1" /> Về thư mục
             </Button>
-            <span className="text-[10px] font-mono text-[#8C87A2]">
+            <span className="text-[10px] font-mono text-[var(--os-muted)]">
               {subjectInfo.icon} {subjectInfo.label}
             </span>
           </div>
           <div className="mb-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-200/90">
             Nội dung bản quyền StudyHub — cấm ghi hình, tải xuống, chia sẻ trái phép.
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#F1EDF9] mb-4">{activeLesson.title}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--os-fg)] mb-4">{activeLesson.title}</h1>
 
           {loadingPlayback ? (
-            <div className="aspect-video rounded-xl border border-[#8C87A2]/20 bg-[#15131F] flex items-center justify-center">
+            <div className="aspect-video rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex items-center justify-center">
               <Loading label="Đang tải video bảo mật…" />
             </div>
           ) : activeVideo ? (
@@ -466,11 +466,11 @@ function StudyPageInner() {
                 onEnded={() => handleMarkCompleted(activeLesson.id)}
               />
               {activeVideo.title && (
-                <p className="text-xs text-[#8C87A2]">Đang phát: {activeVideo.title}</p>
+                <p className="text-xs text-[var(--os-muted)]">Đang phát: {activeVideo.title}</p>
               )}
             </div>
           ) : (
-            <div className="aspect-video rounded-xl border border-[#8C87A2]/20 bg-[#15131F] flex items-center justify-center text-[#8C87A2] text-sm">
+            <div className="aspect-video rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex items-center justify-center text-[var(--os-muted)] text-sm">
               Bài này chưa có video
             </div>
           )}
@@ -485,8 +485,8 @@ function StudyPageInner() {
                   className={cn(
                     "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-semibold",
                     activeVideo?.url === vid.url
-                      ? "border-[#C18CFF]/40 bg-[#C18CFF]/10 text-[#C18CFF]"
-                      : "border-[#8C87A2]/20 bg-[#15131F] text-[#8C87A2]"
+                      ? "border-[var(--os-accent)]/40 bg-[var(--os-accent)]/10 text-[var(--os-accent)]"
+                      : "border-[var(--os-muted)]/20 bg-[var(--os-card)] text-[var(--os-muted)]"
                   )}
                 >
                   <PlayCircle className="h-4 w-4 shrink-0" />
@@ -496,8 +496,8 @@ function StudyPageInner() {
             </div>
           )}
 
-          <div className="mt-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between rounded-xl border border-[#8C87A2]/15 bg-[#15131F] p-4">
-            <p className="text-[11px] text-[#8C87A2]">Đánh dấu hoàn thành để theo dõi tiến độ.</p>
+          <div className="mt-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between rounded-xl border border-[var(--os-muted)]/15 bg-[var(--os-card)] p-4">
+            <p className="text-[11px] text-[var(--os-muted)]">Đánh dấu hoàn thành để theo dõi tiến độ.</p>
             <Button
               onClick={() =>
                 handleMarkCompleted(activeLesson.id, !completedLessons.includes(activeLesson.id))
@@ -506,7 +506,7 @@ function StudyPageInner() {
                 "rounded-lg text-xs font-bold shrink-0",
                 completedLessons.includes(activeLesson.id)
                   ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
-                  : "bg-[#C18CFF] text-[#0B0A13]"
+                  : "bg-[var(--os-accent)] text-[var(--os-accent-fg)]"
               )}
             >
               {completedLessons.includes(activeLesson.id) ? (
@@ -520,27 +520,27 @@ function StudyPageInner() {
           </div>
 
           {(playback?.description || activeLesson.description) && (
-            <div className="mt-4 rounded-xl border border-[#8C87A2]/15 bg-[#15131F]/50 p-4">
-              <p className="text-sm text-[#8C87A2] whitespace-pre-line">
+            <div className="mt-4 rounded-xl border border-[var(--os-muted)]/15 bg-[var(--os-card)]/50 p-4">
+              <p className="text-sm text-[var(--os-muted)] whitespace-pre-line">
                 {playback?.description || activeLesson.description}
               </p>
             </div>
           )}
 
           <div className="mt-6">
-            <h3 className="text-[10px] font-mono uppercase text-[#8C87A2] mb-3">Tài liệu</h3>
+            <h3 className="text-[10px] font-mono uppercase text-[var(--os-muted)] mb-3">Tài liệu</h3>
             {docs.length === 0 ? (
-              <p className="text-xs text-[#8C87A2] italic">Không có tài liệu đính kèm.</p>
+              <p className="text-xs text-[var(--os-muted)] italic">Không có tài liệu đính kèm.</p>
             ) : (
               <div className="space-y-2">
                 {docs.map((doc, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13] p-3"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-bg)] p-3"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <FileText className="h-5 w-5 text-[#C18CFF] shrink-0" />
-                      <span className="text-sm font-semibold text-[#F1EDF9] truncate">
+                      <FileText className="h-5 w-5 text-[var(--os-accent)] shrink-0" />
+                      <span className="text-sm font-semibold text-[var(--os-fg)] truncate">
                         {doc.title || `Tài liệu ${idx + 1}`}
                       </span>
                     </div>
@@ -549,7 +549,7 @@ function StudyPageInner() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <Button className="rounded-lg bg-[#C18CFF] text-[#0B0A13] text-xs font-bold">
+                      <Button className="rounded-lg bg-[var(--os-accent)] text-[var(--os-accent-fg)] text-xs font-bold">
                         <Download className="h-3.5 w-3.5 mr-1" /> Mở
                       </Button>
                     </a>
@@ -566,7 +566,7 @@ function StudyPageInner() {
               )}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-xs text-[#C18CFF] hover:underline"
+              className="inline-flex items-center gap-2 text-xs text-[var(--os-accent)] hover:underline"
             >
               <MessageCircle className="h-4 w-4" /> Báo lỗi qua Zalo
               <ExternalLink className="h-3 w-3" />
@@ -594,28 +594,28 @@ function StudyPageInner() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-xl border border-[#8C87A2]/25 h-10 w-10 text-[#8C87A2]"
+                className="rounded-xl border border-[var(--os-muted)]/25 h-10 w-10 text-[var(--os-muted)]"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-[#F1EDF9] truncate flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-[var(--os-fg)] truncate flex items-center gap-2">
                 <span>{subjectInfo.icon}</span> {subjectInfo.label}
               </h1>
-              <p className="text-[11px] text-[#8C87A2] font-mono mt-0.5">
+              <p className="text-[11px] text-[var(--os-muted)] font-mono mt-0.5">
                 Kho bài giảng · {folders.length} thư mục · {lessons.length} bài
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 self-end sm:self-auto">
-            <div className="flex bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-1">
+            <div className="flex bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-1">
               <button
                 type="button"
                 onClick={() => setViewMode("grid")}
                 className={cn(
                   "p-2 rounded-lg transition-colors",
-                  viewMode === "grid" ? "bg-[#C18CFF]/15 text-[#C18CFF]" : "text-[#8C87A2]"
+                  viewMode === "grid" ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]" : "text-[var(--os-muted)]"
                 )}
                 title="Lưới"
               >
@@ -626,7 +626,7 @@ function StudyPageInner() {
                 onClick={() => setViewMode("list")}
                 className={cn(
                   "p-2 rounded-lg transition-colors",
-                  viewMode === "list" ? "bg-[#C18CFF]/15 text-[#C18CFF]" : "text-[#8C87A2]"
+                  viewMode === "list" ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]" : "text-[var(--os-muted)]"
                 )}
                 title="Danh sách"
               >
@@ -637,14 +637,14 @@ function StudyPageInner() {
         </div>
 
         {/* Toolbar: search + path (Drive style) */}
-        <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-3 sm:p-4 mb-4 space-y-3 shadow-sm">
+        <div className="rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] p-3 sm:p-4 mb-4 space-y-3 shadow-sm">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C87A2]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--os-muted)]" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm trong thư mục hiện tại…"
-              className="w-full rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13] pl-10 pr-4 py-2.5 text-sm text-[#F1EDF9] placeholder-[#8C87A2] outline-none focus:ring-1 focus:ring-[#C18CFF]"
+              className="w-full rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-bg)] pl-10 pr-4 py-2.5 text-sm text-[var(--os-fg)] placeholder-[var(--os-muted)] outline-none focus:ring-1 focus:ring-[var(--os-accent)]"
             />
           </div>
 
@@ -653,7 +653,7 @@ function StudyPageInner() {
               <button
                 type="button"
                 onClick={goUp}
-                className="mr-1 p-2 rounded-lg hover:bg-[#0B0A13] text-[#C18CFF] shrink-0"
+                className="mr-1 p-2 rounded-lg hover:bg-[var(--os-bg)] text-[var(--os-accent)] shrink-0"
                 title="Lên một cấp"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -665,23 +665,23 @@ function StudyPageInner() {
               className={cn(
                 "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shrink-0 font-semibold text-xs sm:text-sm",
                 !currentFolderId
-                  ? "bg-[#C18CFF]/15 text-[#C18CFF]"
-                  : "text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#0B0A13]"
+                  ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]"
+                  : "text-[var(--os-muted)] hover:text-[var(--os-fg)] hover:bg-[var(--os-bg)]"
               )}
             >
               <Home className="h-4 w-4" /> Gốc
             </button>
             {breadcrumbs.map((crumb, idx) => (
               <div key={crumb.id} className="flex items-center gap-1 shrink-0">
-                <ChevronRight className="h-4 w-4 text-[#8C87A2]/50" />
+                <ChevronRight className="h-4 w-4 text-[var(--os-muted)]/50" />
                 <button
                   type="button"
                   onClick={() => setCurrentFolderId(crumb.id)}
                   className={cn(
                     "px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold max-w-[160px] truncate",
                     idx === breadcrumbs.length - 1
-                      ? "bg-[#C18CFF]/15 text-[#C18CFF]"
-                      : "text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#0B0A13]"
+                      ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]"
+                      : "text-[var(--os-muted)] hover:text-[var(--os-fg)] hover:bg-[var(--os-bg)]"
                   )}
                 >
                   {crumb.name}
@@ -692,7 +692,7 @@ function StudyPageInner() {
         </div>
 
         {/* Full-page content area */}
-        <div className="flex-1 min-h-[55vh] rounded-2xl border border-[#8C87A2]/15 bg-[#15131F]/40 p-4 sm:p-6">
+        <div className="flex-1 min-h-[55vh] rounded-2xl border border-[var(--os-muted)]/15 bg-[var(--os-card)]/40 p-4 sm:p-6">
           {empty ? (
             <EmptyState
               icon={<FolderOpenIcon />}
@@ -719,7 +719,7 @@ function StudyPageInner() {
             <div className="space-y-8">
               {currentFolders.length > 0 && (
                 <div>
-                  <h3 className="text-[11px] font-mono uppercase tracking-wider text-[#8C87A2] mb-3">
+                  <h3 className="text-[11px] font-mono uppercase tracking-wider text-[var(--os-muted)] mb-3">
                     Thư mục ({currentFolders.length})
                   </h3>
                   <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -732,10 +732,10 @@ function StudyPageInner() {
                           setSearch("")
                           setCurrentFolderId(folder.id)
                         }}
-                        className="group flex flex-col items-start gap-3 rounded-2xl border border-[#8C87A2]/15 bg-[#0B0A13]/50 p-4 min-h-[120px] text-left hover:border-[#C18CFF]/50 hover:bg-[#0B0A13] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#C18CFF]/50"
+                        className="group flex flex-col items-start gap-3 rounded-2xl border border-[var(--os-muted)]/15 bg-[var(--os-bg)]/50 p-4 min-h-[120px] text-left hover:border-[var(--os-accent)]/50 hover:bg-[var(--os-bg)] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[var(--os-accent)]/50"
                       >
-                        <FolderIcon className="h-10 w-10 text-[#C18CFF] group-hover:scale-105 transition-transform" />
-                        <span className="text-sm font-bold text-[#F1EDF9] line-clamp-2 leading-snug w-full">
+                        <FolderIcon className="h-10 w-10 text-[var(--os-accent)] group-hover:scale-105 transition-transform" />
+                        <span className="text-sm font-bold text-[var(--os-fg)] line-clamp-2 leading-snug w-full">
                           {folder.name}
                         </span>
                       </button>
@@ -745,7 +745,7 @@ function StudyPageInner() {
               )}
               {currentLessons.length > 0 && (
                 <div>
-                  <h3 className="text-[11px] font-mono uppercase tracking-wider text-[#8C87A2] mb-3">
+                  <h3 className="text-[11px] font-mono uppercase tracking-wider text-[var(--os-muted)] mb-3">
                     Bài giảng ({currentLessons.length})
                   </h3>
                   <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -765,23 +765,23 @@ function StudyPageInner() {
                           type="button"
                           aria-label={`${done ? "Đã học · " : ""}Mở bài ${lesson.title}`}
                           onClick={() => void openLesson(lesson)}
-                          className="group flex flex-col gap-3 rounded-2xl border border-[#8C87A2]/15 bg-[#0B0A13]/40 p-5 text-left hover:border-[#C18CFF]/45 hover:bg-[#0B0A13] transition-all min-h-[130px] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#C18CFF]/50"
+                          className="group flex flex-col gap-3 rounded-2xl border border-[var(--os-muted)]/15 bg-[var(--os-bg)]/40 p-5 text-left hover:border-[var(--os-accent)]/45 hover:bg-[var(--os-bg)] transition-all min-h-[130px] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[var(--os-accent)]/50"
                         >
                           <div className="flex items-start justify-between w-full">
                             {done ? (
                               <CheckCircle2 className="h-9 w-9 text-emerald-400" />
                             ) : (
-                              <PlayCircle className="h-9 w-9 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
+                              <PlayCircle className="h-9 w-9 text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors" />
                             )}
-                            <ChevronRight className="h-5 w-5 text-[#8C87A2] group-hover:text-[#C18CFF]" />
+                            <ChevronRight className="h-5 w-5 text-[var(--os-muted)] group-hover:text-[var(--os-accent)]" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-[#F1EDF9] line-clamp-2 leading-snug">
+                            <p className="text-sm font-bold text-[var(--os-fg)] line-clamp-2 leading-snug">
                               {lesson.title}
                             </p>
                             <div className="flex gap-2 mt-2 flex-wrap">
                               {hasVideo && (
-                                <span className="text-[10px] font-bold uppercase text-[#C18CFF] bg-[#C18CFF]/10 px-2 py-0.5 rounded-md">
+                                <span className="text-[10px] font-bold uppercase text-[var(--os-accent)] bg-[var(--os-accent)]/10 px-2 py-0.5 rounded-md">
                                   Video
                                 </span>
                               )}
@@ -803,7 +803,7 @@ function StudyPageInner() {
               )}
             </div>
           ) : (
-            <div className="rounded-xl border border-[#8C87A2]/15 overflow-hidden divide-y divide-[#8C87A2]/10">
+            <div className="rounded-xl border border-[var(--os-muted)]/15 overflow-hidden divide-y divide-[var(--os-muted)]/10">
               {currentFolders.map((folder) => (
                 <button
                   key={folder.id}
@@ -812,14 +812,14 @@ function StudyPageInner() {
                     setSearch("")
                     setCurrentFolderId(folder.id)
                   }}
-                  className="w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-[#0B0A13]/50 transition-colors"
+                  className="w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-[var(--os-bg)]/50 transition-colors"
                 >
-                  <FolderIcon className="h-6 w-6 text-[#C18CFF] shrink-0" />
-                  <span className="flex-1 text-sm font-semibold text-[#F1EDF9] truncate">
+                  <FolderIcon className="h-6 w-6 text-[var(--os-accent)] shrink-0" />
+                  <span className="flex-1 text-sm font-semibold text-[var(--os-fg)] truncate">
                     {folder.name}
                   </span>
-                  <span className="text-[10px] text-[#8C87A2] font-mono shrink-0">Thư mục</span>
-                  <ChevronRight className="h-4 w-4 text-[#8C87A2]" />
+                  <span className="text-[10px] text-[var(--os-muted)] font-mono shrink-0">Thư mục</span>
+                  <ChevronRight className="h-4 w-4 text-[var(--os-muted)]" />
                 </button>
               ))}
               {currentLessons.map((lesson) => {
@@ -829,18 +829,18 @@ function StudyPageInner() {
                     key={lesson.id}
                     type="button"
                     onClick={() => void openLesson(lesson)}
-                    className="w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-[#0B0A13]/50 transition-colors"
+                    className="w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-[var(--os-bg)]/50 transition-colors"
                   >
                     {done ? (
                       <CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0" />
                     ) : (
-                      <PlayCircle className="h-6 w-6 text-[#8C87A2] shrink-0" />
+                      <PlayCircle className="h-6 w-6 text-[var(--os-muted)] shrink-0" />
                     )}
-                    <span className="flex-1 text-sm font-semibold text-[#F1EDF9] truncate">
+                    <span className="flex-1 text-sm font-semibold text-[var(--os-fg)] truncate">
                       {lesson.title}
                     </span>
-                    <span className="text-[10px] text-[#8C87A2] font-mono shrink-0">Bài giảng</span>
-                    <ChevronRight className="h-4 w-4 text-[#8C87A2]" />
+                    <span className="text-[10px] text-[var(--os-muted)] font-mono shrink-0">Bài giảng</span>
+                    <ChevronRight className="h-4 w-4 text-[var(--os-muted)]" />
                   </button>
                 )
               })}
@@ -859,7 +859,7 @@ export default function OnlineStudentStudyPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
+        <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
           <Loading label="Đang mở kho bài giảng…" />
         </div>
       }

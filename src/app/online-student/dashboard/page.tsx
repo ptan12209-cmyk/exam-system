@@ -354,39 +354,39 @@ export default function OnlineStudentDashboard() {
         
         {/* Welcome Section */}
         <section className="mb-8">
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 lg:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden">
+          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-2xl p-6 lg:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden">
             {/* Ambient Background Glows */}
-            <div className="absolute -right-24 -top-24 w-80 h-80 rounded-full bg-[#C18CFF]/5 blur-[80px] pointer-events-none" />
-            <div className="absolute -left-24 -bottom-24 w-80 h-80 rounded-full bg-[#3B82F6]/5 blur-[80px] pointer-events-none" />
+            <div className="absolute -right-24 -top-24 w-80 h-80 rounded-full bg-[var(--os-accent)]/5 blur-[80px] pointer-events-none" />
+            <div className="absolute -left-24 -bottom-24 w-80 h-80 rounded-full bg-[var(--os-accent-secondary)]/5 blur-[80px] pointer-events-none" />
 
             <div className="relative z-10">
               <div className="flex items-center gap-3 justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#C18CFF]" />
-                  <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#8C87A2] font-mono">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--os-accent)]" />
+                  <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-[var(--os-muted)] font-mono">
                     StudyHub E-Learning Portal
                   </span>
                 </div>
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight font-serif-italic">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl text-[var(--os-fg)] font-normal leading-tight font-serif-italic">
                 Chào mừng, {profile?.full_name || "Học viên"}!
               </h1>
-              <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] max-w-2xl">
+              <p className="mt-3 text-sm sm:text-base leading-relaxed text-[var(--os-muted)] max-w-2xl">
                 {mySubjects.length === 0
                   ? "Chưa có môn nào được mở khóa. Chọn môn bên dưới và thanh toán để bắt đầu học."
                   : "Tiếp tục bài giảng video và tài liệu — chọn môn đã mở khóa bên dưới."}
               </p>
 
               {/* Progress bar */}
-              <div className="mt-6 max-w-md bg-[#0B0A13]/40 border border-[#8C87A2]/10 rounded-2xl p-4 flex items-center justify-between gap-4">
+              <div className="mt-6 max-w-md bg-[var(--os-bg)]/40 border border-[var(--os-muted)]/10 rounded-2xl p-4 flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <div className="flex justify-between items-center text-xs font-mono text-[#8C87A2] mb-1.5">
+                  <div className="flex justify-between items-center text-xs font-mono text-[var(--os-muted)] mb-1.5">
                     <span>ĐÃ HOÀN THÀNH {completedCount} BÀI</span>
-                    <span className="text-[#C18CFF] font-bold">{totalProgressPercent}%</span>
+                    <span className="text-[var(--os-accent)] font-bold">{totalProgressPercent}%</span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-[#0B0A13] overflow-hidden">
+                  <div className="w-full h-2 rounded-full bg-[var(--os-bg)] overflow-hidden">
                     <div 
-                      className="h-full bg-gradient-to-r from-[#C18CFF] to-[#3B82F6] rounded-full transition-all duration-500" 
+                      className="h-full bg-gradient-to-r from-[var(--os-accent)] to-[var(--os-accent-secondary)] rounded-full transition-all duration-500" 
                       style={{ width: `${totalProgressPercent}%` }}
                       role="progressbar"
                       aria-valuenow={totalProgressPercent}
@@ -395,7 +395,7 @@ export default function OnlineStudentDashboard() {
                     />
                   </div>
                 </div>
-                <div className="h-10 w-10 shrink-0 rounded-xl bg-[#C18CFF]/10 border border-[#C18CFF]/20 flex items-center justify-center text-[#C18CFF]">
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-[var(--os-accent)]/10 border border-[var(--os-accent)]/20 flex items-center justify-center text-[var(--os-accent)]">
                   <GraduationCap className="h-5 w-5" />
                 </div>
               </div>
@@ -407,20 +407,20 @@ export default function OnlineStudentDashboard() {
         {continueStudy &&
           (mySubjects.includes("all") || mySubjects.includes(continueStudy.subject)) && (
             <section className="mb-8">
-              <div className="rounded-2xl border border-[#C18CFF]/30 bg-gradient-to-r from-[#C18CFF]/10 to-transparent p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="rounded-2xl border border-[var(--os-accent)]/30 bg-gradient-to-r from-[var(--os-accent)]/10 to-transparent p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
-                  <div className="h-11 w-11 shrink-0 rounded-xl bg-[#C18CFF]/15 border border-[#C18CFF]/30 flex items-center justify-center text-[#C18CFF]">
+                  <div className="h-11 w-11 shrink-0 rounded-xl bg-[var(--os-accent)]/15 border border-[var(--os-accent)]/30 flex items-center justify-center text-[var(--os-accent)]">
                     <PlayCircle className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-[#8C87A2]">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--os-muted)]">
                       Tiếp tục học
                     </p>
-                    <p className="text-base font-bold text-[#F1EDF9] truncate">
+                    <p className="text-base font-bold text-[var(--os-fg)] truncate">
                       {getOnlineSubjectInfo(continueStudy.subject).icon}{" "}
                       {getOnlineSubjectInfo(continueStudy.subject).label}
                     </p>
-                    <p className="text-[11px] text-[#8C87A2] mt-0.5">
+                    <p className="text-[11px] text-[var(--os-muted)] mt-0.5">
                       {continueStudy.lessonId
                         ? "Mở lại bài bạn đang xem dở"
                         : "Vào thư mục môn học gần nhất"}
@@ -431,7 +431,7 @@ export default function OnlineStudentDashboard() {
                   href={`/online-student/study?subject=${encodeURIComponent(continueStudy.subject)}`}
                   className="shrink-0"
                 >
-                  <Button className="w-full sm:w-auto rounded-xl bg-[#C18CFF] text-[#0B0A13] font-bold text-sm h-11 min-w-[140px]">
+                  <Button className="w-full sm:w-auto rounded-xl bg-[var(--os-accent)] text-[var(--os-accent-fg)] font-bold text-sm h-11 min-w-[140px]">
                     Vào học ngay
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
@@ -444,11 +444,11 @@ export default function OnlineStudentDashboard() {
         <section>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-[#C18CFF]" />
-              <h2 className="text-lg font-bold text-[#F1EDF9] tracking-tight uppercase font-mono">Chương trình học tập trực tuyến</h2>
+              <BookOpen className="h-5 w-5 text-[var(--os-accent)]" />
+              <h2 className="text-lg font-bold text-[var(--os-fg)] tracking-tight uppercase font-mono">Chương trình học tập trực tuyến</h2>
             </div>
             {mySubjects.includes("all") && (
-              <span className="text-[9px] font-bold bg-[#C18CFF]/15 text-[#C18CFF] border border-[#C18CFF]/20 px-3 py-1 rounded-full font-mono">
+              <span className="text-[9px] font-bold bg-[var(--os-accent)]/15 text-[var(--os-accent)] border border-[var(--os-accent)]/20 px-3 py-1 rounded-full font-mono">
                 Cấp quyền tất cả môn học
               </span>
             )}
@@ -467,27 +467,27 @@ export default function OnlineStudentDashboard() {
                     href={`/online-student/study?subject=${subject.value}`}
                     aria-label={`Vào học ${subject.label}`}
                     className={cn(
-                      "group flex flex-col justify-between p-5 h-48 bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl transition-all duration-300 relative overflow-hidden focus-visible:ring-2 focus-visible:ring-[#C18CFF]/50",
+                      "group flex flex-col justify-between p-5 h-48 bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-2xl transition-all duration-300 relative overflow-hidden focus-visible:ring-2 focus-visible:ring-[var(--os-accent)]/50",
                       theme.border,
                       theme.glow
                     )}
                   >
                     {/* Top Accent Gradient Border */}
-                    <div className="absolute top-0 left-0 w-full h-1 bg-[#8C87A2]/10 group-hover:bg-gradient-to-r group-hover:from-[#C18CFF] group-hover:to-[#3B82F6] transition-all" />
+                    <div className="absolute top-0 left-0 w-full h-1 bg-[var(--os-muted)]/10 group-hover:bg-gradient-to-r group-hover:from-[var(--os-accent)] group-hover:to-[var(--os-accent-secondary)] transition-all" />
 
                     <div className="flex items-center justify-between">
-                      <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl border bg-[#0B0A13] transition-colors duration-300", theme.iconBg)}>
+                      <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl border bg-[var(--os-bg)] transition-colors duration-300", theme.iconBg)}>
                         <SubjectSvgIcon value={subject.value} className="h-7 w-7" />
                       </div>
-                      <ChevronRight className="h-5 w-5 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors transform group-hover:translate-x-1" />
+                      <ChevronRight className="h-5 w-5 text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors transform group-hover:translate-x-1" />
                     </div>
 
                     <div className="mt-4">
-                      <h3 className="text-lg font-bold text-[#F1EDF9] tracking-tight group-hover:text-[#C18CFF] transition-colors">
+                      <h3 className="text-lg font-bold text-[var(--os-fg)] tracking-tight group-hover:text-[var(--os-accent)] transition-colors">
                         {subject.label}
                       </h3>
                       <div className="flex items-center justify-between mt-2">
-                        <span className="text-[10px] text-[#8C87A2] font-mono">Bài giảng & tài liệu</span>
+                        <span className="text-[10px] text-[var(--os-muted)] font-mono">Bài giảng & tài liệu</span>
                         <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md font-mono">Đã kích hoạt</span>
                       </div>
                     </div>
@@ -509,29 +509,29 @@ export default function OnlineStudentDashboard() {
                       }
                     }}
                     className={cn(
-                      "group flex flex-col justify-between p-5 h-48 bg-[#15131F]/40 border border-[#8C87A2]/10 rounded-2xl cursor-pointer relative overflow-hidden select-none transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-[#15131F]/70 focus-visible:ring-2 focus-visible:ring-[#C18CFF]/50",
+                      "group flex flex-col justify-between p-5 h-48 bg-[var(--os-card)]/40 border border-[var(--os-muted)]/10 rounded-2xl cursor-pointer relative overflow-hidden select-none transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-[var(--os-card)]/70 focus-visible:ring-2 focus-visible:ring-[var(--os-accent)]/50",
                       theme.border,
                       theme.glow
                     )}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl border bg-[#0B0A13] border-[#8C87A2]/10 grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl border bg-[var(--os-bg)] border-[var(--os-muted)]/10 grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
                         <SubjectSvgIcon value={subject.value} className="h-7 w-7" />
                       </div>
-                      <span className="p-1.5 rounded-lg bg-[#0B0A13] border border-[#8C87A2]/15 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors">
+                      <span className="p-1.5 rounded-lg bg-[var(--os-bg)] border border-[var(--os-muted)]/15 text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors">
                         <Lock className="h-3.5 w-3.5" />
                       </span>
                     </div>
 
                     <div className="mt-4">
-                      <h3 className="text-base font-bold text-[#8C87A2] group-hover:text-[#F1EDF9] transition-colors">
+                      <h3 className="text-base font-bold text-[var(--os-muted)] group-hover:text-[var(--os-fg)] transition-colors">
                         {subject.label}
                       </h3>
-                      <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-[#8C87A2]/10">
-                        <span className="text-xs font-semibold text-[#C18CFF] font-mono">
+                      <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-[var(--os-muted)]/10">
+                        <span className="text-xs font-semibold text-[var(--os-accent)] font-mono">
                           {formatPrice(getSubjectPrice(subject.value, subject.price))}
                         </span>
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#0B0A13] bg-[#C18CFF] group-hover:bg-[#C18CFF]/90 px-2 py-1 rounded-lg transition-colors">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--os-accent-fg)] bg-[var(--os-accent)] group-hover:bg-[var(--os-accent)]/90 px-2 py-1 rounded-lg transition-colors">
                           <ShoppingCart className="h-3 w-3" />
                           Mua khóa
                         </span>
