@@ -60,6 +60,25 @@ Body:
 
 Lessons are upserted by `source_drive_file_id` (unique partial index). Re-import updates URLs/title, does not duplicate.
 
+## Subject codes (critical)
+
+Teacher Online Study UI filters folders by **DB** subject values:
+
+| UI tab (frontend) | Stored in `online_folders.subject` |
+|-------------------|-------------------------------------|
+| `toan` | `math` |
+| `ly` | `physics` |
+| `hoa` | `chemistry` |
+| `sinh` | `biology` |
+| `anh` | `english` |
+| `van` | `literature` |
+| `dgnl_hsa` / `dgnl_vact` / `dgnl_tsa` | same dbValue |
+
+Import accepts **either** frontend keys or DB values and normalizes to DB codes.
+If you store `subject=toan` while the UI queries `subject=math`, folders appear empty.
+
+Folder tree is scoped by `(examhub_course_key, subject, source_path)` so each môn has its own root.
+
 ## Security
 
 - Secret only on server + local downloader settings (never in client browser).

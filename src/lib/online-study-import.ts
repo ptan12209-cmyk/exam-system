@@ -3,6 +3,29 @@ import {
   type MediaItem,
 } from '@/lib/lesson-media'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { ONLINE_SUBJECTS } from '@/lib/subjects'
+
+/**
+ * Teacher UI filters folders by DB subject codes (math, physics, …)
+ * via getOnlineSubjectInfo(selected).dbValue — NOT frontend keys (toan, ly).
+ * Import payloads often send frontend keys; normalize here.
+ */
+export function toOnlineStudyDbSubject(input: string): string {
+  const s = String(input || '').trim()
+  if (!s) return 'math'
+  const byValue = ONLINE_SUBJECTS.find((x) => x.value === s)
+  if (byValue) return byValue.dbValue
+  const byDb = ONLINE_SUBJECTS.find((x) => x.dbValue === s)
+  if (byDb) return byDb.dbValue
+  // Downloader / watch-job aliases
+  const aliases: Record<string, string> = {
+    dgnl: 'dgnl_hsa',
+    khxh: 'history', // KHXH mixed — default history tab
+    'khoa-hoc-xa-hoi': 'history',
+  }
+  if (aliases[s.toLowerCase()]) return aliases[s.toLowerCase()]
+  return s
+}
 
 export type ImportItem = {
   driveFileId?: string
@@ -68,12 +91,15 @@ async function ensureFolderChain(
   let parentId: string | null = null
   let pathSoFar = ''
 
-  // Ensure root
+  // Ensure root — scoped by (courseKey + subject) so each môn has its own tree root.
+  // Teacher UI lists folders with .eq('subject', dbValue); a single shared root with
+  // subject=toan is invisible when browsing physics/chemistry tabs.
   {
     const { data: existingRoot } = await admin
       .from('online_folders')
       .select('id')
       .eq('examhub_course_key', courseKey)
+      .eq('subject', subject)
       .eq('source_path', '')
       .maybeSingle()
 
@@ -105,6 +131,7 @@ async function ensureFolderChain(
       .from('online_folders')
       .select('id')
       .eq('examhub_course_key', courseKey)
+      .eq('subject', subject)
       .eq('source_path', pathSoFar)
       .maybeSingle()
 
@@ -157,6 +184,8 @@ export async function importOnlineStudyItems(
   const items = Array.isArray(payload.items) ? payload.items : []
   const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] }
   const rootName = payload.defaultFolderName || courseKey
+  // CRITICAL: store DB subject codes (math/physics/…) so teacher UI filters work
+  const subjectDb = toOnlineStudyDbSubject(subject)
 
   for (let index = 0; index < items.length; index++) {
     const item = items[index] || {}
@@ -164,12 +193,28 @@ export async function importOnlineStudyItems(
       const driveFileId = String(item.driveFileId || '').trim()
       const kind = String(item.kind || 'document').toLowerCase()
       const title = cleanTitle(item.title || 'Bài học')
-      const rel = String(item.relativePath || '').replace(/\\/g, '/')
+      let rel = String(item.relativePath || '').replace(/\\/g, '/')
+      // Strip long Drive package root if still present (📚 COMBO XPS … Zalo …)
+      {
+        const segs0 = pathSegments(rel)
+        if (segs0.length >= 1) {
+          const head = segs0[0]
+          const looksLikeDriveRoot =
+            head.length >= 40 ||
+            /combo\s*xps/i.test(head) ||
+            /zalo/i.test(head) ||
+            /📚/.test(head) ||
+            (/thpt/i.test(head) && /2027/.test(head))
+          if (looksLikeDriveRoot) {
+            rel = segs0.slice(1).join('/')
+          }
+        }
+      }
       const segments = pathSegments(rel)
 
       const folderId = await ensureFolderChain(admin, {
         courseKey,
-        subject,
+        subject: subjectDb,
         teacherId: payload.teacherId,
         rootName,
         segments,
