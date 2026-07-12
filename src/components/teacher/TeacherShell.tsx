@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { TeacherSidebar } from "@/components/TeacherSidebar"
 import Footer from "@/components/Footer"
 import { SupportFab } from "@/components/support/SupportFab"
@@ -25,11 +25,13 @@ export function TeacherShell({
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] selection:bg-[hsl(var(--primary))]/25 selection:text-[hsl(var(--foreground))]">
-      <TeacherSidebar
-        onLogout={onLogout}
-        collapsed={collapsed}
-        setCollapsed={setCollapsed}
-      />
+      <Suspense fallback={null}>
+        <TeacherSidebar
+          onLogout={onLogout}
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+        />
+      </Suspense>
 
       <div
         className={cn(

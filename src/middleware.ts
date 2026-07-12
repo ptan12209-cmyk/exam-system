@@ -1,11 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { GAMIFICATION_ENABLED, isGamificationRoute } from '@/lib/features'
 
 /**
  * Middleware for:
  * 1. Refreshing Supabase auth tokens on every request
  * 2. Protecting /teacher/*, /student/*, /arena/*, /live/*, /profile/* routes
  * 3. Role-based access control (student ↔ teacher)
+ * 4. Feature locks (e.g. gamification UI)
  */
 
 // Routes that require authentication
@@ -16,6 +18,14 @@ const AUTH_ROUTES = ['/login', '/register']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Gamification locked: bounce to student dashboard
+  if (!GAMIFICATION_ENABLED && isGamificationRoute(pathname)) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/student/dashboard'
+    url.searchParams.set('gamification', 'locked')
+    return NextResponse.redirect(url)
+  }
 
   // Create a response that we can modify
   let supabaseResponse = NextResponse.next({ request })

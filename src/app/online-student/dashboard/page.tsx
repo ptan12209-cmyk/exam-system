@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils"
 import { getOnlineSubjectInfo } from "@/lib/subjects"
 import { Button } from "@/components/ui/button"
+import { ThptCountdown } from "@/components/shared/ThptCountdown"
 
 function SubjectSvgIcon({ value, className = "h-8 w-8" }: { value: string; className?: string }) {
   switch (value) {
@@ -351,56 +352,53 @@ export default function OnlineStudentDashboard() {
       <OnlineStudentTopbar name={profile?.full_name} onLogout={handleLogout} />
       
       <main className="mx-auto max-w-7xl w-full px-4 pb-10 pt-8 sm:px-6 lg:px-8">
-        
-        {/* Welcome Section */}
-        <section className="mb-8">
-          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-2xl p-6 lg:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden">
-            {/* Ambient Background Glows */}
+        <section className="mb-8 grid gap-4 lg:grid-cols-[1.35fr_0.85fr] lg:items-stretch">
+          <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-2xl p-6 lg:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden">
             <div className="absolute -right-24 -top-24 w-80 h-80 rounded-full bg-[var(--os-accent)]/5 blur-[80px] pointer-events-none" />
             <div className="absolute -left-24 -bottom-24 w-80 h-80 rounded-full bg-[var(--os-accent-secondary)]/5 blur-[80px] pointer-events-none" />
 
             <div className="relative z-10">
-              <div className="flex items-center gap-3 justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--os-accent)]" />
-                  <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-[var(--os-muted)] font-mono">
-                    StudyHub E-Learning Portal
-                  </span>
-                </div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--os-accent)]" />
+                <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-[var(--os-muted)] font-mono">
+                  StudyHub E-Learning Portal
+                </span>
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl text-[var(--os-fg)] font-normal leading-tight font-serif-italic">
-                Chào mừng, {profile?.full_name || "Học viên"}!
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl text-[var(--os-fg)] font-normal leading-tight font-serif-italic text-balance">
+                Chào mừng, {profile?.full_name || "Học viên"}
               </h1>
               <p className="mt-3 text-sm sm:text-base leading-relaxed text-[var(--os-muted)] max-w-2xl">
                 {mySubjects.length === 0
                   ? "Chưa có môn nào được mở khóa. Chọn môn bên dưới và thanh toán để bắt đầu học."
-                  : "Tiếp tục bài giảng video và tài liệu — chọn môn đã mở khóa bên dưới."}
+                  : "Tiếp tục bài giảng video và tài liệu. Chọn môn đã mở khóa bên dưới."}
               </p>
 
-              {/* Progress bar */}
-              <div className="mt-6 max-w-md bg-[var(--os-bg)]/40 border border-[var(--os-muted)]/10 rounded-2xl p-4 flex items-center justify-between gap-4">
-                <div className="flex-1">
+              <div className="mt-6 max-w-md bg-[var(--os-bg)]/40 border border-[var(--os-border)] rounded-2xl p-4 flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center text-xs font-mono text-[var(--os-muted)] mb-1.5">
                     <span>ĐÃ HOÀN THÀNH {completedCount} BÀI</span>
-                    <span className="text-[var(--os-accent)] font-bold">{totalProgressPercent}%</span>
+                    <span className="text-[var(--os-accent)] font-bold tabular-nums">{totalProgressPercent}%</span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-[var(--os-bg)] overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-[var(--os-accent)] to-[var(--os-accent-secondary)] rounded-full transition-all duration-500" 
+                    <div
+                      className="h-full bg-[var(--os-accent)] rounded-full transition-all duration-500"
                       style={{ width: `${totalProgressPercent}%` }}
                       role="progressbar"
                       aria-valuenow={totalProgressPercent}
                       aria-valuemin={0}
                       aria-valuemax={100}
+                      aria-label="Tiến độ hoàn thành bài học"
                     />
                   </div>
                 </div>
                 <div className="h-10 w-10 shrink-0 rounded-xl bg-[var(--os-accent)]/10 border border-[var(--os-accent)]/20 flex items-center justify-center text-[var(--os-accent)]">
-                  <GraduationCap className="h-5 w-5" />
+                  <GraduationCap className="h-5 w-5" aria-hidden />
                 </div>
               </div>
             </div>
           </div>
+
+          <ThptCountdown className="h-full" />
         </section>
 
         {/* Continue learning */}

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useMemo, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -100,8 +100,9 @@ interface StudentProfile {
   online_subjects: string[]
 }
 
-export default function TeacherOnlineStudyPage() {
+function TeacherOnlineStudyPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   const { success, error: toastError } = useToast()
 
@@ -109,8 +110,23 @@ export default function TeacherOnlineStudyPage() {
   const [profile, setProfile] = useState<{ full_name: string | null } | null>(null)
   
   // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<"lectures" | "permissions" | "payment" | "orders" | "security">("lectures")
+  type StudyTab = "lectures" | "permissions" | "payment" | "orders" | "security"
+  const [activeTab, setActiveTab] = useState<StudyTab>("lectures")
   const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "pending" | "success" | "failed">("all")
+
+  const goTab = (tab: StudyTab) => {
+    setActiveTab(tab)
+    try {
+      localStorage.setItem("teacher_study_tab", tab)
+    } catch {
+      /* ignore */
+    }
+    const next = new URLSearchParams(searchParams?.toString() || "")
+    if (tab === "lectures") next.delete("tab")
+    else next.set("tab", tab)
+    const q = next.toString()
+    router.replace(q ? `/teacher/online-study?${q}` : "/teacher/online-study", { scroll: false })
+  }
 
   // Selection States
   const [selectedSubject, setSelectedSubject] = useState("toan")
@@ -319,43 +335,43 @@ export default function TeacherOnlineStudyPage() {
     setSubjectPrices(prev => ({ ...prev, [val]: price }))
   }
 
-  // Load states from localStorage after mounting
+  // URL tab (?tab=orders) > localStorage > default
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedTab = localStorage.getItem("teacher_study_tab")
-      const savedSubject = localStorage.getItem("teacher_study_subject")
-      
-      if (
-        savedTab === "lectures" ||
-        savedTab === "permissions" ||
-        savedTab === "payment" ||
-        savedTab === "orders" ||
-        savedTab === "security"
-      ) {
-        setActiveTab(savedTab)
-      }
-      if (savedSubject && ONLINE_SUBJECTS.some(s => s.value === savedSubject)) {
-        setSelectedSubject(savedSubject)
-      }
-      
-      const targetSub = savedSubject || "toan"
-      const savedFolder = localStorage.getItem(`teacher_folder_${targetSub}`)
-      const savedExpanded = localStorage.getItem(`teacher_expanded_${targetSub}`)
-      if (savedFolder) setSelectedFolderId(savedFolder)
-      if (savedExpanded) {
-        try {
-          setExpandedFolders(JSON.parse(savedExpanded))
-        } catch (e){}
-      }
-    }
-  }, [])
+    if (typeof window === "undefined") return
+    const urlTab = searchParams?.get("tab")
+    const savedTab = localStorage.getItem("teacher_study_tab")
+    const pick =
+      urlTab === "lectures" ||
+      urlTab === "permissions" ||
+      urlTab === "payment" ||
+      urlTab === "orders" ||
+      urlTab === "security"
+        ? urlTab
+        : savedTab === "lectures" ||
+            savedTab === "permissions" ||
+            savedTab === "payment" ||
+            savedTab === "orders" ||
+            savedTab === "security"
+          ? savedTab
+          : "lectures"
+    setActiveTab(pick)
 
-  // Save states to localStorage on changes
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("teacher_study_tab", activeTab)
+    const savedSubject = localStorage.getItem("teacher_study_subject")
+    if (savedSubject && ONLINE_SUBJECTS.some((s) => s.value === savedSubject)) {
+      setSelectedSubject(savedSubject)
     }
-  }, [activeTab])
+    const targetSub = savedSubject || "toan"
+    const savedFolder = localStorage.getItem(`teacher_folder_${targetSub}`)
+    const savedExpanded = localStorage.getItem(`teacher_expanded_${targetSub}`)
+    if (savedFolder) setSelectedFolderId(savedFolder)
+    if (savedExpanded) {
+      try {
+        setExpandedFolders(JSON.parse(savedExpanded))
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [searchParams])
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -937,16 +953,7 @@ export default function TeacherOnlineStudyPage() {
           <select
             id="teacher-os-tab"
             value={activeTab}
-            onChange={(e) =>
-              setActiveTab(
-                e.target.value as
-                  | "lectures"
-                  | "permissions"
-                  | "payment"
-                  | "orders"
-                  | "security"
-              )
-            }
+            onChange={(e) => goTab(e.target.value as StudyTab)}
             className="w-full sm:hidden h-11 rounded-xl border border-[var(--os-muted)]/25 bg-[var(--os-card)] px-3 text-sm text-[var(--os-fg)] mb-3"
           >
             <option value="lectures">Bài giảng (Drive)</option>
@@ -989,7 +996,7 @@ export default function TeacherOnlineStudyPage() {
                 type="button"
                 role="tab"
                 aria-selected={activeTab === tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => goTab(tab.id)}
                 className={`pb-3 px-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap inline-flex items-center gap-1.5 min-h-[44px] ${
                   activeTab === tab.id
                     ? "border-[var(--os-accent)] text-[var(--os-accent)]"
@@ -1953,5 +1960,19 @@ export default function TeacherOnlineStudyPage() {
         </div>
       )}
     </TeacherShell>
+  )
+}
+
+export default function TeacherOnlineStudyPageWithSuspense() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center text-[var(--os-muted)] text-sm">
+          Đang tải quản trị học liệu…
+        </div>
+      }
+    >
+      <TeacherOnlineStudyPage />
+    </Suspense>
   )
 }

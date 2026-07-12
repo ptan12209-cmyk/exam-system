@@ -35,7 +35,9 @@ import { StudentShell } from "@/components/student/StudentShell"
 import { StudentTopbar } from "@/components/student/StudentTopbar"
 import { StudentNavTabs } from "@/components/student/StudentNavTabs"
 import { GradeOnboardingModal } from "@/components/student/GradeOnboardingModal"
+import { ThptCountdown } from "@/components/shared/ThptCountdown"
 import { useAuth } from "@/hooks/useAuth"
+import { GAMIFICATION_ENABLED } from "@/lib/features"
 
 import type { Profile, Exam, Submission } from "@/types"
 
@@ -67,34 +69,6 @@ export default function StudentDashboard() {
   const [classRank, setClassRank] = useState<number | null>(null)
   const [classSize, setClassSize] = useState<number | null>(null)
   const [maxStreak, setMaxStreak] = useState<number>(0)
-  
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
-
-  // 1. Calculate Countdown to THPT 2027
-  useEffect(() => {
-    const targetDate = new Date("2027-06-11T07:30:00").getTime()
-
-    const updateCountdown = () => {
-      const difference = targetDate - Date.now()
-
-      if (difference <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
-        return
-      }
-
-      const days = Math.floor(difference / (1000 * 60 * 60 * 24))
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60))
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000)
-
-      setTimeLeft({ days, hours, minutes, seconds })
-    }
-
-    updateCountdown()
-    const interval = setInterval(updateCountdown, 1000)
-
-    return () => clearInterval(interval)
-  }, [])
 
   useEffect(() => {
     if (!user || !profile) return
@@ -365,56 +339,52 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Gamified Profile Info Card */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center gap-4">
-              {/* Avatar with Custom Rank Ring */}
-              <div className={cn("relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 shadow-sm bg-[#0B0A13]", rank.border)}>
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url ?? undefined} alt={profile.full_name ?? undefined} className="h-full w-full rounded-full object-cover" />
-                ) : (
-                  <span className="text-2xl font-bold text-[#F1EDF9]">{profile?.full_name?.[0] || (profile?.nickname === "X" ? "X" : "H")}</span>
-                )}
-                {/* Level Tag */}
-                <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#15131F] border border-[#8C87A2]/40 text-[10px] font-bold text-[#C18CFF]">
-                  {studentStats.level}
+          {/* Profile / countdown card */}
+          <div className="flex flex-col gap-4">
+            <ThptCountdown className="flex-1" />
+
+            {GAMIFICATION_ENABLED && (
+              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={cn("relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 shadow-sm bg-[#0B0A13]", rank.border)}>
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url ?? undefined} alt={profile.full_name ?? undefined} className="h-full w-full rounded-full object-cover" />
+                    ) : (
+                      <span className="text-2xl font-bold text-[#F1EDF9]">{profile?.full_name?.[0] || (profile?.nickname === "X" ? "X" : "H")}</span>
+                    )}
+                    <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#15131F] border border-[#8C87A2]/40 text-[10px] font-bold text-[#C18CFF]">
+                      {studentStats.level}
+                    </div>
+                  </div>
+                  <div>
+                    <span className={cn("text-xs font-bold uppercase tracking-widest", rank.color)}>
+                      {rank.name} Rank
+                    </span>
+                    <h3 className="text-xl font-bold text-[#F1EDF9] mt-0.5">{profile?.full_name || "Học sinh"}</h3>
+                    <p className="text-xs text-[#8C87A2] mt-0.5">
+                      Lớp: {profile?.class || "Chưa thiết lập"}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-6 space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-[#8C87A2]">
+                    <span>Tiến trình cấp {studentStats.level}</span>
+                    <span>
+                      <strong className="text-[#C18CFF]">{xpProgress.current}</strong> / {xpProgress.required} XP
+                    </span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-[#0B0A13] overflow-hidden border border-[#8C87A2]/20">
+                    <div
+                      className="h-full bg-[#C18CFF] transition-all duration-700 ease-out"
+                      style={{ width: `${xpProgress.percent}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 border-t border-[#8C87A2]/25 pt-4">
+                  <DailyCheckIn onComplete={({ xp }) => setUserXp((prev) => prev + xp)} />
                 </div>
               </div>
-
-              <div>
-                <span className={cn("text-xs font-bold uppercase tracking-widest", rank.color)}>
-                  {rank.name} Rank 🏆
-                </span>
-                <h3 className="text-xl font-bold text-[#F1EDF9] mt-0.5">{profile?.full_name || (profile?.nickname === "X" ? "Học sinh X" : "Học sinh")}</h3>
-                <p className="text-xs text-[#8C87A2] mt-0.5">
-                  Lớp học: {profile?.nickname === "X" ? "Lớp X • THPT 2027" : (profile?.class || "Chưa thiết lập")}
-                </p>
-              </div>
-            </div>
-
-            {/* In-Card XP Progress */}
-            <div className="mt-6 space-y-2">
-              <div className="flex justify-between text-xs font-mono text-[#8C87A2]">
-                <span>Tiến trình cấp {studentStats.level}</span>
-                <span>
-                  <strong className="text-[#C18CFF]">{xpProgress.current}</strong> / {xpProgress.required} XP
-                </span>
-              </div>
-              <div className="h-2 w-full rounded-full bg-[#0B0A13] overflow-hidden border border-[#8C87A2]/20">
-                <div 
-                  className="h-full bg-[#C18CFF] transition-all duration-700 ease-out" 
-                  style={{ width: `${xpProgress.percent}%` }}
-                />
-              </div>
-              <p className="text-[10px] text-right text-[#8C87A2]">
-                Còn <strong className="text-[#C18CFF]">{xpProgress.nextTotal - userXp} XP</strong> để lên cấp {studentStats.level + 1}
-              </p>
-            </div>
-
-            {/* Daily Checkin Widget */}
-            <div className="mt-6 border-t border-[#8C87A2]/25 pt-4">
-              <DailyCheckIn onComplete={({ xp }) => setUserXp((prev) => prev + xp)} />
-            </div>
+            )}
           </div>
         </section>
 
@@ -455,17 +425,31 @@ export default function StudentDashboard() {
             </p>
           </div>
 
-          {/* Card 4: Streak */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">🔥 Streak</span>
-              <Sparkles className="h-4 w-4 text-[#C18CFF]" />
+          {/* Card 4: Streak (gamification) or online study CTA */}
+          {GAMIFICATION_ENABLED ? (
+            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Streak</span>
+                <Sparkles className="h-4 w-4 text-[#C18CFF]" />
+              </div>
+              <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">
+                {studentStats.streak_days} <span className="text-lg font-normal text-[#8C87A2]">ngày</span>
+              </p>
+              <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Kỷ lục: {maxStreak} ngày</p>
             </div>
-            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">
-              {studentStats.streak_days} <span className="text-lg font-normal text-[#8C87A2]">ngày</span>
-            </p>
-            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Kỷ lục: {maxStreak} ngày</p>
-          </div>
+          ) : (
+            <Link
+              href="/online-student/dashboard"
+              className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors block"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Học online</span>
+                <Globe2 className="h-4 w-4 text-[#C18CFF]" />
+              </div>
+              <p className="text-xl font-bold tracking-tight text-[#F1EDF9] mt-3">Vào portal</p>
+              <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Video bài giảng & tài liệu</p>
+            </Link>
+          )}
         </section>
 
         {/* Row 3: Main Layout Content Grid */}
@@ -613,64 +597,28 @@ export default function StudentDashboard() {
           {/* Right Panel: Challenges & Quick Tools */}
           <div className="space-y-6">
             
-            {/* 1. THPT 2027 Countdown Widget (For student X only) */}
-            {profile?.nickname === "X" && (
-              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#C18CFF] mb-4 font-semibold">
-                  <Clock className="h-4 w-4 animate-pulse" />
-                  <span>Đếm ngược THPT Quốc Gia 2027</span>
-                </div>
-                
-                <div className="grid grid-cols-4 gap-2 text-center">
-                  {[
-                    { label: "Ngày", value: timeLeft.days },
-                    { label: "Giờ", value: timeLeft.hours },
-                    { label: "Phút", value: timeLeft.minutes },
-                    { label: "Giây", value: timeLeft.seconds }
-                  ].map((item) => (
-                    <div key={item.label} className="bg-[#0B0A13] border border-[#8C87A2]/20 rounded-xl p-2.5">
-                      <span className={cn("text-2xl font-bold text-[#F1EDF9]", jetbrainsMono.className)}>
-                        {String(item.value).padStart(2, '0')}
-                      </span>
-                      <span className="block text-[9px] uppercase tracking-wider text-[#8C87A2] mt-1">
-                        {item.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-[10px] text-[#8C87A2]">
-                    Ngày thi dự kiến: <span className="text-[#C18CFF] font-bold">11/06/2027</span>
-                  </p>
-                </div>
+            {GAMIFICATION_ENABLED && (
+              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
+                <ChallengesWidget limit={3} />
               </div>
             )}
-
-            {/* Daily Challenges Widget */}
-            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
-              <ChallengesWidget limit={3} />
-            </div>
 
             {/* Quick Navigation Tools */}
             <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
               <h3 className={cn("text-2xl text-[#F1EDF9] font-normal mb-4", instrumentSerif.className)}>Công cụ học tập</h3>
               <div className="grid grid-cols-2 gap-2">
                 {[
+                  { href: "/online-student/dashboard", label: "Học Online", icon: Globe2 },
                   { href: "/resources", label: "Tài liệu học tập", icon: BookOpen },
                   { href: "/arena", label: "Đấu trường thi đấu", icon: Swords },
                   { href: "https://theieltsdictionary.com/", label: "Từ điển IELTS", icon: GraduationCap, isExternal: true },
-                  { href: "/student/achievements", label: "Bảng thành tích", icon: Award },
+                  ...(GAMIFICATION_ENABLED
+                    ? [{ href: "/student/achievements", label: "Bảng thành tích", icon: Award }]
+                    : []),
                   { href: "/student/timetable", label: "Thời khóa biểu", icon: Calendar },
                   { href: "/student/checklist", label: "Checklist / Nhiệm vụ", icon: ListTodo },
                   { href: "/student/co-study", label: "Pomodoro học tập", icon: Timer },
                   { href: "/live", label: "Lớp học trực tiếp", icon: Video },
-                  ...((profile?.role as string) === "online_student"
-                    ? [
-                        { href: "/online-student/dashboard", label: "Học Online 🌐", icon: Globe2 }
-                      ]
-                    : []
-                  ),
                 ].map((item) => {
                   const itemContent = (
                     <div className="flex flex-col justify-between p-3.5 h-20 bg-[#0B0A13] hover:bg-[#0B0A13]/80 border border-[#8C87A2]/20 hover:border-[#C18CFF]/50 rounded-xl transition-all duration-200 group">

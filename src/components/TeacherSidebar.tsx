@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { 
   BarChart3, 
@@ -33,19 +33,15 @@ interface TeacherSidebarProps {
 }
 
 const NAV_ITEMS = [
-  // { href: "/teacher/dashboard", label: "Tổng quan", icon: LayoutDashboard },
-  // { href: "/teacher/exams", label: "Đề thi", icon: FileText },
-  // { href: "/teacher/exams/create", label: "Tạo đề mới", icon: Plus },
   { href: "/teacher/online-study", label: "Học liệu online", icon: Globe2 },
+  { href: "/teacher/online-study?tab=orders", label: "Đơn hàng", icon: FileText },
+  { href: "/teacher/online-study?tab=permissions", label: "Cấp quyền HV", icon: User },
+  { href: "/teacher/online-study?tab=payment", label: "Thanh toán & giá", icon: Database },
 ]
 
 const MANAGE_ITEMS = [
   { href: "/teacher/profile", label: "Hồ sơ giáo viên", icon: UserCircle },
-  // { href: "/teacher/monitor", label: "Giám sát học tập", icon: Activity },
-  // { href: "/teacher/study", label: "Quản lý bài học", icon: BookOpen },
-  // { href: "/teacher/exam-bank", label: "Ngân hàng đề", icon: Database },
-  // { href: "/teacher/arena", label: "Đấu trường", icon: Swords },
-  // { href: "/teacher/analytics", label: "Thống kê chi tiết", icon: PieChart },
+  { href: "/teacher/online-study?tab=security", label: "Bảo mật truy cập", icon: Activity },
 ]
 
 function SidebarLink({ 
@@ -95,8 +91,26 @@ function SidebarLink({
   )
 }
 
+function linkIsActive(href: string, pathname: string, tab: string | null) {
+  const [path, query] = href.split("?")
+  if (!pathname.startsWith(path)) return false
+  if (!query) {
+    // bare /teacher/online-study → active on lectures (default)
+    if (path === "/teacher/online-study") {
+      return !tab || tab === "lectures"
+    }
+    return pathname === path || pathname.startsWith(`${path}/`)
+  }
+  const params = new URLSearchParams(query)
+  const wantTab = params.get("tab")
+  if (wantTab) return (tab || "lectures") === wantTab
+  return true
+}
+
 export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setCollapsed: externalSetCollapsed }: TeacherSidebarProps) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const currentTab = searchParams?.get("tab")
   const router = useRouter()
   const [internalCollapsed, setInternalCollapsed] = useState(false)
   
@@ -168,7 +182,7 @@ export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setColl
               href={item.href} 
               label={item.label} 
               icon={item.icon} 
-              active={pathname === item.href} 
+              active={linkIsActive(item.href, pathname || "", currentTab)} 
               collapsed={collapsed} 
             />
           ))}
@@ -185,7 +199,7 @@ export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setColl
                 href={item.href} 
                 label={item.label} 
                 icon={item.icon} 
-                active={pathname === item.href || pathname.startsWith(item.href + "/")} 
+                active={linkIsActive(item.href, pathname || "", currentTab)} 
                 collapsed={collapsed} 
               />
             ))}

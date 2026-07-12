@@ -431,9 +431,9 @@ function StudyPageInner() {
     const vids = playback?.videos || []
 
     return (
-      <OnlineStudentShell>
+      <OnlineStudentShell supportMessage={`Báo lỗi video — ${subjectInfo.label} — ${activeLesson.title}`}>
         <OnlineStudentTopbar name={profile?.full_name} onLogout={handleLogout} />
-        <div className="mx-auto max-w-5xl w-full px-4 py-5 sm:px-6 flex-1">
+        <div className="mx-auto max-w-6xl w-full px-4 py-5 sm:px-6 flex-1">
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <Button
               variant="ghost"
@@ -453,125 +453,148 @@ function StudyPageInner() {
           <div className="mb-3 rounded-xl border border-[var(--os-warning)]/25 bg-[var(--os-warning)]/10 px-3 py-2">
             <CopyrightNotice className="text-[var(--os-fg)]/90" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[var(--os-fg)] mb-4">{activeLesson.title}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--os-fg)] mb-4 text-balance">
+            {activeLesson.title}
+          </h1>
 
-          {loadingPlayback ? (
-            <div className="aspect-video rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex items-center justify-center">
-              <Loading label="Đang tải video bảo mật…" />
-            </div>
-          ) : activeVideo ? (
-            <div className="space-y-3">
-              <ProtectedVideoPlayer
-                url={activeVideo.url}
-                watermarkText={watermark}
-                onEnded={() => handleMarkCompleted(activeLesson.id)}
-              />
-              {activeVideo.title && (
-                <p className="text-xs text-[var(--os-muted)]">Đang phát: {activeVideo.title}</p>
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+            <div className="min-w-0 space-y-4">
+              {loadingPlayback ? (
+                <div className="aspect-video rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex items-center justify-center">
+                  <Loading label="Đang tải video bảo mật…" />
+                </div>
+              ) : activeVideo ? (
+                <div className="space-y-3">
+                  <ProtectedVideoPlayer
+                    url={activeVideo.url}
+                    watermarkText={watermark}
+                    onEnded={() => handleMarkCompleted(activeLesson.id)}
+                  />
+                  {activeVideo.title && (
+                    <p className="text-xs text-[var(--os-muted)]">Đang phát: {activeVideo.title}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="aspect-video rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex items-center justify-center text-[var(--os-muted)] text-sm">
+                  Bài này chưa có video
+                </div>
               )}
-            </div>
-          ) : (
-            <div className="aspect-video rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex items-center justify-center text-[var(--os-muted)] text-sm">
-              Bài này chưa có video
-            </div>
-          )}
 
-          {vids.length > 1 && (
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {vids.map((vid, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setActiveVideo(vid)}
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between rounded-xl border border-[var(--os-muted)]/15 bg-[var(--os-card)] p-4">
+                <p className="text-[11px] text-[var(--os-muted)]">
+                  Đánh dấu hoàn thành để theo dõi tiến độ.
+                </p>
+                <Button
+                  onClick={() =>
+                    handleMarkCompleted(activeLesson.id, !completedLessons.includes(activeLesson.id))
+                  }
                   className={cn(
-                    "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-semibold",
-                    activeVideo?.url === vid.url
-                      ? "border-[var(--os-accent)]/40 bg-[var(--os-accent)]/10 text-[var(--os-accent)]"
-                      : "border-[var(--os-muted)]/20 bg-[var(--os-card)] text-[var(--os-muted)]"
+                    "rounded-lg text-xs font-bold shrink-0",
+                    completedLessons.includes(activeLesson.id)
+                      ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
+                      : "bg-[var(--os-accent)] text-[var(--os-accent-fg)]"
                   )}
                 >
-                  <PlayCircle className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{vid.title || `Video ${idx + 1}`}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="mt-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between rounded-xl border border-[var(--os-muted)]/15 bg-[var(--os-card)] p-4">
-            <p className="text-[11px] text-[var(--os-muted)]">Đánh dấu hoàn thành để theo dõi tiến độ.</p>
-            <Button
-              onClick={() =>
-                handleMarkCompleted(activeLesson.id, !completedLessons.includes(activeLesson.id))
-              }
-              className={cn(
-                "rounded-lg text-xs font-bold shrink-0",
-                completedLessons.includes(activeLesson.id)
-                  ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
-                  : "bg-[var(--os-accent)] text-[var(--os-accent-fg)]"
-              )}
-            >
-              {completedLessons.includes(activeLesson.id) ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-1 inline" /> Đã hoàn thành
-                </>
-              ) : (
-                "Đánh dấu hoàn thành"
-              )}
-            </Button>
-          </div>
-
-          {(playback?.description || activeLesson.description) && (
-            <div className="mt-4 rounded-xl border border-[var(--os-muted)]/15 bg-[var(--os-card)]/50 p-4">
-              <p className="text-sm text-[var(--os-muted)] whitespace-pre-line">
-                {playback?.description || activeLesson.description}
-              </p>
-            </div>
-          )}
-
-          <div className="mt-6">
-            <h3 className="text-[10px] font-mono uppercase text-[var(--os-muted)] mb-3">Tài liệu</h3>
-            {docs.length === 0 ? (
-              <p className="text-xs text-[var(--os-muted)] italic">Không có tài liệu đính kèm.</p>
-            ) : (
-              <div className="space-y-2">
-                {docs.map((doc, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-bg)] p-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <FileText className="h-5 w-5 text-[var(--os-accent)] shrink-0" />
-                      <span className="text-sm font-semibold text-[var(--os-fg)] truncate">
-                        {doc.title || `Tài liệu ${idx + 1}`}
-                      </span>
-                    </div>
-                    <a
-                      href={`/api/online-study/lessons/${activeLesson.id}/document?index=${idx}&redirect=1`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button className="rounded-lg bg-[var(--os-accent)] text-[var(--os-accent-fg)] text-xs font-bold">
-                        <Download className="h-3.5 w-3.5 mr-1" /> Mở
-                      </Button>
-                    </a>
-                  </div>
-                ))}
+                  {completedLessons.includes(activeLesson.id) ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-1 inline" /> Đã hoàn thành
+                    </>
+                  ) : (
+                    "Đánh dấu hoàn thành"
+                  )}
+                </Button>
               </div>
-            )}
-          </div>
 
-          <div className="mt-8 text-center">
-            <a
-              href={supportZaloUrlWithText(
-                `Báo lỗi video — ${subjectInfo.label} — ${activeLesson.title}`
+              {(playback?.description || activeLesson.description) && (
+                <div className="rounded-xl border border-[var(--os-muted)]/15 bg-[var(--os-card)]/50 p-4">
+                  <p className="text-sm text-[var(--os-muted)] whitespace-pre-line">
+                    {playback?.description || activeLesson.description}
+                  </p>
+                </div>
               )}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-xs text-[var(--os-accent)] hover:underline"
-            >
-              <MessageCircle className="h-4 w-4" /> Báo lỗi qua Zalo
-              <ExternalLink className="h-3 w-3" />
-            </a>
+
+              <div className="text-center sm:text-left">
+                <a
+                  href={supportZaloUrlWithText(
+                    `Báo lỗi video — ${subjectInfo.label} — ${activeLesson.title}`
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-xs text-[var(--os-accent)] hover:underline"
+                >
+                  <MessageCircle className="h-4 w-4" /> Báo lỗi qua Zalo
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+
+            {/* Sidebar: playlist + documents */}
+            <aside className="space-y-4 lg:sticky lg:top-24">
+              {vids.length > 0 && (
+                <div className="rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)] p-3">
+                  <h3 className="text-[10px] font-mono uppercase text-[var(--os-muted)] mb-2 px-1">
+                    Video ({vids.length})
+                  </h3>
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                    {vids.map((vid, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setActiveVideo(vid)}
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-semibold",
+                          activeVideo?.url === vid.url
+                            ? "border-[var(--os-accent)]/40 bg-[var(--os-accent)]/10 text-[var(--os-accent)]"
+                            : "border-[var(--os-muted)]/20 bg-[var(--os-bg)] text-[var(--os-muted)] hover:text-[var(--os-fg)]"
+                        )}
+                      >
+                        <PlayCircle className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{vid.title || `Video ${idx + 1}`}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)] p-3">
+                <h3 className="text-[10px] font-mono uppercase text-[var(--os-muted)] mb-2 px-1">
+                  Tài liệu ({docs.length})
+                </h3>
+                {docs.length === 0 ? (
+                  <p className="text-xs text-[var(--os-muted)] italic px-1 py-2">
+                    Không có tài liệu đính kèm.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {docs.map((doc, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between gap-2 rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-bg)] p-2.5"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="h-4 w-4 text-[var(--os-accent)] shrink-0" />
+                          <span className="text-xs font-semibold text-[var(--os-fg)] truncate">
+                            {doc.title || `Tài liệu ${idx + 1}`}
+                          </span>
+                        </div>
+                        <a
+                          href={`/api/online-study/lessons/${activeLesson.id}/document?index=${idx}&redirect=1`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button
+                            size="sm"
+                            className="rounded-lg bg-[var(--os-accent)] text-[var(--os-accent-fg)] text-[10px] font-bold h-8"
+                          >
+                            <Download className="h-3 w-3 mr-0.5" /> Mở
+                          </Button>
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </aside>
           </div>
         </div>
       </OnlineStudentShell>

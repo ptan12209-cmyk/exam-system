@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { TitleBadge } from "@/components/gamification/TitleSelector"
 import { useTheme } from "@/components/ThemeProvider"
+import { GAMIFICATION_ENABLED } from "@/lib/features"
 
 interface UserMenuProps {
     userName: string
@@ -42,7 +43,7 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
     }, [onLogout, router])
 
     useEffect(() => {
-        if (role !== "student") return
+        if (role !== "student" || !GAMIFICATION_ENABLED) return
         
         const fetchEquippedTitle = async () => {
             const supabase = createClient()
@@ -105,7 +106,7 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                 <div className="hidden sm:block text-left">
                     <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="text-sm font-semibold text-foreground leading-tight">{userName || "User"}</p>
-                        {equippedTitle && <TitleBadge title={equippedTitle} />}
+                        {GAMIFICATION_ENABLED && equippedTitle && <TitleBadge title={equippedTitle} />}
                     </div>
                     <p className="text-[10px] text-muted-foreground">{userClass || (role === "student" ? "Học sinh" : "Giáo viên")}</p>
                 </div>
@@ -127,7 +128,7 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                             <div>
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                     <p className="font-semibold text-foreground text-sm">{userName}</p>
-                                    {equippedTitle && <TitleBadge title={equippedTitle} />}
+                                    {GAMIFICATION_ENABLED && equippedTitle && <TitleBadge title={equippedTitle} />}
                                 </div>
                                 <p className="text-xs text-muted-foreground">{userClass || (role === "student" ? "Học sinh" : "Giáo viên")}</p>
                             </div>
