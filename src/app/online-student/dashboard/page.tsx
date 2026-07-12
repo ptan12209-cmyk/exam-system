@@ -17,8 +17,6 @@ import {
   ShoppingCart,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import Footer from "@/components/Footer"
-import { SupportFab } from "@/components/support/SupportFab"
 import { getOnlineSubjectInfo } from "@/lib/subjects"
 import { Button } from "@/components/ui/button"
 
@@ -340,17 +338,19 @@ export default function OnlineStudentDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
-        <Loading label="Khởi động không gian học tập…" />
-      </div>
+      <OnlineStudentShell hideSupport hideFooter hideBottomNav>
+        <div className="flex flex-1 items-center justify-center py-24">
+          <Loading label="Khởi động không gian học tập…" />
+        </div>
+      </OnlineStudentShell>
     )
   }
 
   return (
-    <OnlineStudentShell>
+    <OnlineStudentShell supportMessage="Hỗ trợ StudyHub Online - dashboard">
       <OnlineStudentTopbar name={profile?.full_name} onLogout={handleLogout} />
       
-      <main className="mx-auto max-w-7xl w-full px-4 pb-28 pt-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl w-full px-4 pb-10 pt-8 sm:px-6 lg:px-8">
         
         {/* Welcome Section */}
         <section className="mb-8">
@@ -545,9 +545,6 @@ export default function OnlineStudentDashboard() {
         </section>
 
       </main>
-
-      <Footer />
-      <SupportFab />
     </OnlineStudentShell>
   )
 }

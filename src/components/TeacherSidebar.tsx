@@ -199,9 +199,15 @@ export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setColl
         <ThemeToggle side="top" align="left" />
       </div>
 
-      {/* Footer / Logout */}
-      <div className="p-4 pt-0">
+      {/* Copyright + Logout */}
+      <div className="p-4 pt-0 space-y-3">
+        {!collapsed && (
+          <p className="px-1 text-[9px] leading-relaxed text-[hsl(var(--muted-foreground))]">
+            © {new Date().getFullYear()} StudyHub · Bản quyền nội dung được bảo hộ.
+          </p>
+        )}
         <button
+          type="button"
           onClick={handleLogout}
           className={cn(
             "group flex w-full items-center rounded-2xl py-3 transition-all duration-300 hover:bg-rose-500/10",

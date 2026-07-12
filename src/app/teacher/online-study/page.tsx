@@ -12,7 +12,6 @@ import { UserMenu } from "@/components/UserMenu"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
 import { ONLINE_SUBJECTS, getOnlineSubjectInfo } from "@/lib/subjects"
-import Footer from "@/components/Footer"
 import dynamic from "next/dynamic"
 import { BunnySecurityChecklist } from "@/components/teacher/online-study/BunnySecurityChecklist"
 import {
@@ -29,7 +28,7 @@ const LazyAccessSecurityPanel = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex justify-center py-16 text-[#8C87A2] text-xs font-mono">
+      <div className="flex justify-center py-16 text-[var(--os-muted)] text-xs font-mono">
         Đang tải panel bảo mật…
       </div>
     ),
@@ -794,10 +793,10 @@ export default function TeacherOnlineStudyPage() {
   // Helper to translate subject values to labels
   const getSubjectLabelsDisplay = (subjects: string[]) => {
     if (subjects.includes("all")) {
-      return <span className="text-[#C18CFF] font-bold">Tất cả các môn</span>
+      return <span className="text-[var(--os-accent)] font-bold">Tất cả các môn</span>
     }
     if (subjects.length === 0) {
-      return <span className="text-[#8C87A2] italic">Chưa cấp quyền môn nào</span>
+      return <span className="text-[var(--os-muted)] italic">Chưa cấp quyền môn nào</span>
     }
     
     return (
@@ -805,7 +804,7 @@ export default function TeacherOnlineStudyPage() {
         {subjects.map(s => {
           const info = getOnlineSubjectInfo(s)
           return (
-            <span key={s} className="px-1.5 py-0.5 rounded bg-[#0B0A13] border border-[#8C87A2]/20 text-[10px] text-[#F1EDF9] font-mono">
+            <span key={s} className="px-1.5 py-0.5 rounded bg-[var(--os-bg)] border border-[var(--os-muted)]/20 text-[10px] text-[var(--os-fg)] font-mono">
               {info.icon} {info.label.split(" ")[0]}
             </span>
           )
@@ -830,14 +829,14 @@ export default function TeacherOnlineStudyPage() {
           style={{ paddingLeft: `${level * 12 + 6}px` }}
           className={`flex items-center justify-between py-1.5 px-2 rounded-lg cursor-pointer transition-colors ${
             isSelected 
-              ? "bg-[#C18CFF]/15 text-[#C18CFF] font-bold" 
-              : "hover:bg-[#15131F]/50 text-[#8C87A2] hover:text-[#F1EDF9]"
+              ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)] font-bold" 
+              : "hover:bg-[var(--os-card)]/50 text-[var(--os-muted)] hover:text-[var(--os-fg)]"
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0">
             <span 
               onClick={(e) => toggleFolderExpand(node.folder.id, e)}
-              className="p-0.5 rounded hover:bg-[#0B0A13] shrink-0 text-[#8C87A2]"
+              className="p-0.5 rounded hover:bg-[var(--os-bg)] shrink-0 text-[var(--os-muted)]"
             >
               {hasSubfolders ? (
                 isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />
@@ -845,7 +844,7 @@ export default function TeacherOnlineStudyPage() {
                 <span className="w-3 block" />
               )}
             </span>
-            <span className={isSelected ? "text-[#C18CFF]" : "text-[#8C87A2]"}>
+            <span className={isSelected ? "text-[var(--os-accent)]" : "text-[var(--os-muted)]"}>
               {isExpanded ? <FolderOpenIcon className="h-3.5 w-3.5" /> : <FolderIcon className="h-3.5 w-3.5" />}
             </span>
             <span className="text-xs truncate">{node.folder.name}</span>
@@ -865,9 +864,9 @@ export default function TeacherOnlineStudyPage() {
 
   return (
     <TeacherShell onLogout={handleLogout}>
-      <header className="fixed top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[#8C87A2]/20 bg-[#0B0A13]/85 px-4 backdrop-blur-xl lg:hidden safe-top">
+      <header className="fixed top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[var(--os-muted)]/20 bg-[var(--os-bg)]/85 px-4 backdrop-blur-xl lg:hidden safe-top">
         <div className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-[#C18CFF]" />
+          <BookOpen className="h-5 w-5 text-[var(--os-accent)]" />
           <span className="text-lg font-bold tracking-tight">Quản trị Học Online</span>
         </div>
         <div className="flex items-center gap-2">
@@ -881,8 +880,8 @@ export default function TeacherOnlineStudyPage() {
         {/* Header Section */}
         <section className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/40 px-3 py-1 text-[10px] font-semibold text-[#8C87A2] uppercase tracking-widest font-mono">
-              <Shield className="h-3.5 w-3.5 text-[#C18CFF]" /> Admin control panel
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[var(--os-muted)]/40 px-3 py-1 text-[10px] font-semibold text-[var(--os-muted)] uppercase tracking-widest font-mono">
+              <Shield className="h-3.5 w-3.5 text-[var(--os-accent)]" /> Admin control panel
             </div>
             <h1 className="text-4xl font-normal tracking-tight md:text-5xl lg:text-6xl font-serif-italic">
               Quản trị Hệ thống Học tập
@@ -900,9 +899,9 @@ export default function TeacherOnlineStudyPage() {
                   setActiveModal("folder")
                 }}
                 size="sm"
-                className="rounded-xl border border-[#8C87A2]/30 bg-[#15131F] text-xs font-bold text-[#F1EDF9] hover:bg-[#15131F]/80 flex items-center gap-1.5 transition-transform active:scale-95"
+                className="rounded-xl border border-[var(--os-muted)]/30 bg-[var(--os-card)] text-xs font-bold text-[var(--os-fg)] hover:bg-[var(--os-card)]/80 flex items-center gap-1.5 transition-transform active:scale-95"
               >
-                <FolderPlus className="h-4 w-4 text-[#C18CFF]" /> + Thư mục con
+                <FolderPlus className="h-4 w-4 text-[var(--os-accent)]" /> + Thư mục con
               </Button>
               
               {selectedFolderId && (
@@ -919,7 +918,7 @@ export default function TeacherOnlineStudyPage() {
                     setActiveModal("lesson")
                   }}
                   size="sm"
-                  className="rounded-xl bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 text-xs font-bold flex items-center gap-1.5 transition-transform active:scale-95"
+                  className="rounded-xl bg-[var(--os-accent)] text-[var(--os-accent-fg)] hover:bg-[var(--os-accent)]/90 text-xs font-bold flex items-center gap-1.5 transition-transform active:scale-95"
                 >
                   <FilePlus2 className="h-4 w-4" /> + Thêm Bài học
                 </Button>
@@ -948,7 +947,7 @@ export default function TeacherOnlineStudyPage() {
                   | "security"
               )
             }
-            className="w-full sm:hidden h-11 rounded-xl border border-[#8C87A2]/25 bg-[#15131F] px-3 text-sm text-[#F1EDF9] mb-3"
+            className="w-full sm:hidden h-11 rounded-xl border border-[var(--os-muted)]/25 bg-[var(--os-card)] px-3 text-sm text-[var(--os-fg)] mb-3"
           >
             <option value="lectures">Bài giảng (Drive)</option>
             <option value="permissions">Cấp quyền HV</option>
@@ -962,7 +961,7 @@ export default function TeacherOnlineStudyPage() {
           </select>
 
           <div
-            className="hidden sm:flex gap-1 border-b border-[#8C87A2]/20 pb-px overflow-x-auto"
+            className="hidden sm:flex gap-1 border-b border-[var(--os-muted)]/20 pb-px overflow-x-auto"
             role="tablist"
             aria-label="Quản trị học online"
           >
@@ -993,8 +992,8 @@ export default function TeacherOnlineStudyPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`pb-3 px-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap inline-flex items-center gap-1.5 min-h-[44px] ${
                   activeTab === tab.id
-                    ? "border-[#C18CFF] text-[#C18CFF]"
-                    : "border-transparent text-[#8C87A2] hover:text-[#F1EDF9]"
+                    ? "border-[var(--os-accent)] text-[var(--os-accent)]"
+                    : "border-transparent text-[var(--os-muted)] hover:text-[var(--os-fg)]"
                 }`}
               >
                 {tab.label}
@@ -1015,7 +1014,7 @@ export default function TeacherOnlineStudyPage() {
           <div className="space-y-4">
             
             {/* Drive-style toolbar (full width, no side tree) */}
-            <div className="flex flex-col gap-3 rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-4 sm:p-5 shadow-sm">
+            <div className="flex flex-col gap-3 rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] p-4 sm:p-5 shadow-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
                 
                 {/* Subject Selector */}
@@ -1026,7 +1025,7 @@ export default function TeacherOnlineStudyPage() {
                       setSelectedSubject(e.target.value)
                       setSelectedFolderId(null)
                     }}
-                    className="w-full rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13] px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#C18CFF] text-[#F1EDF9] h-11"
+                    className="w-full rounded-xl border border-[var(--os-muted)]/25 bg-[var(--os-bg)] px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--os-accent)] text-[var(--os-fg)] h-11"
                   >
                     {ONLINE_SUBJECTS.map((s) => (
                       <option key={s.value} value={s.value}>
@@ -1038,27 +1037,27 @@ export default function TeacherOnlineStudyPage() {
 
                 {/* Local search */}
                 <div className="relative w-full sm:flex-1 sm:max-w-md">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C87A2]" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--os-muted)]" />
                   <input
                     value={explorerSearch}
                     onChange={(e) => setExplorerSearch(e.target.value)}
                     placeholder="Tìm trong thư mục hiện tại..."
-                    className="w-full rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13] pl-9 pr-4 py-2.5 text-sm text-[#F1EDF9] placeholder-[#8C87A2] outline-none focus:ring-1 focus:ring-[#C18CFF] h-11"
+                    className="w-full rounded-xl border border-[var(--os-muted)]/25 bg-[var(--os-bg)] pl-9 pr-4 py-2.5 text-sm text-[var(--os-fg)] placeholder-[var(--os-muted)] outline-none focus:ring-1 focus:ring-[var(--os-accent)] h-11"
                   />
                 </div>
 
                 {/* View Mode selection */}
-                <div className="flex items-center gap-1 shrink-0 bg-[#0B0A13] p-1 rounded-lg border border-[#8C87A2]/20 self-end sm:self-auto">
+                <div className="flex items-center gap-1 shrink-0 bg-[var(--os-bg)] p-1 rounded-lg border border-[var(--os-muted)]/20 self-end sm:self-auto">
                   <button 
                     onClick={() => setViewMode("grid")}
-                    className={`p-1.5 rounded transition-colors ${viewMode === "grid" ? "bg-[#C18CFF]/15 text-[#C18CFF]" : "text-[#8C87A2]"}`}
+                    className={`p-1.5 rounded transition-colors ${viewMode === "grid" ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]" : "text-[var(--os-muted)]"}`}
                     title="Dạng lưới"
                   >
                     <LayoutGrid className="h-4 w-4" />
                   </button>
                   <button 
                     onClick={() => setViewMode("list")}
-                    className={`p-1.5 rounded transition-colors ${viewMode === "list" ? "bg-[#C18CFF]/15 text-[#C18CFF]" : "text-[#8C87A2]"}`}
+                    className={`p-1.5 rounded transition-colors ${viewMode === "list" ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]" : "text-[var(--os-muted)]"}`}
                     title="Dạng danh sách"
                   >
                     <List className="h-4 w-4" />
@@ -1068,14 +1067,14 @@ export default function TeacherOnlineStudyPage() {
               </div>
 
               {/* Drive breadcrumb path */}
-              <div className="flex items-center gap-1 bg-[#0B0A13] border border-[#8C87A2]/20 rounded-xl px-2 sm:px-3 py-2 overflow-x-auto text-sm scrollbar-none">
+              <div className="flex items-center gap-1 bg-[var(--os-bg)] border border-[var(--os-muted)]/20 rounded-xl px-2 sm:px-3 py-2 overflow-x-auto text-sm scrollbar-none">
                 {selectedFolderId && (
                   <button
                     onClick={() => {
                       const currentFolder = folders.find(f => f.id === selectedFolderId)
                       setSelectedFolderId(currentFolder ? currentFolder.parent_id : null)
                     }}
-                    className="mr-1 p-2 rounded-lg hover:bg-[#15131F] text-[#C18CFF] shrink-0"
+                    className="mr-1 p-2 rounded-lg hover:bg-[var(--os-card)] text-[var(--os-accent)] shrink-0"
                     title="Lên một cấp"
                   >
                     <ChevronLeft className="h-5 w-5" />
@@ -1084,17 +1083,17 @@ export default function TeacherOnlineStudyPage() {
 
                 <button
                   onClick={() => setSelectedFolderId(null)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shrink-0 font-semibold text-xs sm:text-sm ${!selectedFolderId ? "bg-[#C18CFF]/15 text-[#C18CFF]" : "text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F]"}`}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shrink-0 font-semibold text-xs sm:text-sm ${!selectedFolderId ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]" : "text-[var(--os-muted)] hover:text-[var(--os-fg)] hover:bg-[var(--os-card)]"}`}
                 >
                   <Home className="h-4 w-4" /> Gốc
                 </button>
 
                 {breadcrumbs.map((crumb, idx) => (
-                  <div key={crumb.id} className="flex items-center gap-1 shrink-0 text-[#8C87A2]">
+                  <div key={crumb.id} className="flex items-center gap-1 shrink-0 text-[var(--os-muted)]">
                     <ChevronRight className="h-4 w-4 opacity-50" />
                     <button
                       onClick={() => setSelectedFolderId(crumb.id)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold max-w-[180px] truncate ${idx === breadcrumbs.length - 1 ? "bg-[#C18CFF]/15 text-[#C18CFF]" : "hover:text-[#F1EDF9] hover:bg-[#15131F]"}`}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold max-w-[180px] truncate ${idx === breadcrumbs.length - 1 ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]" : "hover:text-[var(--os-fg)] hover:bg-[var(--os-card)]"}`}
                     >
                       {crumb.name}
                     </button>
@@ -1105,18 +1104,18 @@ export default function TeacherOnlineStudyPage() {
 
             {/* Full-page drive canvas (no side tree) */}
             <div className="w-full">
-              <section className="bg-[#15131F]/50 border border-[#8C87A2]/20 rounded-2xl p-4 sm:p-6 min-h-[60vh] flex flex-col">
+              <section className="bg-[var(--os-card)]/50 border border-[var(--os-muted)]/20 rounded-2xl p-4 sm:p-6 min-h-[60vh] flex flex-col">
                 
                 {loadingData ? (
                   <div className="flex-1 flex flex-col items-center justify-center py-24">
-                    <Loader2 className="h-10 w-10 animate-spin text-[#C18CFF]" />
-                    <p className="mt-3 text-xs text-[#8C87A2]">Đang đọc dữ liệu thư mục...</p>
+                    <Loader2 className="h-10 w-10 animate-spin text-[var(--os-accent)]" />
+                    <p className="mt-3 text-xs text-[var(--os-muted)]">Đang đọc dữ liệu thư mục...</p>
                   </div>
                 ) : currentSubFolders.length === 0 && currentLessons.length === 0 ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
-                    <FolderOpenIcon className="h-16 w-16 text-[#8C87A2]/30 mb-4" />
-                    <h4 className="text-base font-bold text-[#F1EDF9]">Thư mục trống</h4>
-                    <p className="text-sm text-[#8C87A2] max-w-sm mt-2">
+                    <FolderOpenIcon className="h-16 w-16 text-[var(--os-muted)]/30 mb-4" />
+                    <h4 className="text-base font-bold text-[var(--os-fg)]">Thư mục trống</h4>
+                    <p className="text-sm text-[var(--os-muted)] max-w-sm mt-2">
                       Thêm thư mục con hoặc bài học bằng nút góc trên. Điều hướng bằng thanh đường dẫn như Google Drive.
                     </p>
                   </div>
@@ -1126,7 +1125,7 @@ export default function TeacherOnlineStudyPage() {
                     {/* Subfolders list */}
                     {currentSubFolders.length > 0 && (
                       <div>
-                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-4">Thư mục ({currentSubFolders.length})</h4>
+                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--os-muted)] font-mono mb-4">Thư mục ({currentSubFolders.length})</h4>
                         
                         {viewMode === "grid" ? (
                           <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
@@ -1135,21 +1134,21 @@ export default function TeacherOnlineStudyPage() {
                                 key={folder.id}
                                 onDoubleClick={() => setSelectedFolderId(folder.id)}
                                 onClick={() => setSelectedFolderId(folder.id)}
-                                className="group relative p-4 bg-[#0B0A13]/60 hover:bg-[#0B0A13] border border-[#8C87A2]/15 hover:border-[#C18CFF] rounded-2xl flex flex-col justify-between min-h-[128px] cursor-pointer select-none transition-all duration-200"
+                                className="group relative p-4 bg-[var(--os-bg)]/60 hover:bg-[var(--os-bg)] border border-[var(--os-muted)]/15 hover:border-[var(--os-accent)] rounded-2xl flex flex-col justify-between min-h-[128px] cursor-pointer select-none transition-all duration-200"
                               >
                                 <div className="flex justify-between items-start">
-                                  <FolderIcon className="h-10 w-10 text-[#C18CFF]" />
+                                  <FolderIcon className="h-10 w-10 text-[var(--os-accent)]" />
                                   <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button 
                                       onClick={(e) => { e.stopPropagation(); openEditFolder(folder); }}
-                                      className="p-1.5 rounded-lg bg-[#15131F] text-[#8C87A2] hover:text-[#C18CFF] border border-[#8C87A2]/20"
+                                      className="p-1.5 rounded-lg bg-[var(--os-card)] text-[var(--os-muted)] hover:text-[var(--os-accent)] border border-[var(--os-muted)]/20"
                                       title="Sửa tên"
                                     >
                                       <Edit3 className="h-3.5 w-3.5" />
                                     </button>
                                     <button 
                                       onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "folder", id: folder.id, title: folder.name }); }}
-                                      className="p-1.5 rounded-lg bg-[#15131F] text-red-400 hover:text-red-500 border border-[#8C87A2]/20"
+                                      className="p-1.5 rounded-lg bg-[var(--os-card)] text-red-400 hover:text-red-500 border border-[var(--os-muted)]/20"
                                       title="Xóa"
                                     >
                                       <Trash2 className="h-3.5 w-3.5" />
@@ -1157,30 +1156,30 @@ export default function TeacherOnlineStudyPage() {
                                   </div>
                                 </div>
                                 <div className="min-w-0 mt-2">
-                                  <h5 className="font-bold text-sm text-[#F1EDF9] line-clamp-2 leading-snug">{folder.name}</h5>
+                                  <h5 className="font-bold text-sm text-[var(--os-fg)] line-clamp-2 leading-snug">{folder.name}</h5>
                                 </div>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <div className="border border-[#8C87A2]/15 rounded-xl overflow-hidden divide-y divide-[#8C87A2]/10 bg-[#15131F]/10">
+                          <div className="border border-[var(--os-muted)]/15 rounded-xl overflow-hidden divide-y divide-[var(--os-muted)]/10 bg-[var(--os-card)]/10">
                             {currentSubFolders.map(folder => (
                               <div
                                 key={folder.id}
                                 onClick={() => setSelectedFolderId(folder.id)}
-                                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-[#15131F]/50 transition-colors"
+                                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-[var(--os-card)]/50 transition-colors"
                               >
                                 <div className="flex items-center gap-3 min-w-0">
-                                  <FolderIcon className="h-4.5 w-4.5 text-[#C18CFF] shrink-0" />
-                                  <span className="text-xs font-semibold text-[#F1EDF9] truncate">{folder.name}</span>
-                                  <span className="text-[9px] font-mono text-[#8C87A2]">Thứ tự: {folder.order_index}</span>
+                                  <FolderIcon className="h-4.5 w-4.5 text-[var(--os-accent)] shrink-0" />
+                                  <span className="text-xs font-semibold text-[var(--os-fg)] truncate">{folder.name}</span>
+                                  <span className="text-[9px] font-mono text-[var(--os-muted)]">Thứ tự: {folder.order_index}</span>
                                 </div>
                                 <div className="flex gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
                                     onClick={(e) => { e.stopPropagation(); openEditFolder(folder); }}
-                                    className="h-7 w-7 rounded-lg border border-[#8C87A2]/20 p-1 hover:bg-[#0B0A13]"
+                                    className="h-7 w-7 rounded-lg border border-[var(--os-muted)]/20 p-1 hover:bg-[var(--os-bg)]"
                                   >
                                     <Edit3 className="h-2.5 w-2.5" />
                                   </Button>
@@ -1203,28 +1202,28 @@ export default function TeacherOnlineStudyPage() {
                     {/* Lessons list */}
                     {currentLessons.length > 0 && (
                       <div>
-                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-4">Bài giảng ({currentLessons.length})</h4>
+                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--os-muted)] font-mono mb-4">Bài giảng ({currentLessons.length})</h4>
                         
                         {viewMode === "grid" ? (
                           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {currentLessons.map(lesson => (
                               <div
                                 key={lesson.id}
-                                className="group relative p-5 bg-[#0B0A13]/50 hover:bg-[#0B0A13] border border-[#8C87A2]/15 hover:border-[#C18CFF]/50 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all duration-200"
+                                className="group relative p-5 bg-[var(--os-bg)]/50 hover:bg-[var(--os-bg)] border border-[var(--os-muted)]/15 hover:border-[var(--os-accent)]/50 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all duration-200"
                               >
                                 <div className="flex justify-between items-start">
-                                  <PlayCircle className="h-9 w-9 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
+                                  <PlayCircle className="h-9 w-9 text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors" />
                                   <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button 
                                       onClick={() => openEditLesson(lesson)}
-                                      className="p-1.5 rounded-lg bg-[#15131F] text-[#8C87A2] hover:text-[#C18CFF] border border-[#8C87A2]/20"
+                                      className="p-1.5 rounded-lg bg-[var(--os-card)] text-[var(--os-muted)] hover:text-[var(--os-accent)] border border-[var(--os-muted)]/20"
                                       title="Sửa bài giảng"
                                     >
                                       <Edit3 className="h-3.5 w-3.5" />
                                     </button>
                                     <button 
                                       onClick={() => setDeleteTarget({ type: "lesson", id: lesson.id, title: lesson.title })}
-                                      className="p-1.5 rounded-lg bg-[#15131F] text-red-400 hover:text-red-500 border border-[#8C87A2]/20"
+                                      className="p-1.5 rounded-lg bg-[var(--os-card)] text-red-400 hover:text-red-500 border border-[var(--os-muted)]/20"
                                       title="Xóa"
                                     >
                                       <Trash2 className="h-3.5 w-3.5" />
@@ -1233,9 +1232,9 @@ export default function TeacherOnlineStudyPage() {
                                 </div>
 
                                 <div className="min-w-0 mt-3">
-                                  <h5 className="font-bold text-sm text-[#F1EDF9] line-clamp-2 leading-snug">{lesson.title}</h5>
+                                  <h5 className="font-bold text-sm text-[var(--os-fg)] line-clamp-2 leading-snug">{lesson.title}</h5>
                                   <div className="flex gap-2 mt-2 flex-wrap">
-                                    {(lesson.video_url || (lesson.videos && lesson.videos.length > 0)) && <span className="text-[10px] uppercase font-bold text-[#C18CFF] bg-[#C18CFF]/10 px-2 py-0.5 rounded-md">Video</span>}
+                                    {(lesson.video_url || (lesson.videos && lesson.videos.length > 0)) && <span className="text-[10px] uppercase font-bold text-[var(--os-accent)] bg-[var(--os-accent)]/10 px-2 py-0.5 rounded-md">Video</span>}
                                     {(lesson.document_url || (lesson.documents && lesson.documents.length > 0)) && <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">Tài liệu</span>}
                                   </div>
                                 </div>
@@ -1243,18 +1242,18 @@ export default function TeacherOnlineStudyPage() {
                             ))}
                           </div>
                         ) : (
-                          <div className="border border-[#8C87A2]/10 rounded-xl overflow-hidden divide-y divide-[#8C87A2]/10 bg-[#0B0A13]/10">
+                          <div className="border border-[var(--os-muted)]/10 rounded-xl overflow-hidden divide-y divide-[var(--os-muted)]/10 bg-[var(--os-bg)]/10">
                             {currentLessons.map(lesson => (
                               <div
                                 key={lesson.id}
-                                className="group flex items-center justify-between p-3 hover:bg-[#0B0A13]/30 transition-colors"
+                                className="group flex items-center justify-between p-3 hover:bg-[var(--os-bg)]/30 transition-colors"
                               >
                                 <div className="flex items-center gap-3 min-w-0">
-                                  <PlayCircle className="h-4.5 w-4.5 text-[#8C87A2] shrink-0" />
-                                  <span className="text-xs font-semibold text-[#F1EDF9] truncate">{lesson.title}</span>
-                                  <span className="text-[9px] font-mono text-[#8C87A2]">Bài: {lesson.order_index}</span>
+                                  <PlayCircle className="h-4.5 w-4.5 text-[var(--os-muted)] shrink-0" />
+                                  <span className="text-xs font-semibold text-[var(--os-fg)] truncate">{lesson.title}</span>
+                                  <span className="text-[9px] font-mono text-[var(--os-muted)]">Bài: {lesson.order_index}</span>
                                   <div className="flex gap-1.5 shrink-0">
-                                    {lesson.video_url && <Video className="h-3 w-3 text-[#C18CFF]" />}
+                                    {lesson.video_url && <Video className="h-3 w-3 text-[var(--os-accent)]" />}
                                     {lesson.document_url && <FileText className="h-3 w-3 text-emerald-400" />}
                                   </div>
                                 </div>
@@ -1263,7 +1262,7 @@ export default function TeacherOnlineStudyPage() {
                                     variant="ghost" 
                                     size="icon" 
                                     onClick={() => openEditLesson(lesson)}
-                                    className="h-7 w-7 rounded-lg border border-[#8C87A2]/20 p-1 hover:bg-[#15131F]"
+                                    className="h-7 w-7 rounded-lg border border-[var(--os-muted)]/20 p-1 hover:bg-[var(--os-card)]"
                                   >
                                     <Edit3 className="h-2.5 w-2.5" />
                                   </Button>
@@ -1297,11 +1296,11 @@ export default function TeacherOnlineStudyPage() {
             <div className="flex flex-col sm:flex-row items-center gap-3">
               <form
                 onSubmit={handleStudentSearchSubmit}
-                className="flex-1 flex items-center gap-2 rounded-xl border border-[#8C87A2]/20 bg-[#15131F]/30 px-3 py-2 w-full"
+                className="flex-1 flex items-center gap-2 rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)]/30 px-3 py-2 w-full"
                 role="search"
                 aria-label="Tìm học viên"
               >
-                <Search className="h-4 w-4 text-[#8C87A2]" aria-hidden />
+                <Search className="h-4 w-4 text-[var(--os-muted)]" aria-hidden />
                 <label htmlFor="student-search" className="sr-only">
                   Tìm học sinh theo tên hoặc email
                 </label>
@@ -1310,71 +1309,71 @@ export default function TeacherOnlineStudyPage() {
                   value={searchStudentQuery}
                   onChange={(e) => setSearchStudentQuery(e.target.value)}
                   placeholder="Tìm học sinh theo tên hoặc email..."
-                  className="bg-transparent text-sm w-full outline-none text-[#F1EDF9] placeholder-[#8C87A2] h-9"
+                  className="bg-transparent text-sm w-full outline-none text-[var(--os-fg)] placeholder-[var(--os-muted)] h-9"
                 />
-                <Button type="submit" size="sm" className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 text-xs font-bold px-4 h-9 shrink-0">
+                <Button type="submit" size="sm" className="rounded-lg bg-[var(--os-accent)] text-[var(--os-accent-fg)] hover:bg-[var(--os-accent)]/90 text-xs font-bold px-4 h-9 shrink-0">
                   Tìm kiếm
                 </Button>
               </form>
               <Button
                 onClick={() => setIsCreateStudentOpen(true)}
-                className="w-full sm:w-auto rounded-xl bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 text-xs font-bold px-4 py-2.5 flex items-center justify-center gap-1.5 transition-transform active:scale-95 shrink-0"
+                className="w-full sm:w-auto rounded-xl bg-[var(--os-accent)] text-[var(--os-accent-fg)] hover:bg-[var(--os-accent)]/90 text-xs font-bold px-4 py-2.5 flex items-center justify-center gap-1.5 transition-transform active:scale-95 shrink-0"
               >
                 <UserPlus className="h-4 w-4" /> Cấp tài khoản mới
               </Button>
             </div>
 
             {/* Students list */}
-            <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/10 overflow-hidden">
-              <div className="p-4 border-b border-[#8C87A2]/20 bg-[#15131F]/50 flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Cấp quyền học trực tuyến</span>
-                <span className="text-[10px] bg-[#0B0A13] px-2 py-0.5 rounded border border-[#8C87A2]/20 text-[#8C87A2] font-mono">
+            <div className="rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)]/10 overflow-hidden">
+              <div className="p-4 border-b border-[var(--os-muted)]/20 bg-[var(--os-card)]/50 flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--os-muted)] font-mono">Cấp quyền học trực tuyến</span>
+                <span className="text-[10px] bg-[var(--os-bg)] px-2 py-0.5 rounded border border-[var(--os-muted)]/20 text-[var(--os-muted)] font-mono">
                   {students.length} học viên
                 </span>
               </div>
 
               {loadingStudents ? (
                 <div className="flex flex-col items-center justify-center py-20">
-                  <Loader2 className="h-8 w-8 animate-spin text-[#C18CFF]" />
-                  <p className="mt-2 text-xs text-[#8C87A2]">Đang tải học sinh...</p>
+                  <Loader2 className="h-8 w-8 animate-spin text-[var(--os-accent)]" />
+                  <p className="mt-2 text-xs text-[var(--os-muted)]">Đang tải học sinh...</p>
                 </div>
               ) : students.length === 0 ? (
-                <div className="text-center py-20 text-sm text-[#8C87A2] italic">
+                <div className="text-center py-20 text-sm text-[var(--os-muted)] italic">
                   Không tìm thấy học sinh nào.
                 </div>
               ) : (
-                <div className="divide-y divide-[#8C87A2]/10 bg-[#15131F]/20">
+                <div className="divide-y divide-[var(--os-muted)]/10 bg-[var(--os-card)]/20">
                   {students.map(student => {
                     const isOnline = student.online_subjects && student.online_subjects.length > 0
                     return (
-                      <div key={student.id} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-[#15131F]/30 transition-colors">
+                      <div key={student.id} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-[var(--os-card)]/30 transition-colors">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${
                             isOnline 
-                              ? "border-[#C18CFF]/50 bg-[#C18CFF]/10 text-[#C18CFF]" 
-                              : "border-[#8C87A2]/30 bg-[#0B0A13] text-[#8C87A2]"
+                              ? "border-[var(--os-accent)]/50 bg-[var(--os-accent)]/10 text-[var(--os-accent)]" 
+                              : "border-[var(--os-muted)]/30 bg-[var(--os-bg)] text-[var(--os-muted)]"
                           }`}>
                             {student.full_name?.[0]?.toUpperCase() || "H"}
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-sm text-[#F1EDF9] truncate">{student.full_name || "Chưa đặt tên"}</h4>
+                              <h4 className="font-bold text-sm text-[var(--os-fg)] truncate">{student.full_name || "Chưa đặt tên"}</h4>
                               {student.class && (
-                                <span className="rounded bg-[#0B0A13] border border-[#8C87A2]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#8C87A2] font-mono shrink-0">
+                                <span className="rounded bg-[var(--os-bg)] border border-[var(--os-muted)]/20 px-1.5 py-0.5 text-[9px] font-bold text-[var(--os-muted)] font-mono shrink-0">
                                   {student.class}
                                 </span>
                               )}
-                              <span className="rounded bg-[#C18CFF]/10 border border-[#C18CFF]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#C18CFF] font-mono shrink-0">
+                              <span className="rounded bg-[var(--os-accent)]/10 border border-[var(--os-accent)]/20 px-1.5 py-0.5 text-[9px] font-bold text-[var(--os-accent)] font-mono shrink-0">
                                 Đã học: {(student as any).progress_percent || 0}%
                               </span>
                             </div>
-                            <p className="text-xs text-[#8C87A2] mt-0.5 truncate">{student.email}</p>
+                            <p className="text-xs text-[var(--os-muted)] mt-0.5 truncate">{student.email}</p>
                           </div>
                         </div>
 
                         {/* Middle display: Assigned Subjects list */}
                         <div className="flex-1 px-0 sm:px-6 max-w-md">
-                          <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono mb-1">Môn học trực tuyến được cấp</div>
+                          <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--os-muted)] font-mono mb-1">Môn học trực tuyến được cấp</div>
                           {getSubjectLabelsDisplay(student.online_subjects || [])}
                         </div>
 
@@ -1382,7 +1381,7 @@ export default function TeacherOnlineStudyPage() {
                           <Button
                             size="sm"
                             onClick={() => openPermissionsModal(student)}
-                            className="rounded-xl font-bold text-xs py-1.5 px-4 bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 flex items-center gap-1.5 transition-transform active:scale-95"
+                            className="rounded-xl font-bold text-xs py-1.5 px-4 bg-[var(--os-accent)] text-[var(--os-accent-fg)] hover:bg-[var(--os-accent)]/90 flex items-center gap-1.5 transition-transform active:scale-95"
                           >
                             <Sliders className="h-3.5 w-3.5" /> Điều chỉnh quyền
                           </Button>
@@ -1439,7 +1438,6 @@ export default function TeacherOnlineStudyPage() {
         {activeTab === "security" && <LazyAccessSecurityPanel />}
 
       </main>
-      <Footer />
 
       {/* ── Create Student Modal ── */}
       <AnimatePresence>
@@ -1449,75 +1447,75 @@ export default function TeacherOnlineStudyPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-[#0B0A13]/80 backdrop-blur-sm"
+              className="absolute inset-0 bg-[var(--os-bg)]/80 backdrop-blur-sm"
               onClick={() => setIsCreateStudentOpen(false)}
             />
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-md rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-6 shadow-2xl z-10"
+              className="relative w-full max-w-md rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] p-6 shadow-2xl z-10"
             >
-              <button onClick={() => setIsCreateStudentOpen(false)} className="absolute right-4 top-4 text-[#8C87A2] hover:text-[#F1EDF9]">
+              <button onClick={() => setIsCreateStudentOpen(false)} className="absolute right-4 top-4 text-[var(--os-muted)] hover:text-[var(--os-fg)]">
                 <X className="h-5 w-5" />
               </button>
               
-              <h3 className="text-xl font-bold text-[#F1EDF9] mb-4 font-mono uppercase tracking-wide text-sm">
+              <h3 className="text-xl font-bold text-[var(--os-fg)] mb-4 font-mono uppercase tracking-wide text-sm">
                 Cấp Tài Khoản Học Viên Mới
               </h3>
 
               <form onSubmit={handleCreateStudentSubmit} className="space-y-4 text-left">
                 <div>
-                  <Label className="text-xs text-[#8C87A2] font-mono">Họ và tên học viên</Label>
+                  <Label className="text-xs text-[var(--os-muted)] font-mono">Họ và tên học viên</Label>
                   <Input 
                     value={newStudentName}
                     onChange={(e) => setNewStudentName(e.target.value)}
                     placeholder="VD: Nguyễn Văn A"
-                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                    className="mt-1 bg-[var(--os-bg)] border-[var(--os-muted)]/25 focus:ring-[var(--os-accent)] text-[var(--os-fg)]"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label className="text-xs text-[#8C87A2] font-mono">Email đăng nhập</Label>
+                  <Label className="text-xs text-[var(--os-muted)] font-mono">Email đăng nhập</Label>
                   <Input 
                     type="email"
                     value={newStudentEmail}
                     onChange={(e) => setNewStudentEmail(e.target.value)}
                     placeholder="VD: nguyenvana@gmail.com"
-                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                    className="mt-1 bg-[var(--os-bg)] border-[var(--os-muted)]/25 focus:ring-[var(--os-accent)] text-[var(--os-fg)]"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label className="text-xs text-[#8C87A2] font-mono">Mật khẩu đăng nhập</Label>
+                  <Label className="text-xs text-[var(--os-muted)] font-mono">Mật khẩu đăng nhập</Label>
                   <Input 
                     type="password"
                     value={newStudentPassword}
                     onChange={(e) => setNewStudentPassword(e.target.value)}
                     placeholder="Tối thiểu 6 ký tự"
-                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                    className="mt-1 bg-[var(--os-bg)] border-[var(--os-muted)]/25 focus:ring-[var(--os-accent)] text-[var(--os-fg)]"
                     minLength={6}
                     required
                   />
                 </div>
 
                 <div>
-                  <Label className="text-xs text-[#8C87A2] font-mono">Lớp học (Tùy chọn)</Label>
+                  <Label className="text-xs text-[var(--os-muted)] font-mono">Lớp học (Tùy chọn)</Label>
                   <Input 
                     value={newStudentClass}
                     onChange={(e) => setNewStudentClass(e.target.value)}
                     placeholder="VD: 12A1"
-                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                    className="mt-1 bg-[var(--os-bg)] border-[var(--os-muted)]/25 focus:ring-[var(--os-accent)] text-[var(--os-fg)]"
                   />
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-2">
-                  <Button type="button" variant="ghost" onClick={() => setIsCreateStudentOpen(false)} className="rounded-lg border border-[#8C87A2]/20 text-[#8C87A2]">
+                  <Button type="button" variant="ghost" onClick={() => setIsCreateStudentOpen(false)} className="rounded-lg border border-[var(--os-muted)]/20 text-[var(--os-muted)]">
                     Hủy
                   </Button>
-                  <Button type="submit" disabled={creatingStudent} className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 font-bold px-6 flex items-center gap-1.5">
+                  <Button type="submit" disabled={creatingStudent} className="rounded-lg bg-[var(--os-accent)] text-[var(--os-accent-fg)] hover:bg-[var(--os-accent)]/90 font-bold px-6 flex items-center gap-1.5">
                     {creatingStudent && <Loader2 className="h-4 w-4 animate-spin" />}
                     Cấp tài khoản
                   </Button>
@@ -1536,42 +1534,42 @@ export default function TeacherOnlineStudyPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-[#0B0A13]/80 backdrop-blur-sm"
+              className="absolute inset-0 bg-[var(--os-bg)]/80 backdrop-blur-sm"
               onClick={closeModal}
             />
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-md rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-6 shadow-2xl z-10"
+              className="relative w-full max-w-md rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] p-6 shadow-2xl z-10"
             >
-              <button onClick={closeModal} className="absolute right-4 top-4 text-[#8C87A2] hover:text-[#F1EDF9]">
+              <button onClick={closeModal} className="absolute right-4 top-4 text-[var(--os-muted)] hover:text-[var(--os-fg)]">
                 <X className="h-5 w-5" />
               </button>
               
-              <h3 className="text-xl font-bold text-[#F1EDF9] mb-4">
+              <h3 className="text-xl font-bold text-[var(--os-fg)] mb-4">
                 {editingItem ? "Sửa Thư Mục" : folderParentId ? "Thêm Thư Mục Con" : "Tạo Thư Mục Gốc"}
               </h3>
 
               <form onSubmit={handleFolderSubmit} className="space-y-4">
                 <div>
-                  <Label className="text-xs text-[#8C87A2] font-mono">Tên thư mục</Label>
+                  <Label className="text-xs text-[var(--os-muted)] font-mono">Tên thư mục</Label>
                   <Input 
                     value={folderName}
                     onChange={(e) => setFolderName(e.target.value)}
                     placeholder="VD: Chương 1: Đạo hàm"
-                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                    className="mt-1 bg-[var(--os-bg)] border-[var(--os-muted)]/25 focus:ring-[var(--os-accent)] text-[var(--os-fg)]"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label className="text-xs text-[#8C87A2] font-mono">Thứ tự sắp xếp (Order Index)</Label>
+                  <Label className="text-xs text-[var(--os-muted)] font-mono">Thứ tự sắp xếp (Order Index)</Label>
                   <Input 
                     type="number"
                     value={folderOrder}
                     onChange={(e) => setFolderOrder(Number(e.target.value))}
-                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                    className="mt-1 bg-[var(--os-bg)] border-[var(--os-muted)]/25 focus:ring-[var(--os-accent)] text-[var(--os-fg)]"
                     min={1}
                     required
                   />
@@ -1580,10 +1578,10 @@ export default function TeacherOnlineStudyPage() {
                 {formError && <p className="text-xs text-red-500 mt-2">{formError}</p>}
 
                 <div className="flex items-center justify-end gap-2 pt-2">
-                  <Button type="button" variant="ghost" onClick={closeModal} className="rounded-lg border border-[#8C87A2]/20 text-[#8C87A2]">
+                  <Button type="button" variant="ghost" onClick={closeModal} className="rounded-lg border border-[var(--os-muted)]/20 text-[var(--os-muted)]">
                     Hủy
                   </Button>
-                  <Button type="submit" disabled={submitting} className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 font-bold px-6">
+                  <Button type="submit" disabled={submitting} className="rounded-lg bg-[var(--os-accent)] text-[var(--os-accent-fg)] hover:bg-[var(--os-accent)]/90 font-bold px-6">
                     {submitting ? "Đang xử lý..." : editingItem ? "Lưu thay đổi" : "Tạo thư mục"}
                   </Button>
                 </div>
@@ -1601,56 +1599,56 @@ export default function TeacherOnlineStudyPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-[#0B0A13]/80 backdrop-blur-sm"
+              className="absolute inset-0 bg-[var(--os-bg)]/80 backdrop-blur-sm"
               onClick={closeModal}
             />
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-xl rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-6 shadow-2xl z-10"
+              className="relative w-full max-w-xl rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] p-6 shadow-2xl z-10"
             >
-              <button onClick={closeModal} className="absolute right-4 top-4 text-[#8C87A2] hover:text-[#F1EDF9]">
+              <button onClick={closeModal} className="absolute right-4 top-4 text-[var(--os-muted)] hover:text-[var(--os-fg)]">
                 <X className="h-5 w-5" />
               </button>
               
-              <h3 className="text-xl font-bold text-[#F1EDF9] mb-4">
+              <h3 className="text-xl font-bold text-[var(--os-fg)] mb-4">
                 {editingItem ? "Chỉnh sửa bài giảng" : "Thêm bài giảng mới"}
               </h3>
 
               <form onSubmit={handleLessonSubmit} className="space-y-4">
                 <div>
-                  <Label className="text-xs text-[#8C87A2] font-mono">Tiêu đề bài giảng</Label>
+                  <Label className="text-xs text-[var(--os-muted)] font-mono">Tiêu đề bài giảng</Label>
                   <Input 
                     value={lessonTitle}
                     onChange={(e) => setLessonTitle(e.target.value)}
                     placeholder="VD: Bài 1: Lý thuyết đạo hàm căn bản"
-                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                    className="mt-1 bg-[var(--os-bg)] border-[var(--os-muted)]/25 focus:ring-[var(--os-accent)] text-[var(--os-fg)]"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label className="text-xs text-[#8C87A2] font-mono">Mô tả bài giảng (Không bắt buộc)</Label>
+                  <Label className="text-xs text-[var(--os-muted)] font-mono">Mô tả bài giảng (Không bắt buộc)</Label>
                   <textarea 
                     value={lessonDesc}
                     onChange={(e) => setLessonDesc(e.target.value)}
                     placeholder="Nhập nội dung mô tả, yêu cầu tự học của bài giảng..."
                     rows={3}
-                    className="w-full rounded-lg border border-[#8C87A2]/25 bg-[#0B0A13] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#C18CFF] text-[#F1EDF9] mt-1"
+                    className="w-full rounded-lg border border-[var(--os-muted)]/25 bg-[var(--os-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--os-accent)] text-[var(--os-fg)] mt-1"
                   />
                 </div>
 
                 {/* Dynamic Video list */}
-                <div className="space-y-2 border-t border-[#8C87A2]/10 pt-3">
+                <div className="space-y-2 border-t border-[var(--os-muted)]/10 pt-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-bold text-[#C18CFF] uppercase font-mono">Danh sách Video ({lessonVideos.length})</Label>
+                    <Label className="text-xs font-bold text-[var(--os-accent)] uppercase font-mono">Danh sách Video ({lessonVideos.length})</Label>
                     <Button 
                       type="button" 
                       onClick={() => setLessonVideos([...lessonVideos, { title: "", url: "" }])}
                       size="sm"
                       variant="ghost"
-                      className="h-7 text-[10px] text-[#C18CFF] hover:bg-[#C18CFF]/10 font-bold rounded-lg border border-[#C18CFF]/20"
+                      className="h-7 text-[10px] text-[var(--os-accent)] hover:bg-[var(--os-accent)]/10 font-bold rounded-lg border border-[var(--os-accent)]/20"
                     >
                       + Thêm Video
                     </Button>
@@ -1658,7 +1656,7 @@ export default function TeacherOnlineStudyPage() {
 
                   <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
                     {lessonVideos.map((video, idx) => (
-                      <div key={idx} className="flex gap-2 items-start bg-[#0B0A13]/40 p-2 rounded-xl border border-[#8C87A2]/10">
+                      <div key={idx} className="flex gap-2 items-start bg-[var(--os-bg)]/40 p-2 rounded-xl border border-[var(--os-muted)]/10">
                         <div className="flex-1 space-y-1.5 min-w-0">
                           <Input 
                             value={video.title}
@@ -1668,7 +1666,7 @@ export default function TeacherOnlineStudyPage() {
                               setLessonVideos(updated)
                             }}
                             placeholder="Tiêu đề (VD: Video Lý thuyết)"
-                            className="h-8 text-xs bg-[#0B0A13] border-[#8C87A2]/20 text-[#F1EDF9] focus:ring-[#C18CFF]"
+                            className="h-8 text-xs bg-[var(--os-bg)] border-[var(--os-muted)]/20 text-[var(--os-fg)] focus:ring-[var(--os-accent)]"
                             required
                           />
                           <Input 
@@ -1679,7 +1677,7 @@ export default function TeacherOnlineStudyPage() {
                               setLessonVideos(updated)
                             }}
                             placeholder="Bunny embed/play hoặc YouTube (không dán token)"
-                            className="h-8 text-xs bg-[#0B0A13] border-[#8C87A2]/20 text-[#F1EDF9] focus:ring-[#C18CFF]"
+                            className="h-8 text-xs bg-[var(--os-bg)] border-[var(--os-muted)]/20 text-[var(--os-fg)] focus:ring-[var(--os-accent)]"
                             required
                           />
                         </div>
@@ -1699,7 +1697,7 @@ export default function TeacherOnlineStudyPage() {
                 </div>
 
                 {/* Dynamic Document list */}
-                <div className="space-y-2 border-t border-[#8C87A2]/10 pt-3">
+                <div className="space-y-2 border-t border-[var(--os-muted)]/10 pt-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-bold text-emerald-400 uppercase font-mono">Tài liệu ôn tập ({lessonDocuments.length})</Label>
                     <Button 
@@ -1715,7 +1713,7 @@ export default function TeacherOnlineStudyPage() {
 
                   <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
                     {lessonDocuments.map((doc, idx) => (
-                      <div key={idx} className="flex gap-2 items-start bg-[#0B0A13]/40 p-2 rounded-xl border border-[#8C87A2]/10">
+                      <div key={idx} className="flex gap-2 items-start bg-[var(--os-bg)]/40 p-2 rounded-xl border border-[var(--os-muted)]/10">
                         <div className="flex-1 space-y-1.5 min-w-0">
                           <Input 
                             value={doc.title}
@@ -1725,7 +1723,7 @@ export default function TeacherOnlineStudyPage() {
                               setLessonDocuments(updated)
                             }}
                             placeholder="Tiêu đề (VD: Đề tự luyện PDF)"
-                            className="h-8 text-xs bg-[#0B0A13] border-[#8C87A2]/20 text-[#F1EDF9] focus:ring-[#C18CFF]"
+                            className="h-8 text-xs bg-[var(--os-bg)] border-[var(--os-muted)]/20 text-[var(--os-fg)] focus:ring-[var(--os-accent)]"
                             required
                           />
                           <Input 
@@ -1736,7 +1734,7 @@ export default function TeacherOnlineStudyPage() {
                               setLessonDocuments(updated)
                             }}
                             placeholder="Link tài liệu (Bunny PDF / Storage)"
-                            className="h-8 text-xs bg-[#0B0A13] border-[#8C87A2]/20 text-[#F1EDF9] focus:ring-[#C18CFF]"
+                            className="h-8 text-xs bg-[var(--os-bg)] border-[var(--os-muted)]/20 text-[var(--os-fg)] focus:ring-[var(--os-accent)]"
                             required
                           />
                         </div>
@@ -1752,18 +1750,18 @@ export default function TeacherOnlineStudyPage() {
                       </div>
                     ))}
                     {lessonDocuments.length === 0 && (
-                      <p className="text-[10px] text-[#8C87A2] italic text-center py-2">Không có tài liệu đính kèm.</p>
+                      <p className="text-[10px] text-[var(--os-muted)] italic text-center py-2">Không có tài liệu đính kèm.</p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <Label className="text-xs text-[#8C87A2] font-mono">Thứ tự bài học (Order Index)</Label>
+                  <Label className="text-xs text-[var(--os-muted)] font-mono">Thứ tự bài học (Order Index)</Label>
                   <Input 
                     type="number"
                     value={lessonOrder}
                     onChange={(e) => setLessonOrder(Number(e.target.value))}
-                    className="mt-1 bg-[#0B0A13] border-[#8C87A2]/25 focus:ring-[#C18CFF] text-[#F1EDF9]"
+                    className="mt-1 bg-[var(--os-bg)] border-[var(--os-muted)]/25 focus:ring-[var(--os-accent)] text-[var(--os-fg)]"
                     min={1}
                     required
                   />
@@ -1772,10 +1770,10 @@ export default function TeacherOnlineStudyPage() {
                 {formError && <p className="text-xs text-red-500 mt-2">{formError}</p>}
 
                 <div className="flex items-center justify-end gap-2 pt-2">
-                  <Button type="button" variant="ghost" onClick={closeModal} className="rounded-lg border border-[#8C87A2]/20 text-[#8C87A2]">
+                  <Button type="button" variant="ghost" onClick={closeModal} className="rounded-lg border border-[var(--os-muted)]/20 text-[var(--os-muted)]">
                     Hủy
                   </Button>
-                  <Button type="submit" disabled={submitting} className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 font-bold px-6">
+                  <Button type="submit" disabled={submitting} className="rounded-lg bg-[var(--os-accent)] text-[var(--os-accent-fg)] hover:bg-[var(--os-accent)]/90 font-bold px-6">
                     {submitting ? "Đang xử lý..." : editingItem ? "Lưu thay đổi" : "Thêm bài học"}
                   </Button>
                 </div>
@@ -1793,51 +1791,51 @@ export default function TeacherOnlineStudyPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-[#0B0A13]/80 backdrop-blur-sm"
+              className="absolute inset-0 bg-[var(--os-bg)]/80 backdrop-blur-sm"
               onClick={closeModal}
             />
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-lg rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-6 shadow-2xl z-10"
+              className="relative w-full max-w-lg rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] p-6 shadow-2xl z-10"
             >
-              <button onClick={closeModal} className="absolute right-4 top-4 text-[#8C87A2] hover:text-[#F1EDF9]">
+              <button onClick={closeModal} className="absolute right-4 top-4 text-[var(--os-muted)] hover:text-[var(--os-fg)]">
                 <X className="h-5 w-5" />
               </button>
               
               <div className="mb-4">
-                <h3 className="text-lg font-bold text-[#F1EDF9]">Cấp quyền môn học trực tuyến</h3>
-                <p className="text-xs text-[#8C87A2] mt-1">
-                  Đang thiết lập quyền cho: <strong className="text-[#C18CFF]">{selectedStudentForPermission.full_name}</strong> ({selectedStudentForPermission.email})
+                <h3 className="text-lg font-bold text-[var(--os-fg)]">Cấp quyền môn học trực tuyến</h3>
+                <p className="text-xs text-[var(--os-muted)] mt-1">
+                  Đang thiết lập quyền cho: <strong className="text-[var(--os-accent)]">{selectedStudentForPermission.full_name}</strong> ({selectedStudentForPermission.email})
                 </p>
               </div>
 
               <form onSubmit={handlePermissionsSubmit} className="space-y-4">
                 
                 {/* Master Switch: All subjects */}
-                <div className="p-3 bg-[#0B0A13]/40 border border-[#8C87A2]/20 rounded-xl flex items-center justify-between">
+                <div className="p-3 bg-[var(--os-bg)]/40 border border-[var(--os-muted)]/20 rounded-xl flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-[#F1EDF9]">Cấp tất cả các môn</span>
-                    <span className="text-[10px] text-[#8C87A2] mt-0.5">Cho phép truy cập toàn bộ 12 môn học trực tuyến</span>
+                    <span className="text-xs font-bold text-[var(--os-fg)]">Cấp tất cả các môn</span>
+                    <span className="text-[10px] text-[var(--os-muted)] mt-0.5">Cho phép truy cập toàn bộ 12 môn học trực tuyến</span>
                   </div>
                   <input
                     type="checkbox"
                     checked={tempSelectedSubjects.includes("all")}
                     onChange={() => handleToggleSubjectCheckbox("all")}
-                    className="h-4 w-4 rounded border-[#8C87A2]/40 bg-[#0B0A13] text-[#C18CFF] focus:ring-[#C18CFF] accent-[#C18CFF] cursor-pointer"
+                    className="h-4 w-4 rounded border-[var(--os-muted)]/40 bg-[var(--os-bg)] text-[var(--os-accent)] focus:ring-[var(--os-accent)] accent-[var(--os-accent)] cursor-pointer"
                   />
                 </div>
 
                 {/* Sub-selector: Individual subjects (disabled if "all" is checked) */}
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">
+                  <div className="flex justify-between items-center text-[10px] font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">
                     <span>Chọn từng môn học</span>
                     <div className="flex gap-2">
                       <button 
                         type="button" 
                         onClick={handleSelectAllSubjects}
-                        className="text-[#C18CFF] hover:underline"
+                        className="text-[var(--os-accent)] hover:underline"
                       >
                         Chọn hết
                       </button>
@@ -1852,7 +1850,7 @@ export default function TeacherOnlineStudyPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1 border border-[#8C87A2]/10 rounded-xl p-3 bg-[#0B0A13]/20 custom-scrollbar">
+                  <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1 border border-[var(--os-muted)]/10 rounded-xl p-3 bg-[var(--os-bg)]/20 custom-scrollbar">
                     {ONLINE_SUBJECTS.map(subject => {
                       const isChecked = tempSelectedSubjects.includes("all") || tempSelectedSubjects.includes(subject.value as string)
                       const isDisabled = tempSelectedSubjects.includes("all")
@@ -1862,8 +1860,8 @@ export default function TeacherOnlineStudyPage() {
                           key={subject.value}
                           className={`flex items-center justify-between p-2.5 rounded-lg border text-xs cursor-pointer transition-colors ${
                             isChecked 
-                              ? "bg-[#C18CFF]/10 border-[#C18CFF]/30 text-[#F1EDF9]" 
-                              : "bg-[#0B0A13]/30 border-[#8C87A2]/10 text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#0B0A13]/55"
+                              ? "bg-[var(--os-accent)]/10 border-[var(--os-accent)]/30 text-[var(--os-fg)]" 
+                              : "bg-[var(--os-bg)]/30 border-[var(--os-muted)]/10 text-[var(--os-muted)] hover:text-[var(--os-fg)] hover:bg-[var(--os-bg)]/55"
                           }`}
                         >
                           <div className="flex items-center gap-1.5 min-w-0">
@@ -1875,7 +1873,7 @@ export default function TeacherOnlineStudyPage() {
                             checked={isChecked}
                             disabled={isDisabled && (subject.value as string) !== "all"}
                             onChange={() => handleToggleSubjectCheckbox(subject.value as string)}
-                            className="h-3.5 w-3.5 rounded border-[#8C87A2]/40 bg-[#0B0A13] text-[#C18CFF] focus:ring-[#C18CFF] accent-[#C18CFF] cursor-pointer disabled:opacity-50"
+                            className="h-3.5 w-3.5 rounded border-[var(--os-muted)]/40 bg-[var(--os-bg)] text-[var(--os-accent)] focus:ring-[var(--os-accent)] accent-[var(--os-accent)] cursor-pointer disabled:opacity-50"
                           />
                         </label>
                       )
@@ -1885,11 +1883,11 @@ export default function TeacherOnlineStudyPage() {
 
                 {formError && <p className="text-xs text-red-500 mt-2">{formError}</p>}
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#8C87A2]/10">
-                  <Button type="button" variant="ghost" onClick={closeModal} className="rounded-lg border border-[#8C87A2]/20 text-[#8C87A2]">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--os-muted)]/10">
+                  <Button type="button" variant="ghost" onClick={closeModal} className="rounded-lg border border-[var(--os-muted)]/20 text-[var(--os-muted)]">
                     Hủy
                   </Button>
-                  <Button type="submit" disabled={submitting} className="rounded-lg bg-[#C18CFF] text-[#0B0A13] hover:bg-[#C18CFF]/90 font-bold px-6">
+                  <Button type="submit" disabled={submitting} className="rounded-lg bg-[var(--os-accent)] text-[var(--os-accent-fg)] hover:bg-[var(--os-accent)]/90 font-bold px-6">
                     {submitting ? "Đang xử lý..." : "Lưu quyền hạn"}
                   </Button>
                 </div>
@@ -1927,19 +1925,19 @@ export default function TeacherOnlineStudyPage() {
       {/* Mobile Folder Tree Drawer */}
       {isMobileTreeOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden bg-black/60 backdrop-blur-sm transition-all duration-300">
-          <div className="w-80 max-w-[85%] bg-[#0B0A13] border-r border-[#8C87A2]/20 h-full flex flex-col p-4 shadow-2xl relative animate-in slide-in-from-left duration-300">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#8C87A2]/10">
-              <span className="text-sm font-bold text-[#F1EDF9] font-mono tracking-wide">CÂY THƯ MỤC</span>
+          <div className="w-80 max-w-[85%] bg-[var(--os-bg)] border-r border-[var(--os-muted)]/20 h-full flex flex-col p-4 shadow-2xl relative animate-in slide-in-from-left duration-300">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-[var(--os-muted)]/10">
+              <span className="text-sm font-bold text-[var(--os-fg)] font-mono tracking-wide">CÂY THƯ MỤC</span>
               <button 
                 onClick={() => setIsMobileTreeOpen(false)} 
-                className="p-1.5 rounded-lg border border-[#8C87A2]/20 text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#15131F] transition-colors"
+                className="p-1.5 rounded-lg border border-[var(--os-muted)]/20 text-[var(--os-muted)] hover:text-[var(--os-fg)] hover:bg-[var(--os-card)] transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto pr-1">
               {folderTree.length === 0 ? (
-                <p className="text-xs text-[#8C87A2] italic text-center py-4">Chưa có thư mục</p>
+                <p className="text-xs text-[var(--os-muted)] italic text-center py-4">Chưa có thư mục</p>
               ) : (
                 <div className="space-y-0.5">
                   {folderTree.map(root => (

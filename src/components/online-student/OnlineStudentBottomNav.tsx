@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { BookOpen, Home, MessageCircle } from "lucide-react"
+import { BookOpen, Home, MessageCircle, ShoppingCart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { supportZaloUrlWithText } from "@/lib/support"
 import { getOnlineSubjectInfo } from "@/lib/subjects"
@@ -21,14 +21,14 @@ export function OnlineStudentBottomNav() {
     const last = localStorage.getItem("drive_last_subject")
     if (last) {
       setStudyHref(`/online-student/study?subject=${encodeURIComponent(last)}`)
-      setLastLabel(getOnlineSubjectInfo(last).label.slice(0, 10))
+      setLastLabel(getOnlineSubjectInfo(last).label.slice(0, 8))
     } else {
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i)
         if (k?.startsWith("drive_folder_")) {
           const sub = k.replace("drive_folder_", "")
           setStudyHref(`/online-student/study?subject=${encodeURIComponent(sub)}`)
-          setLastLabel(getOnlineSubjectInfo(sub).label.slice(0, 10))
+          setLastLabel(getOnlineSubjectInfo(sub).label.slice(0, 8))
           break
         }
       }
@@ -39,6 +39,7 @@ export function OnlineStudentBottomNav() {
 
   const studyActive = pathname.startsWith("/online-student/study")
   const homeActive = pathname.startsWith("/online-student/dashboard")
+  const payActive = pathname.startsWith("/online-student/payment")
 
   const itemClass = (active: boolean) =>
     cn(
@@ -60,6 +61,10 @@ export function OnlineStudentBottomNav() {
         <Link href={studyHref} className={itemClass(studyActive)}>
           <BookOpen className="h-5 w-5" />
           <span>{studyActive ? "Đang học" : lastLabel}</span>
+        </Link>
+        <Link href="/online-student/payment" className={itemClass(payActive)}>
+          <ShoppingCart className="h-5 w-5" />
+          <span>Mua khóa</span>
         </Link>
         <a
           href={supportZaloUrlWithText("Hỗ trợ StudyHub Online")}

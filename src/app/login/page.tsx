@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Captcha, useCaptcha } from "@/components/Captcha"
 import { ArrowRight, Eye, EyeOff, GraduationCap, Lock, Mail, Sparkles } from "lucide-react"
+import Footer from "@/components/Footer"
+import { SupportFab } from "@/components/support/SupportFab"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -68,13 +71,16 @@ export default function LoginPage() {
             </div>
             <span className="text-lg font-semibold tracking-tight">StudyHub</span>
           </Link>
-          <Link href="/register" className="text-sm text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]">
-            Đăng ký
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link href="/register" className="text-sm text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]">
+              Đăng ký
+            </Link>
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto flex min-h-screen max-w-7xl items-center px-6 pb-16 pt-24 md:px-10">
+      <main className="mx-auto flex min-h-screen max-w-7xl items-center px-6 pb-8 pt-24 md:px-10">
         <div className="grid w-full gap-12 lg:grid-cols-[1fr_0.92fr] lg:gap-16">
           <section className="flex flex-col justify-center">
             <span className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-[hsl(var(--border))]/60 px-3 py-1 text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
@@ -168,6 +174,9 @@ export default function LoginPage() {
           </section>
         </div>
       </main>
+
+      <Footer compact />
+      <SupportFab offsetBottomNav={false} zaloMessage="Hỗ trợ StudyHub - đăng nhập" />
     </div>
   )
 }

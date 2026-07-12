@@ -1,17 +1,31 @@
 import { cn } from "@/lib/utils"
 import { OnlineStudentBottomNav } from "@/components/online-student/OnlineStudentBottomNav"
+import Footer from "@/components/Footer"
+import { SupportFab } from "@/components/support/SupportFab"
 
 interface OnlineStudentShellProps {
   readonly children: React.ReactNode
   readonly className?: string
-  /** Hide mobile bottom nav (e.g. full-screen player) */
+  /** Hide mobile bottom nav (e.g. full-screen intercept) */
   readonly hideBottomNav?: boolean
+  /** Hide floating support FAB */
+  readonly hideSupport?: boolean
+  /** Hide site footer / copyright */
+  readonly hideFooter?: boolean
+  /** Zalo prefills */
+  readonly supportMessage?: string
 }
 
+/**
+ * Online-student layout chrome: brand surface, footer copyright, support FAB, bottom nav.
+ */
 export function OnlineStudentShell({
   children,
   className,
   hideBottomNav = false,
+  hideSupport = false,
+  hideFooter = false,
+  supportMessage,
 }: Readonly<OnlineStudentShellProps>) {
   return (
     <div
@@ -21,7 +35,17 @@ export function OnlineStudentShell({
         className
       )}
     >
-      {children}
+      <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+
+      {!hideFooter && <Footer />}
+
+      {!hideSupport && (
+        <SupportFab
+          offsetBottomNav={!hideBottomNav}
+          zaloMessage={supportMessage ?? "Hỗ trợ StudyHub Online"}
+        />
+      )}
+
       {!hideBottomNav && <OnlineStudentBottomNav />}
     </div>
   )

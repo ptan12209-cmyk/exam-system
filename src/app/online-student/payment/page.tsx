@@ -20,8 +20,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react"
-import Footer from "@/components/Footer"
-import { SupportFab } from "@/components/support/SupportFab"
+
 import { ErrorState } from "@/components/online-student/ErrorState"
 import { cn } from "@/lib/utils"
 
@@ -498,8 +497,6 @@ function PaymentPageInner() {
         </div>
       )}
 
-      <Footer />
-      <SupportFab />
     </OnlineStudentShell>
   )
 }

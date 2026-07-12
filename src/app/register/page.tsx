@@ -5,6 +5,9 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Captcha, useCaptcha } from "@/components/Captcha"
 import { ArrowRight, BookOpen, Eye, EyeOff, GraduationCap, Lock, Mail, Phone, Sparkles, User } from "lucide-react"
+import Footer from "@/components/Footer"
+import { SupportFab } from "@/components/support/SupportFab"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -83,9 +86,12 @@ export default function RegisterPage() {
             </div>
             <span className="text-lg font-semibold tracking-tight">StudyHub</span>
           </Link>
-          <Link href="/login" className="text-sm text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]">
-            Đăng nhập
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link href="/login" className="text-sm text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]">
+              Đăng nhập
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -218,6 +224,9 @@ export default function RegisterPage() {
           </section>
         </div>
       </main>
+
+      <Footer compact />
+      <SupportFab offsetBottomNav={false} zaloMessage="Hỗ trợ StudyHub - đăng ký" />
     </div>
   )
 }

@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client"
 import { OnlineStudentShell } from "@/components/online-student/OnlineStudentShell"
 import { OnlineStudentTopbar } from "@/components/online-student/OnlineStudentTopbar"
 import { Loading } from "@/components/shared/Loading"
-import { SupportFab } from "@/components/support/SupportFab"
 
 const ProtectedVideoPlayer = dynamic(
   () =>
@@ -46,7 +45,7 @@ import {
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
-import Footer from "@/components/Footer"
+import { CopyrightNotice } from "@/components/Footer"
 import { cn } from "@/lib/utils"
 import { cacheGet, cacheSet } from "@/lib/client-swr-cache"
 import { EmptyState } from "@/components/online-student/EmptyState"
@@ -410,16 +409,18 @@ function StudyPageInner() {
 
   if (!hasAccess) {
     return (
-      <OnlineStudentShell>
+      <OnlineStudentShell supportMessage="Hỗ trợ StudyHub - chưa có quyền môn học">
         <OnlineStudentTopbar name={profile?.full_name} onLogout={handleLogout} />
         <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
-          <ShieldAlert className="h-10 w-10 text-red-400 mb-3" />
+          <ShieldAlert className="h-10 w-10 text-[var(--os-danger)] mb-3" />
           <h2 className="text-lg font-bold text-[var(--os-fg)]">Chưa có quyền môn này</h2>
+          <p className="mt-2 max-w-sm text-sm text-[var(--os-muted)]">
+            Mua khóa hoặc liên hệ hỗ trợ nếu em đã thanh toán.
+          </p>
           <Link href="/online-student/dashboard" className="mt-4">
             <Button className="rounded-xl bg-[var(--os-accent)] text-[var(--os-accent-fg)] font-bold">Về dashboard</Button>
           </Link>
         </div>
-        <SupportFab />
       </OnlineStudentShell>
     )
   }
@@ -449,8 +450,8 @@ function StudyPageInner() {
               {subjectInfo.icon} {subjectInfo.label}
             </span>
           </div>
-          <div className="mb-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-200/90">
-            Nội dung bản quyền StudyHub — cấm ghi hình, tải xuống, chia sẻ trái phép.
+          <div className="mb-3 rounded-xl border border-[var(--os-warning)]/25 bg-[var(--os-warning)]/10 px-3 py-2">
+            <CopyrightNotice className="text-[var(--os-fg)]/90" />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-[var(--os-fg)] mb-4">{activeLesson.title}</h1>
 
@@ -573,8 +574,6 @@ function StudyPageInner() {
             </a>
           </div>
         </div>
-        <Footer />
-        <SupportFab />
       </OnlineStudentShell>
     )
   }
@@ -849,8 +848,6 @@ function StudyPageInner() {
         </div>
       </div>
 
-      <Footer />
-      <SupportFab />
     </OnlineStudentShell>
   )
 }
