@@ -43,8 +43,17 @@ function extractImportSecret(request: NextRequest): string {
  */
 async function handlePOST(request: NextRequest) {
   const ip = getClientIP(request)
-  const rl = checkRateLimit(`online-import:${ip}`, 30, 60_000)
-  if (!rl.success) return rateLimitResponse(rl)
+  // checkRateLimit is async; returns { allowed, remaining, reset } (reset in seconds)
+  // Limit 120/min — downloader sends batches of 100 items for large Storage syncs
+  const rl = await checkRateLimit(`online-import:${ip}`, 120, 60)
+  if (!rl.allowed) {
+    return rateLimitResponse({
+      success: false,
+      limit: 120,
+      remaining: rl.remaining,
+      resetTime: rl.reset * 1000,
+    })
+  }
 
   const expected = String(process.env.ONLINE_STUDY_IMPORT_SECRET || '').trim()
   if (!expected) {
