@@ -200,11 +200,11 @@ export async function importOnlineStudyItems(
         if (segs0.length >= 1) {
           const head = segs0[0]
           const looksLikeDriveRoot =
-            head.length >= 40 ||
-            /combo\s*xps/i.test(head) ||
-            /zalo/i.test(head) ||
-            /📚/.test(head) ||
-            (/thpt/i.test(head) && /2027/.test(head))
+            head.length >= 40 &&
+            (/combo\s*xps/i.test(head) ||
+              /zalo/i.test(head) ||
+              /📚/.test(head) ||
+              (/thpt/i.test(head) && /2027/.test(head)))
           if (looksLikeDriveRoot) {
             rel = segs0.slice(1).join('/')
           }
