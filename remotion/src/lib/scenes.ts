@@ -180,20 +180,20 @@ export const SCENES: Scene[] = [
   },
 ];
 
-/** Voice-only text for ElevenLabs (phonetic-friendly Vietnamese). */
+/** Voice text for ElevenLabs — original brand/terms (no phonetic mangling). */
 export const SCENE_VOICE: Record<string, string> = {
-  s01: "Các em hai nghìn lẻ chín ơi. Anh mời các em xem qua khóa học online một chút.",
-  s02: "Ôn video đang loạn. File rải khắp nơi, khó theo dõi, dễ bỏ cuộc. Đúng không các em?",
-  s03: "Sta-đi Háp. Cổng học online: video theo môn, có thầy cô phụ trách. Học trung học phổ thông và đánh giá năng lực, linh hoạt thời gian.",
+  s01: "Các em 2k9 ơi. Anh mời các em xem qua khóa học online một chút.",
+  s02: "Ôn video đang loạn. File rải khắp Drive, khó theo dõi, dễ bỏ cuộc. Đúng không các em?",
+  s03: "StudyHub. Cổng học online: video theo môn, có thầy cô phụ trách. Học THPT và ĐGNL, linh hoạt thời gian.",
   s04: "Trong mỗi môn có gì? Bài giảng video theo chương, tài liệu ôn kèm theo. Các em học mọi lúc, mọi nơi.",
-  s05: "Chương trình đủ môn cho hai nghìn lẻ chín. Tự nhiên, xã hội, tiếng Anh, và đánh giá năng lực.",
+  s05: "Chương trình đủ môn cho 2k9. Tự nhiên, xã hội, tiếng Anh, và ĐGNL.",
   s06: "Giáo viên khối tự nhiên. Toán khoảng mười khóa. Lý khoảng tám thầy. Hóa bốn, Sinh ba. Nhiều thầy cô theo từng môn, các em chọn được lộ trình phù hợp.",
   s07: "Xã hội và tiếng Anh. Văn bốn khóa. Sử, Địa có cô Lan Hương, cô Hương Sen, cô Mai Anh. Tiếng Anh có cô Phạm Liễu, cô Trang Anh, cô Vũ Mai Phương.",
-  s08: "Đánh giá năng lực bốn hướng. Hát-ét-a, Vi-áct, Tê-ét-a, và Sư phạm. Mỗi hướng có đội ngũ riêng.",
-  s09: "Chương trình ưu đãi đang mở tham khảo. Mua lẻ một môn chín mươi chín nghìn, giảm mười lăm phần trăm. Combo ba môn hai trăm năm mươi nghìn, giảm hai mươi lăm. Toàn vẹn chưa đánh giá năng lực bốn trăm năm mươi nghìn, giảm ba mươi. Chỉ đánh giá năng lực một trăm chín mươi chín nghìn. Full kèm đánh giá năng lực năm trăm chín mươi chín nghìn, giảm bốn mươi phần trăm.",
+  s08: "ĐGNL bốn hướng. HSA, V-ACT, TSA, và Sư phạm. Mỗi hướng có đội ngũ riêng.",
+  s09: "Chương trình ưu đãi đang mở tham khảo. Mua lẻ một môn chín mươi chín nghìn, giảm mười lăm phần trăm. Combo ba môn hai trăm năm mươi nghìn, giảm hai mươi lăm. Toàn vẹn chưa ĐGNL bốn trăm năm mươi nghìn, giảm ba mươi. Chỉ ĐGNL một trăm chín mươi chín nghìn. Full kèm ĐGNL năm trăm chín mươi chín nghìn, giảm bốn mươi phần trăm.",
   s10: "Đặc biệt: các em được học thử miễn phí một ngày. Xem giao diện, xem bài mẫu, không ép mua ngay.",
-  s11: "Quyền lợi học viên. Một tài khoản một thiết bị. Hỗ trợ qua Da-lo bằng cách quét mã Q R. Nên quay màn hình khi thanh toán. Nội dung bám chương trình hai nghìn lẻ chín.",
-  s12: "Muốn học thử ngay, các em quét mã Q R Da-lo trên màn hình, hoặc vào luyende chấm i đê chấm vân ên, hoặc bấm link bio. Anh mở học thử cho các em. Hẹn gặp các em trên Sta-đi Háp.",
+  s11: "Quyền lợi học viên. Một tài khoản một thiết bị. Hỗ trợ qua Zalo bằng cách quét mã QR. Nên quay màn hình khi thanh toán. Nội dung bám chương trình 2k9.",
+  s12: "Muốn học thử ngay, các em quét mã QR Zalo trên màn hình, hoặc vào luyende.id.vn, hoặc bấm link bio. Anh mở học thử cho các em. Hẹn gặp các em trên StudyHub.",
 };
 
 export const FPS = 30;
