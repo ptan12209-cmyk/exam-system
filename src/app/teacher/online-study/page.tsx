@@ -540,11 +540,21 @@ function TeacherOnlineStudyPage() {
       }
     })
 
+    const folderSort = (a: { folder: DbFolder }, b: { folder: DbFolder }) => {
+      if (a.folder.order_index !== b.folder.order_index) {
+        return a.folder.order_index - b.folder.order_index
+      }
+      // Tie-break: natural Vietnamese/numeric name (1 < 2 < 10) — fixes legacy depth-based order_index
+      return String(a.folder.name || '').localeCompare(String(b.folder.name || ''), 'vi', {
+        numeric: true,
+        sensitivity: 'base',
+      })
+    }
     map.forEach(node => {
-      node.children.sort((a, b) => a.folder.order_index - b.folder.order_index)
+      node.children.sort(folderSort)
     })
 
-    roots.sort((a, b) => a.folder.order_index - b.folder.order_index)
+    roots.sort(folderSort)
     return roots
   }, [folders])
 
@@ -568,18 +578,30 @@ function TeacherOnlineStudyPage() {
   // Current folder's children and lessons
   const currentSubFolders = useMemo(() => {
     const filtered = folders.filter(f => f.parent_id === selectedFolderId)
-    if (explorerSearch.trim()) {
-      return filtered.filter(f => f.name.toLowerCase().includes(explorerSearch.toLowerCase()))
-    }
-    return filtered.sort((a, b) => a.order_index - b.order_index)
+    const list = explorerSearch.trim()
+      ? filtered.filter(f => f.name.toLowerCase().includes(explorerSearch.toLowerCase()))
+      : filtered
+    return list.sort((a, b) => {
+      if (a.order_index !== b.order_index) return a.order_index - b.order_index
+      return String(a.name || '').localeCompare(String(b.name || ''), 'vi', {
+        numeric: true,
+        sensitivity: 'base',
+      })
+    })
   }, [folders, selectedFolderId, explorerSearch])
 
   const currentLessons = useMemo(() => {
     const filtered = lessons.filter(l => l.folder_id === selectedFolderId)
-    if (explorerSearch.trim()) {
-      return filtered.filter(l => l.title.toLowerCase().includes(explorerSearch.toLowerCase()))
-    }
-    return filtered.sort((a, b) => a.order_index - b.order_index)
+    const list = explorerSearch.trim()
+      ? filtered.filter(l => l.title.toLowerCase().includes(explorerSearch.toLowerCase()))
+      : filtered
+    return list.sort((a, b) => {
+      if (a.order_index !== b.order_index) return a.order_index - b.order_index
+      return String(a.title || '').localeCompare(String(b.title || ''), 'vi', {
+        numeric: true,
+        sensitivity: 'base',
+      })
+    })
   }, [lessons, selectedFolderId, explorerSearch])
 
   const toggleFolderExpand = (folderId: string, e: React.MouseEvent) => {

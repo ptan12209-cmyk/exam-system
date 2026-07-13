@@ -81,6 +81,47 @@ function pathSegments(relativePath: string): string[] {
     .map((s) => s.slice(0, 180))
 }
 
+/**
+ * Natural order from folder/file names so UI matches Drive/Bunny tree:
+ *   "1. xxx" < "2. xxx" < "10. xxx"
+ *   "1.2 Lộ trình" → 1002
+ * Depth-based order_index was wrong (all siblings got the same index).
+ */
+export function naturalOrderIndex(name: string): number {
+  const s = String(name || '').trim()
+  if (!s) return 999_999
+
+  // "1. Title", "01) Title", "10 - Title", "1.2 Title"
+  let m = s.match(/^(\d{1,4})(?:[.\-_](\d{1,4}))?[.\-_)\]\s]/)
+  if (m) {
+    const major = parseInt(m[1], 10)
+    const minor = m[2] != null ? parseInt(m[2], 10) : 0
+    return major * 1000 + minor
+  }
+
+  // "Chương 1", "Bài 12", "Theme 3", "Phần 2"
+  m = s.match(
+    /(?:chương|chuong|bài|bai|theme|phần|phan|buổi|buoi|step|chapter)\s*(\d{1,4})(?:[.\-_](\d{1,4}))?/i
+  )
+  if (m) {
+    const major = parseInt(m[1], 10)
+    const minor = m[2] != null ? parseInt(m[2], 10) : 0
+    return major * 1000 + minor
+  }
+
+  // Leading number anywhere early: "___ 03. xxx"
+  m = s.match(/(\d{1,4})[.)\]]/)
+  if (m) return parseInt(m[1], 10) * 1000
+
+  // Stable alpha fallback (keeps relative order among unnumbered names)
+  let h = 0
+  const sample = s.toLocaleLowerCase('vi')
+  for (let i = 0; i < Math.min(sample.length, 32); i++) {
+    h = (h * 33 + sample.charCodeAt(i)) >>> 0
+  }
+  return 500_000 + (h % 400_000)
+}
+
 async function ensureFolderChain(
   admin: SupabaseClient,
   {
@@ -137,15 +178,24 @@ async function ensureFolderChain(
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i]
     pathSoFar = pathSoFar ? `${pathSoFar}/${seg}` : seg
+    const orderIndex = naturalOrderIndex(seg)
+
     const { data: existing } = await admin
       .from('online_folders')
-      .select('id')
+      .select('id, order_index')
       .eq('examhub_course_key', courseKey)
       .eq('subject', subject)
       .eq('source_path', pathSoFar)
       .maybeSingle()
 
     if (existing?.id) {
+      // Fix legacy depth-based order_index on re-import
+      if (Number(existing.order_index) !== orderIndex) {
+        await admin
+          .from('online_folders')
+          .update({ order_index: orderIndex, name: seg })
+          .eq('id', existing.id)
+      }
       parentId = existing.id
       continue
     }
@@ -156,7 +206,7 @@ async function ensureFolderChain(
         name: seg,
         parent_id: parentId,
         subject,
-        order_index: i + 2,
+        order_index: orderIndex,
         teacher_id: teacherId || null,
         examhub_course_key: courseKey,
         source_path: pathSoFar,
@@ -252,11 +302,12 @@ export async function importOnlineStudyItems(
         continue
       }
 
+      const lessonOrder = naturalOrderIndex(title)
       const rowBase = {
         folder_id: folderId,
         title,
         description: rel || null,
-        order_index: 1,
+        order_index: lessonOrder,
         teacher_id: payload.teacherId || null,
         source_drive_file_id: driveFileId || null,
         source_bunny_video_id: item.streamVideoId || null,
@@ -269,40 +320,68 @@ export async function importOnlineStudyItems(
         documents: docItems,
       }
 
+      // Prefer update by drive file id, else by remote path (rebuilt manifest has empty drive ids)
+      let existingId: string | null = null
+      let existingVideos: unknown = null
+      let existingDocuments: unknown = null
       if (driveFileId) {
         const { data: existing } = await admin
           .from('online_lessons')
           .select('id, videos, documents')
           .eq('source_drive_file_id', driveFileId)
           .maybeSingle()
-
         if (existing?.id) {
-          // Merge media arrays if needed
-          const prevVideos = Array.isArray(existing.videos) ? existing.videos : []
-          const prevDocs = Array.isArray(existing.documents) ? existing.documents : []
-          const nextVideos =
-            videoItems.length > 0
-              ? videoItems
-              : prevVideos
-          const nextDocs =
-            docItems.length > 0
-              ? docItems
-              : prevDocs
-
-          const { error } = await admin
-            .from('online_lessons')
-            .update({
-              ...rowBase,
-              videos: nextVideos,
-              documents: nextDocs,
-              video_url: nextVideos[0]?.url || null,
-              document_url: nextDocs[0]?.url || null,
-            })
-            .eq('id', existing.id)
-          if (error) throw error
-          result.updated++
-          continue
+          existingId = existing.id
+          existingVideos = existing.videos
+          existingDocuments = existing.documents
         }
+      }
+      if (!existingId && item.remotePath) {
+        const { data: byPath } = await admin
+          .from('online_lessons')
+          .select('id, videos, documents')
+          .eq('source_remote_path', String(item.remotePath))
+          .maybeSingle()
+        if (byPath?.id) {
+          existingId = byPath.id
+          existingVideos = byPath.videos
+          existingDocuments = byPath.documents
+        }
+      }
+      // Last resort: same folder + same title (fixes duplicate creates from empty driveFileId)
+      if (!existingId) {
+        const { data: byTitle } = await admin
+          .from('online_lessons')
+          .select('id, videos, documents')
+          .eq('folder_id', folderId)
+          .eq('title', title)
+          .maybeSingle()
+        if (byTitle?.id) {
+          existingId = byTitle.id
+          existingVideos = byTitle.videos
+          existingDocuments = byTitle.documents
+        }
+      }
+
+      if (existingId) {
+        const prevVideos = Array.isArray(existingVideos) ? existingVideos : []
+        const prevDocs = Array.isArray(existingDocuments) ? existingDocuments : []
+        const nextVideos = videoItems.length > 0 ? videoItems : prevVideos
+        const nextDocs = docItems.length > 0 ? docItems : prevDocs
+
+        const { error } = await admin
+          .from('online_lessons')
+          .update({
+            ...rowBase,
+            videos: nextVideos,
+            documents: nextDocs,
+            video_url: nextVideos[0]?.url || null,
+            document_url: nextDocs[0]?.url || null,
+          })
+          .eq('id', existingId)
+        if (error) throw error
+        result.updated++
+        continue
       }
 
       const { error } = await admin.from('online_lessons').insert(rowBase)
