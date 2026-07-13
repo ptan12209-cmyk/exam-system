@@ -440,14 +440,25 @@ function SubjectBlock({
             </p>
             <div className="mt-4 border-t border-white/[0.06] pt-3">
               <p className="text-[10px] font-mono uppercase tracking-wider text-[#8C87A2]/70">
-                Giáo viên
+                Giáo viên · {s.teachers.length} khóa
               </p>
-              {s.teachers.map((t) => (
-                <div key={t.name} className="mt-1.5">
-                  <p className="text-[13px] font-medium text-[#e8e4f0]">{t.name}</p>
-                  <p className="text-[11px] text-[#8C87A2]">{t.role}</p>
-                </div>
-              ))}
+              <ul
+                className={cn(
+                  "mt-2 space-y-1.5",
+                  s.teachers.length > 5 && "max-h-40 overflow-y-auto pr-1"
+                )}
+              >
+                {s.teachers.map((t) => (
+                  <li key={`${t.name}-${t.role}`} className="flex flex-col gap-0.5">
+                    <span className="text-[12.5px] font-medium leading-snug text-[#e8e4f0]">
+                      {t.name}
+                    </span>
+                    {t.role ? (
+                      <span className="text-[10.5px] leading-snug text-[#8C87A2]">{t.role}</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
             </div>
           </article>
         ))}
