@@ -416,47 +416,57 @@ export async function importOnlineStudyItems(
         documents: docItems,
       }
 
-      // Prefer update by drive file id, else by remote path (rebuilt manifest has empty drive ids)
+      // Prefer update by drive file id, else by remote path (rebuilt manifest has empty drive ids).
+      // IMPORTANT: never use maybeSingle() when dupes may exist — it errors and falls through
+      // to INSERT, creating yet another copy. Always .limit(1) and take first row.
       let existingId: string | null = null
       let existingVideos: unknown = null
       let existingDocuments: unknown = null
+      const pickFirst = (rows: Array<{ id: string; videos?: unknown; documents?: unknown }> | null) => {
+        const row = Array.isArray(rows) && rows[0] ? rows[0] : null
+        if (!row?.id) return
+        existingId = row.id
+        existingVideos = row.videos
+        existingDocuments = row.documents
+      }
       if (driveFileId) {
         const { data: existing } = await admin
           .from('online_lessons')
           .select('id, videos, documents')
           .eq('source_drive_file_id', driveFileId)
-          .maybeSingle()
-        if (existing?.id) {
-          existingId = existing.id
-          existingVideos = existing.videos
-          existingDocuments = existing.documents
-        }
+          .order('last_synced_at', { ascending: false })
+          .limit(1)
+        pickFirst(existing as Array<{ id: string; videos?: unknown; documents?: unknown }> | null)
       }
       if (!existingId && item.remotePath) {
         const { data: byPath } = await admin
           .from('online_lessons')
           .select('id, videos, documents')
           .eq('source_remote_path', String(item.remotePath))
-          .maybeSingle()
-        if (byPath?.id) {
-          existingId = byPath.id
-          existingVideos = byPath.videos
-          existingDocuments = byPath.documents
-        }
+          .order('last_synced_at', { ascending: false })
+          .limit(1)
+        pickFirst(byPath as Array<{ id: string; videos?: unknown; documents?: unknown }> | null)
       }
-      // Last resort: same folder + same title (fixes duplicate creates from empty driveFileId)
+      // CDN/url identity for docs when drive id missing
+      if (!existingId && item.cdnUrl) {
+        const { data: byCdn } = await admin
+          .from('online_lessons')
+          .select('id, videos, documents')
+          .eq('document_url', String(item.cdnUrl))
+          .order('last_synced_at', { ascending: false })
+          .limit(1)
+        pickFirst(byCdn as Array<{ id: string; videos?: unknown; documents?: unknown }> | null)
+      }
+      // Last resort: same folder + same title (bulk re-import without driveFileId)
       if (!existingId) {
         const { data: byTitle } = await admin
           .from('online_lessons')
           .select('id, videos, documents')
           .eq('folder_id', folderId)
           .eq('title', title)
-          .maybeSingle()
-        if (byTitle?.id) {
-          existingId = byTitle.id
-          existingVideos = byTitle.videos
-          existingDocuments = byTitle.documents
-        }
+          .order('last_synced_at', { ascending: false })
+          .limit(1)
+        pickFirst(byTitle as Array<{ id: string; videos?: unknown; documents?: unknown }> | null)
       }
 
       if (existingId) {
