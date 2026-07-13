@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { requireAuth, requireRole } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
+
+const createStudentSchema = z.object({
+  email: z.string().email("Email không hợp lệ"),
+  fullName: z.string().trim().min(1, "Thiếu họ tên"),
+  password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
+  studentClass: z.string().trim().nullable().optional(),
+})
 
 // POST /api/online-study/create-student
 async function handlePOST(request: NextRequest) {
@@ -11,18 +19,19 @@ async function handlePOST(request: NextRequest) {
   // Chỉ giáo viên hoặc admin mới được cấp tài khoản học viên trực tiếp
   await requireRole(supabase, user.id, ["teacher", "admin"])
 
-  const body = await request.json()
-  const { email, fullName, password, studentClass } = body
-
-  if (!email || !password || !fullName) {
-    throw new ApiError("BAD_REQUEST", "Thiếu thông tin bắt buộc (email, fullName, password)", 400)
+  const raw = await request.json().catch(() => null)
+  const parsed = createStudentSchema.safeParse(raw)
+  if (!parsed.success) {
+    const msg = parsed.error.issues[0]?.message || "Dữ liệu không hợp lệ"
+    throw new ApiError("BAD_REQUEST", msg, 400)
   }
+  const { email, fullName, password, studentClass } = parsed.data
 
   const adminSupabase = createAdminClient()
 
   // 1. Tạo tài khoản trong auth.users bằng Admin client để không bị logout admin hiện tại
   const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
-    email,
+    email: email.toLowerCase().trim(),
     password,
     email_confirm: true, // Tự động xác thực email để học viên đăng nhập được ngay
     user_metadata: {

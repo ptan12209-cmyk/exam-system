@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { requireAuth, requireRole } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
+import { isValidOnlineSubjectKey } from "@/lib/online-study-auth"
+
+const assignRoleSchema = z.object({
+  student_id: z.string().uuid("student_id không hợp lệ"),
+  /** Catalog keys: ['toan','ly'] or ['all'] — NOT db keys (math/physics) */
+  subjects: z.array(z.string()),
+})
 
 // POST /api/online-study/assign-role (Cấp quyền các môn học được chọn hoặc toàn bộ)
 async function handlePOST(request: NextRequest) {
@@ -11,15 +19,19 @@ async function handlePOST(request: NextRequest) {
   // Only teachers or admins can edit permissions
   await requireRole(supabase, user.id, ["teacher", "admin"])
 
-  const body = await request.json()
-  const { student_id, subjects } = body as {
-    student_id: string
-    /** Catalog keys from UI: ['toan','ly'] or ['all'] — NOT db keys (math/physics) */
-    subjects: string[]
+  const raw = await request.json().catch(() => null)
+  const parsed = assignRoleSchema.safeParse(raw)
+  if (!parsed.success) {
+    const msg = parsed.error.issues[0]?.message || "Thiếu student_id / subjects"
+    throw new ApiError("BAD_REQUEST", msg, 400)
   }
+  const { student_id, subjects } = parsed.data
 
-  if (!student_id || !Array.isArray(subjects)) {
-    throw new ApiError("BAD_REQUEST", "Thiếu thông tin bắt buộc (student_id, subjects[])", 400)
+  // Allow 'all' or catalog keys only
+  for (const sub of subjects) {
+    if (sub !== "all" && !isValidOnlineSubjectKey(sub)) {
+      throw new ApiError("BAD_REQUEST", `Mã môn không hợp lệ: ${sub}`, 400)
+    }
   }
 
   const adminSupabase = createAdminClient()
