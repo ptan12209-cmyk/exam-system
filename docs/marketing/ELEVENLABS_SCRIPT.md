@@ -1,10 +1,25 @@
 # Script ElevenLabs = 100% chữ trên video
 
 **Nguồn sự thật:** `remotion/src/lib/scenes.ts` → field `lines[]`  
-**Voice file:** `s01.mp3` … `s12.mp3` = nối các `lines` của scene (cùng thứ tự).  
 **Không số điện thoại.**
 
 Video hiện **đúng từng câu** trong `lines` (dòng đầu to, các dòng sau hiện lần lượt).
+
+## File audio — 1 file hoặc 12 file
+
+| Ưu tiên | File | Cách làm |
+|--------|------|----------|
+| **1 (khuyên)** | `remotion/public/voice/full.mp3` | ElevenLabs export **1 take full** (script s01→s12 liền) |
+| 2 | `s01.mp3` … `s12.mp3` | Tách từng đoạn — khớp tuyệt đối |
+| 3 | Không có file | Video câm |
+
+**1 file `full.mp3`:** Remotion phát cả track, **chia thời lượng scene theo độ dài chữ** script (đoạn giá/s09 đứng lâu hơn). Đọc **đúng thứ tự s01→s12** để hình theo kịp.
+
+```bash
+# đặt full.mp3 vào remotion/public/voice/
+cd remotion
+npm run render:full
+```
 
 ---
 
