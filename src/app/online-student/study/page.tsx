@@ -111,27 +111,9 @@ function StudyPageInner() {
   const [playback, setPlayback] = useState<PlaybackPayload | null>(null)
   const [loadingPlayback, setLoadingPlayback] = useState(false)
   const [activeVideo, setActiveVideo] = useState<{ title: string; url: string } | null>(null)
-  const [isDevToolsOpen, setIsDevToolsOpen] = useState(false)
 
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const threshold = 160
-    const check = () => {
-      if (
-        window.outerWidth - window.innerWidth > threshold ||
-        window.outerHeight - window.innerHeight > threshold
-      ) {
-        setIsDevToolsOpen(true)
-      }
-    }
-    window.addEventListener("resize", check)
-    const interval = setInterval(check, 1500)
-    return () => {
-      window.removeEventListener("resize", check)
-      clearInterval(interval)
-    }
-  }, [])
-
+  // Soft keyboard deterrents only. Do NOT use outerWidth/innerWidth heuristics:
+  // browser zoom, DPI scale, and OS chrome all trigger false "DevTools" locks.
   useEffect(() => {
     if (typeof window === "undefined") return
     const onKey = (e: KeyboardEvent) => {
@@ -383,21 +365,6 @@ function StudyPageInner() {
   const watermark = profile
     ? `${profile.full_name || "HV"} · ${(profile.email || "").split("@")[0] || ""}`
     : "StudyHub"
-
-  if (isDevToolsOpen) {
-    return (
-      <div className="min-h-screen bg-[var(--os-bg)] flex flex-col items-center justify-center text-center p-6 select-none">
-        <ShieldAlert className="h-10 w-10 text-red-400 mb-4" />
-        <h1 className="text-xl font-bold text-[var(--os-fg)]">Cảnh báo bảo mật</h1>
-        <p className="text-sm text-[var(--os-muted)] max-w-md mt-3">
-          Phát hiện DevTools. Đóng bảng điều khiển và tải lại trang để tiếp tục.
-        </p>
-        <Button onClick={() => window.location.reload()} className="mt-6 rounded-xl bg-[var(--os-accent)] text-[var(--os-accent-fg)] font-bold">
-          Tải lại trang
-        </Button>
-      </div>
-    )
-  }
 
   if (loadingAuth || (loadingData && hasAccess)) {
     return (
