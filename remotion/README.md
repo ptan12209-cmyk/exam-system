@@ -30,6 +30,20 @@ npm run render:v6    # → out/v6-trust.mp4
 **Không hiện số điện thoại trên frame** — chỉ QR Zalo (`zalo.me/...`) + domain.  
 Voice script: `../docs/marketing/VOICE_FULL_COMBO.md`
 
+### Auto voice (TTS khớp timeline)
+
+Mặc định render **không** có tiếng. Để **tự sinh giọng nam VI + lồng vào video**:
+
+```bash
+cd remotion
+npm run voice:generate           # edge-tts → public/voice/*.mp3 (cần mạng)
+npm run render:full              # MP4 có audio
+# hoặc gộp:
+npm run render:full:with-voice
+```
+
+Từ root: `npm run remotion:render:full:voice`
+
 File nằm trong `remotion/out/`.
 
 ## Từ root monorepo

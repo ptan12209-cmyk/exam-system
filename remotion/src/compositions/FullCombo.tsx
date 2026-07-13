@@ -14,6 +14,7 @@ import { ZaloQr } from "../components/ZaloQr";
 import { V1Hook, v1Config } from "./V1Hook";
 import { V3Tour, v3Config } from "./V3Tour";
 import { V6Trust, v6Config } from "./V6Trust";
+import { VoiceTrack } from "../components/VoiceTrack";
 import { BRAND, FPS, HEIGHT, WIDTH } from "../lib/brand";
 
 /** Short bridge between chapters (no phone) */
@@ -131,9 +132,17 @@ const EndCard: React.FC = () => {
  * Full TikTok/FB long-form: V1 → V3 → V6 + end QR card.
  * ~70s content + bridges + end ≈ 80s @ 30fps
  */
-export const FullCombo: React.FC = () => {
+/**
+ * Full TikTok/FB long-form with optional baked-in TTS.
+ * 1) npm run voice:generate
+ * 2) npm run render:full
+ * Without step 1, visual still works; Studio may warn missing static files.
+ */
+export const FullCombo: React.FC<{ voice?: boolean }> = ({ voice = true }) => {
   return (
     <AbsoluteFill>
+      <VoiceTrack enabled={voice} />
+
       <Sequence from={T0} durationInFrames={v1Config.durationInFrames}>
         <V1Hook />
       </Sequence>

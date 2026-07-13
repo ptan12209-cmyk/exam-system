@@ -4,7 +4,24 @@
 **Không đọc số điện thoại** (TikTok dễ quét). Đọc: *“quét QR Zalo”* · *“link bio”* · *“luyende.id.vn”*.  
 **Độ dài video:** ~80 giây (15 + 1.2 + 30 + 1.2 + 25 + 8 end QR)
 
-**Render:** `cd remotion && npm run render:full` → `out/full-combo.mp4`
+## Có voice sẵn trong render không?
+
+| Cách | Kết quả |
+|------|---------|
+| `npm run render:full` **không** chạy TTS trước | **Chỉ hình** (cần lồng voice sau) |
+| `npm run voice:generate` rồi `npm run render:full` | **Có voice TTS** ghép sẵn theo timeline |
+| Một lệnh | `npm run render:full:with-voice` (hoặc root: `npm run remotion:render:full:voice`) |
+
+TTS dùng **Microsoft Edge neural** (`edge-tts` npm) — giọng **vi-VN NamMinh** (nam), **không cần API key**. Cần mạng lúc generate.
+
+```bash
+cd remotion
+npm run voice:generate      # → public/voice/part-*.mp3
+npm run studio              # nghe thử FullCombo
+npm run render:full         # MP4 có audio
+```
+
+File voice: `remotion/public/voice/`. Có thể thay bằng file tự thu (giữ tên `part-v1.mp3` …) nếu muốn giọng thầy thật.
 
 ---
 

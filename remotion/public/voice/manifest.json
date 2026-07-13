@@ -1,0 +1,31 @@
+{
+  "provider": "edge",
+  "generatedAt": "2026-07-13T16:19:07.580Z",
+  "note": "No phone digits in speech. QR/link only.",
+  "parts": [
+    {
+      "id": "part-v1",
+      "file": "voice/part-v1.mp3"
+    },
+    {
+      "id": "part-bridge1",
+      "file": "voice/part-bridge1.mp3"
+    },
+    {
+      "id": "part-v3",
+      "file": "voice/part-v3.mp3"
+    },
+    {
+      "id": "part-bridge2",
+      "file": "voice/part-bridge2.mp3"
+    },
+    {
+      "id": "part-v6",
+      "file": "voice/part-v6.mp3"
+    },
+    {
+      "id": "part-end",
+      "file": "voice/part-end.mp3"
+    }
+  ]
+}
