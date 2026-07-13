@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { requireAuth, requireRole } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
 import { requireOnlineSubject, isValidOnlineSubjectAny } from "@/lib/online-study-auth"
+import { requireSingleDevice } from "@/lib/device-binding"
 
 // GET /api/online-study/folders?subject=math|toan
 async function handleGET(request: NextRequest) {
@@ -18,6 +19,8 @@ async function handleGET(request: NextRequest) {
   if (!isValidOnlineSubjectAny(subject)) {
     throw new ApiError("BAD_REQUEST", "Mã môn học không hợp lệ", 400)
   }
+
+  await requireSingleDevice(request, createAdminClient(), user.id)
 
   // Defense in depth — also enforced by RLS after migration
   await requireOnlineSubject(supabase, user.id, subject)

@@ -9,6 +9,7 @@ import { ArrowRight, Eye, EyeOff, GraduationCap, Lock, Mail, Sparkles } from "lu
 import Footer from "@/components/Footer"
 import { SupportFab } from "@/components/support/SupportFab"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { getDeviceLabel, getOrCreateDeviceId } from "@/lib/device-id"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,6 +26,11 @@ export default function LoginPage() {
       const params = new URLSearchParams(window.location.search)
       if (params.get("error") === "profile_not_found") {
         setError("Tài khoản này chưa có thông tin hồ sơ trong hệ thống (có thể do cơ sở dữ liệu đã được làm mới). Vui lòng Đăng ký lại tài khoản này.")
+      } else if (params.get("error") === "device_kicked") {
+        setError(
+          params.get("msg") ||
+            "Tài khoản đã đăng nhập trên thiết bị khác. Mỗi tài khoản chỉ dùng được 1 thiết bị. Liên hệ thầy nếu cần mở khóa."
+        )
       }
     }
   }, [])
@@ -45,6 +51,25 @@ export default function LoginPage() {
       setError(signInError?.message ?? "Đăng nhập thất bại")
       setLoading(false)
       return
+    }
+
+    // Bind this browser as the sole active device (students only; API skips staff)
+    try {
+      const deviceId = getOrCreateDeviceId()
+      await fetch("/api/auth/device/bind", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-device-id": deviceId,
+        },
+        body: JSON.stringify({
+          deviceId,
+          deviceLabel: getDeviceLabel(),
+        }),
+        credentials: "same-origin",
+      })
+    } catch {
+      /* non-blocking; verify will auto-bind later */
     }
 
     const { data: profile } = await supabase.from("profiles").select("role, nickname").eq("id", data.user.id).single()

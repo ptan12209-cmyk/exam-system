@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { requireAuth } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse } from "@/lib/api-utils"
+import { requireSingleDevice } from "@/lib/device-binding"
 
 // GET /api/online-study/my-subjects
 async function handleGET(request: NextRequest) {
   const supabase = await createClient()
   const user = await requireAuth(supabase)
+
+  await requireSingleDevice(request, createAdminClient(), user.id)
 
   // Fetch subjects assigned to current authenticated student
   const { data: subjects, error } = await supabase

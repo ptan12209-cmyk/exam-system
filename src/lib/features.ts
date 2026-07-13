@@ -15,6 +15,14 @@ export const REGISTRATION_ENABLED = false
 /** ISO date (local VN calendar): reopen self-registration */
 export const REGISTRATION_REOPEN_DATE = "2026-07-29"
 
+/**
+ * 1 thiết bị / 1 tài khoản (học viên).
+ * Login máy mới → ghi đè binding, máy cũ bị đá khi verify.
+ * Teacher/admin được miễn.
+ * Cần chạy migrations/migration-single-device-binding.sql trên Supabase.
+ */
+export const SINGLE_DEVICE_ENABLED = true
+
 /** Routes hidden / redirected while gamification is locked */
 export const GAMIFICATION_ROUTE_PREFIXES = [
   "/student/achievements",

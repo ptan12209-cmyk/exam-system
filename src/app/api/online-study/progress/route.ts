@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from "@/lib/auth-utils"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
 import { checkRateLimit, getClientIP, rateLimitResponse } from "@/lib/rate-limit"
 import { requireOnlineSubject } from "@/lib/online-study-auth"
+import { requireSingleDevice } from "@/lib/device-binding"
 
 // GET /api/online-study/progress
 async function handleGET(request: NextRequest) {
@@ -18,6 +19,8 @@ async function handleGET(request: NextRequest) {
   if (studentIdParam && studentIdParam !== user.id) {
     await requireRole(supabase, user.id, ["teacher", "admin"])
     targetStudentId = studentIdParam
+  } else {
+    await requireSingleDevice(request, createAdminClient(), user.id)
   }
 
   // Prefer user-scoped client for own progress; admin only for cross-user teacher reads

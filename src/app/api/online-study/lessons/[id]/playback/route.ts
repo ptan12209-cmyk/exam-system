@@ -6,6 +6,7 @@ import { requireOnlineSubject } from "@/lib/online-study-auth"
 import { buildPlaybackPayload, type LessonMediaRow } from "@/lib/lesson-media"
 import { signDocumentList } from "@/lib/document-sign"
 import { checkRateLimit, getClientIP, rateLimitResponse } from "@/lib/rate-limit"
+import { requireSingleDevice } from "@/lib/device-binding"
 
 /**
  * GET /api/online-study/lessons/[id]/playback
@@ -44,6 +45,12 @@ async function handleGET(
     .single()
   const isStaff = profile?.role === "teacher" || profile?.role === "admin"
   const dataClient = isStaff ? supabase : createAdminClient()
+
+  if (!isStaff) {
+    await requireSingleDevice(request, createAdminClient(), user.id, {
+      role: profile?.role,
+    })
+  }
 
   const { data: lesson, error } = await dataClient
     .from("online_lessons")

@@ -32,6 +32,13 @@ async function handleGET(request: NextRequest) {
     .single()
   const isStaff = profile?.role === "teacher" || profile?.role === "admin"
 
+  if (!isStaff) {
+    const { requireSingleDevice } = await import("@/lib/device-binding")
+    await requireSingleDevice(request, createAdminClient(), user.id, {
+      role: profile?.role,
+    })
+  }
+
   // V3: students cannot SELECT online_lessons (RLS). After entitlement, use admin.
   const dataClient = isStaff ? supabase : createAdminClient()
 

@@ -68,6 +68,7 @@ import {
   Sliders,
   CheckSquare,
   Square,
+  Smartphone,
 } from "lucide-react"
 
 interface DbFolder {
@@ -539,6 +540,32 @@ function TeacherOnlineStudyPage() {
       toastError("Không thể tải danh sách học sinh.")
     } finally {
       setLoadingStudents(false)
+    }
+  }
+
+  /** Clear single-device binding so student can login on a new machine */
+  const resetStudentDevice = async (student: StudentProfile) => {
+    if (
+      !confirm(
+        `Reset thiết bị của ${student.full_name || student.email}?\nHọc viên có thể đăng nhập máy mới (máy cũ sẽ bị đá khi vào lại).`
+      )
+    ) {
+      return
+    }
+    try {
+      const res = await fetch("/api/auth/device/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: student.id }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        toastError(data?.error?.message || "Reset thiết bị thất bại")
+        return
+      }
+      success("Đã reset thiết bị — học viên đăng nhập lại trên máy mới được.")
+    } catch {
+      toastError("Lỗi kết nối khi reset thiết bị")
     }
   }
 
@@ -1795,7 +1822,16 @@ function TeacherOnlineStudyPage() {
                           {getSubjectLabelsDisplay(student.online_subjects || [])}
                         </div>
 
-                        <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+                        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 flex-wrap justify-end">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void resetStudentDevice(student)}
+                            className="rounded-xl font-bold text-xs py-1.5 px-3 border-[var(--os-muted)]/30 text-[var(--os-fg)] flex items-center gap-1.5"
+                            title="Cho phép học viên đăng nhập thiết bị mới"
+                          >
+                            <Smartphone className="h-3.5 w-3.5" /> Reset TB
+                          </Button>
                           <Button
                             size="sm"
                             onClick={() => openPermissionsModal(student)}

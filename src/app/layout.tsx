@@ -10,6 +10,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/ThemeProvider"
 import { ToastProvider } from "@/components/ui/toast"
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister"
+import { DeviceSessionGuard } from "@/components/DeviceSessionGuard"
 import { MobileNav } from "@/components/pwa/MobileNav"
 import NextTopLoader from "nextjs-toploader"
 import { cn } from "@/lib/utils"
@@ -135,6 +136,7 @@ export default function RootLayout({
             </div>
             <MobileNav />
             <ServiceWorkerRegister />
+            <DeviceSessionGuard />
           </ToastProvider>
         </ThemeProvider>
       </body>
