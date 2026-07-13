@@ -344,8 +344,8 @@ function CoursesIntroPage() {
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                ĐGNL gồm HSA, VACT, TSA — chỉ có trong gói <strong className="text-[#e8e4f0]">599.000đ</strong>{" "}
-                hoặc mua lẻ theo tư vấn.
+                ĐGNL gồm V-ACT, HSA, TSA, Sư phạm — có trong gói{" "}
+                <strong className="text-[#e8e4f0]">599.000đ</strong> hoặc mua lẻ theo tư vấn.
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
