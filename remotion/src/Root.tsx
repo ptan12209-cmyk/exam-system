@@ -3,10 +3,19 @@ import { Composition } from "remotion";
 import { V1Hook, v1Config } from "./compositions/V1Hook";
 import { V3Tour, v3Config } from "./compositions/V3Tour";
 import { V6Trust, v6Config } from "./compositions/V6Trust";
+import { FullCombo, fullComboConfig } from "./compositions/FullCombo";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      <Composition
+        id={fullComboConfig.id}
+        component={FullCombo}
+        durationInFrames={fullComboConfig.durationInFrames}
+        fps={fullComboConfig.fps}
+        width={fullComboConfig.width}
+        height={fullComboConfig.height}
+      />
       <Composition
         id={v1Config.id}
         component={V1Hook}

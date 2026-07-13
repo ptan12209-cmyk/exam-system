@@ -21,11 +21,14 @@ Cần [Chrome/Chromium](https://www.remotion.dev/docs/miscellaneous/chrome-headl
 
 ```bash
 cd remotion
+npm run render:full  # → out/full-combo.mp4  (V1+V3+V6 + end QR, ~80s)
 npm run render:v1    # → out/v1-hook.mp4
 npm run render:v3    # → out/v3-tour.mp4
 npm run render:v6    # → out/v6-trust.mp4
-npm run render:all
 ```
+
+**Không hiện số điện thoại trên frame** — chỉ QR Zalo (`zalo.me/...`) + domain.  
+Voice script: `../docs/marketing/VOICE_FULL_COMBO.md`
 
 File nằm trong `remotion/out/`.
 

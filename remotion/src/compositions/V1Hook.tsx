@@ -97,12 +97,12 @@ export const V1Hook: React.FC = () => {
         </AbsoluteFill>
       </Sequence>
 
-      {/* Beat 3: 11–15s */}
+      {/* Beat 3: 11–15s — domain only, no phone on screen */}
       <Sequence from={11 * FPS} durationInFrames={4 * FPS}>
         <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", paddingBottom: 160 }}>
           <BigText
             line={BRAND.domain}
-            sub={`Zalo ${BRAND.zaloDisplay} · Sắp mở`}
+            sub="Link bio · Sắp mở · Quét QR Zalo cuối clip"
             size={56}
           />
         </AbsoluteFill>

@@ -1,8 +1,11 @@
 export const BRAND = {
   name: "StudyHub",
   domain: "luyende.id.vn",
+  /**
+   * Zalo number — ONLY for generating QR / deep link.
+   * NEVER render digits on video frames (TikTok phone-number scan).
+   */
   zalo: "0946741031",
-  zaloDisplay: "0946 741 031",
   accent: "#C18CFF",
   bg: "#060510",
   fg: "#F4F0FF",

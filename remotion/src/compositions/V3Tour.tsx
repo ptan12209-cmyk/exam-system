@@ -46,7 +46,7 @@ export const V3Tour: React.FC = () => {
         <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", paddingBottom: 160 }}>
           <BigText
             line="luyende.id.vn"
-            sub="Xem GV từng môn · Zalo 0946 741 031"
+            sub="Xem GV từng môn · Link bio · QR Zalo cuối video"
             size={54}
           />
         </AbsoluteFill>

@@ -5,16 +5,19 @@
   "description": "StudyHub marketing reels (V1/V3/V6) — Remotion 9:16",
   "scripts": {
     "studio": "remotion studio src/index.ts",
+    "render:full": "remotion render src/index.ts FullCombo out/full-combo.mp4",
     "render:v1": "remotion render src/index.ts V1Hook out/v1-hook.mp4",
     "render:v3": "remotion render src/index.ts V3Tour out/v3-tour.mp4",
     "render:v6": "remotion render src/index.ts V6Trust out/v6-trust.mp4",
-    "render:all": "npm run render:v1 && npm run render:v3 && npm run render:v6",
+    "render:all": "npm run render:full && npm run render:v1 && npm run render:v3 && npm run render:v6",
     "upgrade": "remotion upgrade"
   },
   "dependencies": {
     "@remotion/cli": "4.0.489",
     "@remotion/renderer": "4.0.489",
     "@remotion/zod-types": "4.0.489",
+    "@types/qrcode": "^1.5.6",
+    "qrcode": "^1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "remotion": "4.0.489"

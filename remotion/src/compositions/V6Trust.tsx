@@ -11,6 +11,7 @@ import { Background } from "../components/Background";
 import { BrandBar } from "../components/BrandBar";
 import { BottomCta } from "../components/BottomCta";
 import { BigText } from "../components/BigText";
+import { ZaloQr } from "../components/ZaloQr";
 import { BRAND, FPS, HEIGHT, WIDTH } from "../lib/brand";
 
 const DURATION = 25 * FPS;
@@ -82,20 +83,30 @@ export const V6Trust: React.FC = () => {
         />
       </Sequence>
 
+      {/* Contact via QR only — never show phone digits (TikTok scan) */}
       <Sequence from={17 * FPS} durationInFrames={4 * FPS}>
-        <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", paddingBottom: 160 }}>
-          <IconBadge emoji="💬" />
-          <BigText line={`Zalo ${BRAND.zaloDisplay}`} sub="Anh hỗ trợ các em" size={48} delay={4} />
+        <AbsoluteFill
+          style={{
+            justifyContent: "center",
+            alignItems: "center",
+            paddingBottom: 120,
+            flexDirection: "column",
+          }}
+        >
+          <BigText line="Nhắn Zalo" sub="Quét QR — không cần ghi số" size={56} delay={2} />
+          <div style={{ marginTop: 28 }}>
+            <ZaloQr size={240} label="Quét để chat với anh" />
+          </div>
         </AbsoluteFill>
       </Sequence>
 
       <Sequence from={21 * FPS} durationInFrames={4 * FPS}>
         <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", paddingBottom: 160 }}>
-          <BigText line={BRAND.domain} sub="StudyHub · Sắp mở" size={56} />
+          <BigText line={BRAND.domain} sub="StudyHub · Sắp mở · Link bio" size={56} />
         </AbsoluteFill>
       </Sequence>
 
-      <BottomCta delay={10} />
+      <BottomCta delay={10} showQr />
     </AbsoluteFill>
   );
 };
