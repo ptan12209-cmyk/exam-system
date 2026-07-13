@@ -210,6 +210,7 @@ export const SUBJECTS_WITHOUT_DGNL = INTRO_SUBJECTS.filter((s) => s.group !== "d
  * Giá bán thật (`price`) giữ nguyên.
  * `originalPrice` = giá niêm yết (đã tăng) để hiển thị gạch ngang + % giảm.
  * original ≈ price / (1 - discount/100), làm tròn nghìn cho đẹp.
+ * `contactEnabled: false` = chỉ xem tham khảo (chưa mở mua / Zalo).
  */
 export const PRICING = {
   single: {
@@ -221,6 +222,7 @@ export const PRICING = {
     note: "Chọn đúng 1 môn (không gồm ĐGNL trừ khi chọn riêng gói ĐGNL).",
     highlight: false,
     badge: null as string | null,
+    contactEnabled: true,
   },
   combo3: {
     id: "combo3",
@@ -231,6 +233,7 @@ export const PRICING = {
     note: "Chọn bất kỳ 3 môn. Chưa bao gồm ĐGNL.",
     highlight: false,
     badge: null as string | null,
+    contactEnabled: true,
   },
   fullNoDgnl: {
     id: "full-no-dgnl",
@@ -241,6 +244,18 @@ export const PRICING = {
     note: "Toàn bộ môn học thường. Chưa tính các gói ĐGNL.",
     highlight: true,
     badge: "Phổ biến",
+    contactEnabled: true,
+  },
+  dgnlOnly: {
+    id: "dgnl-only",
+    name: "Gói ĐGNL riêng",
+    originalPrice: 285_000,
+    price: 199_000,
+    discountPercent: 30,
+    note: "Chỉ các gói ĐGNL (V-ACT / HSA / TSA / Sư phạm). Đang mở tham khảo giá — chưa bán chính thức.",
+    highlight: false,
+    badge: "Sắp mở",
+    contactEnabled: false,
   },
   fullWithDgnl: {
     id: "full-with-dgnl",
@@ -251,8 +266,13 @@ export const PRICING = {
     note: "Bao gồm toàn bộ môn học và các gói ĐGNL (V-ACT / HSA / TSA / Sư phạm).",
     highlight: true,
     badge: "Giảm mạnh",
+    contactEnabled: true,
   },
 } as const
+
+/** Câu khuyến khích tin cậy khi thanh toán (marketing / UX) */
+export const PAYMENT_TRUST_HINT =
+  "Để đảm bảo quyền lợi, vui lòng quay màn hình hoặc quay video trong quá trình thanh toán. Video sẽ giúp chúng tôi hỗ trợ nhanh hơn nếu xảy ra sự cố ngoài ý muốn."
 
 export function formatVnd(n: number) {
   return new Intl.NumberFormat("vi-VN", {

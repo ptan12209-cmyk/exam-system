@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import {
   INTRO_SUBJECTS,
+  PAYMENT_TRUST_HINT,
   PRICING,
   SUBJECTS_WITHOUT_DGNL,
   formatVnd,
@@ -275,19 +276,21 @@ function CoursesIntroPage() {
               Chọn gói phù hợp
             </h2>
             <p className="mx-auto mt-2 max-w-lg text-[14px] text-[#8C87A2]">
-              Đang ưu đãi: lẻ −15% · 3 môn −25% · gói phổ biến −30% · full+ĐGNL −40%. Combo 450k{" "}
+              Ưu đãi: lẻ −15% · 3 môn −25% · phổ biến / ĐGNL riêng −30% · full+ĐGNL −40%. Combo 450k{" "}
               <strong className="text-[#e8e4f0]/90">chưa tính ĐGNL</strong>; gói 599k gồm ĐGNL.
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {Object.values(PRICING).map((plan) => {
               const saved = plan.originalPrice - plan.price
+              const canContact = plan.contactEnabled
               return (
               <div
                 key={plan.id}
                 className={cn(
                   "relative flex flex-col rounded-2xl border p-5 sm:p-6",
+                  !canContact && "opacity-95",
                   plan.highlight
                     ? "border-[oklch(0.75_0.18_290/0.45)] bg-[oklch(0.75_0.18_290/0.08)]"
                     : "border-white/[0.07] bg-[oklch(0.11_0.02_290)]"
@@ -297,7 +300,14 @@ function CoursesIntroPage() {
                   {plan.badge ? (
                     <span
                       className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-                      style={{ background: ACCENT, color: BG }}
+                      style={
+                        canContact
+                          ? { background: ACCENT, color: BG }
+                          : {
+                              background: "oklch(0.45 0.04 290)",
+                              color: "#e8e4f0",
+                            }
+                      }
                     >
                       {plan.badge}
                     </span>
@@ -322,31 +332,52 @@ function CoursesIntroPage() {
                 <p className="mt-3 flex-1 text-[12px] leading-relaxed text-[#8C87A2]">
                   {plan.note}
                 </p>
-                <a
-                  href={supportZaloUrlWithText(
-                    `Em muốn mua gói: ${plan.name} — giá ưu đãi ${formatVnd(plan.price)} (gốc ${formatVnd(plan.originalPrice)}, −${plan.discountPercent}%)`
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-5 inline-flex h-10 items-center justify-center rounded-xl text-[13px] font-semibold"
-                  style={
-                    plan.highlight
-                      ? { background: ACCENT, color: BG }
-                      : {
-                          border: "1px solid rgba(255,255,255,0.12)",
-                          color: "#e8e4f0",
-                        }
-                  }
-                >
-                  Nhắn Zalo mua gói
-                </a>
+                {canContact ? (
+                  <a
+                    href={supportZaloUrlWithText(
+                      `Em muốn mua gói: ${plan.name} — giá ưu đãi ${formatVnd(plan.price)} (gốc ${formatVnd(plan.originalPrice)}, −${plan.discountPercent}%)`
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-5 inline-flex h-10 items-center justify-center rounded-xl text-[13px] font-semibold"
+                    style={
+                      plan.highlight
+                        ? { background: ACCENT, color: BG }
+                        : {
+                            border: "1px solid rgba(255,255,255,0.12)",
+                            color: "#e8e4f0",
+                          }
+                    }
+                  >
+                    Nhắn Zalo mua gói
+                  </a>
+                ) : (
+                  <div
+                    className="mt-5 inline-flex h-auto min-h-10 flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-white/15 px-3 py-2 text-center"
+                    aria-disabled
+                  >
+                    <span className="text-[12px] font-semibold text-[#8C87A2]">
+                      Chỉ xem tham khảo
+                    </span>
+                    <span className="text-[10px] text-[#8C87A2]/75">
+                      Chưa mở liên hệ / mua chính thức
+                    </span>
+                  </div>
+                )}
               </div>
               )
             })}
           </div>
 
           <div
-            className="mt-8 rounded-2xl border border-white/[0.07] p-5 text-[13px] leading-relaxed text-[#8C87A2]"
+            className="mt-6 rounded-2xl border border-amber-500/20 bg-amber-500/[0.07] p-4 text-[13px] leading-relaxed text-amber-50/90 sm:p-5"
+          >
+            <p className="font-semibold text-amber-50">Lưu ý khi thanh toán</p>
+            <p className="mt-1.5 text-[12.5px] text-amber-100/85">{PAYMENT_TRUST_HINT}</p>
+          </div>
+
+          <div
+            className="mt-4 rounded-2xl border border-white/[0.07] p-5 text-[13px] leading-relaxed text-[#8C87A2]"
             style={{ background: "oklch(0.11 0.02 290)" }}
           >
             <p className="font-semibold text-[#e8e4f0]">Ghi chú nhanh</p>
@@ -357,20 +388,25 @@ function CoursesIntroPage() {
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                Ưu đãi: mua lẻ −15%, 3 môn −25%, gói phổ biến −30%, gói 599k −40% (so với giá gốc).
+                Ưu đãi: lẻ −15%, 3 môn −25%, phổ biến −30%, ĐGNL riêng −30%, full+ĐGNL −40%.
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                ĐGNL gồm V-ACT, HSA, TSA, Sư phạm — có trong gói{" "}
-                <strong className="text-[#e8e4f0]">599.000đ</strong> hoặc mua lẻ theo tư vấn.
+                Gói ĐGNL riêng <strong className="text-[#e8e4f0]">199.000đ</strong> đang{" "}
+                <strong className="text-[#e8e4f0]">tham khảo giá</strong> — chưa mở mua / Zalo.
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                Thanh toán / mở khóa: nhắn Zalo{" "}
+                ĐGNL (V-ACT, HSA, TSA, Sư phạm) cũng có trong combo{" "}
+                <strong className="text-[#e8e4f0]">599.000đ</strong>.
+              </li>
+              <li className="flex gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
+                Gói đang bán: nhắn Zalo{" "}
                 <a href={SUPPORT_ZALO_URL} className="font-semibold" style={{ color: ACCENT }}>
                   {SUPPORT_ZALO}
                 </a>
-                .
+                . Sau này sẽ thanh toán tự động; Zalo chỉ khi cần tư vấn.
               </li>
             </ul>
           </div>
