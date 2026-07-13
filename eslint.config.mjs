@@ -15,6 +15,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "scripts/**",
+    "remotion/**",
     // Tooling / plan dumps / seed helpers — not app runtime
     ".agents/**",
     ".claude/**",

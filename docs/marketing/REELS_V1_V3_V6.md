@@ -4,13 +4,23 @@
 **Domain:** luyende.id.vn  
 **Zalo:** 0946741031  
 
-**Preview code:**  
+**Preview web (browser):**  
 - Index: `/marketing/reels`  
 - V1: `/marketing/reels/v1`  
 - V3: `/marketing/reels/v3`  
 - V6: `/marketing/reels/v6`  
 
-Data/script: `src/data/marketing-reels.ts`
+**Remotion (animation đẹp → export MP4):**  
+```bash
+cd remotion
+npm run studio          # preview V1Hook / V3Tour / V6Trust
+npm run render:v1       # → remotion/out/v1-hook.mp4
+npm run render:all
+```
+Hoặc từ root: `npm run remotion:studio` · `npm run remotion:render:v1`
+
+Data/script web: `src/data/marketing-reels.ts`  
+Remotion source: `remotion/src/compositions/`
 
 ---
 

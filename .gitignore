@@ -17,6 +17,11 @@
 /.next/
 /out/
 
+# remotion
+/remotion/node_modules/
+/remotion/out/
+/remotion/.remotion/
+
 # production
 /build
 
