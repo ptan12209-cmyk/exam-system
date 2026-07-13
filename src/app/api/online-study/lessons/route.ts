@@ -11,6 +11,34 @@ import {
   type MediaItem,
 } from "@/lib/lesson-media"
 
+/**
+ * Supabase/PostgREST defaults to max 1000 rows per request.
+ * Teacher UI used to load ?subject=math once → only first 1000 lessons
+ * (by order_index). Videos imported later (high order_index) never appeared
+ * even when the teacher opened the correct folder.
+ */
+const PAGE_SIZE = 1000
+
+type LessonQuery = {
+  range: (from: number, to: number) => PromiseLike<{ data: LessonMediaRow[] | null; error: { message?: string } | null }>
+}
+
+async function fetchAllLessonPages(build: () => LessonQuery): Promise<LessonMediaRow[]> {
+  const all: LessonMediaRow[] = []
+  let from = 0
+  // Hard cap: 50k lessons per subject (50 pages) — safety against runaway loops
+  for (let page = 0; page < 50; page++) {
+    const { data, error } = await build().range(from, from + PAGE_SIZE - 1)
+    if (error) throw error
+    const rows = (data || []) as LessonMediaRow[]
+    if (!rows.length) break
+    all.push(...rows)
+    if (rows.length < PAGE_SIZE) break
+    from += PAGE_SIZE
+  }
+  return all
+}
+
 // GET /api/online-study/lessons?folder_id=uuid OR ?subject=math|toan
 async function handleGET(request: NextRequest) {
   const supabase = await createClient()
@@ -58,31 +86,32 @@ async function handleGET(request: NextRequest) {
 
     await requireOnlineSubject(supabase, user.id, folder.subject)
 
-    const { data: lessons, error } = await dataClient
-      .from("online_lessons")
-      .select("*")
-      .eq("folder_id", folderId)
-      .order("order_index", { ascending: true })
-
-    if (error) throw error
-    lessonsData = (lessons || []) as LessonMediaRow[]
+    // Folder scope is small — still paginate for safety
+    lessonsData = await fetchAllLessonPages(() =>
+      dataClient
+        .from("online_lessons")
+        .select("*")
+        .eq("folder_id", folderId)
+        .order("order_index", { ascending: true }) as unknown as LessonQuery
+    )
   } else if (subject) {
     if (!isValidOnlineSubjectAny(subject)) {
       throw new ApiError("BAD_REQUEST", "Mã môn học không hợp lệ", 400)
     }
     await requireOnlineSubject(supabase, user.id, subject)
 
-    const { data: lessons, error } = await dataClient
-      .from("online_lessons")
-      .select(`
+    lessonsData = await fetchAllLessonPages(() =>
+      dataClient
+        .from("online_lessons")
+        .select(
+          `
         *,
         online_folders!inner(subject)
-      `)
-      .eq("online_folders.subject", subject)
-      .order("order_index", { ascending: true })
-
-    if (error) throw error
-    lessonsData = (lessons || []) as LessonMediaRow[]
+      `
+        )
+        .eq("online_folders.subject", subject)
+        .order("order_index", { ascending: true }) as unknown as LessonQuery
+    )
   }
 
   if (!isStaff) {

@@ -504,20 +504,45 @@ function TeacherOnlineStudyPage() {
   }, [router, supabase])
 
   // Fetch Folders and Lessons
+  // Critical: always re-fetch lessons for the *selected folder* by folder_id.
+  // Subject-wide list alone was truncated at Supabase's 1000-row default, so
+  // late-imported videos (high order_index) never reached the client.
   const fetchData = async () => {
     setLoadingData(true)
     try {
       const resFolders = await fetch(`/api/online-study/folders?subject=${subjectInfo.dbValue}`)
       const dataFolders = await resFolders.json()
-      
-      const resLessons = await fetch(`/api/online-study/lessons?subject=${subjectInfo.dbValue}`)
-      const dataLessons = await resLessons.json()
 
       if (resFolders.ok && dataFolders.success) {
         setFolders(dataFolders.data || [])
       }
+
+      // Prefer folder-scoped load when a folder is selected (complete, small).
+      // Also load subject catalog (API now paginates past 1000) for search/move.
+      const lessonUrl = selectedFolderId
+        ? `/api/online-study/lessons?folder_id=${encodeURIComponent(selectedFolderId)}`
+        : `/api/online-study/lessons?subject=${subjectInfo.dbValue}`
+      const resLessons = await fetch(lessonUrl)
+      const dataLessons = await resLessons.json()
+
       if (resLessons.ok && dataLessons.success) {
-        setLessons(dataLessons.data || [])
+        const folderRows: DbLesson[] = dataLessons.data || []
+        if (selectedFolderId) {
+          // Merge folder rows into existing subject cache so other folders stay browsable
+          setLessons((prev) => {
+            const byId = new Map(prev.map((l) => [l.id, l]))
+            // Drop stale rows that claimed this folder but are gone
+            for (const [id, row] of byId) {
+              if (row.folder_id === selectedFolderId && !folderRows.some((r) => r.id === id)) {
+                byId.delete(id)
+              }
+            }
+            for (const row of folderRows) byId.set(row.id, row)
+            return Array.from(byId.values())
+          })
+        } else {
+          setLessons(folderRows)
+        }
       }
     } catch (err) {
       console.error(err)
@@ -582,6 +607,37 @@ function TeacherOnlineStudyPage() {
       fetchStudents(searchStudentQuery)
     }
   }, [selectedSubject, activeTab])
+
+  // Re-load lessons every time teacher clicks a folder (folder_id = complete list)
+  useEffect(() => {
+    if (activeTab !== "lectures" || !selectedFolderId) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(
+          `/api/online-study/lessons?folder_id=${encodeURIComponent(selectedFolderId)}`
+        )
+        const data = await res.json()
+        if (cancelled || !res.ok || !data.success) return
+        const folderRows: DbLesson[] = data.data || []
+        setLessons((prev) => {
+          const byId = new Map(prev.map((l) => [l.id, l]))
+          for (const [id, row] of byId) {
+            if (row.folder_id === selectedFolderId && !folderRows.some((r) => r.id === id)) {
+              byId.delete(id)
+            }
+          }
+          for (const row of folderRows) byId.set(row.id, row)
+          return Array.from(byId.values())
+        })
+      } catch (e) {
+        console.error(e)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [selectedFolderId, activeTab])
 
   // Build Left Folder Tree
   const folderTree = useMemo(() => {

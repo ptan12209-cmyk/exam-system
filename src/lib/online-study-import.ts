@@ -65,20 +65,91 @@ export type ImportResult = {
   logId?: string
 }
 
+const VI_DIACRITIC =
+  /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/
+
+/** Count “bad” display chars that make titles look broken on web. */
+function countBadDisplayChars(s: string): number {
+  let n = 0
+  for (const ch of s) {
+    if (ch === '?' || ch === '\uFFFD' || ch === '�') n++
+    // private-use / replacement-looking
+    const c = ch.charCodeAt(0)
+    if (c === 0xfffd) n++
+  }
+  return n
+}
+
+/**
+ * Repair common UTF-8 mojibake (e.g. "MÃ”N" → "MÔN") and normalize NFC.
+ * Does not invent Vietnamese for ASCII-only Drive names (t_i_li_u…).
+ */
+export function repairDisplayText(input: string): string {
+  let s = String(input || '')
+  if (!s) return s
+  // Strip UTF-8 BOM / zero-width junk
+  s = s.replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '')
+
+  const looksMojibake =
+    /Ã[\x80-\xBF]|Ä[\x80-\xBF]|Å[\x80-\xBF]|Æ[\x80-\xBF]|Â[\x80-\xBF]|â€|â€™|â€œ|ðŸ/.test(s) ||
+    /MÃ.|TIÃ.|LÃ.|HÃ.|Äá»|Æ°á»/.test(s)
+
+  if (looksMojibake) {
+    try {
+      // mis-decoded as latin1/windows-1252 → re-interpret bytes as utf8
+      const bytes = Uint8Array.from(Array.from(s, (ch) => ch.charCodeAt(0) & 0xff))
+      const fixed = new TextDecoder('utf-8', { fatal: false }).decode(bytes)
+      if (
+        countBadDisplayChars(fixed) < countBadDisplayChars(s) ||
+        (VI_DIACRITIC.test(fixed) && !VI_DIACRITIC.test(s))
+      ) {
+        s = fixed
+      }
+    } catch {
+      /* keep original */
+    }
+  }
+
+  // NFC so ê + combining ≠ precomposed mismatch / missing-glyph surprises
+  try {
+    s = s.normalize('NFC')
+  } catch {
+    /* ignore */
+  }
+  return s
+}
+
 function cleanTitle(name: string): string {
-  return String(name || 'Bài học')
-    .replace(/^📚\s*/u, '')
-    .trim()
-    .slice(0, 200) || 'Bài học'
+  const repaired = repairDisplayText(name)
+  return (
+    repaired
+      .replace(/^📚\s*/u, '')
+      .trim()
+      .slice(0, 200) || 'Bài học'
+  )
 }
 
 function pathSegments(relativePath: string): string[] {
   return String(relativePath || '')
     .replace(/\\/g, '/')
     .split('/')
-    .map((s) => s.trim())
+    .map((s) => repairDisplayText(s).trim())
     .filter(Boolean)
     .map((s) => s.slice(0, 180))
+}
+
+/** Prefer a label with fewer ?/� and more Vietnamese when re-importing. */
+function shouldRefreshStoredName(current: string, incoming: string): boolean {
+  const a = String(current || '')
+  const b = String(incoming || '')
+  if (!b || a === b) return false
+  const badA = countBadDisplayChars(a)
+  const badB = countBadDisplayChars(b)
+  if (badB < badA) return true
+  if (badA === badB && VI_DIACRITIC.test(b) && !VI_DIACRITIC.test(a)) return true
+  // Same quality but different spelling after repair — refresh
+  if (badA === 0 && badB === 0 && a.normalize('NFC') !== b.normalize('NFC')) return true
+  return false
 }
 
 /**
@@ -146,21 +217,25 @@ async function ensureFolderChain(
   // Teacher UI lists folders with .eq('subject', dbValue); a single shared root with
   // subject=toan is invisible when browsing physics/chemistry tabs.
   {
+    const rootLabel = repairDisplayText(rootName).slice(0, 180) || courseKey
     const { data: existingRoot } = await admin
       .from('online_folders')
-      .select('id')
+      .select('id, name')
       .eq('examhub_course_key', courseKey)
       .eq('subject', subject)
       .eq('source_path', '')
       .maybeSingle()
 
     if (existingRoot?.id) {
+      if (shouldRefreshStoredName(String(existingRoot.name || ''), rootLabel)) {
+        await admin.from('online_folders').update({ name: rootLabel }).eq('id', existingRoot.id)
+      }
       parentId = existingRoot.id
     } else {
       const { data: created, error } = await admin
         .from('online_folders')
         .insert({
-          name: rootName.slice(0, 180) || courseKey,
+          name: rootLabel,
           parent_id: null,
           subject,
           order_index: 1,
@@ -182,19 +257,24 @@ async function ensureFolderChain(
 
     const { data: existing } = await admin
       .from('online_folders')
-      .select('id, order_index')
+      .select('id, order_index, name')
       .eq('examhub_course_key', courseKey)
       .eq('subject', subject)
       .eq('source_path', pathSoFar)
       .maybeSingle()
 
     if (existing?.id) {
+      const patch: { order_index?: number; name?: string } = {}
       // Fix legacy depth-based order_index on re-import
       if (Number(existing.order_index) !== orderIndex) {
-        await admin
-          .from('online_folders')
-          .update({ order_index: orderIndex, name: seg })
-          .eq('id', existing.id)
+        patch.order_index = orderIndex
+      }
+      // Refresh mojibake / "?" labels when a cleaner UTF-8 name arrives
+      if (shouldRefreshStoredName(String(existing.name || ''), seg)) {
+        patch.name = seg
+      }
+      if (Object.keys(patch).length) {
+        await admin.from('online_folders').update(patch).eq('id', existing.id)
       }
       parentId = existing.id
       continue
@@ -267,6 +347,22 @@ export async function importOnlineStudyItems(
               (/thpt/i.test(head) && /2027/.test(head)))
           if (looksLikeDriveRoot) {
             rel = segs0.slice(1).join('/')
+          }
+        }
+      }
+      // Strip leading mon folder ("01. MÔN TOÁN 2009") so video + PDF share one tree.
+      // Without this, videos land in a duplicate folder path under the mon name
+      // while PDFs (imported without mon prefix) sit in a sibling folder of the same label.
+      {
+        const segs1 = pathSegments(rel)
+        if (segs1.length >= 2) {
+          const head = segs1[0]
+          const looksLikeMonFolder =
+            /^0?\d{1,2}\.\s*m[oô]n\b/i.test(head) ||
+            /^m[oô]n\s+(to[aá]n|l[yý]|h[oó]a|sinh|anh|v[aă]n)/i.test(head) ||
+            /khoa\s*h[oọ]c\s*x[aã]\s*h[oộ]i/i.test(head)
+          if (looksLikeMonFolder) {
+            rel = segs1.slice(1).join('/')
           }
         }
       }
