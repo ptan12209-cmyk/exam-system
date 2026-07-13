@@ -4,6 +4,11 @@ import {
 } from '@/lib/lesson-media'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { ONLINE_SUBJECTS } from '@/lib/subjects'
+import {
+  buildFolderKey,
+  buildLessonContentKey,
+  buildRootFolderKey,
+} from '@/lib/online-content-keys'
 
 /**
  * Teacher UI filters folders by DB subject codes (math, physics, …)
@@ -47,6 +52,12 @@ export type ImportItem = {
   remotePath?: string
   streamVideoId?: string
   streamLibraryId?: string
+  /** Stable machine id — preferred for lesson upsert */
+  contentKey?: string
+  /** Leaf folder machine id */
+  folderKey?: string
+  /** Subject root machine id */
+  rootFolderKey?: string
 }
 
 export type ImportPayload = {
@@ -201,48 +212,91 @@ async function ensureFolderChain(
     teacherId,
     rootName,
     segments,
+    rootFolderKey,
+    writeFolderKey = true,
   }: {
     courseKey: string
     subject: string
     teacherId?: string | null
     rootName: string
     segments: string[]
+    rootFolderKey?: string
+    writeFolderKey?: boolean
   }
 ): Promise<string> {
   // Root folder: courseKey + empty source_path
   let parentId: string | null = null
   let pathSoFar = ''
+  const rootKey = writeFolderKey
+    ? rootFolderKey || buildRootFolderKey(courseKey, subject)
+    : ''
 
-  // Ensure root — scoped by (courseKey + subject) so each môn has its own tree root.
-  // Teacher UI lists folders with .eq('subject', dbValue); a single shared root with
-  // subject=toan is invisible when browsing physics/chemistry tabs.
+  // Ensure root — scoped by (courseKey + subject). Prefer folder_key when set.
   {
     const rootLabel = repairDisplayText(rootName).slice(0, 180) || courseKey
-    const { data: existingRoot } = await admin
-      .from('online_folders')
-      .select('id, name')
-      .eq('examhub_course_key', courseKey)
-      .eq('subject', subject)
-      .eq('source_path', '')
-      .maybeSingle()
+    let existingRoot: { id: string; name?: string; folder_key?: string | null } | null = null
+
+    if (writeFolderKey && rootKey) {
+      const { data } = await admin
+        .from('online_folders')
+        .select('id, name, folder_key')
+        .eq('folder_key', rootKey)
+        .limit(1)
+      existingRoot = Array.isArray(data) && data[0] ? data[0] : null
+    }
+    if (!existingRoot) {
+      let data: unknown = null
+      if (writeFolderKey) {
+        const res = await admin
+          .from('online_folders')
+          .select('id, name, folder_key')
+          .eq('examhub_course_key', courseKey)
+          .eq('subject', subject)
+          .eq('source_path', '')
+          .limit(1)
+        data = res.data
+      } else {
+        const res = await admin
+          .from('online_folders')
+          .select('id, name')
+          .eq('examhub_course_key', courseKey)
+          .eq('subject', subject)
+          .eq('source_path', '')
+          .limit(1)
+        data = res.data
+      }
+      const row = Array.isArray(data) && data[0] ? data[0] : null
+      existingRoot = row
+        ? (row as unknown as { id: string; name?: string; folder_key?: string | null })
+        : null
+    }
 
     if (existingRoot?.id) {
+      const patch: { name?: string; folder_key?: string; subject?: string } = {}
       if (shouldRefreshStoredName(String(existingRoot.name || ''), rootLabel)) {
-        await admin.from('online_folders').update({ name: rootLabel }).eq('id', existingRoot.id)
+        patch.name = rootLabel
+      }
+      if (writeFolderKey && rootKey && existingRoot.folder_key !== rootKey) {
+        patch.folder_key = rootKey
+      }
+      if (Object.keys(patch).length) {
+        await admin.from('online_folders').update(patch).eq('id', existingRoot.id)
       }
       parentId = existingRoot.id
     } else {
+      const insertRow: Record<string, unknown> = {
+        name: rootLabel,
+        parent_id: null,
+        subject,
+        order_index: 1,
+        teacher_id: teacherId || null,
+        examhub_course_key: courseKey,
+        source_path: '',
+      }
+      if (writeFolderKey && rootKey) insertRow.folder_key = rootKey
       const { data: created, error } = await admin
         .from('online_folders')
-        .insert({
-          name: rootLabel,
-          parent_id: null,
-          subject,
-          order_index: 1,
-          teacher_id: teacherId || null,
-          examhub_course_key: courseKey,
-          source_path: '',
-        })
+        .insert(insertRow)
         .select('id')
         .single()
       if (error) throw error
@@ -254,25 +308,73 @@ async function ensureFolderChain(
     const seg = segments[i]
     pathSoFar = pathSoFar ? `${pathSoFar}/${seg}` : seg
     const orderIndex = naturalOrderIndex(seg)
+    const nodeKey = writeFolderKey ? buildFolderKey(courseKey, subject, pathSoFar) : ''
 
-    const { data: existing } = await admin
-      .from('online_folders')
-      .select('id, order_index, name')
-      .eq('examhub_course_key', courseKey)
-      .eq('subject', subject)
-      .eq('source_path', pathSoFar)
-      .maybeSingle()
+    let existing: {
+      id: string
+      order_index?: number
+      name?: string
+      folder_key?: string | null
+      parent_id?: string | null
+    } | null = null
+
+    if (writeFolderKey && nodeKey) {
+      const { data } = await admin
+        .from('online_folders')
+        .select('id, order_index, name, folder_key, parent_id')
+        .eq('folder_key', nodeKey)
+        .limit(1)
+      existing = Array.isArray(data) && data[0] ? data[0] : null
+    }
+    if (!existing) {
+      let data: unknown = null
+      if (writeFolderKey) {
+        const res = await admin
+          .from('online_folders')
+          .select('id, order_index, name, folder_key, parent_id')
+          .eq('examhub_course_key', courseKey)
+          .eq('subject', subject)
+          .eq('source_path', pathSoFar)
+          .limit(1)
+        data = res.data
+      } else {
+        const res = await admin
+          .from('online_folders')
+          .select('id, order_index, name, parent_id')
+          .eq('examhub_course_key', courseKey)
+          .eq('subject', subject)
+          .eq('source_path', pathSoFar)
+          .limit(1)
+        data = res.data
+      }
+      const row = Array.isArray(data) && data[0] ? data[0] : null
+      existing = row
+        ? (row as unknown as {
+            id: string
+            order_index?: number
+            name?: string
+            folder_key?: string | null
+            parent_id?: string | null
+          })
+        : null
+    }
 
     if (existing?.id) {
-      const patch: { order_index?: number; name?: string } = {}
-      // Fix legacy depth-based order_index on re-import
-      if (Number(existing.order_index) !== orderIndex) {
-        patch.order_index = orderIndex
+      const patch: {
+        order_index?: number
+        name?: string
+        folder_key?: string
+        parent_id?: string | null
+        subject?: string
+        source_path?: string
+      } = {}
+      if (Number(existing.order_index) !== orderIndex) patch.order_index = orderIndex
+      if (shouldRefreshStoredName(String(existing.name || ''), seg)) patch.name = seg
+      if (writeFolderKey && nodeKey && existing.folder_key !== nodeKey) {
+        patch.folder_key = nodeKey
       }
-      // Refresh mojibake / "?" labels when a cleaner UTF-8 name arrives
-      if (shouldRefreshStoredName(String(existing.name || ''), seg)) {
-        patch.name = seg
-      }
+      // Move under correct parent if tree was rebuilt
+      if (parentId && existing.parent_id !== parentId) patch.parent_id = parentId
       if (Object.keys(patch).length) {
         await admin.from('online_folders').update(patch).eq('id', existing.id)
       }
@@ -280,17 +382,19 @@ async function ensureFolderChain(
       continue
     }
 
+    const insertRow: Record<string, unknown> = {
+      name: seg,
+      parent_id: parentId,
+      subject,
+      order_index: orderIndex,
+      teacher_id: teacherId || null,
+      examhub_course_key: courseKey,
+      source_path: pathSoFar,
+    }
+    if (writeFolderKey && nodeKey) insertRow.folder_key = nodeKey
     const { data: created, error } = await admin
       .from('online_folders')
-      .insert({
-        name: seg,
-        parent_id: parentId,
-        subject,
-        order_index: orderIndex,
-        teacher_id: teacherId || null,
-        examhub_course_key: courseKey,
-        source_path: pathSoFar,
-      })
+      .insert(insertRow)
       .select('id')
       .single()
     if (error) throw error
@@ -312,6 +416,19 @@ function isDocKind(kind: string): boolean {
 /**
  * Idempotent import of Bunny/Drive items into online_folders + online_lessons.
  */
+async function probeColumn(
+  admin: SupabaseClient,
+  table: string,
+  column: string
+): Promise<boolean> {
+  const { error } = await admin.from(table).select(column).limit(1)
+  if (!error) return true
+  const msg = String(error.message || error.code || '')
+  if (/does not exist|42703/i.test(msg)) return false
+  // other errors (empty table RLS) still mean column likely exists
+  return !/column/i.test(msg)
+}
+
 export async function importOnlineStudyItems(
   admin: SupabaseClient,
   payload: ImportPayload
@@ -326,6 +443,8 @@ export async function importOnlineStudyItems(
   const rootName = payload.defaultFolderName || courseKey
   // CRITICAL: store DB subject codes (math/physics/…) so teacher UI filters work
   const subjectDb = toOnlineStudyDbSubject(subject)
+  const hasContentKey = await probeColumn(admin, 'online_lessons', 'content_key')
+  const hasFolderKey = await probeColumn(admin, 'online_folders', 'folder_key')
 
   for (let index = 0; index < items.length; index++) {
     const item = items[index] || {}
@@ -372,13 +491,35 @@ export async function importOnlineStudyItems(
         rel = segs1.join('/')
       }
       const segments = pathSegments(rel)
+      // Reject leftover mon wrappers at depth1 (engine should already strip)
+      if (segments.length) {
+        const head = segments[0]
+        const monLeak =
+          /^0?\d{1,2}\.\s*m[oô]n\b/i.test(head) ||
+          /khoa\s*h[oọ]c\s*x[aã]\s*h[oộ]i/i.test(head) ||
+          /^0?8\.\s*combo\s*đ[aá]nh\s*gi[aá]/i.test(head)
+        if (monLeak) {
+          result.errors.push({
+            index,
+            driveFileId: item.driveFileId,
+            error: `relativePath still has mon wrapper: ${head}`,
+          })
+          result.skipped++
+          continue
+        }
+      }
 
+      const rootFk = hasFolderKey
+        ? String(item.rootFolderKey || '').trim() || buildRootFolderKey(courseKey, subjectDb)
+        : undefined
       const folderId = await ensureFolderChain(admin, {
         courseKey,
         subject: subjectDb,
         teacherId: payload.teacherId,
         rootName,
         segments,
+        rootFolderKey: rootFk,
+        writeFolderKey: hasFolderKey,
       })
 
       let videoItems: MediaItem[] = []
@@ -403,8 +544,19 @@ export async function importOnlineStudyItems(
         continue
       }
 
+      const contentKey = hasContentKey
+        ? String(item.contentKey || '').trim() ||
+          buildLessonContentKey({
+            kind: isVideoKind(kind) ? 'video' : kind,
+            driveFileId,
+            streamVideoId: item.streamVideoId,
+            streamLibraryId: item.streamLibraryId,
+            remotePath: item.remotePath,
+          })
+        : ''
+
       const lessonOrder = naturalOrderIndex(title)
-      const rowBase = {
+      const rowBase: Record<string, unknown> = {
         folder_id: folderId,
         title,
         description: rel || null,
@@ -420,21 +572,32 @@ export async function importOnlineStudyItems(
         videos: videoItems,
         documents: docItems,
       }
+      if (hasContentKey && contentKey) rowBase.content_key = contentKey
 
-      // Prefer update by drive file id, else by remote path (rebuilt manifest has empty drive ids).
-      // IMPORTANT: never use maybeSingle() when dupes may exist — it errors and falls through
-      // to INSERT, creating yet another copy. Always .limit(1) and take first row.
+      // Lookup: content_key → drive → bunny video → remote path → folder+title
+      // never maybeSingle() on possibly-dupe sets
       let existingId: string | null = null
       let existingVideos: unknown = null
       let existingDocuments: unknown = null
-      const pickFirst = (rows: Array<{ id: string; videos?: unknown; documents?: unknown }> | null) => {
+      const pickFirst = (
+        rows: Array<{ id: string; videos?: unknown; documents?: unknown }> | null
+      ) => {
         const row = Array.isArray(rows) && rows[0] ? rows[0] : null
         if (!row?.id) return
         existingId = row.id
         existingVideos = row.videos
         existingDocuments = row.documents
       }
-      if (driveFileId) {
+      if (hasContentKey && contentKey) {
+        const { data } = await admin
+          .from('online_lessons')
+          .select('id, videos, documents')
+          .eq('content_key', contentKey)
+          .order('last_synced_at', { ascending: false })
+          .limit(1)
+        pickFirst(data as Array<{ id: string; videos?: unknown; documents?: unknown }> | null)
+      }
+      if (!existingId && driveFileId) {
         const { data: existing } = await admin
           .from('online_lessons')
           .select('id, videos, documents')
@@ -442,6 +605,15 @@ export async function importOnlineStudyItems(
           .order('last_synced_at', { ascending: false })
           .limit(1)
         pickFirst(existing as Array<{ id: string; videos?: unknown; documents?: unknown }> | null)
+      }
+      if (!existingId && item.streamVideoId) {
+        const { data: byStream } = await admin
+          .from('online_lessons')
+          .select('id, videos, documents')
+          .eq('source_bunny_video_id', String(item.streamVideoId))
+          .order('last_synced_at', { ascending: false })
+          .limit(1)
+        pickFirst(byStream as Array<{ id: string; videos?: unknown; documents?: unknown }> | null)
       }
       if (!existingId && item.remotePath) {
         const { data: byPath } = await admin
@@ -452,7 +624,6 @@ export async function importOnlineStudyItems(
           .limit(1)
         pickFirst(byPath as Array<{ id: string; videos?: unknown; documents?: unknown }> | null)
       }
-      // CDN/url identity for docs when drive id missing
       if (!existingId && item.cdnUrl) {
         const { data: byCdn } = await admin
           .from('online_lessons')
@@ -462,7 +633,6 @@ export async function importOnlineStudyItems(
           .limit(1)
         pickFirst(byCdn as Array<{ id: string; videos?: unknown; documents?: unknown }> | null)
       }
-      // Last resort: same folder + same title (bulk re-import without driveFileId)
       if (!existingId) {
         const { data: byTitle } = await admin
           .from('online_lessons')
@@ -480,6 +650,7 @@ export async function importOnlineStudyItems(
         const nextVideos = videoItems.length > 0 ? videoItems : prevVideos
         const nextDocs = docItems.length > 0 ? docItems : prevDocs
 
+        // MOVE into canonical folder_id when path/subject was wrong before
         const { error } = await admin
           .from('online_lessons')
           .update({
