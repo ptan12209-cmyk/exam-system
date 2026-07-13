@@ -276,8 +276,8 @@ function CoursesIntroPage() {
               Chọn gói phù hợp
             </h2>
             <p className="mx-auto mt-2 max-w-lg text-[14px] text-[#8C87A2]">
-              Ưu đãi: lẻ −15% · 3 môn −25% · phổ biến / ĐGNL riêng −30% · full+ĐGNL −40%. Combo 450k{" "}
-              <strong className="text-[#e8e4f0]/90">chưa tính ĐGNL</strong>; gói 599k gồm ĐGNL.
+              Bảng giá đang mở <strong className="text-[#e8e4f0]/90">tham khảo</strong> — toàn bộ gói
+              «Sắp mở», chưa nhận đăng ký / Zalo mua. Ưu đãi: lẻ −15% · 3 môn −25% · gói −30% · full+ĐGNL −40%.
             </p>
           </div>
 
@@ -388,25 +388,26 @@ function CoursesIntroPage() {
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                Ưu đãi: lẻ −15%, 3 môn −25%, phổ biến −30%, ĐGNL riêng −30%, full+ĐGNL −40%.
+                Ưu đãi (tham khảo): lẻ −15%, 3 môn −25%, gói −30%, ĐGNL riêng −30%, full+ĐGNL −40%.
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                Gói ĐGNL riêng <strong className="text-[#e8e4f0]">199.000đ</strong> đang{" "}
-                <strong className="text-[#e8e4f0]">tham khảo giá</strong> — chưa mở mua / Zalo.
+                <strong className="text-[#e8e4f0]">Tất cả gói đang «Sắp mở»</strong> — chưa mở liên hệ /
+                mua. Giá chỉ để preview chiến lược marketing.
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                ĐGNL (V-ACT, HSA, TSA, Sư phạm) cũng có trong combo{" "}
+                ĐGNL (V-ACT, HSA, TSA, Sư phạm): gói riêng{" "}
+                <strong className="text-[#e8e4f0]">199.000đ</strong> hoặc full{" "}
                 <strong className="text-[#e8e4f0]">599.000đ</strong>.
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                Gói đang bán: nhắn Zalo{" "}
+                Sau khi mở bán: thanh toán tự động; Zalo{" "}
                 <a href={SUPPORT_ZALO_URL} className="font-semibold" style={{ color: ACCENT }}>
                   {SUPPORT_ZALO}
-                </a>
-                . Sau này sẽ thanh toán tự động; Zalo chỉ khi cần tư vấn.
+                </a>{" "}
+                chỉ khi cần tư vấn.
               </li>
             </ul>
           </div>
