@@ -5,6 +5,7 @@ import Link from "next/link"
 import { AlertCircle, CheckCircle2, ChevronRight, Clock } from "lucide-react"
 import { getOnlineSubjectInfo } from "@/lib/subjects"
 import { cn } from "@/lib/utils"
+import { onlineStudyFetch } from "@/lib/online-study-client"
 
 type StudentOrder = {
   id: string
@@ -26,7 +27,7 @@ export function OrderStatusBanner({ className }: { className?: string }) {
     let cancelled = false
     ;(async () => {
       try {
-        const res = await fetch("/api/online-study/orders")
+        const res = await onlineStudyFetch("/api/online-study/orders")
         const data = await res.json()
         if (!cancelled && res.ok && data.success) {
           setOrders((data.data?.orders || data.data || []) as StudentOrder[])

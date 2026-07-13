@@ -21,6 +21,10 @@ import { getOnlineSubjectInfo } from "@/lib/subjects"
 import { Button } from "@/components/ui/button"
 import { ThptCountdown } from "@/components/shared/ThptCountdown"
 import { OrderStatusBanner } from "@/components/online-student/OrderStatusBanner"
+import {
+  hasOnlineSubjectAccess,
+  onlineStudyFetch,
+} from "@/lib/online-study-client"
 
 function SubjectSvgIcon({ value, className = "h-8 w-8" }: { value: string; className?: string }) {
   switch (value) {
@@ -272,9 +276,9 @@ export default function OnlineStudentDashboard() {
       // Parallel load: prices + unlocked subjects + progress
       try {
         const [resSettings, resSubjects, resProgress] = await Promise.all([
-          fetch("/api/online-study/payment-settings"),
-          fetch("/api/online-study/my-subjects"),
-          fetch("/api/online-study/progress"),
+          onlineStudyFetch("/api/online-study/payment-settings"),
+          onlineStudyFetch("/api/online-study/my-subjects"),
+          onlineStudyFetch("/api/online-study/progress"),
         ])
         const [dataSettings, dataSubjects, dataProgress] = await Promise.all([
           resSettings.json(),
@@ -324,7 +328,7 @@ export default function OnlineStudentDashboard() {
   }
 
   const isUnlocked = (subjectValue: string) => {
-    return mySubjects.includes("all") || mySubjects.includes(subjectValue)
+    return hasOnlineSubjectAccess(mySubjects, subjectValue)
   }
 
   const getSubjectPrice = (subjectValue: string, defaultPrice: number) => {

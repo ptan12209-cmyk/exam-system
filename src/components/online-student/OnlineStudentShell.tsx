@@ -1,7 +1,11 @@
+"use client"
+
+import { useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { OnlineStudentBottomNav } from "@/components/online-student/OnlineStudentBottomNav"
 import Footer from "@/components/Footer"
 import { SupportFab } from "@/components/support/SupportFab"
+import { getOrCreateDeviceId, syncDeviceIdCookie } from "@/lib/device-id"
 
 interface OnlineStudentShellProps {
   readonly children: React.ReactNode
@@ -27,6 +31,12 @@ export function OnlineStudentShell({
   hideFooter = false,
   supportMessage,
 }: Readonly<OnlineStudentShellProps>) {
+  // Seed device cookie early so my-subjects / folders / playback pass single-device gate
+  useEffect(() => {
+    const id = getOrCreateDeviceId()
+    syncDeviceIdCookie(id)
+  }, [])
+
   return (
     <div
       className={cn(

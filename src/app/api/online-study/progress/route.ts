@@ -90,6 +90,7 @@ async function handlePOST(request: NextRequest) {
   }
 
   await requireOnlineSubject(supabase, user.id, folderSubject)
+  await requireSingleDevice(request, admin, user.id)
 
   // Own-row write via user client when RLS allows; fallback admin for legacy policies
   const { error } = await supabase.from("student_lesson_progress").upsert(

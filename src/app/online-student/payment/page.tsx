@@ -23,6 +23,7 @@ import {
 
 import { ErrorState } from "@/components/online-student/ErrorState"
 import { cn } from "@/lib/utils"
+import { onlineStudyFetch } from "@/lib/online-study-client"
 
 type PayState = "loading" | "ready" | "polling" | "success" | "error"
 
@@ -132,7 +133,7 @@ function PaymentPageInner() {
   const checkOrderStatus = useCallback(
     async (id: string, silent = false) => {
       try {
-        const res = await fetch("/api/online-study/orders")
+        const res = await onlineStudyFetch("/api/online-study/orders")
         const data = await res.json()
         if (!res.ok || !data.success) {
           if (!silent) setPollHint("Không kiểm tra được trạng thái. Thử lại.")
@@ -216,7 +217,7 @@ function PaymentPageInner() {
         if (!cancelled) setProfileName(profile.full_name)
 
         // Already unlocked?
-        const resSub = await fetch("/api/online-study/my-subjects")
+        const resSub = await onlineStudyFetch("/api/online-study/my-subjects")
         const dataSub = await resSub.json()
         if (resSub.ok && dataSub.success) {
           const list: string[] = dataSub.data || []
@@ -226,7 +227,7 @@ function PaymentPageInner() {
           }
         }
 
-        const res = await fetch("/api/online-study/orders", {
+        const res = await onlineStudyFetch("/api/online-study/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ subjectKey }),

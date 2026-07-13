@@ -50,6 +50,10 @@ import { cn } from "@/lib/utils"
 import { cacheGet, cacheSet } from "@/lib/client-swr-cache"
 import { EmptyState } from "@/components/online-student/EmptyState"
 import { ErrorState } from "@/components/online-student/ErrorState"
+import {
+  hasOnlineSubjectAccess,
+  onlineStudyFetch,
+} from "@/lib/online-study-client"
 
 interface DbFolder {
   id: string
@@ -188,7 +192,7 @@ function StudyPageInner() {
       }
       setProfile(profileData)
       try {
-        const res = await fetch("/api/online-study/my-subjects")
+        const res = await onlineStudyFetch("/api/online-study/my-subjects")
         const data = await res.json()
         if (res.ok && data.success) setMySubjects(data.data || [])
       } catch (e) {
@@ -201,7 +205,7 @@ function StudyPageInner() {
 
   const hasAccess = useMemo(() => {
     if (loadingAuth) return true
-    return mySubjects.includes("all") || mySubjects.includes(subjectKey)
+    return hasOnlineSubjectAccess(mySubjects, subjectKey)
   }, [loadingAuth, mySubjects, subjectKey])
 
   useEffect(() => {
@@ -210,7 +214,7 @@ function StudyPageInner() {
 
   const fetchProgress = async () => {
     try {
-      const res = await fetch("/api/online-study/progress")
+      const res = await onlineStudyFetch("/api/online-study/progress")
       const data = await res.json()
       if (res.ok && data.success) {
         setCompletedLessons(
@@ -244,10 +248,18 @@ function StudyPageInner() {
       }
       try {
         const [rf, rl] = await Promise.all([
-          fetch(`/api/online-study/folders?subject=${subjectInfo.dbValue}`),
-          fetch(`/api/online-study/lessons?subject=${subjectInfo.dbValue}`),
+          onlineStudyFetch(`/api/online-study/folders?subject=${subjectInfo.dbValue}`),
+          onlineStudyFetch(`/api/online-study/lessons?subject=${subjectInfo.dbValue}`),
         ])
+        // Device lock → guard will sign out; subject lock → dashboard
+        if (rf.status === 409 || rl.status === 409) return
         if (rf.status === 403 || rl.status === 403) {
+          const body = await rf
+            .clone()
+            .json()
+            .catch(() => null)
+          const code = body?.error?.code as string | undefined
+          if (code === "DEVICE_REQUIRED" || code === "DEVICE_CONFLICT") return
           router.replace("/online-student/dashboard")
           return
         }
@@ -346,7 +358,7 @@ function StudyPageInner() {
     setActiveVideo(null)
     setLoadingPlayback(true)
     try {
-      const res = await fetch(`/api/online-study/lessons/${lesson.id}/playback`)
+      const res = await onlineStudyFetch(`/api/online-study/lessons/${lesson.id}/playback`)
       const data = await res.json()
       if (!res.ok || !data.success) {
         const msg = data?.error?.message || data?.error || "Không tải được video"
@@ -375,7 +387,7 @@ function StudyPageInner() {
 
   const handleMarkCompleted = async (lessonId: string, completed = true) => {
     try {
-      const res = await fetch("/api/online-study/progress", {
+      const res = await onlineStudyFetch("/api/online-study/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lessonId, completed }),
@@ -456,7 +468,7 @@ function StudyPageInner() {
           <div className="mb-3 rounded-xl border border-[var(--os-warning)]/25 bg-[var(--os-warning)]/10 px-3 py-2">
             <CopyrightNotice className="text-[var(--os-fg)]/90" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[var(--os-fg)] mb-4 text-balance">
+          <h1 className="os-content-text text-xl sm:text-2xl font-bold text-[var(--os-fg)] mb-4 text-balance">
             {activeLesson.title}
           </h1>
 
@@ -780,7 +792,7 @@ function StudyPageInner() {
                         >
                           <FolderIcon className="h-5 w-5 text-[var(--os-accent)] shrink-0" />
                           <span className="text-sm font-semibold text-[var(--os-fg)] truncate">
-                            {folder.name}
+                            <span className="os-content-text">{folder.name}</span>
                           </span>
                         </button>
                       ))}
