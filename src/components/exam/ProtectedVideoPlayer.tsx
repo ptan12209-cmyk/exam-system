@@ -151,9 +151,6 @@ export function ProtectedVideoPlayer({
             referrerPolicy="strict-origin-when-cross-origin"
             loading="eager"
             title="Bài giảng video"
-            // iOS: helps some WebViews treat media as user-gesture friendly
-            // @ts-expect-error playsInline is valid on iframe in mobile Safari
-            playsInline
           />
         )}
         {/* Fallback if iframe blocked (in-app browser / referrer) */}
