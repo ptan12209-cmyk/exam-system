@@ -206,34 +206,51 @@ export const INTRO_SUBJECTS: CourseSubject[] = [
 /** Môn không thuộc gói ĐGNL (dùng cho combo 450k) */
 export const SUBJECTS_WITHOUT_DGNL = INTRO_SUBJECTS.filter((s) => s.group !== "dgnl")
 
+/**
+ * Giá bán thật (`price`) giữ nguyên.
+ * `originalPrice` = giá niêm yết (đã tăng) để hiển thị gạch ngang + % giảm.
+ * original ≈ price / (1 - discount/100), làm tròn nghìn cho đẹp.
+ */
 export const PRICING = {
   single: {
     id: "single",
     name: "Mua lẻ 1 môn",
+    originalPrice: 117_000,
     price: 99_000,
+    discountPercent: 15,
     note: "Chọn đúng 1 môn (không gồm ĐGNL trừ khi chọn riêng gói ĐGNL).",
     highlight: false,
+    badge: null as string | null,
   },
   combo3: {
     id: "combo3",
     name: "Combo 3 môn",
+    originalPrice: 334_000,
     price: 250_000,
+    discountPercent: 25,
     note: "Chọn bất kỳ 3 môn. Chưa bao gồm ĐGNL.",
     highlight: false,
+    badge: null as string | null,
   },
   fullNoDgnl: {
     id: "full-no-dgnl",
     name: "Combo toàn vẹn (chưa ĐGNL)",
+    originalPrice: 643_000,
     price: 450_000,
+    discountPercent: 30,
     note: "Toàn bộ môn học thường. Chưa tính các gói ĐGNL.",
     highlight: true,
+    badge: "Phổ biến",
   },
   fullWithDgnl: {
     id: "full-with-dgnl",
     name: "Combo toàn vẹn + ĐGNL",
+    originalPrice: 999_000,
     price: 599_000,
+    discountPercent: 40,
     note: "Bao gồm toàn bộ môn học và các gói ĐGNL (V-ACT / HSA / TSA / Sư phạm).",
     highlight: true,
+    badge: "Giảm mạnh",
   },
 } as const
 

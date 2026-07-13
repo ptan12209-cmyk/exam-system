@@ -275,14 +275,15 @@ function CoursesIntroPage() {
               Chọn gói phù hợp
             </h2>
             <p className="mx-auto mt-2 max-w-lg text-[14px] text-[#8C87A2]">
-              Combo 3 môn và combo toàn vẹn 450k{" "}
-              <strong className="text-[#e8e4f0]/90">chưa tính ĐGNL</strong>. Gói 599k mới gồm
-              ĐGNL.
+              Đang ưu đãi: lẻ −15% · 3 môn −25% · gói phổ biến −30% · full+ĐGNL −40%. Combo 450k{" "}
+              <strong className="text-[#e8e4f0]/90">chưa tính ĐGNL</strong>; gói 599k gồm ĐGNL.
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {Object.values(PRICING).map((plan) => (
+            {Object.values(PRICING).map((plan) => {
+              const saved = plan.originalPrice - plan.price
+              return (
               <div
                 key={plan.id}
                 className={cn(
@@ -292,27 +293,38 @@ function CoursesIntroPage() {
                     : "border-white/[0.07] bg-[oklch(0.11_0.02_290)]"
                 )}
               >
-                {plan.highlight && (
-                  <span
-                    className="absolute -top-2.5 left-4 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-                    style={{ background: ACCENT, color: BG }}
-                  >
-                    Phổ biến
+                <div className="absolute -top-2.5 left-3 right-3 flex flex-wrap gap-1.5">
+                  {plan.badge ? (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                      style={{ background: ACCENT, color: BG }}
+                    >
+                      {plan.badge}
+                    </span>
+                  ) : null}
+                  <span className="rounded-full bg-rose-500/90 px-2 py-0.5 text-[10px] font-bold tabular-nums text-white">
+                    −{plan.discountPercent}%
                   </span>
-                )}
-                <p className="text-[13px] font-semibold text-[#e8e4f0]">{plan.name}</p>
+                </div>
+                <p className="mt-2 text-[13px] font-semibold text-[#e8e4f0]">{plan.name}</p>
+                <p className="mt-2 text-[12px] tabular-nums text-[#8C87A2] line-through decoration-white/30">
+                  {formatVnd(plan.originalPrice)}
+                </p>
                 <p
-                  className="mt-3 text-2xl font-bold tracking-tight tabular-nums sm:text-[1.65rem]"
+                  className="mt-0.5 text-2xl font-bold tracking-tight tabular-nums sm:text-[1.65rem]"
                   style={{ color: ACCENT }}
                 >
                   {formatVnd(plan.price)}
+                </p>
+                <p className="mt-1 text-[11px] font-medium text-emerald-400/90">
+                  Tiết kiệm {formatVnd(saved)}
                 </p>
                 <p className="mt-3 flex-1 text-[12px] leading-relaxed text-[#8C87A2]">
                   {plan.note}
                 </p>
                 <a
                   href={supportZaloUrlWithText(
-                    `Em muốn mua gói: ${plan.name} (${formatVnd(plan.price)})`
+                    `Em muốn mua gói: ${plan.name} — giá ưu đãi ${formatVnd(plan.price)} (gốc ${formatVnd(plan.originalPrice)}, −${plan.discountPercent}%)`
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -329,7 +341,8 @@ function CoursesIntroPage() {
                   Nhắn Zalo mua gói
                 </a>
               </div>
-            ))}
+              )
+            })}
           </div>
 
           <div
@@ -341,6 +354,10 @@ function CoursesIntroPage() {
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
                 Môn thường (không ĐGNL): {SUBJECTS_WITHOUT_DGNL.map((s) => s.label).join(", ")}.
+              </li>
+              <li className="flex gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
+                Ưu đãi: mua lẻ −15%, 3 môn −25%, gói phổ biến −30%, gói 599k −40% (so với giá gốc).
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
