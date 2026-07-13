@@ -288,7 +288,13 @@ function StudyPageInner() {
     let list = folders.filter((f) => f.parent_id === currentFolderId)
     const q = search.trim().toLowerCase()
     if (q) list = list.filter((f) => f.name.toLowerCase().includes(q))
-    return list.sort((a, b) => a.order_index - b.order_index)
+    return list.sort((a, b) => {
+      if (a.order_index !== b.order_index) return a.order_index - b.order_index
+      return String(a.name || "").localeCompare(String(b.name || ""), "vi", {
+        numeric: true,
+        sensitivity: "base",
+      })
+    })
   }, [folders, currentFolderId, search])
 
   const currentLessons = useMemo(() => {
@@ -301,7 +307,13 @@ function StudyPageInner() {
           (l.description || "").toLowerCase().includes(q)
       )
     }
-    return list.sort((a, b) => a.order_index - b.order_index)
+    return list.sort((a, b) => {
+      if (a.order_index !== b.order_index) return a.order_index - b.order_index
+      return String(a.title || "").localeCompare(String(b.title || ""), "vi", {
+        numeric: true,
+        sensitivity: "base",
+      })
+    })
   }, [lessons, currentFolderId, search])
 
   const openLesson = async (lesson: CatalogLesson) => {
