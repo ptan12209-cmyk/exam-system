@@ -20,8 +20,18 @@ export function toOnlineStudyDbSubject(input: string): string {
   // Downloader / watch-job aliases
   const aliases: Record<string, string> = {
     dgnl: 'dgnl_hsa',
+    hsa: 'dgnl_hsa',
+    tsa: 'dgnl_tsa',
+    vact: 'dgnl_vact',
+    vatc: 'dgnl_vact', // Drive often labels V-ACT as VATC
+    'dgnl-hsa': 'dgnl_hsa',
+    'dgnl-tsa': 'dgnl_tsa',
+    'dgnl-vact': 'dgnl_vact',
     khxh: 'history', // KHXH mixed — default history tab
     'khoa-hoc-xa-hoi': 'history',
+    history: 'history',
+    geography: 'geography',
+    civic_education: 'civic_education',
   }
   if (aliases[s.toLowerCase()]) return aliases[s.toLowerCase()]
   return s
