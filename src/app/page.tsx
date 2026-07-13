@@ -2,642 +2,861 @@
 
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
-import { motion, useScroll, useTransform, useInView, useMotionValueEvent } from "framer-motion"
-import { ArrowRight, ArrowUpRight, Play, Check } from "lucide-react"
-import Hls from "hls.js"
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useInView,
+  useMotionValueEvent,
+  useReducedMotion,
+} from "framer-motion"
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  Check,
+  FolderOpen,
+  GraduationCap,
+  Menu,
+  Play,
+  Unlock,
+  Video,
+  X,
+} from "lucide-react"
+import {
+  ACCENT,
+  BG,
+  easeOutQuart,
+  revealProps,
+  revealScaleProps,
+} from "@/components/landing/motion"
+import {
+  SUPPORT_EMAIL,
+  SUPPORT_EMAIL_URL,
+  SUPPORT_ZALO,
+  SUPPORT_ZALO_URL,
+} from "@/lib/support"
+import { cn } from "@/lib/utils"
 
-/* ═══════════════════════════════════════════
-   Motion helpers — ease-out-quart for premium feel
-   ═══════════════════════════════════════════ */
-const easeOutQuart = [0.25, 1, 0.5, 1] as const
-
-const reveal = (delay = 0) => ({
-  initial: { opacity: 0, y: 32 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.8, delay, ease: easeOutQuart },
-})
-
-const revealScale = (delay = 0) => ({
-  initial: { opacity: 0, scale: 0.92 },
-  whileInView: { opacity: 1, scale: 1 },
-  viewport: { once: true, margin: "-60px" },
-  transition: { duration: 1, delay, ease: easeOutQuart },
-})
-
-/* ═══════════════════════════════════════════
-   HLS Video Background
-   ═══════════════════════════════════════════ */
-function HlsVideo({ src, className }: { src: string; className?: string }) {
-  const ref = useRef<HTMLVideoElement>(null)
-  useEffect(() => {
-    const v = ref.current
-    if (!v) return
-    let hls: Hls | null = null
-    if (Hls.isSupported()) {
-      hls = new Hls({ enableWorker: false })
-      hls.loadSource(src)
-      hls.attachMedia(v)
-    } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
-      v.src = src
-    }
-    return () => { hls?.destroy() }
-  }, [src])
-  return <video ref={ref} autoPlay loop muted playsInline className={className} />
-}
-
-/* ═══════════════════════════════════════════
-   Scroll progress bar at top
-   ═══════════════════════════════════════════ */
+/* ─── Scroll progress ─── */
 function ScrollProgress() {
   const { scrollYProgress } = useScroll()
   const scaleX = useTransform(scrollYProgress, [0, 1], [0, 1])
+  const reduce = useReducedMotion()
+  if (reduce) return null
   return (
     <motion.div
       className="fixed top-0 left-0 right-0 z-[60] h-[2px] origin-left"
-      style={{
-        scaleX,
-        background: "oklch(0.75 0.18 290)",
-      }}
+      style={{ scaleX, background: ACCENT }}
+      aria-hidden
     />
   )
 }
 
-/* ═══════════════════════════════════════════
-   Animated counter
-   ═══════════════════════════════════════════ */
+/* ─── Counter ─── */
 function Counter({ target, suffix = "" }: { target: number; suffix?: string }) {
   const ref = useRef<HTMLSpanElement>(null)
-  const inView = useInView(ref, { once: true, margin: "-100px" })
-  const [val, setVal] = useState(0)
+  const inView = useInView(ref, { once: true, margin: "-80px" })
+  const reduce = useReducedMotion()
+  const [val, setVal] = useState(reduce ? target : 0)
 
   useEffect(() => {
-    if (!inView) return
-    let start = 0
-    const duration = 1800
+    if (!inView || reduce) {
+      setVal(target)
+      return
+    }
+    const duration = 1400
     const startTime = performance.now()
+    let raf = 0
     function tick(now: number) {
-      const elapsed = now - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      // ease-out-quart
+      const progress = Math.min((now - startTime) / duration, 1)
       const eased = 1 - Math.pow(1 - progress, 4)
       setVal(Math.floor(eased * target))
-      if (progress < 1) requestAnimationFrame(tick)
+      if (progress < 1) raf = requestAnimationFrame(tick)
     }
-    requestAnimationFrame(tick)
-  }, [inView, target])
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [inView, target, reduce])
 
-  return <span ref={ref}>{val.toLocaleString()}{suffix}</span>
+  return (
+    <span ref={ref} className="tabular-nums">
+      {val.toLocaleString("vi-VN")}
+      {suffix}
+    </span>
+  )
+}
+
+/* ─── Safe autoplay video (respect reduced motion / mobile data) ─── */
+function SoftVideo({
+  src,
+  className,
+  posterOpacity = 0.35,
+}: {
+  src: string
+  className?: string
+  posterOpacity?: number
+}) {
+  const reduce = useReducedMotion()
+  const [allowPlay, setAllowPlay] = useState(false)
+
+  useEffect(() => {
+    if (reduce) return
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } })
+      .connection
+    if (conn?.saveData) return
+    // Prefer no autoplay on narrow screens for battery
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches) {
+      return
+    }
+    setAllowPlay(true)
+  }, [reduce])
+
+  if (!allowPlay) {
+    return (
+      <div
+        className={cn("h-full w-full", className)}
+        style={{
+          background: `radial-gradient(ellipse 80% 60% at 50% 40%, oklch(0.75 0.18 290 / 0.12), ${BG})`,
+          opacity: posterOpacity + 0.4,
+        }}
+        aria-hidden
+      />
+    )
+  }
+
+  return (
+    <video
+      src={src}
+      className={className}
+      style={{ opacity: posterOpacity }}
+      muted
+      autoPlay
+      loop
+      playsInline
+      aria-hidden
+    />
+  )
+}
+
+/* ─── Product preview (real UI chrome, not fake metrics) ─── */
+function ProductPreview() {
+  return (
+    <div
+      className="relative overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl"
+      style={{ background: "oklch(0.12 0.025 290)" }}
+    >
+      {/* Window chrome */}
+      <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-3">
+        <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+        <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+        <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+        <span className="ml-3 text-[11px] font-mono text-white/35">
+          StudyHub · Học online
+        </span>
+      </div>
+      <div className="grid grid-cols-[100px_1fr] sm:grid-cols-[140px_1fr] min-h-[220px] sm:min-h-[280px]">
+        {/* Sidebar tree */}
+        <div className="border-r border-white/[0.06] p-3 space-y-2">
+          <p className="text-[9px] font-mono uppercase tracking-wider text-white/30 mb-2">
+            Môn học
+          </p>
+          {["Toán", "Vật lý", "Hóa"].map((s, i) => (
+            <div
+              key={s}
+              className={cn(
+                "rounded-lg px-2 py-1.5 text-[11px] font-medium",
+                i === 0
+                  ? "bg-[oklch(0.75_0.18_290/0.15)] text-[oklch(0.82_0.14_290)]"
+                  : "text-white/40"
+              )}
+            >
+              {s}
+            </div>
+          ))}
+          <div className="pt-3 space-y-1.5">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-white/30">
+              Thư mục
+            </p>
+            {["Chương 1", "Chương 2", "Ôn tập"].map((f, i) => (
+              <div
+                key={f}
+                className={cn(
+                  "flex items-center gap-1.5 text-[10px]",
+                  i === 0 ? "text-white/70" : "text-white/35"
+                )}
+              >
+                <FolderOpen className="h-3 w-3 shrink-0" style={{ color: ACCENT }} />
+                {f}
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Player pane */}
+        <div className="p-3 sm:p-4 flex flex-col gap-3">
+          <div
+            className="relative aspect-video rounded-xl overflow-hidden border border-white/[0.06]"
+            style={{ background: "oklch(0.08 0.02 290)" }}
+          >
+            <div
+              className="absolute inset-0 opacity-40"
+              style={{
+                background:
+                  "radial-gradient(circle at 40% 40%, oklch(0.75 0.18 290 / 0.25), transparent 55%)",
+              }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-full"
+                style={{ background: "oklch(0.75 0.18 290 / 0.9)" }}
+              >
+                <Play className="h-5 w-5 text-[#060510] ml-0.5" fill="currentColor" />
+              </div>
+            </div>
+            <div className="absolute bottom-2 left-2 right-2 h-1 rounded-full bg-white/10">
+              <div
+                className="h-full w-[38%] rounded-full"
+                style={{ background: ACCENT }}
+              />
+            </div>
+          </div>
+          <div>
+            <p className="text-[12px] sm:text-[13px] font-semibold text-white/90">
+              Bài 3 · Đạo hàm hàm hợp
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-white/40 mt-0.5 font-mono">
+              Video · Tài liệu PDF
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <span
+              className="rounded-md px-2 py-1 text-[9px] font-bold uppercase tracking-wide"
+              style={{
+                background: "oklch(0.75 0.18 290 / 0.12)",
+                color: ACCENT,
+              }}
+            >
+              Video
+            </span>
+            <span className="rounded-md px-2 py-1 text-[9px] font-bold uppercase tracking-wide bg-emerald-500/10 text-emerald-400/90">
+              Tài liệu
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 /* ═══════════════════════════════════════════
-   Main page
+   Landing page v3 — Calm Focus Education
    ═══════════════════════════════════════════ */
 export default function HomePage() {
+  const reduce = useReducedMotion()
   const heroRef = useRef<HTMLElement>(null)
   const { scrollYProgress: heroProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"],
   })
-  const heroOpacity = useTransform(heroProgress, [0, 0.7], [1, 0])
-  const heroScale = useTransform(heroProgress, [0, 0.7], [1, 0.92])
-  const heroFilter = useTransform(heroProgress, (v) => {
-    const blur = v * (8 / 0.7)
-    return blur > 0.1 ? `blur(${Math.min(blur, 8)}px)` : "none"
-  })
+  const heroOpacity = useTransform(heroProgress, [0, 0.75], [1, reduce ? 1 : 0])
+  const heroScale = useTransform(heroProgress, [0, 0.75], [1, reduce ? 1 : 0.96])
 
-  // Nav state — show bg after hero
   const [scrolled, setScrolled] = useState(false)
-  useMotionValueEvent(heroProgress, "change", (v) => setScrolled(v > 0.08))
+  const [menuOpen, setMenuOpen] = useState(false)
+  useMotionValueEvent(heroProgress, "change", (v) => setScrolled(v > 0.06))
+
+  const r0 = revealProps(reduce, 0)
+  const r1 = revealProps(reduce, 0.08)
+  const r2 = revealProps(reduce, 0.12)
+  const rs0 = revealScaleProps(reduce, 0)
+  const rs1 = revealScaleProps(reduce, 0.1)
+
+  const navLinks = [
+    { label: "Cách học", href: "#how" },
+    { label: "Tính năng", href: "#features" },
+    { label: "Đối tượng", href: "#audience" },
+  ]
 
   return (
-    <div className="relative bg-[#060510] text-[#e8e4f0] selection:bg-[oklch(0.75_0.18_290)] selection:text-[#060510]">
-      <ScrollProgress />
-
-      {/* ─── NAV ─── */}
-      <motion.nav
-        className="fixed inset-x-0 top-0 z-50 flex items-center justify-between px-6 py-4 md:px-12"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.3, ease: easeOutQuart }}
-      >
-        {/* bg layer */}
-        <motion.div
-          className="absolute inset-0 -z-10 border-b"
-          animate={{
-            backgroundColor: scrolled ? "rgba(6,5,16,0.85)" : "rgba(6,5,16,0)",
-            backdropFilter: scrolled ? "blur(16px) saturate(180%)" : "blur(0px) saturate(100%)",
-            borderColor: scrolled ? "rgba(193,140,255,0.08)" : "rgba(0,0,0,0)",
-          }}
-          transition={{ duration: 0.4 }}
-        />
-
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="relative flex h-8 w-8 items-center justify-center">
-            <div className="absolute inset-0 rounded-lg bg-[oklch(0.75 0.18 290)]" style={{ opacity: 0.15 }} />
-            <span className="text-base font-bold tracking-tight" style={{ color: "oklch(0.75 0.18 290)" }}>S</span>
-          </div>
-          <span className="text-[15px] font-semibold tracking-[-0.02em]">StudyHub</span>
-        </Link>
-
-        <div className="hidden items-center gap-8 md:flex">
-          {[
-            { label: "Tính năng", href: "#features" },
-            { label: "Giải pháp", href: "#solution" },
-            { label: "Đối tượng", href: "#audience" },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-[13px] font-medium tracking-wide text-[#8C87A2] transition-colors duration-200 hover:text-[#e8e4f0]"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="text-[13px] font-medium text-[#8C87A2] transition-colors hover:text-[#e8e4f0]"
-          >
-            Đăng nhập
-          </Link>
-          <Link
-            href="/register"
-            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-semibold transition-all duration-200 hover:brightness-110"
-            style={{ background: "oklch(0.75 0.18 290)", color: "#060510" }}
-          >
-            Bắt đầu <ArrowUpRight size={14} strokeWidth={2.5} />
-          </Link>
-        </div>
-      </motion.nav>
-
-      {/* ═══════════════════════════════════════
-          HERO — cinematic, single viewport
-          ═══════════════════════════════════════ */}
-      <section ref={heroRef} className="relative flex min-h-screen items-center justify-center overflow-hidden">
-        {/* BG Video */}
-        <div className="absolute inset-0">
-          <video
-            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_120549_0cd82c36-56b3-4dd9-b190-069cfc3a623f.mp4"
-            className="h-full w-full object-cover"
-            style={{ opacity: 0.35 }}
-            muted autoPlay loop playsInline
-          />
-          {/* Bottom gradient to bg */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#060510] via-[#060510]/40 to-transparent" />
-          {/* Top vignette */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#060510]/60 via-transparent to-transparent" />
-        </div>
-
-        <motion.div
-          className="relative z-10 flex flex-col items-center px-6 text-center"
-          style={{ opacity: heroOpacity, scale: heroScale, filter: heroFilter }}
-        >
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 16, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.5, ease: easeOutQuart }}
-            className="mb-8 inline-flex items-center gap-2 rounded-full border px-4 py-1.5"
-            style={{
-              borderColor: "oklch(0.75 0.18 290 / 0.2)",
-              background: "oklch(0.75 0.18 290 / 0.06)",
-            }}
-          >
-            <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: "oklch(0.75 0.18 290)" }} />
-            <span className="text-[12px] font-medium tracking-wide" style={{ color: "oklch(0.75 0.18 290)" }}>
-              Nền tảng học trực tuyến thế hệ mới
-            </span>
-          </motion.div>
-
-          {/* Headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.7, ease: easeOutQuart }}
-            className="mb-6 max-w-4xl text-[clamp(2.5rem,6vw,5.5rem)] font-medium leading-[1.05] tracking-[-0.03em]"
-            style={{ textWrap: "balance" }}
-          >
-            Học trực tuyến{" "}
-            <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>tập trung</span>
-            <br />
-            Hiệu quả{" "}
-            <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>rõ ràng</span>
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.9, ease: easeOutQuart }}
-            className="mb-10 max-w-xl text-[clamp(0.95rem,1.8vw,1.125rem)] leading-relaxed text-[#8C87A2]"
-            style={{ textWrap: "pretty" }}
-          >
-            Hệ thống học trực tuyến thông minh — Giúp quản lý bài giảng, video lý thuyết, tài liệu tự học trực quan và hỗ trợ học sinh học tập dễ dàng, hiệu quả.
-          </motion.p>
-
-          {/* CTAs */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 1.1, ease: easeOutQuart }}
-            className="flex flex-col gap-3 sm:flex-row"
-          >
-            <Link
-              href="/register"
-              className="group inline-flex items-center justify-center gap-2 rounded-lg px-7 py-3.5 text-[14px] font-semibold transition-all duration-200 hover:brightness-110"
-              style={{ background: "oklch(0.75 0.18 290)", color: "#060510" }}
-            >
-              Bắt đầu miễn phí
-              <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#e8e4f0]/10 px-7 py-3.5 text-[14px] font-medium text-[#e8e4f0] transition-all duration-200 hover:border-[#e8e4f0]/25 hover:bg-[#e8e4f0]/[0.04]"
-            >
-              Đăng nhập
-            </Link>
-          </motion.div>
-
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.8, duration: 0.8 }}
-            className="absolute bottom-12 left-1/2 -translate-x-1/2"
-          >
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-              className="flex flex-col items-center gap-2"
-            >
-              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#8C87A2]/60">Kéo xuống</span>
-              <div className="h-8 w-[1px] bg-gradient-to-b from-[#8C87A2]/40 to-transparent" />
-            </motion.div>
-          </motion.div>
-        </motion.div>
-      </section>
-
-
-
-      {/* ═══════════════════════════════════════
-          FEATURES — asymmetric 2-column layout
-          ═══════════════════════════════════════ */}
-      <section id="features" className="relative px-6 py-28 md:px-12 md:py-40">
-        <div className="mx-auto max-w-6xl">
-          {/* Section heading */}
-          <div className="mb-20 max-w-2xl">
-            <motion.p
-              {...reveal(0)}
-              className="mb-4 text-[13px] font-semibold uppercase tracking-[0.15em]"
-              style={{ color: "oklch(0.75 0.18 290)" }}
-            >
-              Tính năng nổi bật
-            </motion.p>
-            <motion.h2
-              {...reveal(0.1)}
-              className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] tracking-[-0.02em]"
-              style={{ textWrap: "balance" }}
-            >
-              Không gian học tập{" "}
-              <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>tinh gọn</span>{" "}
-              và khoa học
-            </motion.h2>
-          </div>
-
-          {/* Feature blocks — stacked asymmetric */}
-          <div className="space-y-24 md:space-y-32">
-            {/* Feature 1 */}
-            <div className="grid items-center gap-10 md:grid-cols-[1fr_1.2fr] md:gap-16">
-              <motion.div {...reveal(0)} className="order-2 md:order-1 space-y-5">
-                <div className="inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-[12px] font-semibold" style={{ background: "oklch(0.75 0.18 290 / 0.1)", color: "oklch(0.75 0.18 290)" }}>
-                  <Play size={12} /> Thư mục học liệu
-                </div>
-                <h3 className="text-[clamp(1.25rem,2.5vw,1.75rem)] font-medium leading-snug tracking-[-0.01em]">
-                  Quản lý bài giảng trực quan như File Explorer
-                </h3>
-                <p className="text-[15px] leading-relaxed text-[#8C87A2]" style={{ maxWidth: "50ch" }}>
-                  Tổ chức học liệu thông minh theo chương trình học. Giáo viên sắp xếp thư mục lồng nhau nhiều cấp, tải lên bài giảng trực tuyến dễ nhìn, tránh rối mắt và thao tác sai.
-                </p>
-              </motion.div>
-              <motion.div {...revealScale(0.15)} className="order-1 md:order-2">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e4f0]/[0.06]">
-                  <video
-                    src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_125119_8e5ae31c-0021-4396-bc08-f7aebeb877a2.mp4"
-                    className="h-full w-full object-cover"
-                    style={{ opacity: 0.8 }}
-                    muted autoPlay loop playsInline
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#060510]/60 to-transparent" />
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Feature 2 — reversed */}
-            <div className="grid items-center gap-10 md:grid-cols-[1.2fr_1fr] md:gap-16">
-              <motion.div {...revealScale(0)} className="order-1">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e4f0]/[0.06]">
-                  <video
-                    src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_132944_a0d124bb-eaa1-4082-aa30-2310efb42b4b.mp4"
-                    className="h-full w-full object-cover"
-                    style={{ opacity: 0.7 }}
-                    muted autoPlay loop playsInline
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#060510]/60 to-transparent" />
-                </div>
-              </motion.div>
-              <motion.div {...reveal(0.15)} className="order-2 space-y-5">
-                <div className="inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-[12px] font-semibold" style={{ background: "oklch(0.65 0.15 170 / 0.12)", color: "oklch(0.72 0.15 170)" }}>
-                  <Play size={12} /> Học trực tuyến
-                </div>
-                <h3 className="text-[clamp(1.25rem,2.5vw,1.75rem)] font-medium leading-snug tracking-[-0.01em]">
-                  Bài giảng video & tài liệu ôn tập đa phương tiện
-                </h3>
-                <p className="text-[15px] leading-relaxed text-[#8C87A2]" style={{ maxWidth: "50ch" }}>
-                  Hỗ trợ tích hợp nhiều video bài giảng và tài liệu ôn tập trong mỗi buổi học. Học sinh xem playlist video lý thuyết và tải tài liệu tự luyện chỉ trên một trang duy nhất.
-                </p>
-              </motion.div>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="grid items-center gap-10 md:grid-cols-[1fr_1.2fr] md:gap-16">
-              <motion.div {...reveal(0)} className="order-2 md:order-1 space-y-5">
-                <div className="inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-[12px] font-semibold" style={{ background: "oklch(0.70 0.15 60 / 0.12)", color: "oklch(0.78 0.15 60)" }}>
-                  <Play size={12} /> Bài tập tự luyện
-                </div>
-                <h3 className="text-[clamp(1.25rem,2.5vw,1.75rem)] font-medium leading-snug tracking-[-0.01em]">
-                  Làm bài tập củng cố ngay sau buổi học online
-                </h3>
-                <p className="text-[15px] leading-relaxed text-[#8C87A2]" style={{ maxWidth: "50ch" }}>
-                  Kết hợp hoàn hảo giữa lý thuyết và thực hành. Hệ thống cung cấp cổng bài tập tự luyện tương ứng với mỗi bài học, giúp học sinh kiểm tra ngay khả năng tiếp thu bài.
-                </p>
-              </motion.div>
-              <motion.div {...revealScale(0.15)} className="order-1 md:order-2">
-                <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border border-[#e8e4f0]/[0.06]" style={{ background: "oklch(0.12 0.03 290)" }}>
-                  {/* Abstract decorative element instead of a placeholder */}
-                  <div className="relative">
-                    <div className="h-32 w-32 rounded-2xl" style={{ background: "oklch(0.75 0.18 290 / 0.15)", boxShadow: "0 0 80px oklch(0.75 0.18 290 / 0.2)" }} />
-                    <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full" style={{ background: "oklch(0.70 0.15 60 / 0.12)", boxShadow: "0 0 60px oklch(0.70 0.15 60 / 0.15)" }} />
-                    <div className="absolute -bottom-6 -left-6 h-16 w-16 rounded-xl" style={{ background: "oklch(0.65 0.15 170 / 0.12)", boxShadow: "0 0 50px oklch(0.65 0.15 170 / 0.15)" }} />
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════
-          SOLUTION — full-width immersive
-          ═══════════════════════════════════════ */}
-      <section id="solution" className="relative overflow-hidden py-28 md:py-40">
-        {/* Ambient glow */}
-        <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 h-[600px] w-[800px] rounded-full opacity-30" style={{ background: "radial-gradient(circle, oklch(0.75 0.18 290 / 0.15), transparent 70%)" }} />
-
-        <div className="relative mx-auto max-w-6xl px-6 md:px-12">
-          <div className="mb-16 text-center">
-            <motion.p
-              {...reveal(0)}
-              className="mb-4 text-[13px] font-semibold uppercase tracking-[0.15em]"
-              style={{ color: "oklch(0.75 0.18 290)" }}
-            >
-              Giải pháp toàn diện
-            </motion.p>
-            <motion.h2
-              {...reveal(0.1)}
-              className="mx-auto max-w-3xl text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] tracking-[-0.02em]"
-              style={{ textWrap: "balance" }}
-            >
-              Thiết kế cho{" "}
-              <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>kết quả học tập</span>
-              {" "}thực sự
-            </motion.h2>
-          </div>
-
-          {/* Solution items — vertical list with left accent line */}
-          <div className="mx-auto max-w-3xl space-y-0">
-            {[
-              {
-                title: "Học tập có định hướng",
-                desc: "Tổ chức nội dung theo cây thư mục nhiều cấp, giúp phân loại rõ ràng, tránh lẫn lộn giữa các môn học.",
-              },
-              {
-                title: "Đa tài nguyên bài giảng",
-                desc: "Mỗi buổi học hỗ trợ phát nhiều video bài giảng, đính kèm không giới hạn slide, phiếu bài tập và đáp án chi tiết.",
-              },
-              {
-                title: "Kiểm tra tiến độ thực tế",
-                desc: "Học sinh tự theo dõi trạng thái hoàn thành bài học, giáo viên nắm rõ tiến trình học tập của từng học viên.",
-              },
-              {
-                title: "Cấp quyền truy cập linh hoạt",
-                desc: "Cấp quyền truy cập học trực tuyến theo từng môn học hoặc tất cả các môn dựa trên nhu cầu thực tế của từng học sinh.",
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={item.title}
-                {...reveal(0.1 + i * 0.08)}
-                className="group flex gap-5 border-b border-[#e8e4f0]/[0.06] py-8 first:pt-0 last:border-0 last:pb-0"
-              >
-                <div className="mt-1.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full" style={{ background: "oklch(0.75 0.18 290 / 0.15)" }}>
-                  <Check size={12} style={{ color: "oklch(0.75 0.18 290)" }} />
-                </div>
-                <div>
-                  <h3 className="mb-1.5 text-[17px] font-semibold text-[#e8e4f0] transition-colors duration-200 group-hover:text-white">
-                    {item.title}
-                  </h3>
-                  <p className="text-[14px] leading-relaxed text-[#8C87A2]" style={{ maxWidth: "55ch" }}>
-                    {item.desc}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════
-          AUDIENCE — who it's for
-          ═══════════════════════════════════════ */}
-      <section id="audience" className="relative border-t border-[#e8e4f0]/[0.06] px-6 py-28 md:px-12 md:py-40">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-16 text-center">
-            <motion.p
-              {...reveal(0)}
-              className="mb-4 text-[13px] font-semibold uppercase tracking-[0.15em]"
-              style={{ color: "oklch(0.75 0.18 290)" }}
-            >
-              Dành cho ai
-            </motion.p>
-            <motion.h2
-              {...reveal(0.1)}
-              className="mx-auto max-w-2xl text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] tracking-[-0.02em]"
-              style={{ textWrap: "balance" }}
-            >
-              Một nền tảng,{" "}
-              <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>nhiều vai trò</span>
-            </motion.h2>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-3">
-            {[
-              {
-                role: "Học sinh",
-                desc: "Xem bài giảng video, tải tài liệu ôn tập, làm bài tự luyện củng cố và theo dõi lộ trình học trực tuyến của mình.",
-                accent: "oklch(0.75 0.18 290)",
-                accentBg: "oklch(0.75 0.18 290 / 0.08)",
-              },
-              {
-                role: "Giáo viên",
-                desc: "Tạo cấu trúc thư mục học tập, đăng tải nhiều bài giảng video và tài liệu, cấp quyền môn học và theo dõi kết quả của học sinh.",
-                accent: "oklch(0.72 0.15 170)",
-                accentBg: "oklch(0.72 0.15 170 / 0.08)",
-              },
-              {
-                role: "Nhà trường",
-                desc: "Quản lý lớp học trực tuyến, cấp quyền theo môn, cấu hình học liệu và theo dõi tổng quan hiệu quả giảng dạy.",
-                accent: "oklch(0.78 0.15 60)",
-                accentBg: "oklch(0.78 0.15 60 / 0.08)",
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={item.role}
-                {...reveal(i * 0.1)}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-[#e8e4f0]/[0.06] p-7 transition-all duration-300 hover:border-[#e8e4f0]/[0.12]"
-                style={{ background: "oklch(0.10 0.02 290)" }}
-              >
-                {/* Top accent dot */}
-                <div className="mb-6 flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: item.accentBg }}>
-                  <span className="text-sm font-bold" style={{ color: item.accent }}>{item.role[0]}</span>
-                </div>
-
-                <div>
-                  <h3 className="mb-2 text-[18px] font-semibold text-[#e8e4f0]">{item.role}</h3>
-                  <p className="text-[14px] leading-relaxed text-[#8C87A2]">
-                    {item.desc}
-                  </p>
-                </div>
-
-                <div className="mt-6">
-                  <Link
-                    href="/register"
-                    className="inline-flex items-center gap-1.5 text-[13px] font-semibold transition-colors duration-200"
-                    style={{ color: item.accent }}
-                  >
-                    Tìm hiểu thêm <ArrowRight size={14} />
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════
-          QUOTE / PHILOSOPHY STRIP
-          ═══════════════════════════════════════ */}
-      <section className="relative overflow-hidden border-y border-[#e8e4f0]/[0.06] py-24 md:py-32">
-        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 60% 50% at 50% 50%, oklch(0.75 0.18 290 / 0.04), transparent)" }} />
-        <div className="relative mx-auto max-w-4xl px-6 text-center">
-          <motion.blockquote
-            {...reveal(0)}
-            className="text-[clamp(1.25rem,3vw,2rem)] font-medium leading-[1.5] tracking-[-0.01em] text-[#e8e4f0]"
-            style={{ textWrap: "balance" }}
-          >
-            &ldquo;Cây lớn ôm vòng, sinh từ mầm nhỏ; đài cao chín tầng, khởi từ đất bao; hành trình vạn dặm, bắt đầu dưới chân.&rdquo;
-          </motion.blockquote>
-          <motion.cite
-            {...reveal(0.15)}
-            className="mt-6 block text-[14px] font-medium not-italic text-[#8C87A2]"
-          >
-            — Lão Tử
-          </motion.cite>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════
-          CTA — immersive final fold
-          ═══════════════════════════════════════ */}
-      <section className="relative flex min-h-[70vh] items-center justify-center overflow-hidden py-28 md:py-40">
-        {/* BG Video */}
-        <HlsVideo
-          src="https://stream.mux.com/8wrHPCX2dC3msyYU9ObwqNdm00u3ViXvOSHUMRYSEe5Q.m3u8"
-          className="absolute inset-0 h-full w-full object-cover opacity-25"
-        />
-        <div className="absolute inset-0 bg-[#060510]/50" />
-        {/* Ambient glow */}
-        <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full" style={{ background: "radial-gradient(circle, oklch(0.75 0.18 290 / 0.1), transparent 70%)" }} />
-
-        <div className="relative z-10 flex flex-col items-center px-6 text-center">
-          <motion.h2
-            {...reveal(0)}
-            className="mb-5 max-w-2xl text-[clamp(2rem,5vw,3.5rem)] font-medium leading-[1.1] tracking-[-0.02em]"
-            style={{ textWrap: "balance" }}
-          >
-            Trải nghiệm không gian{" "}
-            <span className="font-serif-italic" style={{ color: "oklch(0.75 0.18 290)" }}>học tập trực tuyến</span>
-          </motion.h2>
-
-          <motion.p
-            {...reveal(0.1)}
-            className="mb-10 max-w-md text-[15px] leading-relaxed text-[#8C87A2]"
-            style={{ textWrap: "pretty" }}
-          >
-            Hệ thống học tập gọn gàng, trực quan và dễ sử dụng dành cho giáo viên và học sinh.
-          </motion.p>
-
-          <motion.div {...reveal(0.2)} className="flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/register"
-              className="group inline-flex items-center justify-center gap-2 rounded-lg px-8 py-4 text-[15px] font-semibold transition-all duration-200 hover:brightness-110"
-              style={{ background: "oklch(0.75 0.18 290)", color: "#060510" }}
-            >
-              Đăng ký miễn phí
-              <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center rounded-lg border border-[#e8e4f0]/10 px-8 py-4 text-[15px] font-medium text-[#e8e4f0] transition-all duration-200 hover:border-[#e8e4f0]/25 hover:bg-[#e8e4f0]/[0.04]"
-            >
-              Đăng nhập
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════
-          FOOTER
-          ═══════════════════════════════════════ */}
-      <footer className="border-t border-[#e8e4f0]/[0.06] px-6 py-12 md:px-12">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 md:flex-row">
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex h-7 w-7 items-center justify-center">
-              <div className="absolute inset-0 rounded-md" style={{ background: "oklch(0.75 0.18 290 / 0.12)" }} />
-              <span className="text-sm font-bold" style={{ color: "oklch(0.75 0.18 290)" }}>S</span>
-            </div>
-            <span className="text-[14px] font-semibold tracking-tight">StudyHub</span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[13px] text-[#8C87A2]">
-            <Link href="/login" className="transition-colors hover:text-[#e8e4f0]">Cổng học tập</Link>
-            <Link href="/login" className="transition-colors hover:text-[#e8e4f0]">Đăng nhập</Link>
-            <Link href="/register" className="transition-colors hover:text-[#e8e4f0]">Đăng ký</Link>
-          </div>
-
-          <p className="text-[12px] text-[#8C87A2]/60">
-            © {new Date().getFullYear()} StudyHub. All rights reserved.
-          </p>
-        </div>
-      </footer>
-
-      {/* ─── Reduced motion alternative ─── */}
+    <div
+      className="relative text-[#e8e4f0] selection:text-[#060510]"
+      style={{ background: BG }}
+    >
       <style jsx global>{`
+        .landing-v3 ::selection {
+          background: oklch(0.75 0.18 290 / 0.35);
+          color: #060510;
+        }
         @media (prefers-reduced-motion: reduce) {
-          .animate-pulse { animation: none !important; }
+          .landing-v3 * {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+          }
         }
       `}</style>
+      <div className="landing-v3">
+        <ScrollProgress />
+
+        {/* ─── NAV ─── */}
+        <motion.nav
+          className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between px-5 md:px-10 lg:px-12"
+          initial={reduce ? false : { y: -16, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.15, ease: easeOutQuart }}
+        >
+          <motion.div
+            className="absolute inset-0 -z-10 border-b"
+            animate={{
+              backgroundColor: scrolled ? "rgba(6,5,16,0.88)" : "rgba(6,5,16,0)",
+              backdropFilter: scrolled ? "blur(14px) saturate(160%)" : "blur(0px)",
+              borderColor: scrolled ? "rgba(193,140,255,0.1)" : "rgba(0,0,0,0)",
+            }}
+            transition={{ duration: 0.35 }}
+          />
+
+          <Link href="/" className="flex items-center gap-2.5 z-10">
+            <div
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold"
+              style={{ background: "oklch(0.75 0.18 290 / 0.15)", color: ACCENT }}
+            >
+              S
+            </div>
+            <span className="text-[15px] font-semibold tracking-tight">StudyHub</span>
+          </Link>
+
+          <div className="hidden items-center gap-8 md:flex">
+            {navLinks.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="text-[13px] font-medium text-[#8C87A2] transition-colors hover:text-[#e8e4f0]"
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3 z-10">
+            <Link
+              href="/login"
+              className="hidden sm:inline text-[13px] font-medium text-[#8C87A2] transition-colors hover:text-[#e8e4f0]"
+            >
+              Đăng nhập
+            </Link>
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-semibold transition-all hover:brightness-110"
+              style={{ background: ACCENT, color: BG }}
+            >
+              Bắt đầu học
+              <ArrowUpRight size={14} strokeWidth={2.5} className="hidden sm:block" />
+            </Link>
+            <button
+              type="button"
+              className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 text-[#e8e4f0]"
+              aria-label={menuOpen ? "Đóng menu" : "Mở menu"}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
+        </motion.nav>
+
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div className="fixed inset-x-0 top-16 z-40 border-b border-white/10 bg-[#060510]/95 backdrop-blur-xl md:hidden">
+            <div className="flex flex-col gap-1 px-5 py-4">
+              {navLinks.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-lg px-3 py-3 text-sm font-medium text-[#e8e4f0] hover:bg-white/5"
+                >
+                  {item.label}
+                </a>
+              ))}
+              <Link
+                href="/login"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-3 text-sm font-medium text-[#8C87A2]"
+              >
+                Đăng nhập
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* ─── HERO ─── */}
+        <section
+          ref={heroRef}
+          className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden pt-16"
+        >
+          <div className="absolute inset-0">
+            <SoftVideo
+              src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_120549_0cd82c36-56b3-4dd9-b190-069cfc3a623f.mp4"
+              className="h-full w-full object-cover"
+              posterOpacity={0.32}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#060510] via-[#060510]/50 to-[#060510]/70" />
+          </div>
+
+          <motion.div
+            className="relative z-10 flex w-full max-w-4xl flex-col items-center px-5 text-center sm:px-6"
+            style={reduce ? undefined : { opacity: heroOpacity, scale: heroScale }}
+          >
+            <motion.p
+              initial={reduce ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.25, ease: easeOutQuart }}
+              className="mb-5 text-[11px] font-semibold uppercase tracking-[0.18em] sm:mb-6"
+              style={{ color: ACCENT }}
+            >
+              Học online · Video · Tài liệu
+            </motion.p>
+
+            <motion.h1
+              initial={reduce ? false : { opacity: 0, y: 28 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.85, delay: 0.35, ease: easeOutQuart }}
+              className="mb-5 max-w-3xl text-[clamp(2rem,5.5vw,3.75rem)] font-medium leading-[1.08] tracking-[-0.03em] text-balance"
+            >
+              Học trực tuyến{" "}
+              <span className="font-serif-italic" style={{ color: ACCENT }}>
+                tập trung
+              </span>
+              <br className="hidden sm:block" />{" "}
+              theo nhịp của bạn
+            </motion.h1>
+
+            <motion.p
+              initial={reduce ? false : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.5, ease: easeOutQuart }}
+              className="mb-8 max-w-lg text-[15px] leading-relaxed text-[#8C87A2] sm:mb-10 sm:text-base text-pretty"
+            >
+              Mở khóa môn, xem bài giảng video và tài liệu trên một cổng học gọn, rõ, dễ dùng
+              cho học sinh và giáo viên.
+            </motion.p>
+
+            <motion.div
+              initial={reduce ? false : { opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.65, ease: easeOutQuart }}
+              className="flex w-full max-w-sm flex-col gap-3 sm:max-w-none sm:w-auto sm:flex-row"
+            >
+              <Link
+                href="/register"
+                className="group inline-flex h-12 items-center justify-center gap-2 rounded-xl px-7 text-[14px] font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
+                style={{ background: ACCENT, color: BG }}
+              >
+                Bắt đầu học
+                <ArrowRight
+                  size={16}
+                  className="transition-transform group-hover:translate-x-0.5"
+                />
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex h-12 items-center justify-center rounded-xl border border-white/10 px-7 text-[14px] font-medium text-[#e8e4f0] transition-colors hover:border-white/20 hover:bg-white/[0.04] active:scale-[0.98]"
+              >
+                Đăng nhập
+              </Link>
+            </motion.div>
+          </motion.div>
+        </section>
+
+        {/* ─── HOW IT WORKS — 3 steps ─── */}
+        <section id="how" className="relative px-5 py-20 sm:px-6 md:px-12 md:py-32">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-12 max-w-xl md:mb-16">
+              <motion.p
+                {...r0}
+                className="mb-3 text-[12px] font-semibold uppercase tracking-[0.14em]"
+                style={{ color: ACCENT }}
+              >
+                Cách học
+              </motion.p>
+              <motion.h2
+                {...r1}
+                className="text-[clamp(1.6rem,3.5vw,2.5rem)] font-medium leading-tight tracking-[-0.02em] text-balance"
+              >
+                Ba bước vào lớp online
+              </motion.h2>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3 sm:gap-6">
+              {[
+                {
+                  step: "01",
+                  icon: Unlock,
+                  title: "Mở khóa môn",
+                  desc: "Chọn môn, thanh toán hoặc được giáo viên cấp quyền. Vào học ngay khi mở khóa.",
+                },
+                {
+                  step: "02",
+                  icon: Video,
+                  title: "Xem video & tài liệu",
+                  desc: "Thư mục rõ ràng, playlist video và file ôn tập trong cùng một màn hình.",
+                },
+                {
+                  step: "03",
+                  icon: BookOpen,
+                  title: "Học theo nhịp riêng",
+                  desc: "Mỗi em tự chọn thời điểm học. Không ép lịch, không đua tiến độ tập trung.",
+                },
+              ].map((item, i) => (
+                <motion.div
+                  key={item.step}
+                  {...revealProps(reduce, 0.06 * i)}
+                  className="relative rounded-2xl border border-white/[0.07] p-6 sm:p-7 transition-colors hover:border-white/[0.12]"
+                  style={{ background: "oklch(0.11 0.02 290)" }}
+                >
+                  <span
+                    className="mb-4 block font-mono text-[11px] font-bold tabular-nums"
+                    style={{ color: ACCENT }}
+                  >
+                    {item.step}
+                  </span>
+                  <item.icon
+                    className="mb-4 h-6 w-6"
+                    style={{ color: ACCENT }}
+                    strokeWidth={1.5}
+                  />
+                  <h3 className="mb-2 text-[17px] font-semibold text-[#e8e4f0]">
+                    {item.title}
+                  </h3>
+                  <p className="text-[14px] leading-relaxed text-[#8C87A2]">{item.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ─── PRODUCT PREVIEW ─── */}
+        <section className="relative px-5 py-16 sm:px-6 md:px-12 md:py-24">
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-[480px] w-[min(900px,100%)] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40"
+            style={{
+              background:
+                "radial-gradient(circle, oklch(0.75 0.18 290 / 0.12), transparent 70%)",
+            }}
+          />
+          <div className="relative mx-auto max-w-5xl">
+            <div className="mb-10 text-center md:mb-12">
+              <motion.h2
+                {...r0}
+                className="text-[clamp(1.5rem,3vw,2.25rem)] font-medium tracking-[-0.02em] text-balance"
+              >
+                Cổng học{" "}
+                <span className="font-serif-italic" style={{ color: ACCENT }}>
+                  gọn và rõ
+                </span>
+              </motion.h2>
+              <motion.p
+                {...r1}
+                className="mx-auto mt-3 max-w-md text-[14px] text-[#8C87A2]"
+              >
+                Giao diện Drive-style: môn → thư mục → video. Học trên máy tính và điện thoại.
+              </motion.p>
+            </div>
+            <motion.div {...rs0}>
+              <ProductPreview />
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ─── FEATURES ─── */}
+        <section id="features" className="relative px-5 py-20 sm:px-6 md:px-12 md:py-32">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-14 max-w-2xl md:mb-20">
+              <motion.p
+                {...r0}
+                className="mb-3 text-[12px] font-semibold uppercase tracking-[0.14em]"
+                style={{ color: ACCENT }}
+              >
+                Tính năng
+              </motion.p>
+              <motion.h2
+                {...r1}
+                className="text-[clamp(1.6rem,3.5vw,2.5rem)] font-medium leading-tight tracking-[-0.02em] text-balance"
+              >
+                Không gian học{" "}
+                <span className="font-serif-italic" style={{ color: ACCENT }}>
+                  tinh gọn
+                </span>
+              </motion.h2>
+            </div>
+
+            <div className="space-y-16 md:space-y-24">
+              <div className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
+                <motion.div {...r0} className="order-2 space-y-4 md:order-1">
+                  <div
+                    className="inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-[12px] font-semibold"
+                    style={{
+                      background: "oklch(0.75 0.18 290 / 0.1)",
+                      color: ACCENT,
+                    }}
+                  >
+                    <FolderOpen size={12} /> Học liệu
+                  </div>
+                  <h3 className="text-[clamp(1.2rem,2.2vw,1.6rem)] font-medium leading-snug">
+                    Thư mục bài giảng như File Explorer
+                  </h3>
+                  <p className="text-[15px] leading-relaxed text-[#8C87A2] max-w-[48ch]">
+                    Giáo viên sắp xếp chương, mục, bài. Học sinh mở đúng chỗ cần học, không
+                    lẫn môn.
+                  </p>
+                </motion.div>
+                <motion.div {...rs1} className="order-1 md:order-2">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/[0.06]">
+                    <SoftVideo
+                      src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_125119_8e5ae31c-0021-4396-bc08-f7aebeb877a2.mp4"
+                      className="h-full w-full object-cover"
+                      posterOpacity={0.75}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#060510]/70 to-transparent" />
+                  </div>
+                </motion.div>
+              </div>
+
+              <div className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
+                <motion.div {...rs0} className="order-1">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/[0.06]">
+                    <SoftVideo
+                      src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_132944_a0d124bb-eaa1-4082-aa30-2310efb42b4b.mp4"
+                      className="h-full w-full object-cover"
+                      posterOpacity={0.7}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#060510]/70 to-transparent" />
+                  </div>
+                </motion.div>
+                <motion.div {...r1} className="order-2 space-y-4">
+                  <div
+                    className="inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-[12px] font-semibold"
+                    style={{
+                      background: "oklch(0.72 0.12 170 / 0.12)",
+                      color: "oklch(0.78 0.12 170)",
+                    }}
+                  >
+                    <Video size={12} /> Video
+                  </div>
+                  <h3 className="text-[clamp(1.2rem,2.2vw,1.6rem)] font-medium leading-snug">
+                    Video bài giảng & tài liệu cùng chỗ
+                  </h3>
+                  <p className="text-[15px] leading-relaxed text-[#8C87A2] max-w-[48ch]">
+                    Playlist nhiều video, PDF đính kèm. Xem trên một trang, không nhảy app.
+                  </p>
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Stats strip */}
+            <motion.div
+              {...r2}
+              className="mt-16 grid grid-cols-2 gap-4 rounded-2xl border border-white/[0.06] p-6 sm:grid-cols-4 sm:p-8 md:mt-20"
+              style={{ background: "oklch(0.11 0.02 290)" }}
+            >
+              {[
+                { n: 12, s: "+", l: "Môn học" },
+                { n: 24, s: "/7", l: "Truy cập" },
+                { n: 100, s: "%", l: "Học online" },
+                { n: 1, s: "", l: "Cổng thống nhất" },
+              ].map((stat) => (
+                <div key={stat.l} className="text-center">
+                  <p className="text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: ACCENT }}>
+                    <Counter target={stat.n} suffix={stat.s} />
+                  </p>
+                  <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-[#8C87A2]">
+                    {stat.l}
+                  </p>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ─── AUDIENCE ─── */}
+        <section
+          id="audience"
+          className="relative border-t border-white/[0.06] px-5 py-20 sm:px-6 md:px-12 md:py-32"
+        >
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-12 text-center md:mb-16">
+              <motion.h2
+                {...r0}
+                className="text-[clamp(1.6rem,3.5vw,2.5rem)] font-medium tracking-[-0.02em] text-balance"
+              >
+                Cho học sinh và{" "}
+                <span className="font-serif-italic" style={{ color: ACCENT }}>
+                  giáo viên
+                </span>
+              </motion.h2>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              {[
+                {
+                  role: "Học sinh",
+                  icon: GraduationCap,
+                  points: [
+                    "Vào portal, chọn môn đã mở khóa",
+                    "Xem video, mở tài liệu trên điện thoại hoặc máy tính",
+                    "Học theo thời gian phù hợp với em",
+                  ],
+                  cta: "Tạo tài khoản học",
+                  href: "/register",
+                },
+                {
+                  role: "Giáo viên",
+                  icon: FolderOpen,
+                  points: [
+                    "Quản lý thư mục & bài giảng hàng loạt",
+                    "Cấp quyền môn, duyệt đơn mở khóa",
+                    "Theo dõi giao dịch và import học liệu",
+                  ],
+                  cta: "Vào cổng giáo viên",
+                  href: "/login",
+                },
+              ].map((card, i) => (
+                <motion.div
+                  key={card.role}
+                  {...revealProps(reduce, 0.08 * i)}
+                  className="flex flex-col rounded-2xl border border-white/[0.07] p-7 sm:p-8"
+                  style={{ background: "oklch(0.11 0.02 290)" }}
+                >
+                  <div
+                    className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl"
+                    style={{ background: "oklch(0.75 0.18 290 / 0.12)" }}
+                  >
+                    <card.icon className="h-5 w-5" style={{ color: ACCENT }} />
+                  </div>
+                  <h3 className="mb-4 text-xl font-semibold">{card.role}</h3>
+                  <ul className="mb-8 flex-1 space-y-3">
+                    {card.points.map((p) => (
+                      <li
+                        key={p}
+                        className="flex gap-2.5 text-[14px] leading-relaxed text-[#8C87A2]"
+                      >
+                        <Check
+                          className="mt-0.5 h-4 w-4 shrink-0"
+                          style={{ color: ACCENT }}
+                        />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href={card.href}
+                    className="inline-flex items-center gap-1.5 text-[13px] font-semibold transition-opacity hover:opacity-90"
+                    style={{ color: ACCENT }}
+                  >
+                    {card.cta} <ArrowRight size={14} />
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ─── CTA BAND ─── */}
+        <section className="relative overflow-hidden px-5 py-20 sm:px-6 md:py-28">
+          <div
+            className="absolute inset-0 opacity-90"
+            style={{
+              background: `linear-gradient(135deg, oklch(0.75 0.18 290 / 0.18), ${BG} 55%)`,
+            }}
+          />
+          <div className="relative mx-auto flex max-w-3xl flex-col items-center text-center">
+            <motion.h2
+              {...r0}
+              className="mb-4 text-[clamp(1.75rem,4vw,2.75rem)] font-medium tracking-[-0.02em] text-balance"
+            >
+              Sẵn sàng vào lớp online
+            </motion.h2>
+            <motion.p
+              {...r1}
+              className="mb-8 max-w-md text-[15px] text-[#8C87A2]"
+            >
+              Đăng ký tài khoản hoặc đăng nhập để mở khóa môn và xem bài giảng.
+            </motion.p>
+            <motion.div
+              {...r2}
+              className="flex w-full max-w-sm flex-col gap-3 sm:max-w-none sm:w-auto sm:flex-row"
+            >
+              <Link
+                href="/register"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl px-8 text-[14px] font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
+                style={{ background: ACCENT, color: BG }}
+              >
+                Đăng ký miễn phí
+                <ArrowRight size={16} />
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex h-12 items-center justify-center rounded-xl border border-white/15 px-8 text-[14px] font-medium hover:bg-white/[0.04] active:scale-[0.98]"
+              >
+                Đăng nhập
+              </Link>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ─── FOOTER ─── */}
+        <footer className="border-t border-white/[0.06] px-5 py-10 sm:px-6 md:px-12">
+          <div className="mx-auto flex max-w-6xl flex-col gap-8 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-sm font-bold"
+                  style={{
+                    background: "oklch(0.75 0.18 290 / 0.12)",
+                    color: ACCENT,
+                  }}
+                >
+                  S
+                </div>
+                <span className="text-[14px] font-semibold">StudyHub</span>
+              </div>
+              <p className="mt-3 max-w-xs text-[12px] leading-relaxed text-[#8C87A2]/80">
+                © {new Date().getFullYear()} StudyHub · luyende.id.vn. Học liệu thuộc bản
+                quyền. Cấm sao chép trái phép.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-x-8 gap-y-2 text-[13px] text-[#8C87A2]">
+              <Link href="/login" className="hover:text-[#e8e4f0]">
+                Cổng học
+              </Link>
+              <Link href="/register" className="hover:text-[#e8e4f0]">
+                Đăng ký
+              </Link>
+              <a
+                href={SUPPORT_ZALO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#e8e4f0]"
+              >
+                Zalo {SUPPORT_ZALO}
+              </a>
+              <a href={SUPPORT_EMAIL_URL} className="hover:text-[#e8e4f0]">
+                {SUPPORT_EMAIL}
+              </a>
+            </div>
+          </div>
+        </footer>
+
+        {/* Mobile sticky CTA */}
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#060510]/92 p-3 backdrop-blur-lg md:hidden safe-bottom">
+          <Link
+            href="/register"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold"
+            style={{ background: ACCENT, color: BG }}
+          >
+            Bắt đầu học
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+        <div className="h-16 md:hidden" aria-hidden />
+      </div>
     </div>
   )
 }
