@@ -59,12 +59,13 @@ export async function checkExamAccess(
         .eq('id', examId)
         .single()
 
-    if (examError || !exam) {
+    if (examError || !exam || typeof exam !== 'object' || !('id' in exam)) {
         throw new ApiError('EXAM_NOT_FOUND', 'Exam not found or not published', 404)
     }
 
-    // Kiểm tra teacher ownership trước để tránh query profile không cần thiết
-    const examRow = exam as ExamAccessRow
+    // Supabase dynamic select() widens data to a union that includes error-shaped rows;
+    // narrow via unknown after the runtime guard above.
+    const examRow = exam as unknown as ExamAccessRow
     let hasAccess = examRow.teacher_id === userId
 
     if (!hasAccess) {
@@ -90,5 +91,5 @@ export async function checkExamAccess(
         }
     }
 
-    return exam
+    return examRow
 }
