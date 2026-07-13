@@ -22,14 +22,16 @@ import { getVoiceDurationSeconds } from "../lib/get-audio-duration";
 import { fontFamily } from "../lib/fonts";
 
 export type StudyHubFullProps = {
-  /** seconds per scene (audio-driven when files exist) */
   sceneSeconds: number[];
+  /** When false, no Audio tags (teacher drops ElevenLabs later or silent export) */
+  playVoice: boolean;
 };
 
 const defaultSeconds = SCENES.map((s) => s.minSeconds);
 
 export const studyHubFullDefaultProps: StudyHubFullProps = {
   sceneSeconds: defaultSeconds,
+  playVoice: true,
 };
 
 function voicePath(sceneId: string) {
@@ -40,19 +42,22 @@ export const calculateStudyHubMetadata: CalculateMetadataFunction<
   StudyHubFullProps
 > = async () => {
   const sceneSeconds: number[] = [];
+  let missing = 0;
 
   for (const scene of SCENES) {
     const audioSec = await getVoiceDurationSeconds(voicePath(scene.id));
     if (audioSec != null) {
       sceneSeconds.push(Math.max(scene.minSeconds, audioSec + PAD_AFTER_SPEECH));
     } else {
+      missing += 1;
       sceneSeconds.push(scene.minSeconds);
     }
   }
+  // Only bake Audio when every scene has a file (ElevenLabs drop-in)
+  const anyVoice = missing === 0;
 
   const sceneFrames = sceneSeconds.map((s) => Math.ceil(s * FPS));
   const transitionTotal = TRANSITION_FRAMES * Math.max(0, SCENES.length - 1);
-  // TransitionSeries shortens by transition duration between each pair
   const durationInFrames =
     sceneFrames.reduce((a, b) => a + b, 0) - transitionTotal;
 
@@ -63,19 +68,23 @@ export const calculateStudyHubMetadata: CalculateMetadataFunction<
     height: HEIGHT,
     props: {
       sceneSeconds,
+      // Only attach <Audio> if all or most files exist — avoid crash mid-render
+      playVoice: anyVoice,
     },
   };
 };
 
-const SceneWithVoice: React.FC<{
+const SceneBlock: React.FC<{
   scene: Scene;
   durationInFrames: number;
-}> = ({ scene, durationInFrames }) => {
+  playVoice: boolean;
+}> = ({ scene, durationInFrames, playVoice }) => {
   return (
     <AbsoluteFill style={{ fontFamily }}>
       <SceneVisual scene={scene} />
-      <Audio src={staticFile(voicePath(scene.id))} />
-      {/* invisible duration anchor */}
+      {playVoice ? (
+        <Audio src={staticFile(voicePath(scene.id))} />
+      ) : null}
       <Sequence from={0} durationInFrames={durationInFrames}>
         <AbsoluteFill />
       </Sequence>
@@ -84,14 +93,17 @@ const SceneWithVoice: React.FC<{
 };
 
 /**
- * Single long video: scene-driven, voice-synced duration.
- * Generate voice first: npm run voice:generate
+ * Video giới thiệu khóa học (bao quát).
+ * Voice: thầy dùng ElevenLabs → đặt file public/voice/s01.mp3 … s12.mp3
+ * Script: docs/marketing/ELEVENLABS_SCRIPT.md
  */
 export const StudyHubFull: React.FC<StudyHubFullProps> = ({
   sceneSeconds,
+  playVoice,
 }) => {
   const seconds =
     sceneSeconds?.length === SCENES.length ? sceneSeconds : defaultSeconds;
+  const voiceOn = playVoice !== false;
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#07060F", fontFamily }}>
@@ -101,7 +113,11 @@ export const StudyHubFull: React.FC<StudyHubFullProps> = ({
           return (
             <React.Fragment key={scene.id}>
               <TransitionSeries.Sequence durationInFrames={frames}>
-                <SceneWithVoice scene={scene} durationInFrames={frames} />
+                <SceneBlock
+                  scene={scene}
+                  durationInFrames={frames}
+                  playVoice={voiceOn}
+                />
               </TransitionSeries.Sequence>
               {i < SCENES.length - 1 ? (
                 <TransitionSeries.Transition
@@ -122,7 +138,6 @@ export const StudyHubFull: React.FC<StudyHubFullProps> = ({
 export const studyHubFullConfig = {
   id: "StudyHubFull" as const,
   component: StudyHubFull,
-  // Fallback until calculateMetadata runs
   durationInFrames: Math.ceil(
     defaultSeconds.reduce((a, b) => a + b, 0) * FPS -
       TRANSITION_FRAMES * (SCENES.length - 1),

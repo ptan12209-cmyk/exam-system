@@ -1,36 +1,37 @@
 # StudyHub Remotion — StudyHubFull
 
-**9:16 · 1080×1920** · 1 video dài · scene + voice **đồng bộ**.
+Video **9:16** giới thiệu khóa học (bao quát): nội dung · GV · ưu đãi · học thử 1 ngày · CTA QR.
 
-Skills: `.agents/skills/remotion-skills` (remotion-dev/skills).
+## Voice = thầy (ElevenLabs)
 
-## Workflow
+Em **không** phụ thuộc TTS máy. Thầy:
+
+1. Mở `docs/marketing/ELEVENLABS_SCRIPT.md`
+2. Generate 12 file `s01.mp3` … `s12.mp3`
+3. Copy vào `remotion/public/voice/`
+4. Render
+
+Video **tự scale thời lượng từng scene theo audio**.
 
 ```bash
 cd remotion
 npm install
-npm run voice:generate          # TTS từng scene (s01…s09) khớp chữ màn hình
-npm run studio                  # composition StudyHubFull
-npm run render:full             # → out/studyhub-full.mp4
-# hoặc
-npm run render:full:with-voice
+# (đặt voice vào public/voice/)
+npm run studio
+npm run render:full    # → out/studyhub-full.mp4
 ```
 
-Root: `npm run remotion:studio` · `npm run remotion:render:full:voice`
+Root: `npm run remotion:studio` · `npm run remotion:render:full`
 
-## Cấu trúc
+## Nội dung màn hình
 
-| File | Vai trò |
-|------|---------|
-| `src/lib/scenes.ts` | **SSOT** title / line / voice / visual |
-| `src/compositions/StudyHubFull.tsx` | TransitionSeries + calculateMetadata (độ dài = audio) |
-| `src/components/SceneVisual.tsx` | UI từng scene (Be Vietnam Pro, grid, QR) |
-| `scripts/generate-voice.mjs` | TTS NamMinh / OpenAI fallback |
+Sửa `src/lib/scenes.ts` (title, giá, bullet GV…).  
+Script đọc ElevenLabs: `docs/marketing/ELEVENLABS_SCRIPT.md`.
 
-**Không vẽ số điện thoại** — QR Zalo + domain.
+## Không hiện SĐT
 
-Script: `../docs/marketing/VOICE_FULL_COMBO.md`
+Chỉ **QR Zalo** + **luyende.id.vn**.
 
-## License
+## Optional Edge TTS preview
 
-[Remotion License](https://www.remotion.dev/docs/license) — free cho cá nhân / team nhỏ.
+`npm run voice:generate` — chất lượng kém hơn ElevenLabs; chỉ để test timeline.
