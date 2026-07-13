@@ -49,6 +49,7 @@ import { CopyrightNotice } from "@/components/Footer"
 import { cn } from "@/lib/utils"
 import { cacheGet, cacheSet } from "@/lib/client-swr-cache"
 import { EmptyState } from "@/components/online-student/EmptyState"
+import { ErrorState } from "@/components/online-student/ErrorState"
 
 interface DbFolder {
   id: string
@@ -106,6 +107,8 @@ function StudyPageInner() {
   /** null = drive root */
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
+  /** folder = current folder only; subject = entire subject tree */
+  const [searchScope, setSearchScope] = useState<"folder" | "subject">("folder")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [activeLesson, setActiveLesson] = useState<CatalogLesson | null>(null)
   const [playback, setPlayback] = useState<PlaybackPayload | null>(null)
@@ -287,7 +290,10 @@ function StudyPageInner() {
   const currentFolders = useMemo(() => {
     let list = folders.filter((f) => f.parent_id === currentFolderId)
     const q = search.trim().toLowerCase()
-    if (q) list = list.filter((f) => f.name.toLowerCase().includes(q))
+    // Full-subject search shows results in a separate panel; keep folder browse clean
+    if (q && searchScope === "folder") {
+      list = list.filter((f) => f.name.toLowerCase().includes(q))
+    }
     return list.sort((a, b) => {
       if (a.order_index !== b.order_index) return a.order_index - b.order_index
       return String(a.name || "").localeCompare(String(b.name || ""), "vi", {
@@ -295,12 +301,12 @@ function StudyPageInner() {
         sensitivity: "base",
       })
     })
-  }, [folders, currentFolderId, search])
+  }, [folders, currentFolderId, search, searchScope])
 
   const currentLessons = useMemo(() => {
     let list = lessons.filter((l) => l.folder_id === currentFolderId)
     const q = search.trim().toLowerCase()
-    if (q) {
+    if (q && searchScope === "folder") {
       list = list.filter(
         (l) =>
           l.title.toLowerCase().includes(q) ||
@@ -314,7 +320,25 @@ function StudyPageInner() {
         sensitivity: "base",
       })
     })
-  }, [lessons, currentFolderId, search])
+  }, [lessons, currentFolderId, search, searchScope])
+
+  const subjectSearchResults = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q || searchScope !== "subject") {
+      return { folders: [] as DbFolder[], lessons: [] as CatalogLesson[] }
+    }
+    const matchedFolders = folders
+      .filter((f) => f.name.toLowerCase().includes(q))
+      .slice(0, 40)
+    const matchedLessons = lessons
+      .filter(
+        (l) =>
+          l.title.toLowerCase().includes(q) ||
+          (l.description || "").toLowerCase().includes(q)
+      )
+      .slice(0, 60)
+    return { folders: matchedFolders, lessons: matchedLessons }
+  }, [search, searchScope, folders, lessons])
 
   const openLesson = async (lesson: CatalogLesson) => {
     setActiveLesson(lesson)
@@ -639,14 +663,46 @@ function StudyPageInner() {
 
         {/* Toolbar: search + path (Drive style) */}
         <div className="rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] p-3 sm:p-4 mb-4 space-y-3 shadow-sm">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--os-muted)]" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm trong thư mục hiện tại…"
-              className="w-full rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-bg)] pl-10 pr-4 py-2.5 text-sm text-[var(--os-fg)] placeholder-[var(--os-muted)] outline-none focus:ring-1 focus:ring-[var(--os-accent)]"
-            />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--os-muted)]" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={
+                  searchScope === "subject"
+                    ? "Tìm trong cả môn…"
+                    : "Tìm trong thư mục hiện tại…"
+                }
+                className="w-full rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-bg)] pl-10 pr-4 py-2.5 text-sm text-[var(--os-fg)] placeholder-[var(--os-muted)] outline-none focus:ring-1 focus:ring-[var(--os-accent)]"
+              />
+            </div>
+            <div className="flex rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)] p-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setSearchScope("folder")}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors",
+                  searchScope === "folder"
+                    ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]"
+                    : "text-[var(--os-muted)]"
+                )}
+              >
+                Thư mục
+              </button>
+              <button
+                type="button"
+                onClick={() => setSearchScope("subject")}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors",
+                  searchScope === "subject"
+                    ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]"
+                    : "text-[var(--os-muted)]"
+                )}
+              >
+                Cả môn
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-1 overflow-x-auto text-sm scrollbar-none py-1">
@@ -694,13 +750,77 @@ function StudyPageInner() {
 
         {/* Full-page content area */}
         <div className="flex-1 min-h-[55vh] rounded-2xl border border-[var(--os-muted)]/15 bg-[var(--os-card)]/40 p-4 sm:p-6">
-          {empty ? (
+          {search.trim() && searchScope === "subject" ? (
+            subjectSearchResults.folders.length === 0 &&
+            subjectSearchResults.lessons.length === 0 ? (
+              <EmptyState
+                icon={<Search />}
+                title="Không có kết quả trong môn"
+                description="Thử từ khóa khác hoặc chuyển sang tìm trong thư mục."
+                className="border-0 bg-transparent py-16"
+              />
+            ) : (
+              <div className="space-y-8">
+                {subjectSearchResults.folders.length > 0 && (
+                  <div>
+                    <h3 className="text-[11px] font-mono uppercase tracking-wider text-[var(--os-muted)] mb-3">
+                      Thư mục ({subjectSearchResults.folders.length})
+                    </h3>
+                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                      {subjectSearchResults.folders.map((folder) => (
+                        <button
+                          key={folder.id}
+                          type="button"
+                          onClick={() => {
+                            setCurrentFolderId(folder.id)
+                            setSearch("")
+                            setSearchScope("folder")
+                          }}
+                          className="flex items-center gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)]/50 px-4 py-3 text-left hover:border-[var(--os-accent)]/40"
+                        >
+                          <FolderIcon className="h-5 w-5 text-[var(--os-accent)] shrink-0" />
+                          <span className="text-sm font-semibold text-[var(--os-fg)] truncate">
+                            {folder.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {subjectSearchResults.lessons.length > 0 && (
+                  <div>
+                    <h3 className="text-[11px] font-mono uppercase tracking-wider text-[var(--os-muted)] mb-3">
+                      Bài giảng ({subjectSearchResults.lessons.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {subjectSearchResults.lessons.map((lesson) => (
+                        <button
+                          key={lesson.id}
+                          type="button"
+                          onClick={() => {
+                            setCurrentFolderId(lesson.folder_id)
+                            void openLesson(lesson)
+                          }}
+                          className="flex w-full items-center gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)]/50 px-4 py-3 text-left hover:border-[var(--os-accent)]/40"
+                        >
+                          <PlayCircle className="h-5 w-5 text-[var(--os-accent)] shrink-0" />
+                          <span className="text-sm font-semibold text-[var(--os-fg)] truncate">
+                            {lesson.title}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          ) : empty ? (
             <EmptyState
               icon={<FolderOpenIcon />}
               title={search ? "Không có kết quả" : "Thư mục trống"}
               description={
                 search
-                  ? "Thử từ khóa khác hoặc xóa bộ lọc tìm kiếm."
+                  ? "Thử từ khóa khác hoặc tìm trong cả môn."
                   : "Chưa có thư mục con hoặc bài giảng trong vị trí này."
               }
               action={

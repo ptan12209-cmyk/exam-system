@@ -88,12 +88,37 @@ async function handleGET(request: NextRequest) {
 }
 
 // POST /api/online-study/lessons
+// - create/update lesson
+// - bulk move: { ids: string[], folder_id, action?: "move" }
 async function handlePOST(request: NextRequest) {
   const supabase = await createClient()
   const user = await requireAuth(supabase)
   await requireRole(supabase, user.id, ["teacher", "admin"])
 
   const body = await request.json()
+
+  // Bulk move lessons to a folder
+  if (Array.isArray(body.ids) && body.folder_id && (body.action === "move" || !body.title)) {
+    const folder_id = String(body.folder_id)
+    const ids = (body.ids as unknown[])
+      .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+      .map((x) => x.trim())
+    if (ids.length === 0) {
+      throw new ApiError("BAD_REQUEST", "Thiếu danh sách bài cần chuyển", 400)
+    }
+    if (ids.length > 200) {
+      throw new ApiError("BAD_REQUEST", "Tối đa 200 bài mỗi lần chuyển", 400)
+    }
+    const { error, count } = await supabase
+      .from("online_lessons")
+      .update({ folder_id, teacher_id: user.id })
+      .in("id", ids)
+    if (error) throw error
+    return NextResponse.json(
+      successResponse({ success: true, moved: count ?? ids.length, folder_id, ids })
+    )
+  }
+
   const { id, folder_id, title, description, video_url, document_url, order_index, videos, documents } = body as {
     id?: string
     folder_id: string

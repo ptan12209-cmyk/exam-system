@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 import { getOnlineSubjectInfo } from "@/lib/subjects"
 import { Button } from "@/components/ui/button"
 import { ThptCountdown } from "@/components/shared/ThptCountdown"
+import { OrderStatusBanner } from "@/components/online-student/OrderStatusBanner"
 
 function SubjectSvgIcon({ value, className = "h-8 w-8" }: { value: string; className?: string }) {
   switch (value) {
@@ -400,6 +401,8 @@ export default function OnlineStudentDashboard() {
 
           <ThptCountdown className="h-full" />
         </section>
+
+        <OrderStatusBanner className="mb-8" />
 
         {/* Continue learning */}
         {continueStudy &&

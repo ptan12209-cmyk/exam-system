@@ -330,71 +330,130 @@ async function handlePOST(request: NextRequest) {
   )
 }
 
-// PUT /api/online-study/orders — teacher/admin only approve/reject
+// PUT /api/online-study/orders — teacher/admin approve/reject (single or bulk)
+// Body: { orderId?: string, orderIds?: string[], status: "success" | "failed" }
 async function handlePUT(request: NextRequest) {
   const supabase = await createClient()
   const user = await requireAuth(supabase)
   await requireRole(supabase, user.id, ["teacher", "admin"])
 
   const body = await request.json().catch(() => ({}))
-  const orderId = typeof body.orderId === "string" ? body.orderId : ""
   const status = body.status as string
 
-  if (!orderId || !status) {
-    throw new ApiError("BAD_REQUEST", "Thiếu orderId hoặc status", 400)
+  const orderIds: string[] = []
+  if (Array.isArray(body.orderIds)) {
+    for (const id of body.orderIds) {
+      if (typeof id === "string" && id.trim()) orderIds.push(id.trim())
+    }
+  }
+  if (typeof body.orderId === "string" && body.orderId.trim()) {
+    orderIds.push(body.orderId.trim())
+  }
+  // de-dupe
+  const uniqueIds = Array.from(new Set(orderIds))
+
+  if (uniqueIds.length === 0 || !status) {
+    throw new ApiError("BAD_REQUEST", "Thiếu orderId/orderIds hoặc status", 400)
   }
 
   if (status !== "success" && status !== "failed") {
     throw new ApiError("BAD_REQUEST", "Trạng thái không hợp lệ (success|failed)", 400)
   }
 
+  if (uniqueIds.length > 100) {
+    throw new ApiError("BAD_REQUEST", "Tối đa 100 đơn mỗi lần", 400)
+  }
+
   const adminSupabase = createAdminClient()
+  const results: Array<{ id: string; ok: boolean; reason?: string }> = []
 
-  const { data: order, error: getError } = await adminSupabase
-    .from("online_orders")
-    .select("id, student_id, subject_key, status")
-    .eq("id", orderId)
-    .single()
-
-  if (getError || !order) {
-    throw new ApiError("NOT_FOUND", "Không tìm thấy đơn hàng", 404)
-  }
-
-  // Idempotent: already success
-  if (order.status === "success") {
-    return NextResponse.json(
-      successResponse({ success: true, message: "Đơn hàng đã được duyệt trước đó" })
-    )
-  }
-
-  // Only allow transitions from pending
-  if (order.status !== "pending") {
-    throw new ApiError(
-      "INVALID_TRANSITION",
-      `Không thể chuyển đơn từ ${order.status} sang ${status}`,
-      400
-    )
-  }
-
-  if (status === "success") {
-    const result = await fulfillOnlineOrderSuccess(adminSupabase, orderId, {
-      assignedBy: user.id,
-    })
-    if (!result.ok) {
-      throw new ApiError("FULFILL_FAILED", result.reason, 400)
-    }
-  } else {
-    const { error: updateError } = await adminSupabase
+  for (const orderId of uniqueIds) {
+    const { data: order, error: getError } = await adminSupabase
       .from("online_orders")
-      .update({ status: "failed" })
+      .select("id, student_id, subject_key, status")
       .eq("id", orderId)
-      .eq("status", "pending")
+      .maybeSingle()
 
-    if (updateError) throw updateError
+    if (getError || !order) {
+      results.push({ id: orderId, ok: false, reason: "NOT_FOUND" })
+      continue
+    }
+
+    if (status === "success") {
+      if (order.status === "success") {
+        results.push({ id: orderId, ok: true, reason: "ALREADY_DONE" })
+        continue
+      }
+      if (order.status !== "pending") {
+        results.push({ id: orderId, ok: false, reason: `INVALID_STATUS_${order.status}` })
+        continue
+      }
+      const result = await fulfillOnlineOrderSuccess(adminSupabase, orderId, {
+        assignedBy: user.id,
+      })
+      results.push(
+        result.ok
+          ? { id: orderId, ok: true, reason: result.alreadyDone ? "ALREADY_DONE" : undefined }
+          : { id: orderId, ok: false, reason: result.reason }
+      )
+    } else {
+      // reject → failed
+      if (order.status === "failed") {
+        results.push({ id: orderId, ok: true, reason: "ALREADY_DONE" })
+        continue
+      }
+      if (order.status !== "pending") {
+        results.push({ id: orderId, ok: false, reason: `INVALID_STATUS_${order.status}` })
+        continue
+      }
+      const { error: updateError } = await adminSupabase
+        .from("online_orders")
+        .update({ status: "failed" })
+        .eq("id", orderId)
+        .eq("status", "pending")
+
+      if (updateError) {
+        results.push({ id: orderId, ok: false, reason: updateError.message })
+      } else {
+        results.push({ id: orderId, ok: true })
+      }
+    }
+  }
+
+  const okCount = results.filter((r) => r.ok).length
+  const failed = results.filter((r) => !r.ok)
+
+  // Single-id legacy shape
+  if (uniqueIds.length === 1) {
+    const one = results[0]
+    if (!one.ok) {
+      throw new ApiError(
+        one.reason === "NOT_FOUND" ? "NOT_FOUND" : "FULFILL_FAILED",
+        one.reason || "Cập nhật thất bại",
+        one.reason === "NOT_FOUND" ? 404 : 400
+      )
+    }
+    return NextResponse.json(
+      successResponse({
+        success: true,
+        message: "Cập nhật trạng thái đơn hàng thành công",
+        results,
+      })
+    )
   }
 
   return NextResponse.json(
-    successResponse({ success: true, message: "Cập nhật trạng thái đơn hàng thành công" })
+    successResponse({
+      success: failed.length === 0,
+      okCount,
+      failedCount: failed.length,
+      results,
+      failed,
+      message:
+        failed.length === 0
+          ? `Đã cập nhật ${okCount} đơn`
+          : `Thành công ${okCount}, lỗi ${failed.length}`,
+    })
   )
 }
 

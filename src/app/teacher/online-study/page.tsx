@@ -20,6 +20,7 @@ import {
   type TeacherOrder,
 } from "@/components/teacher/online-study/OrdersRevenuePanel"
 import { PaymentSettingsPanel } from "@/components/teacher/online-study/PaymentSettingsPanel"
+import { ImportLogsPanel } from "@/components/teacher/online-study/ImportLogsPanel"
 
 const LazyAccessSecurityPanel = dynamic(
   () =>
@@ -153,7 +154,12 @@ function TeacherOnlineStudyPage() {
   const [revenue, setRevenue] = useState(0)
   const [loadingOrders, setLoadingOrders] = useState(false)
   const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null)
-  const [approveTarget, setApproveTarget] = useState<{ id: string; label: string } | null>(null)
+  const [approveTarget, setApproveTarget] = useState<{
+    ids: string[]
+    label: string
+    status: "success" | "failed"
+  } | null>(null)
+  const [bulkOrderBusy, setBulkOrderBusy] = useState(false)
   const [pendingOrderCount, setPendingOrderCount] = useState(0)
   const [anomalyCount, setAnomalyCount] = useState(0)
 
@@ -276,30 +282,59 @@ function TeacherOnlineStudyPage() {
     }
   }, [])
 
-  // Handle manual order approval (after confirm dialog)
-  const handleApproveOrder = async (orderId: string) => {
-    setApprovingOrderId(orderId)
+  // Handle manual order approve/reject (single or bulk, after confirm)
+  const handleUpdateOrders = async (
+    orderIds: string[],
+    status: "success" | "failed"
+  ) => {
+    if (orderIds.length === 0) return
+    const single = orderIds.length === 1
+    if (single) setApprovingOrderId(orderIds[0])
+    else setBulkOrderBusy(true)
     try {
       const res = await fetch("/api/online-study/orders", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, status: "success" })
+        body: JSON.stringify(
+          single
+            ? { orderId: orderIds[0], status }
+            : { orderIds, status }
+        ),
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        success("Đã duyệt đơn hàng và mở khóa môn học thành công!")
+        const msg =
+          data?.data?.message ||
+          (status === "success"
+            ? `Đã duyệt ${orderIds.length} đơn và mở khóa môn`
+            : `Đã từ chối ${orderIds.length} đơn`)
+        success(typeof msg === "string" ? msg : "Cập nhật đơn thành công")
         fetchOrders()
         fetchStudents(searchStudentQuery)
       } else {
-        const msg = data?.error?.message || data?.error || "Lỗi duyệt đơn hàng"
-        throw new Error(typeof msg === "string" ? msg : "Lỗi duyệt đơn hàng")
+        const msg = data?.error?.message || data?.error || "Lỗi cập nhật đơn hàng"
+        throw new Error(typeof msg === "string" ? msg : "Lỗi cập nhật đơn hàng")
       }
     } catch (err) {
-      toastError(err instanceof Error ? err.message : "Duyệt đơn hàng thất bại")
+      toastError(err instanceof Error ? err.message : "Cập nhật đơn hàng thất bại")
     } finally {
       setApprovingOrderId(null)
+      setBulkOrderBusy(false)
       setApproveTarget(null)
     }
+  }
+
+  const orderActionLabel = (order: {
+    student?: { full_name?: string | null } | null
+    subject_key: string
+    amount: number
+  }) => {
+    const studentName = order.student?.full_name || "học viên"
+    const subj = getOnlineSubjectInfo(order.subject_key)
+    return `${studentName} · ${subj.label} · ${new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(order.amount)}`
   }
 
   // Save payment settings handler
@@ -403,6 +438,10 @@ function TeacherOnlineStudyPage() {
   const [lessons, setLessons] = useState<DbLesson[]>([])
   const [loadingData, setLoadingData] = useState(false)
   const [explorerSearch, setExplorerSearch] = useState("")
+  const [explorerSearchScope, setExplorerSearchScope] = useState<"folder" | "subject">("folder")
+  const [moveTargetFolderId, setMoveTargetFolderId] = useState<string>("")
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false)
+  const [movingLessons, setMovingLessons] = useState(false)
 
   // Data States (Student Permissions)
   const [students, setStudents] = useState<StudentProfile[]>([])
@@ -578,9 +617,11 @@ function TeacherOnlineStudyPage() {
   // Current folder's children and lessons
   const currentSubFolders = useMemo(() => {
     const filtered = folders.filter(f => f.parent_id === selectedFolderId)
-    const list = explorerSearch.trim()
-      ? filtered.filter(f => f.name.toLowerCase().includes(explorerSearch.toLowerCase()))
-      : filtered
+    const q = explorerSearch.trim().toLowerCase()
+    const list =
+      q && explorerSearchScope === "folder"
+        ? filtered.filter((f) => f.name.toLowerCase().includes(q))
+        : filtered
     return list.sort((a, b) => {
       if (a.order_index !== b.order_index) return a.order_index - b.order_index
       return String(a.name || '').localeCompare(String(b.name || ''), 'vi', {
@@ -588,13 +629,15 @@ function TeacherOnlineStudyPage() {
         sensitivity: 'base',
       })
     })
-  }, [folders, selectedFolderId, explorerSearch])
+  }, [folders, selectedFolderId, explorerSearch, explorerSearchScope])
 
   const currentLessons = useMemo(() => {
     const filtered = lessons.filter(l => l.folder_id === selectedFolderId)
-    const list = explorerSearch.trim()
-      ? filtered.filter(l => l.title.toLowerCase().includes(explorerSearch.toLowerCase()))
-      : filtered
+    const q = explorerSearch.trim().toLowerCase()
+    const list =
+      q && explorerSearchScope === "folder"
+        ? filtered.filter((l) => l.title.toLowerCase().includes(q))
+        : filtered
     return list.sort((a, b) => {
       if (a.order_index !== b.order_index) return a.order_index - b.order_index
       return String(a.title || '').localeCompare(String(b.title || ''), 'vi', {
@@ -602,7 +645,73 @@ function TeacherOnlineStudyPage() {
         sensitivity: 'base',
       })
     })
-  }, [lessons, selectedFolderId, explorerSearch])
+  }, [lessons, selectedFolderId, explorerSearch, explorerSearchScope])
+
+  const subjectExplorerHits = useMemo(() => {
+    const q = explorerSearch.trim().toLowerCase()
+    if (!q || explorerSearchScope !== "subject") {
+      return { folders: [] as DbFolder[], lessons: [] as DbLesson[] }
+    }
+    return {
+      folders: folders.filter((f) => f.name.toLowerCase().includes(q)).slice(0, 40),
+      lessons: lessons.filter((l) => l.title.toLowerCase().includes(q)).slice(0, 60),
+    }
+  }, [explorerSearch, explorerSearchScope, folders, lessons])
+
+  const folderOptions = useMemo(() => {
+    // Flat list with indent depth for move/select
+    const byParent = new Map<string | null, DbFolder[]>()
+    for (const f of folders) {
+      const key = f.parent_id
+      if (!byParent.has(key)) byParent.set(key, [])
+      byParent.get(key)!.push(f)
+    }
+    for (const list of byParent.values()) {
+      list.sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name, "vi"))
+    }
+    const out: Array<{ id: string; label: string }> = [{ id: "", label: "— Gốc (chọn folder con) —" }]
+    const walk = (parent: string | null, depth: number) => {
+      const kids = byParent.get(parent) || []
+      for (const k of kids) {
+        out.push({ id: k.id, label: `${"—".repeat(depth)} ${k.name}`.trim() })
+        walk(k.id, depth + 1)
+      }
+    }
+    walk(null, 0)
+    // Fix root option: lessons need a real folder_id. Use first real folder as empty invalid.
+    return out.filter((o) => o.id !== "")
+  }, [folders])
+
+  const executeBulkMoveLessons = async () => {
+    if (selectedLessonIds.size === 0 || !moveTargetFolderId) {
+      toastError("Chọn ít nhất một bài và thư mục đích.")
+      return
+    }
+    setMovingLessons(true)
+    try {
+      const res = await fetch("/api/online-study/lessons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "move",
+          ids: Array.from(selectedLessonIds),
+          folder_id: moveTargetFolderId,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data?.error?.message || data?.error || "Chuyển bài thất bại")
+      }
+      success(`Đã chuyển ${selectedLessonIds.size} bài sang thư mục mới`)
+      setMoveDialogOpen(false)
+      setSelectedLessonIds(new Set())
+      await fetchData()
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : "Chuyển bài thất bại")
+    } finally {
+      setMovingLessons(false)
+    }
+  }
 
   const toggleFolderExpand = (folderId: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -1167,15 +1276,47 @@ function TeacherOnlineStudyPage() {
                   </select>
                 </div>
 
-                {/* Local search */}
-                <div className="relative w-full sm:flex-1 sm:max-w-md">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--os-muted)]" />
-                  <input
-                    value={explorerSearch}
-                    onChange={(e) => setExplorerSearch(e.target.value)}
-                    placeholder="Tìm trong thư mục hiện tại..."
-                    className="w-full rounded-xl border border-[var(--os-muted)]/25 bg-[var(--os-bg)] pl-9 pr-4 py-2.5 text-sm text-[var(--os-fg)] placeholder-[var(--os-muted)] outline-none focus:ring-1 focus:ring-[var(--os-accent)] h-11"
-                  />
+                {/* Local / subject search */}
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:flex-1 sm:max-w-xl">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--os-muted)]" />
+                    <input
+                      value={explorerSearch}
+                      onChange={(e) => setExplorerSearch(e.target.value)}
+                      placeholder={
+                        explorerSearchScope === "subject"
+                          ? "Tìm trong cả môn..."
+                          : "Tìm trong thư mục hiện tại..."
+                      }
+                      className="w-full rounded-xl border border-[var(--os-muted)]/25 bg-[var(--os-bg)] pl-9 pr-4 py-2.5 text-sm text-[var(--os-fg)] placeholder-[var(--os-muted)] outline-none focus:ring-1 focus:ring-[var(--os-accent)] h-11"
+                    />
+                  </div>
+                  <div className="flex rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)] p-1 h-11">
+                    <button
+                      type="button"
+                      onClick={() => setExplorerSearchScope("folder")}
+                      className={cn(
+                        "px-2.5 rounded-lg text-[10px] font-bold",
+                        explorerSearchScope === "folder"
+                          ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]"
+                          : "text-[var(--os-muted)]"
+                      )}
+                    >
+                      Thư mục
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExplorerSearchScope("subject")}
+                      className={cn(
+                        "px-2.5 rounded-lg text-[10px] font-bold",
+                        explorerSearchScope === "subject"
+                          ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]"
+                          : "text-[var(--os-muted)]"
+                      )}
+                    >
+                      Cả môn
+                    </button>
+                  </div>
                 </div>
 
                 {/* View Mode selection */}
@@ -1275,16 +1416,29 @@ function TeacherOnlineStudyPage() {
                         {selectedCount > 0 && ")"}
                       </span>
                     </div>
-                    <Button
-                      type="button"
-                      disabled={selectedCount === 0 || bulkDeleting}
-                      onClick={() => setBulkDeleteOpen(true)}
-                      className="rounded-xl bg-red-600 hover:bg-red-600/90 text-white text-xs font-bold h-9 disabled:opacity-40"
-                    >
-                      <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                      Xóa hàng loạt
-                      {selectedCount > 0 ? ` (${selectedCount})` : ""}
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        disabled={selectedLessonIds.size === 0 || movingLessons}
+                        onClick={() => {
+                          setMoveTargetFolderId(folderOptions[0]?.id || "")
+                          setMoveDialogOpen(true)
+                        }}
+                        className="rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] text-[var(--os-fg)] text-xs font-bold h-9 disabled:opacity-40"
+                      >
+                        Chuyển bài ({selectedLessonIds.size})
+                      </Button>
+                      <Button
+                        type="button"
+                        disabled={selectedCount === 0 || bulkDeleting}
+                        onClick={() => setBulkDeleteOpen(true)}
+                        className="rounded-xl bg-red-600 hover:bg-red-600/90 text-white text-xs font-bold h-9 disabled:opacity-40"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                        Xóa hàng loạt
+                        {selectedCount > 0 ? ` (${selectedCount})` : ""}
+                      </Button>
+                    </div>
                   </div>
                 )}
                 
@@ -1684,22 +1838,45 @@ function TeacherOnlineStudyPage() {
             onStatusFilterChange={setOrderStatusFilter}
             onRefresh={() => void fetchOrders()}
             approvingOrderId={approvingOrderId}
+            bulkBusy={bulkOrderBusy}
             onRequestApprove={(order) => {
-              const studentName = order.student?.full_name || "học viên"
-              const subj = getOnlineSubjectInfo(order.subject_key)
               setApproveTarget({
-                id: order.id,
-                label: `${studentName} · ${subj.label} · ${new Intl.NumberFormat("vi-VN", {
-                  style: "currency",
-                  currency: "VND",
-                }).format(order.amount)}`,
+                ids: [order.id],
+                label: orderActionLabel(order),
+                status: "success",
+              })
+            }}
+            onRequestReject={(order) => {
+              setApproveTarget({
+                ids: [order.id],
+                label: orderActionLabel(order),
+                status: "failed",
+              })
+            }}
+            onBulkApprove={(list) => {
+              setApproveTarget({
+                ids: list.map((o) => o.id),
+                label: `${list.length} đơn chờ duyệt`,
+                status: "success",
+              })
+            }}
+            onBulkReject={(list) => {
+              setApproveTarget({
+                ids: list.map((o) => o.id),
+                label: `${list.length} đơn chờ duyệt`,
+                status: "failed",
               })
             }}
           />
         )}
 
-        {/* Tab 5: Security logs + anomalies (lazy) */}
-        {activeTab === "security" && <LazyAccessSecurityPanel />}
+        {/* Tab 5: Security + import logs */}
+        {activeTab === "security" && (
+          <div className="space-y-8">
+            <LazyAccessSecurityPanel />
+            <ImportLogsPanel />
+          </div>
+        )}
 
       </main>
 
@@ -1890,6 +2067,25 @@ function TeacherOnlineStudyPage() {
                     className="mt-1 bg-[var(--os-bg)] border-[var(--os-muted)]/25 focus:ring-[var(--os-accent)] text-[var(--os-fg)]"
                     required
                   />
+                </div>
+
+                <div>
+                  <Label className="text-xs text-[var(--os-muted)] font-mono">Thư mục chứa</Label>
+                  <select
+                    value={targetFolderId || ""}
+                    onChange={(e) => setTargetFolderId(e.target.value)}
+                    className="mt-1 w-full h-10 rounded-lg border border-[var(--os-muted)]/25 bg-[var(--os-bg)] px-3 text-sm text-[var(--os-fg)]"
+                    required
+                  >
+                    {folderOptions.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[10px] text-[var(--os-muted)]">
+                    Đổi thư mục để chuyển bài (move) khi lưu.
+                  </p>
                 </div>
 
                 <div>
@@ -2188,19 +2384,66 @@ function TeacherOnlineStudyPage() {
         variant="danger"
       />
 
-      {/* ── Confirm approve order (bank transfer fallback) ── */}
+      {/* ── Confirm approve / reject order(s) ── */}
       <ConfirmDialog
         isOpen={approveTarget !== null}
         onClose={() => setApproveTarget(null)}
         onConfirm={async () => {
-          if (approveTarget) await handleApproveOrder(approveTarget.id)
+          if (approveTarget) {
+            await handleUpdateOrders(approveTarget.ids, approveTarget.status)
+          }
         }}
-        title="Xác nhận duyệt đơn hàng"
-        description={`Mở khóa môn cho: ${approveTarget?.label || ""}. Chỉ duyệt khi đã nhận đủ tiền chuyển khoản.`}
-        confirmText="Duyệt & mở khóa"
+        title={
+          approveTarget?.status === "failed"
+            ? "Xác nhận từ chối đơn"
+            : "Xác nhận duyệt đơn hàng"
+        }
+        description={
+          approveTarget?.status === "failed"
+            ? `Từ chối: ${approveTarget?.label || ""}. Học viên sẽ không được mở khóa môn.`
+            : `Duyệt & mở khóa: ${approveTarget?.label || ""}. Chỉ duyệt khi đã nhận đủ tiền.`
+        }
+        confirmText={
+          approveTarget?.status === "failed"
+            ? `Từ chối${approveTarget && approveTarget.ids.length > 1 ? ` (${approveTarget.ids.length})` : ""}`
+            : `Duyệt & mở khóa${approveTarget && approveTarget.ids.length > 1 ? ` (${approveTarget.ids.length})` : ""}`
+        }
         cancelText="Hủy"
-        variant="success"
+        variant={approveTarget?.status === "failed" ? "danger" : "success"}
       />
+
+      {/* Move lessons dialog */}
+      <ConfirmDialog
+        isOpen={moveDialogOpen}
+        onClose={() => !movingLessons && setMoveDialogOpen(false)}
+        onConfirm={executeBulkMoveLessons}
+        title="Chuyển bài giảng"
+        description={`Chuyển ${selectedLessonIds.size} bài sang thư mục đích. Chọn folder bên dưới rồi xác nhận.`}
+        confirmText={movingLessons ? "Đang chuyển…" : "Chuyển bài"}
+        cancelText="Hủy"
+        variant="info"
+      />
+
+      {moveDialogOpen && (
+        <div className="fixed bottom-6 left-1/2 z-[80] w-[min(420px,92vw)] -translate-x-1/2 rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)] p-4 shadow-2xl">
+          <Label className="text-xs text-[var(--os-muted)] font-mono">Thư mục đích</Label>
+          <select
+            value={moveTargetFolderId}
+            onChange={(e) => setMoveTargetFolderId(e.target.value)}
+            className="mt-1 w-full h-11 rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)] px-3 text-sm text-[var(--os-fg)]"
+          >
+            {folderOptions.length === 0 ? (
+              <option value="">Chưa có thư mục</option>
+            ) : (
+              folderOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
+      )}
 
       {/* Mobile Folder Tree Drawer */}
       {isMobileTreeOpen && (
