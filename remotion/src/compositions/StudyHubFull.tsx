@@ -21,31 +21,82 @@ import {
 import { getVoiceDurationSeconds } from "../lib/get-audio-duration";
 import { fontFamily } from "../lib/fonts";
 
+export type VoiceMode = "none" | "full" | "per-scene";
+
 export type StudyHubFullProps = {
   sceneSeconds: number[];
-  /** When false, no Audio tags (teacher drops ElevenLabs later or silent export) */
-  playVoice: boolean;
+  voiceMode: VoiceMode;
 };
 
 const defaultSeconds = SCENES.map((s) => s.minSeconds);
 
 export const studyHubFullDefaultProps: StudyHubFullProps = {
   sceneSeconds: defaultSeconds,
-  playVoice: true,
+  voiceMode: "none",
 };
 
-function voicePath(sceneId: string) {
+const FULL_VOICE = "voice/full.mp3";
+
+function sceneVoicePath(sceneId: string) {
   return `voice/${sceneId}.mp3`;
+}
+
+/** Weight scene length by script size (better than equal split for one full track). */
+function sceneWeights(): number[] {
+  return SCENES.map((s) => {
+    const chars = s.lines.join("").length;
+    return Math.max(chars, 20);
+  });
+}
+
+function splitBudget(totalSceneSeconds: number): number[] {
+  const weights = sceneWeights();
+  const wSum = weights.reduce((a, b) => a + b, 0);
+  const raw = weights.map((w) => (w / wSum) * totalSceneSeconds);
+  // Floor to minSeconds then re-normalize overflow by scaling
+  const floored = raw.map((s, i) => Math.max(s, SCENES[i]!.minSeconds * 0.85));
+  const floorSum = floored.reduce((a, b) => a + b, 0);
+  if (floorSum <= totalSceneSeconds) {
+    const extra = totalSceneSeconds - floorSum;
+    const rSum = raw.reduce((a, b) => a + b, 0);
+    return floored.map((s, i) => s + (raw[i]! / rSum) * extra);
+  }
+  // If mins too large, scale all proportionally to budget
+  return floored.map((s) => (s / floorSum) * totalSceneSeconds);
 }
 
 export const calculateStudyHubMetadata: CalculateMetadataFunction<
   StudyHubFullProps
 > = async () => {
+  const transitionSec =
+    (Math.max(0, SCENES.length - 1) * TRANSITION_FRAMES) / FPS;
+
+  // --- Priority 1: single full.mp3 (ElevenLabs one-shot) ---
+  const fullSec = await getVoiceDurationSeconds(FULL_VOICE);
+  if (fullSec != null && fullSec > 1) {
+    // TransitionSeries duration = sum(scenes) - transitions
+    // Want ≈ fullSec → sum(scenes) = fullSec + transitionSec
+    const budget = fullSec + transitionSec;
+    const sceneSeconds = splitBudget(budget);
+    const durationInFrames = Math.ceil(fullSec * FPS);
+
+    return {
+      durationInFrames: Math.max(1, durationInFrames),
+      fps: FPS,
+      width: WIDTH,
+      height: HEIGHT,
+      props: {
+        sceneSeconds,
+        voiceMode: "full" as VoiceMode,
+      },
+    };
+  }
+
+  // --- Priority 2: per-scene s01.mp3 … s12.mp3 ---
   const sceneSeconds: number[] = [];
   let missing = 0;
-
   for (const scene of SCENES) {
-    const audioSec = await getVoiceDurationSeconds(voicePath(scene.id));
+    const audioSec = await getVoiceDurationSeconds(sceneVoicePath(scene.id));
     if (audioSec != null) {
       sceneSeconds.push(Math.max(scene.minSeconds, audioSec + PAD_AFTER_SPEECH));
     } else {
@@ -53,13 +104,30 @@ export const calculateStudyHubMetadata: CalculateMetadataFunction<
       sceneSeconds.push(scene.minSeconds);
     }
   }
-  // Only bake Audio when every scene has a file (ElevenLabs drop-in)
-  const anyVoice = missing === 0;
 
-  const sceneFrames = sceneSeconds.map((s) => Math.ceil(s * FPS));
-  const transitionTotal = TRANSITION_FRAMES * Math.max(0, SCENES.length - 1);
+  if (missing === 0) {
+    const sceneFrames = sceneSeconds.map((s) => Math.ceil(s * FPS));
+    const durationInFrames =
+      sceneFrames.reduce((a, b) => a + b, 0) -
+      TRANSITION_FRAMES * Math.max(0, SCENES.length - 1);
+
+    return {
+      durationInFrames: Math.max(1, durationInFrames),
+      fps: FPS,
+      width: WIDTH,
+      height: HEIGHT,
+      props: {
+        sceneSeconds,
+        voiceMode: "per-scene" as VoiceMode,
+      },
+    };
+  }
+
+  // --- Silent / visual only ---
+  const sceneFrames = defaultSeconds.map((s) => Math.ceil(s * FPS));
   const durationInFrames =
-    sceneFrames.reduce((a, b) => a + b, 0) - transitionTotal;
+    sceneFrames.reduce((a, b) => a + b, 0) -
+    TRANSITION_FRAMES * Math.max(0, SCENES.length - 1);
 
   return {
     durationInFrames: Math.max(1, durationInFrames),
@@ -67,9 +135,8 @@ export const calculateStudyHubMetadata: CalculateMetadataFunction<
     width: WIDTH,
     height: HEIGHT,
     props: {
-      sceneSeconds,
-      // Only attach <Audio> if all or most files exist — avoid crash mid-render
-      playVoice: anyVoice,
+      sceneSeconds: defaultSeconds,
+      voiceMode: "none" as VoiceMode,
     },
   };
 };
@@ -77,13 +144,13 @@ export const calculateStudyHubMetadata: CalculateMetadataFunction<
 const SceneBlock: React.FC<{
   scene: Scene;
   durationInFrames: number;
-  playVoice: boolean;
-}> = ({ scene, durationInFrames, playVoice }) => {
+  playPerSceneVoice: boolean;
+}> = ({ scene, durationInFrames, playPerSceneVoice }) => {
   return (
     <AbsoluteFill style={{ fontFamily }}>
       <SceneVisual scene={scene} />
-      {playVoice ? (
-        <Audio src={staticFile(voicePath(scene.id))} />
+      {playPerSceneVoice ? (
+        <Audio src={staticFile(sceneVoicePath(scene.id))} />
       ) : null}
       <Sequence from={0} durationInFrames={durationInFrames}>
         <AbsoluteFill />
@@ -93,20 +160,25 @@ const SceneBlock: React.FC<{
 };
 
 /**
- * Video giới thiệu khóa học (bao quát).
- * Voice: thầy dùng ElevenLabs → đặt file public/voice/s01.mp3 … s12.mp3
- * Script: docs/marketing/ELEVENLABS_SCRIPT.md
+ * Voice options:
+ * 1) public/voice/full.mp3  — ONE ElevenLabs export (preferred for teacher)
+ * 2) public/voice/s01.mp3 … s12.mp3 — split files
+ * 3) no files — silent video
  */
 export const StudyHubFull: React.FC<StudyHubFullProps> = ({
   sceneSeconds,
-  playVoice,
+  voiceMode,
 }) => {
   const seconds =
     sceneSeconds?.length === SCENES.length ? sceneSeconds : defaultSeconds;
-  const voiceOn = playVoice !== false;
+  const mode = voiceMode ?? "none";
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#07060F", fontFamily }}>
+      {mode === "full" ? (
+        <Audio src={staticFile(FULL_VOICE)} />
+      ) : null}
+
       <TransitionSeries>
         {SCENES.map((scene, i) => {
           const frames = Math.ceil(seconds[i]! * FPS);
@@ -116,7 +188,7 @@ export const StudyHubFull: React.FC<StudyHubFullProps> = ({
                 <SceneBlock
                   scene={scene}
                   durationInFrames={frames}
-                  playVoice={voiceOn}
+                  playPerSceneVoice={mode === "per-scene"}
                 />
               </TransitionSeries.Sequence>
               {i < SCENES.length - 1 ? (
