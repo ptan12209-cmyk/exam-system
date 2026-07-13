@@ -12,6 +12,7 @@ import { UserMenu } from "@/components/UserMenu"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
 import { ONLINE_SUBJECTS, getOnlineSubjectInfo } from "@/lib/subjects"
+import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { BunnySecurityChecklist } from "@/components/teacher/online-study/BunnySecurityChecklist"
 import {
@@ -64,6 +65,8 @@ import {
   List,
   Home,
   Sliders,
+  CheckSquare,
+  Square,
 } from "lucide-react"
 
 interface DbFolder {
@@ -414,6 +417,11 @@ function TeacherOnlineStudyPage() {
   const [activeModal, setActiveModal] = useState<"folder" | "lesson" | "permissions" | null>(null)
   const [editingItem, setEditingItem] = useState<{ type: "folder" | "lesson"; id: string } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ type: "folder" | "lesson"; id: string; title: string } | null>(null)
+  /** Bulk selection in lectures explorer */
+  const [selectedFolderIds, setSelectedFolderIds] = useState<Set<string>>(new Set())
+  const [selectedLessonIds, setSelectedLessonIds] = useState<Set<string>>(new Set())
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -654,7 +662,7 @@ function TeacherOnlineStudyPage() {
     }
   }
 
-  // Handle Delete execution
+  // Handle Delete execution (single)
   const executeDelete = async () => {
     if (!deleteTarget) return
     const { type, id } = deleteTarget
@@ -665,12 +673,107 @@ function TeacherOnlineStudyPage() {
         const data = await res.json()
         throw new Error(data.error || "Không thể xóa đối tượng")
       }
-      success("Xóa đối tượng thành công!")
+      success("Xóa đối tượng thành công")
+      setSelectedFolderIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      setSelectedLessonIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
       await fetchData()
     } catch (err) {
       toastError(err instanceof Error ? err.message : "Lỗi xảy ra")
     }
   }
+
+  const clearSelection = () => {
+    setSelectedFolderIds(new Set())
+    setSelectedLessonIds(new Set())
+  }
+
+  const toggleFolderSelect = (id: string) => {
+    setSelectedFolderIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleLessonSelect = (id: string) => {
+    setSelectedLessonIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selectAllInView = () => {
+    setSelectedFolderIds(new Set(currentSubFolders.map((f) => f.id)))
+    setSelectedLessonIds(new Set(currentLessons.map((l) => l.id)))
+  }
+
+  const selectedCount = selectedFolderIds.size + selectedLessonIds.size
+
+  const executeBulkDelete = async () => {
+    if (selectedCount === 0) return
+    setBulkDeleting(true)
+    try {
+      const folderIds = Array.from(selectedFolderIds)
+      const lessonIds = Array.from(selectedLessonIds)
+      const results: string[] = []
+
+      // Folders first (CASCADE removes nested lessons/subfolders)
+      if (folderIds.length > 0) {
+        const res = await fetch("/api/online-study/folders", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: folderIds }),
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(
+            data?.error?.message || data?.error || "Không thể xóa thư mục"
+          )
+        }
+        results.push(`${folderIds.length} thư mục`)
+      }
+
+      if (lessonIds.length > 0) {
+        const res = await fetch("/api/online-study/lessons", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: lessonIds }),
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(
+            data?.error?.message || data?.error || "Không thể xóa bài giảng"
+          )
+        }
+        results.push(`${lessonIds.length} bài giảng`)
+      }
+
+      success(`Đã xóa hàng loạt: ${results.join(", ")}`)
+      clearSelection()
+      await fetchData()
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : "Xóa hàng loạt thất bại")
+    } finally {
+      setBulkDeleting(false)
+      setBulkDeleteOpen(false)
+    }
+  }
+
+  // Clear multi-select when navigating folder/subject
+  useEffect(() => {
+    clearSelection()
+  }, [selectedFolderId, selectedSubject])
 
   // Handle Permissions Submit (Save selected subjects for student)
   const handlePermissionsSubmit = async (e: React.FormEvent) => {
@@ -1112,6 +1215,56 @@ function TeacherOnlineStudyPage() {
             {/* Full-page drive canvas (no side tree) */}
             <div className="w-full">
               <section className="bg-[var(--os-card)]/50 border border-[var(--os-muted)]/20 rounded-2xl p-4 sm:p-6 min-h-[60vh] flex flex-col">
+
+                {/* Bulk selection toolbar */}
+                {!loadingData && (currentSubFolders.length > 0 || currentLessons.length > 0) && (
+                  <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)]/50 px-3 py-2.5">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--os-muted)]">
+                      <button
+                        type="button"
+                        onClick={selectAllInView}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--os-border)] px-2.5 py-1.5 font-semibold text-[var(--os-fg)] hover:border-[var(--os-accent)]/40 hover:text-[var(--os-accent)]"
+                      >
+                        <CheckSquare className="h-3.5 w-3.5" />
+                        Chọn tất cả trong thư mục
+                      </button>
+                      {selectedCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearSelection}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--os-border)] px-2.5 py-1.5 hover:text-[var(--os-fg)]"
+                        >
+                          <Square className="h-3.5 w-3.5" />
+                          Bỏ chọn
+                        </button>
+                      )}
+                      <span className="font-mono tabular-nums">
+                        Đã chọn:{" "}
+                        <strong className="text-[var(--os-accent)]">{selectedCount}</strong>
+                        {selectedFolderIds.size > 0 && (
+                          <span className="ml-1">({selectedFolderIds.size} thư mục</span>
+                        )}
+                        {selectedLessonIds.size > 0 && (
+                          <span>
+                            {selectedFolderIds.size > 0 ? ", " : " ("}
+                            {selectedLessonIds.size} bài
+                          </span>
+                        )}
+                        {selectedCount > 0 && ")"}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      disabled={selectedCount === 0 || bulkDeleting}
+                      onClick={() => setBulkDeleteOpen(true)}
+                      className="rounded-xl bg-red-600 hover:bg-red-600/90 text-white text-xs font-bold h-9 disabled:opacity-40"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                      Xóa hàng loạt
+                      {selectedCount > 0 ? ` (${selectedCount})` : ""}
+                    </Button>
+                  </div>
+                )}
                 
                 {loadingData ? (
                   <div className="flex-1 flex flex-col items-center justify-center py-24">
@@ -1136,15 +1289,37 @@ function TeacherOnlineStudyPage() {
                         
                         {viewMode === "grid" ? (
                           <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
-                            {currentSubFolders.map(folder => (
+                            {currentSubFolders.map(folder => {
+                              const checked = selectedFolderIds.has(folder.id)
+                              return (
                               <div
                                 key={folder.id}
                                 onDoubleClick={() => setSelectedFolderId(folder.id)}
                                 onClick={() => setSelectedFolderId(folder.id)}
-                                className="group relative p-4 bg-[var(--os-bg)]/60 hover:bg-[var(--os-bg)] border border-[var(--os-muted)]/15 hover:border-[var(--os-accent)] rounded-2xl flex flex-col justify-between min-h-[128px] cursor-pointer select-none transition-all duration-200"
+                                className={cn(
+                                  "group relative p-4 bg-[var(--os-bg)]/60 hover:bg-[var(--os-bg)] border rounded-2xl flex flex-col justify-between min-h-[128px] cursor-pointer select-none transition-all duration-200",
+                                  checked
+                                    ? "border-[var(--os-accent)] ring-1 ring-[var(--os-accent)]/40"
+                                    : "border-[var(--os-muted)]/15 hover:border-[var(--os-accent)]"
+                                )}
                               >
                                 <div className="flex justify-between items-start">
-                                  <FolderIcon className="h-10 w-10 text-[var(--os-accent)]" />
+                                  <div className="flex items-start gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); toggleFolderSelect(folder.id) }}
+                                      className="mt-0.5 p-0.5 rounded text-[var(--os-muted)] hover:text-[var(--os-accent)]"
+                                      title={checked ? "Bỏ chọn" : "Chọn để xóa"}
+                                      aria-label={checked ? "Bỏ chọn thư mục" : "Chọn thư mục"}
+                                    >
+                                      {checked ? (
+                                        <CheckSquare className="h-4 w-4 text-[var(--os-accent)]" />
+                                      ) : (
+                                        <Square className="h-4 w-4" />
+                                      )}
+                                    </button>
+                                    <FolderIcon className="h-10 w-10 text-[var(--os-accent)]" />
+                                  </div>
                                   <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button 
                                       onClick={(e) => { e.stopPropagation(); openEditFolder(folder); }}
@@ -1166,17 +1341,35 @@ function TeacherOnlineStudyPage() {
                                   <h5 className="font-bold text-sm text-[var(--os-fg)] line-clamp-2 leading-snug">{folder.name}</h5>
                                 </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         ) : (
                           <div className="border border-[var(--os-muted)]/15 rounded-xl overflow-hidden divide-y divide-[var(--os-muted)]/10 bg-[var(--os-card)]/10">
-                            {currentSubFolders.map(folder => (
+                            {currentSubFolders.map(folder => {
+                              const checked = selectedFolderIds.has(folder.id)
+                              return (
                               <div
                                 key={folder.id}
                                 onClick={() => setSelectedFolderId(folder.id)}
-                                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-[var(--os-card)]/50 transition-colors"
+                                className={cn(
+                                  "group flex items-center justify-between p-3 cursor-pointer hover:bg-[var(--os-card)]/50 transition-colors",
+                                  checked && "bg-[var(--os-accent)]/5"
+                                )}
                               >
                                 <div className="flex items-center gap-3 min-w-0">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); toggleFolderSelect(folder.id) }}
+                                    className="shrink-0 p-0.5 text-[var(--os-muted)] hover:text-[var(--os-accent)]"
+                                    aria-label={checked ? "Bỏ chọn thư mục" : "Chọn thư mục"}
+                                  >
+                                    {checked ? (
+                                      <CheckSquare className="h-4 w-4 text-[var(--os-accent)]" />
+                                    ) : (
+                                      <Square className="h-4 w-4" />
+                                    )}
+                                  </button>
                                   <FolderIcon className="h-4.5 w-4.5 text-[var(--os-accent)] shrink-0" />
                                   <span className="text-xs font-semibold text-[var(--os-fg)] truncate">{folder.name}</span>
                                   <span className="text-[9px] font-mono text-[var(--os-muted)]">Thứ tự: {folder.order_index}</span>
@@ -1200,7 +1393,8 @@ function TeacherOnlineStudyPage() {
                                   </Button>
                                 </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         )}
                       </div>
@@ -1213,13 +1407,35 @@ function TeacherOnlineStudyPage() {
                         
                         {viewMode === "grid" ? (
                           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {currentLessons.map(lesson => (
+                            {currentLessons.map(lesson => {
+                              const checked = selectedLessonIds.has(lesson.id)
+                              return (
                               <div
                                 key={lesson.id}
-                                className="group relative p-5 bg-[var(--os-bg)]/50 hover:bg-[var(--os-bg)] border border-[var(--os-muted)]/15 hover:border-[var(--os-accent)]/50 rounded-2xl flex flex-col justify-between min-h-[140px] transition-all duration-200"
+                                className={cn(
+                                  "group relative p-5 bg-[var(--os-bg)]/50 hover:bg-[var(--os-bg)] border rounded-2xl flex flex-col justify-between min-h-[140px] transition-all duration-200",
+                                  checked
+                                    ? "border-[var(--os-accent)] ring-1 ring-[var(--os-accent)]/40"
+                                    : "border-[var(--os-muted)]/15 hover:border-[var(--os-accent)]/50"
+                                )}
                               >
                                 <div className="flex justify-between items-start">
-                                  <PlayCircle className="h-9 w-9 text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors" />
+                                  <div className="flex items-start gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleLessonSelect(lesson.id)}
+                                      className="mt-0.5 p-0.5 rounded text-[var(--os-muted)] hover:text-[var(--os-accent)]"
+                                      title={checked ? "Bỏ chọn" : "Chọn để xóa"}
+                                      aria-label={checked ? "Bỏ chọn bài giảng" : "Chọn bài giảng"}
+                                    >
+                                      {checked ? (
+                                        <CheckSquare className="h-4 w-4 text-[var(--os-accent)]" />
+                                      ) : (
+                                        <Square className="h-4 w-4" />
+                                      )}
+                                    </button>
+                                    <PlayCircle className="h-9 w-9 text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors" />
+                                  </div>
                                   <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button 
                                       onClick={() => openEditLesson(lesson)}
@@ -1246,16 +1462,34 @@ function TeacherOnlineStudyPage() {
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         ) : (
                           <div className="border border-[var(--os-muted)]/10 rounded-xl overflow-hidden divide-y divide-[var(--os-muted)]/10 bg-[var(--os-bg)]/10">
-                            {currentLessons.map(lesson => (
+                            {currentLessons.map(lesson => {
+                              const checked = selectedLessonIds.has(lesson.id)
+                              return (
                               <div
                                 key={lesson.id}
-                                className="group flex items-center justify-between p-3 hover:bg-[var(--os-bg)]/30 transition-colors"
+                                className={cn(
+                                  "group flex items-center justify-between p-3 hover:bg-[var(--os-bg)]/30 transition-colors",
+                                  checked && "bg-[var(--os-accent)]/5"
+                                )}
                               >
                                 <div className="flex items-center gap-3 min-w-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleLessonSelect(lesson.id)}
+                                    className="shrink-0 p-0.5 text-[var(--os-muted)] hover:text-[var(--os-accent)]"
+                                    aria-label={checked ? "Bỏ chọn bài giảng" : "Chọn bài giảng"}
+                                  >
+                                    {checked ? (
+                                      <CheckSquare className="h-4 w-4 text-[var(--os-accent)]" />
+                                    ) : (
+                                      <Square className="h-4 w-4" />
+                                    )}
+                                  </button>
                                   <PlayCircle className="h-4.5 w-4.5 text-[var(--os-muted)] shrink-0" />
                                   <span className="text-xs font-semibold text-[var(--os-fg)] truncate">{lesson.title}</span>
                                   <span className="text-[9px] font-mono text-[var(--os-muted)]">Bài: {lesson.order_index}</span>
@@ -1283,7 +1517,8 @@ function TeacherOnlineStudyPage() {
                                   </Button>
                                 </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         )}
                       </div>
@@ -1913,6 +2148,22 @@ function TeacherOnlineStudyPage() {
         description={`Bạn có chắc chắn muốn xóa ${deleteTarget?.type === "folder" ? "thư mục" : "bài giảng"}: "${deleteTarget?.title}"? Hành động này sẽ không thể khôi phục và sẽ xóa toàn bộ nội dung con liên quan.`}
         confirmText="Xác nhận xóa"
         cancelText="Hủy bỏ"
+      />
+
+      {/* ── Bulk delete confirm ── */}
+      <ConfirmDialog
+        isOpen={bulkDeleteOpen}
+        onClose={() => !bulkDeleting && setBulkDeleteOpen(false)}
+        onConfirm={executeBulkDelete}
+        title="Xóa hàng loạt"
+        description={
+          bulkDeleting
+            ? "Đang xóa, vui lòng chờ…"
+            : `Xóa ${selectedFolderIds.size > 0 ? `${selectedFolderIds.size} thư mục` : ""}${selectedFolderIds.size > 0 && selectedLessonIds.size > 0 ? " và " : ""}${selectedLessonIds.size > 0 ? `${selectedLessonIds.size} bài giảng` : ""} trong thư mục hiện tại? Thư mục sẽ xóa cả nội dung con (CASCADE). Không thể hoàn tác.`
+        }
+        confirmText={bulkDeleting ? "Đang xóa…" : `Xóa ${selectedCount} mục`}
+        cancelText="Hủy"
+        variant="danger"
       />
 
       {/* ── Confirm approve order (bank transfer fallback) ── */}

@@ -180,25 +180,54 @@ async function handlePOST(request: NextRequest) {
   return NextResponse.json(successResponse(dbResult))
 }
 
-// DELETE /api/online-study/lessons?id=lesson-uuid
+// DELETE /api/online-study/lessons?id=uuid | ?ids=a,b,c | body { ids: string[] }
 async function handleDELETE(request: NextRequest) {
   const supabase = await createClient()
   const user = await requireAuth(supabase)
   await requireRole(supabase, user.id, ["teacher", "admin"])
 
-  const id = request.nextUrl.searchParams.get("id")
-  if (!id) {
+  const ids = await parseDeleteIds(request)
+  if (ids.length === 0) {
     throw new ApiError("BAD_REQUEST", "Thiếu ID bài học cần xóa", 400)
   }
+  if (ids.length > 200) {
+    throw new ApiError("BAD_REQUEST", "Tối đa 200 bài học mỗi lần xóa", 400)
+  }
 
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from("online_lessons")
-    .delete()
-    .eq("id", id)
+    .delete({ count: "exact" })
+    .in("id", ids)
 
   if (error) throw error
 
-  return NextResponse.json(successResponse({ success: true }))
+  return NextResponse.json(
+    successResponse({ success: true, deleted: count ?? ids.length, ids })
+  )
+}
+
+async function parseDeleteIds(request: NextRequest): Promise<string[]> {
+  const single = request.nextUrl.searchParams.get("id")
+  const multi = request.nextUrl.searchParams.get("ids")
+  if (single?.trim()) return [single.trim()]
+  if (multi?.trim()) {
+    return multi
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  }
+  try {
+    const body = await request.json()
+    if (Array.isArray(body?.ids)) {
+      return body.ids
+        .filter((x: unknown): x is string => typeof x === "string" && x.trim().length > 0)
+        .map((x: string) => x.trim())
+    }
+    if (typeof body?.id === "string" && body.id.trim()) return [body.id.trim()]
+  } catch {
+    /* no body */
+  }
+  return []
 }
 
 export const GET = withErrorHandler(handleGET)
