@@ -8,6 +8,15 @@ import { ArrowRight, BookOpen, Eye, EyeOff, GraduationCap, Lock, Mail, Phone, Sp
 import Footer from "@/components/Footer"
 import { SupportFab } from "@/components/support/SupportFab"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import {
+  isRegistrationOpen,
+  REGISTRATION_REOPEN_DATE,
+} from "@/lib/features"
+import {
+  SUPPORT_ZALO,
+  SUPPORT_ZALO_URL,
+  supportZaloUrlWithText,
+} from "@/lib/support"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -20,6 +29,41 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { verified: captchaVerified, token: captchaToken, onVerify, onExpire } = useCaptcha()
+
+  if (!isRegistrationOpen()) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-[hsl(var(--background))] px-6 text-center text-[hsl(var(--foreground))]">
+        <Lock className="h-10 w-10 text-[hsl(var(--muted-foreground))]" />
+        <h1 className="text-xl font-semibold">Đăng ký tạm thời chưa mở</h1>
+        <p className="max-w-md text-sm text-[hsl(var(--muted-foreground))]">
+          Thầy đang mở trang giới thiệu khóa học. Dự kiến mở đăng ký khoảng{" "}
+          <strong>
+            {new Date(`${REGISTRATION_REOPEN_DATE}T00:00:00+07:00`).toLocaleDateString(
+              "vi-VN",
+              { day: "numeric", month: "long", year: "numeric" }
+            )}
+          </strong>
+          .
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Link
+            href="/"
+            className="rounded-xl bg-[hsl(var(--primary))] px-5 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))]"
+          >
+            Xem khóa học & giá
+          </Link>
+          <a
+            href={supportZaloUrlWithText("Em muốn tư vấn mua khóa StudyHub")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-xl border border-[hsl(var(--border))] px-5 py-2.5 text-sm font-medium"
+          >
+            Zalo {SUPPORT_ZALO}
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   const handleRegister = async (event: React.FormEvent) => {
     event.preventDefault()
