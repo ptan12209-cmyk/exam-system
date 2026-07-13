@@ -1,31 +1,52 @@
 {
   "provider": "edge",
-  "generatedAt": "2026-07-13T16:19:07.580Z",
-  "note": "No phone digits in speech. QR/link only.",
+  "generatedAt": "2026-07-13T16:41:49.377Z",
+  "note": "Voice text synced from scenes.ts — no phone digits",
   "parts": [
     {
-      "id": "part-v1",
-      "file": "voice/part-v1.mp3"
+      "id": "s01",
+      "file": "voice/s01.mp3",
+      "voice": "Các em 2k9 ơi. Anh nói chuyện với các em một chút."
     },
     {
-      "id": "part-bridge1",
-      "file": "voice/part-bridge1.mp3"
+      "id": "s02",
+      "file": "voice/s02.mp3",
+      "voice": "Ôn video rải khắp Drive, loạn quá, mệt đúng không các em?"
     },
     {
-      "id": "part-v3",
-      "file": "voice/part-v3.mp3"
+      "id": "s03",
+      "file": "voice/s03.mp3",
+      "voice": "StudyHub. Một cổng học online. Video theo từng môn."
     },
     {
-      "id": "part-bridge2",
-      "file": "voice/part-bridge2.mp3"
+      "id": "s04",
+      "file": "voice/s04.mp3",
+      "voice": "Khối tự nhiên: Toán, Lý, Hóa, Sinh."
     },
     {
-      "id": "part-v6",
-      "file": "voice/part-v6.mp3"
+      "id": "s05",
+      "file": "voice/s05.mp3",
+      "voice": "Xã hội và Anh: Văn, Sử, Địa, Kinh tế pháp luật, Tiếng Anh."
     },
     {
-      "id": "part-end",
-      "file": "voice/part-end.mp3"
+      "id": "s06",
+      "file": "voice/s06.mp3",
+      "voice": "Đánh giá năng lực: HSA, V-ACT, TSA, và Sư phạm."
+    },
+    {
+      "id": "s07",
+      "file": "voice/s07.mp3",
+      "voice": "Mỗi tài khoản chỉ một thiết bị. Đừng share, tránh bị khóa."
+    },
+    {
+      "id": "s08",
+      "file": "voice/s08.mp3",
+      "voice": "Khi thanh toán, các em nên quay màn hình. Có sự cố anh hỗ trợ nhanh hơn."
+    },
+    {
+      "id": "s09",
+      "file": "voice/s09.mp3",
+      "voice": "Vào luyende.id.vn. Quét QR Zalo để nhắn anh. Link bio cũng được. StudyHub sắp mở. Hẹn gặp các em."
     }
   ]
 }

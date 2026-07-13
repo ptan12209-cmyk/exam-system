@@ -1,22 +1,21 @@
 {
   "name": "studyhub-remotion",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "StudyHub marketing reels (V1/V3/V6) — Remotion 9:16",
+  "description": "StudyHub Full marketing video — scene-synced TTS, Remotion best practices",
   "scripts": {
     "studio": "remotion studio src/index.ts",
     "voice:generate": "node scripts/generate-voice.mjs",
-    "render:full": "remotion render src/index.ts FullCombo out/full-combo.mp4",
+    "render:full": "remotion render src/index.ts StudyHubFull out/studyhub-full.mp4",
     "render:full:with-voice": "npm run voice:generate && npm run render:full",
-    "render:v1": "remotion render src/index.ts V1Hook out/v1-hook.mp4",
-    "render:v3": "remotion render src/index.ts V3Tour out/v3-tour.mp4",
-    "render:v6": "remotion render src/index.ts V6Trust out/v6-trust.mp4",
-    "render:all": "npm run render:full && npm run render:v1 && npm run render:v3 && npm run render:v6",
     "upgrade": "remotion upgrade"
   },
   "dependencies": {
     "@remotion/cli": "4.0.489",
+    "@remotion/google-fonts": "^4.0.489",
+    "@remotion/media-utils": "^4.0.489",
     "@remotion/renderer": "4.0.489",
+    "@remotion/transitions": "^4.0.489",
     "@remotion/zod-types": "4.0.489",
     "@types/qrcode": "^1.5.6",
     "edge-tts": "^1.0.1",

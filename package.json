@@ -15,11 +15,7 @@
     "remotion:studio": "npm run studio --prefix remotion",
     "remotion:voice": "npm run voice:generate --prefix remotion",
     "remotion:render:full": "npm run render:full --prefix remotion",
-    "remotion:render:full:voice": "npm run render:full:with-voice --prefix remotion",
-    "remotion:render:v1": "npm run render:v1 --prefix remotion",
-    "remotion:render:v3": "npm run render:v3 --prefix remotion",
-    "remotion:render:v6": "npm run render:v6 --prefix remotion",
-    "remotion:render:all": "npm run render:all --prefix remotion"
+    "remotion:render:full:voice": "npm run render:full:with-voice --prefix remotion"
   },
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1675466862",

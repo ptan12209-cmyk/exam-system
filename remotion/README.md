@@ -1,58 +1,36 @@
-# StudyHub Remotion reels
+# StudyHub Remotion — StudyHubFull
 
-Video marketing **9:16 (1080×1920)** — V1 Hook · V3 Tour môn · V6 Trust.
+**9:16 · 1080×1920** · 1 video dài · scene + voice **đồng bộ**.
 
-Giọng/script (đọc khi render hoặc lồng sau): xem `../docs/marketing/REELS_V1_V3_V6.md`  
-Brand: **luyende.id.vn** · Zalo **0946741031** · xưng **anh / các em**
+Skills: `.agents/skills/remotion-skills` (remotion-dev/skills).
 
-## Chạy Studio (preview animation)
-
-```bash
-cd remotion
-npm install   # nếu chưa
-npm run studio
-```
-
-Mở browser Remotion Studio → chọn composition **V1Hook** / **V3Tour** / **V6Trust**.
-
-## Render MP4
-
-Cần [Chrome/Chromium](https://www.remotion.dev/docs/miscellaneous/chrome-headless-shell). Lần đầu Remotion tự tải nếu cần.
+## Workflow
 
 ```bash
 cd remotion
-npm run render:full  # → out/full-combo.mp4  (V1+V3+V6 + end QR, ~80s)
-npm run render:v1    # → out/v1-hook.mp4
-npm run render:v3    # → out/v3-tour.mp4
-npm run render:v6    # → out/v6-trust.mp4
-```
-
-**Không hiện số điện thoại trên frame** — chỉ QR Zalo (`zalo.me/...`) + domain.  
-Voice script: `../docs/marketing/VOICE_FULL_COMBO.md`
-
-### Auto voice (TTS khớp timeline)
-
-Mặc định render **không** có tiếng. Để **tự sinh giọng nam VI + lồng vào video**:
-
-```bash
-cd remotion
-npm run voice:generate           # edge-tts → public/voice/*.mp3 (cần mạng)
-npm run render:full              # MP4 có audio
-# hoặc gộp:
+npm install
+npm run voice:generate          # TTS từng scene (s01…s09) khớp chữ màn hình
+npm run studio                  # composition StudyHubFull
+npm run render:full             # → out/studyhub-full.mp4
+# hoặc
 npm run render:full:with-voice
 ```
 
-Từ root: `npm run remotion:render:full:voice`
+Root: `npm run remotion:studio` · `npm run remotion:render:full:voice`
 
-File nằm trong `remotion/out/`.
+## Cấu trúc
 
-## Từ root monorepo
+| File | Vai trò |
+|------|---------|
+| `src/lib/scenes.ts` | **SSOT** title / line / voice / visual |
+| `src/compositions/StudyHubFull.tsx` | TransitionSeries + calculateMetadata (độ dài = audio) |
+| `src/components/SceneVisual.tsx` | UI từng scene (Be Vietnam Pro, grid, QR) |
+| `scripts/generate-voice.mjs` | TTS NamMinh / OpenAI fallback |
 
-```bash
-npm run remotion:studio
-npm run remotion:render:v1
-```
+**Không vẽ số điện thoại** — QR Zalo + domain.
 
-## Lưu ý license
+Script: `../docs/marketing/VOICE_FULL_COMBO.md`
 
-Remotion free cho cá nhân / company nhỏ theo [Remotion License](https://www.remotion.dev/docs/license). Dùng commercial lớn → kiểm tra gói Remotion Company.
+## License
+
+[Remotion License](https://www.remotion.dev/docs/license) — free cho cá nhân / team nhỏ.
