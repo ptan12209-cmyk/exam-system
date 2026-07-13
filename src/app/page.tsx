@@ -87,64 +87,30 @@ function Counter({ target, suffix = "" }: { target: number; suffix?: string }) {
 }
 
 /**
- * Feature / hero media. Requires CSP media-src to allow CloudFront hosts.
+ * Pure video background (no hand-drawn UI).
+ * CSP must allow CloudFront in media-src (next.config.ts).
  */
 function SoftVideo({
   src,
   className,
-  opacity = 0.92,
-  label,
+  opacity = 1,
 }: {
   src: string
   className?: string
   opacity?: number
-  /** Shown if video cannot load (CSP / network) */
-  label?: string
 }) {
   const reduce = useReducedMotion()
   const ref = useRef<HTMLVideoElement>(null)
-  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    setFailed(false)
     const v = ref.current
     if (!v || reduce) return
-
     const play = () => {
-      void v.play().catch(() => {
-        /* autoplay may be blocked; frame still shows */
-      })
+      void v.play().catch(() => {})
     }
     if (v.readyState >= 2) play()
-    else {
-      v.addEventListener("loadeddata", play, { once: true })
-      v.addEventListener("canplay", play, { once: true })
-    }
+    else v.addEventListener("loadeddata", play, { once: true })
   }, [reduce, src])
-
-  if (failed) {
-    return (
-      <div
-        className={cn(
-          "flex h-full w-full flex-col items-center justify-center gap-2 p-6 text-center",
-          className
-        )}
-        style={{
-          background:
-            "linear-gradient(145deg, oklch(0.28 0.08 290), oklch(0.14 0.04 290) 60%, #060510)",
-        }}
-        aria-hidden
-      >
-        <Play className="h-10 w-10 opacity-80" style={{ color: ACCENT }} />
-        <p className="text-sm font-medium text-white/80">
-          {label || "Xem demo học liệu"}
-        </p>
-        <p className="text-[11px] text-white/45 max-w-[16rem]">
-          Không tải được video demo (mạng hoặc CSP). Nội dung sản phẩm vẫn hoạt động bình thường.
-        </p>
-      </div>
-    )
-  }
 
   return (
     <video
@@ -153,12 +119,10 @@ function SoftVideo({
       className={className}
       style={{ opacity }}
       muted
-      loop={!reduce}
+      loop
       playsInline
       preload="auto"
-      autoPlay={!reduce}
-      controls={false}
-      onError={() => setFailed(true)}
+      autoPlay
       aria-hidden
     />
   )
@@ -304,22 +268,9 @@ export default function HomePage() {
 
   return (
     <div
-      className="relative text-[#e8e4f0] selection:text-[#060510]"
+      className="relative text-[#e8e4f0] selection:bg-[oklch(0.75_0.18_290/0.35)] selection:text-[#060510]"
       style={{ background: BG }}
     >
-      <style jsx global>{`
-        .landing-v3 ::selection {
-          background: oklch(0.75 0.18 290 / 0.35);
-          color: #060510;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .landing-v3 * {
-            animation-duration: 0.01ms !important;
-            transition-duration: 0.01ms !important;
-          }
-        }
-      `}</style>
-      <div className="landing-v3">
         <ScrollProgress />
 
         {/* ─── NAV ─── */}
@@ -634,28 +585,23 @@ export default function HomePage() {
                   </p>
                 </motion.div>
                 <motion.div {...rs1} className="order-1 md:order-2">
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0914]">
+                  {/* Media only — no hand-drawn UI, pure product clip */}
+                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-black">
                     <SoftVideo
                       src={FEATURE_VIDEO_FOLDER}
-                      className="absolute inset-0 h-full w-full object-cover"
-                      opacity={1}
-                      label="Thư mục bài giảng"
+                      className="h-full w-full object-cover"
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#060510]/35 via-transparent to-transparent" />
                   </div>
                 </motion.div>
               </div>
 
               <div className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
                 <motion.div {...rs0} className="order-1">
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0914]">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-black">
                     <SoftVideo
                       src={FEATURE_VIDEO_PLAYER}
-                      className="absolute inset-0 h-full w-full object-cover"
-                      opacity={1}
-                      label="Video bài giảng"
+                      className="h-full w-full object-cover"
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#060510]/35 via-transparent to-transparent" />
                   </div>
                 </motion.div>
                 <motion.div {...r1} className="order-2 space-y-4">
@@ -882,4 +828,8 @@ export default function HomePage() {
             Bắt đầu học
             <ArrowRight size={16} />
           </Link>
-   
+        </div>
+        <div className="h-16 md:hidden" aria-hidden />
+    </div>
+  )
+}
