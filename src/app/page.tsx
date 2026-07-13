@@ -87,55 +87,62 @@ function Counter({ target, suffix = "" }: { target: number; suffix?: string }) {
 }
 
 /**
- * Feature / hero media: always show the video frame (no empty gradient box).
- * Only skip autoplay when user prefers reduced motion or Save-Data —
- * still paint first frame via preload + show first frame.
+ * Feature / hero media. Requires CSP media-src to allow CloudFront hosts.
  */
 function SoftVideo({
   src,
   className,
-  opacity = 0.85,
+  opacity = 0.92,
+  label,
 }: {
   src: string
   className?: string
-  /** Visual opacity of the video layer (0–1) */
   opacity?: number
+  /** Shown if video cannot load (CSP / network) */
+  label?: string
 }) {
   const reduce = useReducedMotion()
   const ref = useRef<HTMLVideoElement>(null)
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
+    setFailed(false)
     const v = ref.current
     if (!v || reduce) return
 
-    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } })
-      .connection
-    if (conn?.saveData) {
-      // Still show a frame, don't loop autoplay
-      v.preload = "metadata"
-      v.currentTime = 0.1
-      return
-    }
-
     const play = () => {
-      v.play().catch(() => {
-        /* autoplay blocked — first frame still visible */
+      void v.play().catch(() => {
+        /* autoplay may be blocked; frame still shows */
       })
     }
     if (v.readyState >= 2) play()
-    else v.addEventListener("loadeddata", play, { once: true })
+    else {
+      v.addEventListener("loadeddata", play, { once: true })
+      v.addEventListener("canplay", play, { once: true })
+    }
   }, [reduce, src])
 
   if (failed) {
     return (
       <div
-        className={cn("h-full w-full", className)}
+        className={cn(
+          "flex h-full w-full flex-col items-center justify-center gap-2 p-6 text-center",
+          className
+        )}
         style={{
-          background: `linear-gradient(145deg, oklch(0.22 0.06 290), oklch(0.12 0.03 290) 55%, ${BG})`,
+          background:
+            "linear-gradient(145deg, oklch(0.28 0.08 290), oklch(0.14 0.04 290) 60%, #060510)",
         }}
         aria-hidden
-      />
+      >
+        <Play className="h-10 w-10 opacity-80" style={{ color: ACCENT }} />
+        <p className="text-sm font-medium text-white/80">
+          {label || "Xem demo học liệu"}
+        </p>
+        <p className="text-[11px] text-white/45 max-w-[16rem]">
+          Không tải được video demo (mạng hoặc CSP). Nội dung sản phẩm vẫn hoạt động bình thường.
+        </p>
+      </div>
     )
   }
 
@@ -150,6 +157,7 @@ function SoftVideo({
       playsInline
       preload="auto"
       autoPlay={!reduce}
+      controls={false}
       onError={() => setFailed(true)}
       aria-hidden
     />
@@ -630,9 +638,10 @@ export default function HomePage() {
                     <SoftVideo
                       src={FEATURE_VIDEO_FOLDER}
                       className="absolute inset-0 h-full w-full object-cover"
-                      opacity={0.92}
+                      opacity={1}
+                      label="Thư mục bài giảng"
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#060510]/45 via-transparent to-transparent" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#060510]/35 via-transparent to-transparent" />
                   </div>
                 </motion.div>
               </div>
@@ -643,9 +652,10 @@ export default function HomePage() {
                     <SoftVideo
                       src={FEATURE_VIDEO_PLAYER}
                       className="absolute inset-0 h-full w-full object-cover"
-                      opacity={0.92}
+                      opacity={1}
+                      label="Video bài giảng"
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#060510]/45 via-transparent to-transparent" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#060510]/35 via-transparent to-transparent" />
                   </div>
                 </motion.div>
                 <motion.div {...r1} className="order-2 space-y-4">
@@ -872,9 +882,4 @@ export default function HomePage() {
             Bắt đầu học
             <ArrowRight size={16} />
           </Link>
-        </div>
-        <div className="h-16 md:hidden" aria-hidden />
-      </div>
-    </div>
-  )
-}
+   
