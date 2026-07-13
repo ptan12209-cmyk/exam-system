@@ -86,38 +86,53 @@ function Counter({ target, suffix = "" }: { target: number; suffix?: string }) {
   )
 }
 
-/* ─── Safe autoplay video (respect reduced motion / mobile data) ─── */
+/**
+ * Feature / hero media: always show the video frame (no empty gradient box).
+ * Only skip autoplay when user prefers reduced motion or Save-Data —
+ * still paint first frame via preload + show first frame.
+ */
 function SoftVideo({
   src,
   className,
-  posterOpacity = 0.35,
+  opacity = 0.85,
 }: {
   src: string
   className?: string
-  posterOpacity?: number
+  /** Visual opacity of the video layer (0–1) */
+  opacity?: number
 }) {
   const reduce = useReducedMotion()
-  const [allowPlay, setAllowPlay] = useState(false)
+  const ref = useRef<HTMLVideoElement>(null)
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    if (reduce) return
+    const v = ref.current
+    if (!v || reduce) return
+
     const conn = (navigator as Navigator & { connection?: { saveData?: boolean } })
       .connection
-    if (conn?.saveData) return
-    // Prefer no autoplay on narrow screens for battery
-    if (typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches) {
+    if (conn?.saveData) {
+      // Still show a frame, don't loop autoplay
+      v.preload = "metadata"
+      v.currentTime = 0.1
       return
     }
-    setAllowPlay(true)
-  }, [reduce])
 
-  if (!allowPlay) {
+    const play = () => {
+      v.play().catch(() => {
+        /* autoplay blocked — first frame still visible */
+      })
+    }
+    if (v.readyState >= 2) play()
+    else v.addEventListener("loadeddata", play, { once: true })
+  }, [reduce, src])
+
+  if (failed) {
     return (
       <div
         className={cn("h-full w-full", className)}
         style={{
-          background: `radial-gradient(ellipse 80% 60% at 50% 40%, oklch(0.75 0.18 290 / 0.12), ${BG})`,
-          opacity: posterOpacity + 0.4,
+          background: `linear-gradient(145deg, oklch(0.22 0.06 290), oklch(0.12 0.03 290) 55%, ${BG})`,
         }}
         aria-hidden
       />
@@ -126,26 +141,35 @@ function SoftVideo({
 
   return (
     <video
+      ref={ref}
       src={src}
       className={className}
-      style={{ opacity: posterOpacity }}
+      style={{ opacity }}
       muted
-      autoPlay
-      loop
+      loop={!reduce}
       playsInline
+      preload="auto"
+      autoPlay={!reduce}
+      onError={() => setFailed(true)}
       aria-hidden
     />
   )
 }
 
-/* ─── Product preview (real UI chrome, not fake metrics) ─── */
+const FEATURE_VIDEO_FOLDER =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_125119_8e5ae31c-0021-4396-bc08-f7aebeb877a2.mp4"
+const FEATURE_VIDEO_PLAYER =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_132944_a0d124bb-eaa1-4082-aa30-2310efb42b4b.mp4"
+const HERO_VIDEO =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_120549_0cd82c36-56b3-4dd9-b190-069cfc3a623f.mp4"
+
+/* ─── Product preview: chrome + real product clip in player ─── */
 function ProductPreview() {
   return (
     <div
       className="relative overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl"
       style={{ background: "oklch(0.12 0.025 290)" }}
     >
-      {/* Window chrome */}
       <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-3">
         <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
         <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
@@ -155,7 +179,6 @@ function ProductPreview() {
         </span>
       </div>
       <div className="grid grid-cols-[100px_1fr] sm:grid-cols-[140px_1fr] min-h-[220px] sm:min-h-[280px]">
-        {/* Sidebar tree */}
         <div className="border-r border-white/[0.06] p-3 space-y-2">
           <p className="text-[9px] font-mono uppercase tracking-wider text-white/30 mb-2">
             Môn học
@@ -191,28 +214,23 @@ function ProductPreview() {
             ))}
           </div>
         </div>
-        {/* Player pane */}
         <div className="p-3 sm:p-4 flex flex-col gap-3">
-          <div
-            className="relative aspect-video rounded-xl overflow-hidden border border-white/[0.06]"
-            style={{ background: "oklch(0.08 0.02 290)" }}
-          >
-            <div
-              className="absolute inset-0 opacity-40"
-              style={{
-                background:
-                  "radial-gradient(circle at 40% 40%, oklch(0.75 0.18 290 / 0.25), transparent 55%)",
-              }}
+          <div className="relative aspect-video rounded-xl overflow-hidden border border-white/[0.06] bg-black">
+            <SoftVideo
+              src={FEATURE_VIDEO_PLAYER}
+              className="absolute inset-0 h-full w-full object-cover"
+              opacity={0.9}
             />
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div
-                className="flex h-12 w-12 items-center justify-center rounded-full"
-                style={{ background: "oklch(0.75 0.18 290 / 0.9)" }}
+                className="flex h-11 w-11 items-center justify-center rounded-full shadow-lg"
+                style={{ background: "oklch(0.75 0.18 290 / 0.92)" }}
               >
-                <Play className="h-5 w-5 text-[#060510] ml-0.5" fill="currentColor" />
+                <Play className="h-4 w-4 text-[#060510] ml-0.5" fill="currentColor" />
               </div>
             </div>
-            <div className="absolute bottom-2 left-2 right-2 h-1 rounded-full bg-white/10">
+            <div className="absolute bottom-2 left-2 right-2 h-1 rounded-full bg-white/15">
               <div
                 className="h-full w-[38%] rounded-full"
                 style={{ background: ACCENT }}
@@ -394,9 +412,9 @@ export default function HomePage() {
         >
           <div className="absolute inset-0">
             <SoftVideo
-              src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_120549_0cd82c36-56b3-4dd9-b190-069cfc3a623f.mp4"
+              src={HERO_VIDEO}
               className="h-full w-full object-cover"
-              posterOpacity={0.32}
+              opacity={0.38}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#060510] via-[#060510]/50 to-[#060510]/70" />
           </div>
@@ -608,26 +626,26 @@ export default function HomePage() {
                   </p>
                 </motion.div>
                 <motion.div {...rs1} className="order-1 md:order-2">
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/[0.06]">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0914]">
                     <SoftVideo
-                      src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_125119_8e5ae31c-0021-4396-bc08-f7aebeb877a2.mp4"
-                      className="h-full w-full object-cover"
-                      posterOpacity={0.75}
+                      src={FEATURE_VIDEO_FOLDER}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      opacity={0.92}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#060510]/70 to-transparent" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#060510]/45 via-transparent to-transparent" />
                   </div>
                 </motion.div>
               </div>
 
               <div className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
                 <motion.div {...rs0} className="order-1">
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/[0.06]">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0914]">
                     <SoftVideo
-                      src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_132944_a0d124bb-eaa1-4082-aa30-2310efb42b4b.mp4"
-                      className="h-full w-full object-cover"
-                      posterOpacity={0.7}
+                      src={FEATURE_VIDEO_PLAYER}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      opacity={0.92}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#060510]/70 to-transparent" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#060510]/45 via-transparent to-transparent" />
                   </div>
                 </motion.div>
                 <motion.div {...r1} className="order-2 space-y-4">
