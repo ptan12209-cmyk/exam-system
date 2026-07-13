@@ -97,6 +97,7 @@ interface FolderTreeNode {
 }
 
 interface StudentProfile {
+  progress_percent?: number
   id: string
   full_name: string | null
   email: string | null
@@ -1865,7 +1866,7 @@ function TeacherOnlineStudyPage() {
                                 </span>
                               )}
                               <span className="rounded bg-[var(--os-accent)]/10 border border-[var(--os-accent)]/20 px-1.5 py-0.5 text-[9px] font-bold text-[var(--os-accent)] font-mono shrink-0">
-                                Đã học: {(student as any).progress_percent || 0}%
+                                Đã học: {student.progress_percent || 0}%
                               </span>
                             </div>
                             <p className="text-xs text-[var(--os-muted)] mt-0.5 truncate">{student.email}</p>

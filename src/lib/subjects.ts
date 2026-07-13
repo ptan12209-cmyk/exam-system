@@ -60,20 +60,27 @@ export function getSubjectOptions() {
     return SUBJECTS.map(s => ({ value: s.value, label: `${s.icon} ${s.label}` }))
 }
 
-// Danh sách môn học cho phân hệ Học Online (E-learning)
+/**
+ * Catalog môn Học Online.
+ * - `value` = catalog key (grant / order / UI): toan, ly, …
+ * - `dbValue` = online_folders.subject (math, physics, …)
+ * - `price` = DEFAULT fallback only. Production charge = payment_settings → then this.
+ *   Intro marketing prices live in `src/data/courses-intro.ts` (display only).
+ */
 export const ONLINE_SUBJECTS = [
-  { value: "toan", dbValue: "math", label: "Toán học", icon: "📐", color: "from-blue-600 to-cyan-600", price: 299000 },
-  { value: "ly", dbValue: "physics", label: "Vật lý", icon: "⚛️", color: "from-purple-600 to-violet-600", price: 299000 },
-  { value: "hoa", dbValue: "chemistry", label: "Hóa học", icon: "🧪", color: "from-green-600 to-emerald-600", price: 299000 },
-  { value: "van", dbValue: "literature", label: "Ngữ văn", icon: "📖", color: "from-amber-600 to-orange-600", price: 199000 },
-  { value: "su", dbValue: "history", label: "Lịch sử", icon: "📜", color: "from-yellow-600 to-amber-600", price: 199000 },
-  { value: "dia", dbValue: "geography", label: "Địa lý", icon: "🌍", color: "from-teal-600 to-cyan-600", price: 199000 },
-  { value: "ktpl", dbValue: "civic_education", label: "Kinh tế & Pháp luật (KTPL)", icon: "⚖️", color: "from-rose-600 to-pink-600", price: 199000 },
-  { value: "sinh", dbValue: "biology", label: "Sinh học", icon: "🧬", color: "from-lime-600 to-green-600", price: 299000 },
-  { value: "anh", dbValue: "english", label: "Tiếng Anh", icon: "🌎", color: "from-sky-600 to-blue-600", price: 299000 },
-  { value: "dgnl_hsa", dbValue: "dgnl_hsa", label: "ĐGNL - HSA", icon: "🎓", color: "from-fuchsia-600 to-pink-600", price: 499000 },
-  { value: "dgnl_vact", dbValue: "dgnl_vact", label: "ĐGNL - VACT", icon: "🎓", color: "from-fuchsia-600 to-purple-600", price: 499000 },
-  { value: "dgnl_tsa", dbValue: "dgnl_tsa", label: "ĐGNL - TSA", icon: "🎓", color: "from-violet-600 to-pink-600", price: 499000 },
+  { value: "toan", dbValue: "math", label: "Toán học", icon: "📐", color: "from-blue-600 to-cyan-600", price: 99000 },
+  { value: "ly", dbValue: "physics", label: "Vật lý", icon: "⚛️", color: "from-purple-600 to-violet-600", price: 99000 },
+  { value: "hoa", dbValue: "chemistry", label: "Hóa học", icon: "🧪", color: "from-green-600 to-emerald-600", price: 99000 },
+  { value: "van", dbValue: "literature", label: "Ngữ văn", icon: "📖", color: "from-amber-600 to-orange-600", price: 99000 },
+  { value: "su", dbValue: "history", label: "Lịch sử", icon: "📜", color: "from-yellow-600 to-amber-600", price: 99000 },
+  { value: "dia", dbValue: "geography", label: "Địa lý", icon: "🌍", color: "from-teal-600 to-cyan-600", price: 99000 },
+  { value: "ktpl", dbValue: "civic_education", label: "Kinh tế & Pháp luật (KTPL)", icon: "⚖️", color: "from-rose-600 to-pink-600", price: 99000 },
+  { value: "sinh", dbValue: "biology", label: "Sinh học", icon: "🧬", color: "from-lime-600 to-green-600", price: 99000 },
+  { value: "anh", dbValue: "english", label: "Tiếng Anh", icon: "🌎", color: "from-sky-600 to-blue-600", price: 99000 },
+  { value: "dgnl_hsa", dbValue: "dgnl_hsa", label: "ĐGNL - HSA", icon: "🎓", color: "from-fuchsia-600 to-pink-600", price: 199000 },
+  { value: "dgnl_vact", dbValue: "dgnl_vact", label: "ĐGNL - VACT", icon: "🎓", color: "from-fuchsia-600 to-purple-600", price: 199000 },
+  { value: "dgnl_tsa", dbValue: "dgnl_tsa", label: "ĐGNL - TSA", icon: "🎓", color: "from-violet-600 to-pink-600", price: 199000 },
+  { value: "dgnl_sp", dbValue: "dgnl_sp", label: "ĐGNL - Sư phạm", icon: "🎓", color: "from-violet-600 to-fuchsia-600", price: 199000 },
 ] as const
 
 export type OnlineSubjectValue = typeof ONLINE_SUBJECTS[number]["value"]

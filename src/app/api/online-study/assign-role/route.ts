@@ -14,7 +14,8 @@ async function handlePOST(request: NextRequest) {
   const body = await request.json()
   const { student_id, subjects } = body as {
     student_id: string
-    subjects: string[] // e.g., ['math', 'physics'] or ['all'] or []
+    /** Catalog keys from UI: ['toan','ly'] or ['all'] — NOT db keys (math/physics) */
+    subjects: string[]
   }
 
   if (!student_id || !Array.isArray(subjects)) {

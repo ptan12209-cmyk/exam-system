@@ -40,7 +40,9 @@ export function PaymentSettingsPanel({
               THÔNG TIN THỤ HƯỞNG
             </h3>
             <p className="text-[11px] text-[#8C87A2] mt-1">
-              Tài khoản nhận chuyển khoản (payOS / VietQR).
+              Tài khoản nhận chuyển khoản (payOS / VietQR). Giá môn bên dưới ={" "}
+              <strong className="text-[#C8C4D8]">giá charge thật</strong> (ưu tiên hơn
+              catalog default). Trang intro chỉ marketing.
             </p>
           </div>
           <div className="space-y-3">

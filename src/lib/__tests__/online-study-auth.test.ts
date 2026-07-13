@@ -24,10 +24,16 @@ describe('online-study-auth helpers', () => {
     expect(toCatalogSubjectKey('ly')).toBe('ly')
   })
 
-  it('returns catalog default prices', () => {
-    expect(getDefaultSubjectPrice('toan')).toBe(299000)
-    expect(getDefaultSubjectPrice('van')).toBe(199000)
-    expect(getDefaultSubjectPrice('dgnl_hsa')).toBe(499000)
+  it('returns catalog default prices (charge fallback)', () => {
+    expect(getDefaultSubjectPrice('toan')).toBe(99000)
+    expect(getDefaultSubjectPrice('van')).toBe(99000)
+    expect(getDefaultSubjectPrice('dgnl_hsa')).toBe(199000)
+    expect(getDefaultSubjectPrice('dgnl_sp')).toBe(199000)
+  })
+
+  it('accepts dgnl_sp catalog key', () => {
+    expect(isValidOnlineSubjectKey('dgnl_sp')).toBe(true)
+    expect(isValidOnlineSubjectAny('dgnl_sp')).toBe(true)
   })
 
   it('builds server-side memo without client input', () => {
