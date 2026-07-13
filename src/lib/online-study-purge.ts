@@ -48,7 +48,7 @@ export async function purgeOnlineStudyItems(
   // --- by drive file id ---
   for (const driveFileId of driveFileIds) {
     try {
-      let q = admin
+      const q = admin
         .from('online_lessons')
         .select('id, folder_id')
         .eq('source_drive_file_id', driveFileId)

@@ -6,11 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint .",
+    "lint:ci": "eslint . --max-warnings 9999",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run",
-    "ci": "npm run typecheck && npm run lint && npm run test:unit"
+    "ci": "npm run typecheck && npm run lint:ci && npm run test:unit"
   },
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1675466862",

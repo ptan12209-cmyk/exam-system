@@ -45,7 +45,7 @@ async function handleGET(request: NextRequest) {
   const sinceIso = new Date(Date.now() - hours * 3600_000).toISOString()
 
   // Recent window for anomaly scan (up to 1000 rows)
-  let anomalyQuery = admin
+  const anomalyQuery = admin
     .from("content_access_logs")
     .select("user_id, ip, action, created_at, lesson_id")
     .gte("created_at", sinceIso)
@@ -97,7 +97,7 @@ async function handleGET(request: NextRequest) {
 
   // Enrich anomalies with profile names
   const anomalyUserIds = Array.from(new Set(anomalies.map((a) => a.user_id)))
-  let profileMap: Record<string, { full_name: string | null; email: string | null }> = {}
+  const profileMap: Record<string, { full_name: string | null; email: string | null }> = {}
   if (anomalyUserIds.length > 0) {
     const { data: profiles } = await admin
       .from("profiles")

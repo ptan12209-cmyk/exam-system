@@ -350,21 +350,26 @@ export async function importOnlineStudyItems(
           }
         }
       }
-      // Strip leading mon folder ("01. MÔN TOÁN 2009") so video + PDF share one tree.
-      // Without this, videos land in a duplicate folder path under the mon name
-      // while PDFs (imported without mon prefix) sit in a sibling folder of the same label.
+      // Strip leading mon / package folders so courses sit under COMBO root:
+      //   BAD:  COMBO / 01. MÔN TOÁN 2009 / TOÁN THẦY X / ...
+      //   GOOD: COMBO / TOÁN THẦY X / ...
+      // Also strip 07 KHXH, 08 ĐGNL pack wrappers (subject already set by importer).
       {
-        const segs1 = pathSegments(rel)
-        if (segs1.length >= 2) {
+        let segs1 = pathSegments(rel)
+        let guard = 0
+        while (segs1.length >= 2 && guard++ < 5) {
           const head = segs1[0]
-          const looksLikeMonFolder =
+          const looksLikeMonOrPack =
             /^0?\d{1,2}\.\s*m[oô]n\b/i.test(head) ||
             /^m[oô]n\s+(to[aá]n|l[yý]|h[oó]a|sinh|anh|v[aă]n)/i.test(head) ||
-            /khoa\s*h[oọ]c\s*x[aã]\s*h[oộ]i/i.test(head)
-          if (looksLikeMonFolder) {
-            rel = segs1.slice(1).join('/')
-          }
+            /khoa\s*h[oọ]c\s*x[aã]\s*h[oộ]i/i.test(head) ||
+            /^0?8\.\s*combo\s*đ[aá]nh\s*gi[aá]/i.test(head) ||
+            (head.length >= 40 &&
+              (/combo\s*xps/i.test(head) || /📚/.test(head) || /zalo/i.test(head)))
+          if (!looksLikeMonOrPack) break
+          segs1 = segs1.slice(1)
         }
+        rel = segs1.join('/')
       }
       const segments = pathSegments(rel)
 

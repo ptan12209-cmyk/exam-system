@@ -37,7 +37,7 @@ describe('payOS helpers', () => {
     expect(sig).toBe(sig2)
   })
 
-  it('verifies webhook signature round-trip', () => {
+  it('verifies webhook signature round-trip', async () => {
     const data = {
       orderCode: 123,
       amount: 3000,
@@ -66,7 +66,7 @@ describe('payOS helpers', () => {
     })
     // Payment-request signature fields differ from webhook; verify using payosHmac path via verify on same-shaped data
     // Sign the data object the same way webhook does:
-    const { createHmac } = require('crypto') as typeof import('crypto')
+    const { createHmac } = await import('crypto')
     const sorted = Object.keys(data).sort()
     const q = sorted
       .map((k) => {

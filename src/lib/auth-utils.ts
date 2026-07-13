@@ -40,12 +40,19 @@ export async function requireRole(
 //   - Trả về exam object
 // ---------------------------------------------------------------------------
 
+type ExamAccessRow = {
+    id: string
+    teacher_id?: string
+    status?: string
+    [key: string]: unknown
+}
+
 export async function checkExamAccess(
     supabase: SupabaseClient,
     userId: string,
     examId: string,
     select: string = 'id, teacher_id, status'
-): Promise<any> {
+): Promise<ExamAccessRow> {
     const { data: exam, error: examError } = await supabase
         .from('exams')
         .select(select)
@@ -57,7 +64,8 @@ export async function checkExamAccess(
     }
 
     // Kiểm tra teacher ownership trước để tránh query profile không cần thiết
-    let hasAccess = (exam as any).teacher_id === userId
+    const examRow = exam as ExamAccessRow
+    let hasAccess = examRow.teacher_id === userId
 
     if (!hasAccess) {
         const { data: profile } = await supabase

@@ -359,7 +359,7 @@
   let annotSvgEl = null;
   let annotPinsEl = null;
   let annotClearChipEl = null;
-  let annotState = { comments: [], strokes: [] };
+  const annotState = { comments: [], strokes: [] };
   let annotActive = false;
   // `annotPointer` is either:
   //   { kind: 'new',   x0, y0, moved, strokeEl, strokePoints }   creating a stroke/pin
@@ -5637,7 +5637,7 @@
   }
 
   function jsxStylePropToCss(prop) {
-    let out = String(prop || '').trim().replace(/^["']|["']$/g, '');
+    const out = String(prop || '').trim().replace(/^["']|["']$/g, '');
     if (!out) return '';
     if (out.startsWith('--')) return out;
     return out.replace(/[A-Z]/g, (ch) => '-' + ch.toLowerCase()).replace(/^-ms-/, '-ms-');
@@ -9997,7 +9997,7 @@ void main() {
 
   let designHost = null;
   let designShadow = null;
-  let designState = {
+  const designState = {
     open: false,
     tab: 'visual',          // 'visual' | 'raw'
     parsed: null,           // parseDesignMd output (frontmatter + body sections)

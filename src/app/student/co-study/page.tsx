@@ -751,7 +751,7 @@ export default function CoStudyRoomsPage() {
   // Dynamic sessions to override current user's seconds with locally ticking seconds
   const dynamicSessions = useMemo(() => {
     const hasMe = sessions.some(s => s.student_id === userId)
-    let mapped = sessions.map(sess => {
+    const mapped = sessions.map(sess => {
       if (sess.student_id === userId) {
         return {
           ...sess,

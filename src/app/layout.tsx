@@ -29,6 +29,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 const instrumentSerif = Instrument_Serif({
   weight: "400",
+  // Instrument Serif has no Vietnamese glyphs — keep latin only for decorative English.
+  // User content (folder/lesson titles) must use Inter / Plus Jakarta / IBM Plex (vietnamese subset).
   subsets: ["latin"],
   style: ["normal", "italic"],
   variable: "--font-instrument-serif",

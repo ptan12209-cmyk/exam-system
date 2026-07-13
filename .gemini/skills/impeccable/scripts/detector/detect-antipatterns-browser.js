@@ -2083,7 +2083,7 @@ function checkQuality(opts) {
         const CHILD_INSULATE_THRESHOLD = 4;
         const childrenInsulate = { top: false, right: false, bottom: false, left: false };
         for (const child of el.children) {
-          let childStyle = getComputedStyleFor(win, child);
+          const childStyle = getComputedStyleFor(win, child);
           if (!childStyle) continue;
           const childPad = {
             top:    resolveLengthPx(childStyle.paddingTop,    fontSize) ?? 0,

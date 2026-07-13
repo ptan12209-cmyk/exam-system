@@ -260,7 +260,7 @@ async function handlePOST(request: NextRequest) {
 
   const payosCfg = getPayosConfig()
   if (payosCfg.configured) {
-    let orderCode = order.payment_order_code
+    const orderCode = order.payment_order_code
       ? Number(order.payment_order_code)
       : generatePayosOrderCode()
 

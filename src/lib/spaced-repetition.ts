@@ -1,3 +1,5 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
+
 /**
  * Thẻ lặp lại ngắt quãng (Spaced Repetition Card).
  * Lưu thông tin về một câu hỏi cần ôn tập theo thuật toán SM-2.
@@ -83,7 +85,7 @@ export function calculateNextReview(
  * @returns Promise phân giải thành số lượng câu hỏi đã được đưa vào hàng đợi.
  */
 export async function enqueueWrongAnswers(
-  supabase: any,
+  supabase: SupabaseClient,
   userId: string,
   examId: string,
   wrongQuestionIds: string[]

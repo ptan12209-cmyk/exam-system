@@ -29,7 +29,7 @@ async function checkAndUnlockAchievements(userId: string, stats: any) {
   const newUnlockedNames: string[] = []
   let totalXpEarned = 0
 
-  let currentStats = { ...stats }
+  const currentStats = { ...stats }
 
   for (const achievement of achievements) {
     if (unlockedIds.has(achievement.id)) continue

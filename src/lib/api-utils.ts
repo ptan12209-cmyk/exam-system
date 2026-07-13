@@ -40,7 +40,7 @@ export function successResponse<T>(data: T, meta?: ApiResponse['meta']): ApiResp
 export function errorResponse(
   code: string,
   message: string,
-  statusCode?: number
+  _statusCode?: number
 ): ApiResponse<never> {
   return {
     success: false,

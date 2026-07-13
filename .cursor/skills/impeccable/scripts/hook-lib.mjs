@@ -835,7 +835,7 @@ function clampGroupedToBudget(header, lines, footer, maxChars) {
     footer,
   ].join('\n');
 
-  let working = lines.slice();
+  const working = lines.slice();
   let omitted = false;
   let assembled = assemble(working, omitted);
   while (assembled.length > maxChars && working.length > 1) {
@@ -858,7 +858,7 @@ function clampToBudget(header, lines, more, footer, maxChars) {
     return blocks.join('\n');
   };
 
-  let working = lines.slice();
+  const working = lines.slice();
   let moreText = more;
   let assembled = assemble(working, moreText);
   while (assembled.length > maxChars && working.length > 1) {

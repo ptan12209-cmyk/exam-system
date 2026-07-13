@@ -195,7 +195,8 @@ html.theme-dream ::selection {
 }
 
 .font-instrument-serif {
-  font-family: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  /* Fall back to Inter for missing Vietnamese glyphs (serif has no vi subset). */
+  font-family: var(--font-instrument-serif), var(--font-inter), ui-serif, Georgia, "Segoe UI", serif;
 }
 
 .font-jetbrains-mono {
@@ -203,9 +204,15 @@ html.theme-dream ::selection {
 }
 
 .font-serif-italic {
-  font-family: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  font-family: var(--font-instrument-serif), var(--font-inter), ui-serif, Georgia, "Segoe UI", serif;
   font-style: italic;
   font-weight: 400;
+}
+
+/* Lesson / folder titles: always a Vietnamese-capable sans, never decorative serif alone */
+.os-content-text {
+  font-family: var(--font-family-body), var(--font-inter), "Segoe UI", system-ui, sans-serif;
+  font-synthesis: none;
 }
 
 /* Prefer reduced motion globally for decorative loops */
