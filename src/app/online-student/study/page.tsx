@@ -1,40 +1,12 @@
 "use client"
 
-import { useEffect, useState, useMemo, Suspense, useCallback } from "react"
+import { useEffect, useState, useMemo, Suspense } from "react"
 import dynamic from "next/dynamic"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { OnlineStudentShell } from "@/components/online-student/OnlineStudentShell"
 import { OnlineStudentTopbar } from "@/components/online-student/OnlineStudentTopbar"
 import { Loading } from "@/components/shared/Loading"
-import { getOnlineSubjectInfo } from "@/lib/subjects"
-import { supportZaloUrlWithText } from "@/lib/support"
-import {
-  PlayCircle,
-  FileText,
-  ChevronRight,
-  ChevronLeft,
-  Download,
-  ArrowLeft,
-  ShieldAlert,
-  Search,
-  CheckCircle2,
-  MessageCircle,
-  ExternalLink,
-  List,
-  X,
-} from "lucide-react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/toast"
-import { CopyrightNotice } from "@/components/Footer"
-import { cn } from "@/lib/utils"
-import { cacheGet, cacheSet } from "@/lib/client-swr-cache"
-import { EmptyState } from "@/components/online-student/EmptyState"
-import {
-  hasOnlineSubjectAccess,
-  onlineStudyFetch,
-} from "@/lib/online-study-client"
 
 const ProtectedVideoPlayer = dynamic(
   () =>
@@ -48,6 +20,40 @@ const ProtectedVideoPlayer = dynamic(
     ),
   }
 )
+import { getOnlineSubjectInfo } from "@/lib/subjects"
+import { supportZaloUrlWithText } from "@/lib/support"
+import {
+  Folder as FolderIcon,
+  FolderOpen as FolderOpenIcon,
+  PlayCircle,
+  FileText,
+  ChevronRight,
+  ChevronLeft,
+  BookOpen,
+  Download,
+  Video,
+  ArrowLeft,
+  ShieldAlert,
+  Search,
+  CheckCircle2,
+  Home,
+  LayoutGrid,
+  List,
+  MessageCircle,
+  ExternalLink,
+} from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/toast"
+import { CopyrightNotice } from "@/components/Footer"
+import { cn } from "@/lib/utils"
+import { cacheGet, cacheSet } from "@/lib/client-swr-cache"
+import { EmptyState } from "@/components/online-student/EmptyState"
+import { ErrorState } from "@/components/online-student/ErrorState"
+import {
+  hasOnlineSubjectAccess,
+  onlineStudyFetch,
+} from "@/lib/online-study-client"
 
 interface DbFolder {
   id: string
@@ -57,6 +63,7 @@ interface DbFolder {
   order_index: number
 }
 
+/** Catalog row from API — no media URLs for students */
 interface CatalogLesson {
   id: string
   folder_id: string
@@ -67,6 +74,11 @@ interface CatalogLesson {
   video_count?: number
   has_documents?: boolean
   document_count?: number
+  // legacy full rows (teacher) — optional
+  video_url?: string | null
+  document_url?: string | null
+  videos?: Array<{ title: string; url: string }>
+  documents?: Array<{ title: string; url: string }>
 }
 
 interface PlaybackPayload {
@@ -75,80 +87,6 @@ interface PlaybackPayload {
   description: string | null
   videos: Array<{ title: string; url: string }>
   documents: Array<{ title: string; url: string }>
-}
-
-type CourseSection = {
-  id: string
-  name: string
-  lessons: CatalogLesson[]
-}
-
-function sortByOrder<T extends { order_index: number; name?: string; title?: string }>(
-  list: T[],
-  labelKey: "name" | "title"
-): T[] {
-  return [...list].sort((a, b) => {
-    if (a.order_index !== b.order_index) return a.order_index - b.order_index
-    const la = String((labelKey === "name" ? a.name : a.title) || "")
-    const lb = String((labelKey === "name" ? b.name : b.title) || "")
-    return la.localeCompare(lb, "vi", { numeric: true, sensitivity: "base" })
-  })
-}
-
-/** Build 1–2 level course outline from folder tree. */
-function buildCourseSections(folders: DbFolder[], lessons: CatalogLesson[]): CourseSection[] {
-  const roots = sortByOrder(
-    folders.filter((f) => f.parent_id === null),
-    "name"
-  )
-
-  const collectLessonIdsInSubtree = (folderId: string): string[] => {
-    const ids: string[] = []
-    const stack = [folderId]
-    while (stack.length) {
-      const id = stack.pop()!
-      for (const l of lessons) {
-        if (l.folder_id === id) ids.push(l.id)
-      }
-      for (const f of folders) {
-        if (f.parent_id === id) stack.push(f.id)
-      }
-    }
-    return ids
-  }
-
-  if (roots.length === 0) {
-    const rootLessons = sortByOrder(
-      lessons.filter((l) => !l.folder_id || !folders.some((f) => f.id === l.folder_id)),
-      "title"
-    )
-    const orphan = sortByOrder(lessons, "title")
-    const list = rootLessons.length ? rootLessons : orphan
-    return list.length
-      ? [{ id: "_all", name: "Tất cả bài học", lessons: list }]
-      : []
-  }
-
-  const sections: CourseSection[] = roots.map((root) => {
-    const idSet = new Set(collectLessonIdsInSubtree(root.id))
-    const sectionLessons = sortByOrder(
-      lessons.filter((l) => idSet.has(l.id)),
-      "title"
-    )
-    return { id: root.id, name: root.name, lessons: sectionLessons }
-  })
-
-  // Lessons not under any root
-  const covered = new Set(sections.flatMap((s) => s.lessons.map((l) => l.id)))
-  const rest = sortByOrder(
-    lessons.filter((l) => !covered.has(l.id)),
-    "title"
-  )
-  if (rest.length) {
-    sections.push({ id: "_other", name: "Khác", lessons: rest })
-  }
-
-  return sections.filter((s) => s.lessons.length > 0)
 }
 
 function StudyPageInner() {
@@ -170,30 +108,19 @@ function StudyPageInner() {
   const [folders, setFolders] = useState<DbFolder[]>([])
   const [lessons, setLessons] = useState<CatalogLesson[]>([])
   const [completedLessons, setCompletedLessons] = useState<string[]>([])
+  /** null = drive root */
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
+  /** folder = current folder only; subject = entire subject tree */
+  const [searchScope, setSearchScope] = useState<"folder" | "subject">("folder")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [activeLesson, setActiveLesson] = useState<CatalogLesson | null>(null)
   const [playback, setPlayback] = useState<PlaybackPayload | null>(null)
   const [loadingPlayback, setLoadingPlayback] = useState(false)
   const [activeVideo, setActiveVideo] = useState<{ title: string; url: string } | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [showTour, setShowTour] = useState(false)
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
 
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    localStorage.setItem("drive_last_subject", subjectKey)
-    if (!localStorage.getItem("study_tour_v1")) setShowTour(true)
-    const lid = localStorage.getItem(`drive_lesson_id_${subjectKey}`)
-    if (lid) {
-      ;(window as unknown as { __pendingLessonId?: string }).__pendingLessonId = lid
-    }
-  }, [subjectKey])
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    if (activeLesson) localStorage.setItem(`drive_lesson_id_${subjectKey}`, activeLesson.id)
-  }, [activeLesson, subjectKey])
-
+  // Soft keyboard deterrents only. Do NOT use outerWidth/innerWidth heuristics:
+  // browser zoom, DPI scale, and OS chrome all trigger false "DevTools" locks.
   useEffect(() => {
     if (typeof window === "undefined") return
     const onKey = (e: KeyboardEvent) => {
@@ -210,6 +137,37 @@ function StudyPageInner() {
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    localStorage.setItem("drive_last_subject", subjectKey)
+    const f = localStorage.getItem(`drive_folder_${subjectKey}`)
+    if (f) setCurrentFolderId(f)
+    else setCurrentFolderId(null)
+    const lid = localStorage.getItem(`drive_lesson_id_${subjectKey}`)
+    if (lid) {
+      ;(window as unknown as { __pendingLessonId?: string }).__pendingLessonId = lid
+    }
+    const vm = localStorage.getItem(`drive_view_${subjectKey}`)
+    if (vm === "list" || vm === "grid") setViewMode(vm)
+  }, [subjectKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (currentFolderId) localStorage.setItem(`drive_folder_${subjectKey}`, currentFolderId)
+    else localStorage.removeItem(`drive_folder_${subjectKey}`)
+  }, [currentFolderId, subjectKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    localStorage.setItem(`drive_view_${subjectKey}`, viewMode)
+  }, [viewMode, subjectKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (activeLesson) localStorage.setItem(`drive_lesson_id_${subjectKey}`, activeLesson.id)
+    else localStorage.removeItem(`drive_lesson_id_${subjectKey}`)
+  }, [activeLesson, subjectKey])
 
   useEffect(() => {
     ;(async () => {
@@ -274,38 +232,6 @@ function StudyPageInner() {
     if (!loadingAuth && hasAccess) fetchProgress()
   }, [loadingAuth, hasAccess, subjectKey])
 
-  const openLesson = useCallback(
-    async (lesson: CatalogLesson) => {
-      setActiveLesson(lesson)
-      setPlayback(null)
-      setActiveVideo(null)
-      setLoadingPlayback(true)
-      setSidebarOpen(false)
-      try {
-        const res = await onlineStudyFetch(`/api/online-study/lessons/${lesson.id}/playback`)
-        const data = await res.json()
-        if (!res.ok || !data.success) {
-          const msg = data?.error?.message || data?.error || "Không tải được video"
-          throw new Error(typeof msg === "string" ? msg : "Playback failed")
-        }
-        const p = data.data as PlaybackPayload
-        setPlayback(p)
-        if (p.videos && p.videos.length > 0) {
-          setActiveVideo(p.videos[0])
-        }
-      } catch (e) {
-        console.error(e)
-        toastError(
-          e instanceof Error ? e.message : "Không mở được bài học. Thử lại sau."
-        )
-        setActiveLesson(null)
-      } finally {
-        setLoadingPlayback(false)
-      }
-    },
-    [toastError]
-  )
-
   useEffect(() => {
     if (loadingAuth || !hasAccess) return
     ;(async () => {
@@ -325,6 +251,7 @@ function StudyPageInner() {
           onlineStudyFetch(`/api/online-study/folders?subject=${subjectInfo.dbValue}`),
           onlineStudyFetch(`/api/online-study/lessons?subject=${subjectInfo.dbValue}`),
         ])
+        // Device lock → guard will sign out; subject lock → dashboard
         if (rf.status === 409 || rl.status === 409) return
         if (rf.status === 403 || rl.status === 403) {
           const body = await rf
@@ -342,11 +269,13 @@ function StudyPageInner() {
         setFolders(folderList)
         setLessons(lessonList)
         cacheSet(cacheKey, { folders: folderList, lessons: lessonList })
-
         const pending = (window as unknown as { __pendingLessonId?: string }).__pendingLessonId
         if (pending) {
           const found = lessonList.find((l) => l.id === pending)
-          if (found) void openLesson(found)
+          if (found) {
+            setCurrentFolderId(found.folder_id)
+            void openLesson(found)
+          }
           delete (window as unknown as { __pendingLessonId?: string }).__pendingLessonId
         }
       } catch (e) {
@@ -355,65 +284,101 @@ function StudyPageInner() {
         setLoadingData(false)
       }
     })()
-  }, [loadingAuth, hasAccess, subjectInfo.dbValue, router, openLesson])
+  }, [loadingAuth, hasAccess, subjectInfo.dbValue, router])
 
-  const sections = useMemo(
-    () => buildCourseSections(folders, lessons),
-    [folders, lessons]
-  )
+  const breadcrumbs = useMemo(() => {
+    if (!currentFolderId) return [] as DbFolder[]
+    const path: DbFolder[] = []
+    let id: string | null = currentFolderId
+    while (id) {
+      const f = folders.find((x) => x.id === id)
+      if (!f) break
+      path.unshift(f)
+      id = f.parent_id
+    }
+    return path
+  }, [currentFolderId, folders])
 
-  const flatLessons = useMemo(
-    () => sections.flatMap((s) => s.lessons),
-    [sections]
-  )
-
-  // Auto-open first incomplete lesson when nothing active
-  useEffect(() => {
-    if (loadingData || activeLesson || flatLessons.length === 0) return
-    const pending = (window as unknown as { __pendingLessonId?: string }).__pendingLessonId
-    if (pending) return
-    const firstOpen =
-      flatLessons.find((l) => !completedLessons.includes(l.id)) || flatLessons[0]
-    if (firstOpen) void openLesson(firstOpen)
-  }, [loadingData, activeLesson, flatLessons, completedLessons, openLesson])
-
-  useEffect(() => {
-    if (sections.length === 0) return
-    setExpandedSections((prev) => {
-      const next = { ...prev }
-      for (const s of sections) {
-        if (next[s.id] === undefined) next[s.id] = true
-      }
-      return next
-    })
-  }, [sections])
-
-  const filteredSections = useMemo(() => {
+  const currentFolders = useMemo(() => {
+    let list = folders.filter((f) => f.parent_id === currentFolderId)
     const q = search.trim().toLowerCase()
-    if (!q) return sections
-    return sections
-      .map((s) => ({
-        ...s,
-        lessons: s.lessons.filter(
-          (l) =>
-            l.title.toLowerCase().includes(q) ||
-            (l.description || "").toLowerCase().includes(q) ||
-            s.name.toLowerCase().includes(q)
-        ),
-      }))
-      .filter((s) => s.lessons.length > 0)
-  }, [sections, search])
+    // Full-subject search shows results in a separate panel; keep folder browse clean
+    if (q && searchScope === "folder") {
+      list = list.filter((f) => f.name.toLowerCase().includes(q))
+    }
+    return list.sort((a, b) => {
+      if (a.order_index !== b.order_index) return a.order_index - b.order_index
+      return String(a.name || "").localeCompare(String(b.name || ""), "vi", {
+        numeric: true,
+        sensitivity: "base",
+      })
+    })
+  }, [folders, currentFolderId, search, searchScope])
 
-  const activeIndex = useMemo(() => {
-    if (!activeLesson) return -1
-    return flatLessons.findIndex((l) => l.id === activeLesson.id)
-  }, [flatLessons, activeLesson])
+  const currentLessons = useMemo(() => {
+    let list = lessons.filter((l) => l.folder_id === currentFolderId)
+    const q = search.trim().toLowerCase()
+    if (q && searchScope === "folder") {
+      list = list.filter(
+        (l) =>
+          l.title.toLowerCase().includes(q) ||
+          (l.description || "").toLowerCase().includes(q)
+      )
+    }
+    return list.sort((a, b) => {
+      if (a.order_index !== b.order_index) return a.order_index - b.order_index
+      return String(a.title || "").localeCompare(String(b.title || ""), "vi", {
+        numeric: true,
+        sensitivity: "base",
+      })
+    })
+  }, [lessons, currentFolderId, search, searchScope])
 
-  const prevLesson = activeIndex > 0 ? flatLessons[activeIndex - 1] : null
-  const nextLesson =
-    activeIndex >= 0 && activeIndex < flatLessons.length - 1
-      ? flatLessons[activeIndex + 1]
-      : null
+  const subjectSearchResults = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q || searchScope !== "subject") {
+      return { folders: [] as DbFolder[], lessons: [] as CatalogLesson[] }
+    }
+    const matchedFolders = folders
+      .filter((f) => f.name.toLowerCase().includes(q))
+      .slice(0, 40)
+    const matchedLessons = lessons
+      .filter(
+        (l) =>
+          l.title.toLowerCase().includes(q) ||
+          (l.description || "").toLowerCase().includes(q)
+      )
+      .slice(0, 60)
+    return { folders: matchedFolders, lessons: matchedLessons }
+  }, [search, searchScope, folders, lessons])
+
+  const openLesson = async (lesson: CatalogLesson) => {
+    setActiveLesson(lesson)
+    setPlayback(null)
+    setActiveVideo(null)
+    setLoadingPlayback(true)
+    try {
+      const res = await onlineStudyFetch(`/api/online-study/lessons/${lesson.id}/playback`)
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        const msg = data?.error?.message || data?.error || "Không tải được video"
+        throw new Error(typeof msg === "string" ? msg : "Playback failed")
+      }
+      const p = data.data as PlaybackPayload
+      setPlayback(p)
+      if (p.videos && p.videos.length > 0) {
+        setActiveVideo(p.videos[0])
+      }
+    } catch (e) {
+      console.error(e)
+      toastError(
+        e instanceof Error ? e.message : "Không mở được bài học. Thử lại sau."
+      )
+      setActiveLesson(null)
+    } finally {
+      setLoadingPlayback(false)
+    }
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -430,9 +395,6 @@ function StudyPageInner() {
       if (res.ok) {
         fetchProgress()
         toastSuccess(completed ? "Đã đánh dấu hoàn thành" : "Đã bỏ hoàn thành")
-        if (completed && nextLesson) {
-          // soft suggest next — don't auto-jump
-        }
       } else {
         toastError("Không lưu được tiến độ")
       }
@@ -442,14 +404,15 @@ function StudyPageInner() {
     }
   }
 
+  const goUp = () => {
+    if (!currentFolderId) return
+    const cur = folders.find((f) => f.id === currentFolderId)
+    setCurrentFolderId(cur?.parent_id ?? null)
+  }
+
   const watermark = profile
     ? `${profile.full_name || "HV"} · ${(profile.email || "").split("@")[0] || ""}`
     : "StudyHub"
-
-  const dismissTour = () => {
-    localStorage.setItem("study_tour_v1", "1")
-    setShowTour(false)
-  }
 
   if (loadingAuth || (loadingData && hasAccess)) {
     return (
@@ -470,277 +433,81 @@ function StudyPageInner() {
             Mua khóa hoặc liên hệ hỗ trợ nếu em đã thanh toán.
           </p>
           <Link href="/online-student/dashboard" className="mt-4">
-            <Button className="rounded-xl bg-[var(--os-accent)] text-[var(--os-accent-fg)] font-bold">
-              Về dashboard
-            </Button>
+            <Button className="rounded-xl bg-[var(--os-accent)] text-[var(--os-accent-fg)] font-bold">Về dashboard</Button>
           </Link>
         </div>
       </OnlineStudentShell>
     )
   }
 
-  if (flatLessons.length === 0) {
+  // ========== LESSON PLAYER ==========
+  if (activeLesson) {
+    const docs = playback?.documents || []
+    const vids = playback?.videos || []
+
     return (
-      <OnlineStudentShell>
+      <OnlineStudentShell supportMessage={`Báo lỗi video — ${subjectInfo.label} — ${activeLesson.title}`}>
         <OnlineStudentTopbar name={profile?.full_name} onLogout={handleLogout} />
-        <div className="mx-auto max-w-lg px-4 py-16">
-          <EmptyState
-            title="Chưa có bài học"
-            description="Môn này chưa có nội dung. Quay lại sau nhé."
-          />
-          <div className="mt-4 text-center">
-            <Link href="/online-student/dashboard">
-              <Button variant="outline" className="rounded-xl">
-                Về dashboard
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </OnlineStudentShell>
-    )
-  }
-
-  const docs = playback?.documents || []
-  const vids = playback?.videos || []
-  const doneCount = flatLessons.filter((l) => completedLessons.includes(l.id)).length
-  const progressPct = flatLessons.length
-    ? Math.round((doneCount / flatLessons.length) * 100)
-    : 0
-
-  const sidebar = (
-    <div className="flex h-full flex-col">
-      <div className="border-b border-[var(--os-border)] p-3 space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-semibold text-[var(--os-fg)] truncate">
-            {subjectInfo.icon} {subjectInfo.label}
-          </p>
-          <button
-            type="button"
-            className="lg:hidden p-1.5 rounded-lg text-[var(--os-muted)]"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="text-[10px] text-[var(--os-muted)]">
-          {doneCount}/{flatLessons.length} bài · {progressPct}%
-        </p>
-        <div className="h-1.5 rounded-full bg-[var(--os-muted)]/20 overflow-hidden">
-          <div
-            className="h-full rounded-full bg-[var(--os-accent)] transition-all"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--os-muted)]" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm bài…"
-            className="w-full rounded-lg border border-[var(--os-border)] bg-[var(--os-bg)] py-2 pl-8 pr-2 text-xs outline-none focus:ring-1 focus:ring-[var(--os-accent)]"
-          />
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {filteredSections.map((section) => (
-          <div key={section.id}>
-            <button
-              type="button"
-              onClick={() =>
-                setExpandedSections((p) => ({ ...p, [section.id]: !p[section.id] }))
-              }
-              className="flex w-full items-center gap-1 rounded-lg px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wide text-[var(--os-muted)] hover:bg-[var(--os-bg)]"
-            >
-              <ChevronRight
-                className={cn(
-                  "h-3.5 w-3.5 transition-transform",
-                  expandedSections[section.id] && "rotate-90"
-                )}
-              />
-              <span className="truncate">{section.name}</span>
-              <span className="ml-auto tabular-nums">{section.lessons.length}</span>
-            </button>
-            {expandedSections[section.id] !== false && (
-              <ul className="space-y-0.5 pb-2">
-                {section.lessons.map((lesson) => {
-                  const done = completedLessons.includes(lesson.id)
-                  const active = activeLesson?.id === lesson.id
-                  return (
-                    <li key={lesson.id}>
-                      <button
-                        type="button"
-                        onClick={() => void openLesson(lesson)}
-                        className={cn(
-                          "flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left text-xs transition-colors",
-                          active
-                            ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)] font-semibold"
-                            : "text-[var(--os-fg)] hover:bg-[var(--os-bg)]"
-                        )}
-                      >
-                        {done ? (
-                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                        ) : (
-                          <PlayCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-60" />
-                        )}
-                        <span className="line-clamp-2">{lesson.title}</span>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-
-  return (
-    <OnlineStudentShell
-      supportMessage={`Báo lỗi video — ${subjectInfo.label}${activeLesson ? ` — ${activeLesson.title}` : ""}`}
-    >
-      <OnlineStudentTopbar name={profile?.full_name} onLogout={handleLogout} />
-
-      {showTour && (
-        <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)] p-5 shadow-xl">
-            <h2 className="text-lg font-bold">Cách học nhanh</h2>
-            <ol className="mt-3 space-y-2 text-sm text-[var(--os-muted)] list-decimal list-inside">
-              <li>Chọn chương / bài ở danh sách bên trái (hoặc nút Danh sách trên điện thoại).</li>
-              <li>Xem video ở giữa — có nhiều phần thì chọn phía dưới player.</li>
-              <li>Bấm Bài sau / đánh dấu hoàn thành để theo dõi tiến độ.</li>
-            </ol>
-            <Button onClick={dismissTour} className="mt-5 w-full rounded-xl">
-              Hiểu rồi, bắt đầu học
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <div className="mx-auto flex w-full max-w-7xl flex-1 min-h-0">
-        {/* Desktop sidebar */}
-        <aside className="hidden w-72 shrink-0 border-r border-[var(--os-border)] lg:block sticky top-0 h-[calc(100dvh-4rem)]">
-          {sidebar}
-        </aside>
-
-        {/* Mobile drawer */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
-            <button
-              type="button"
-              className="absolute inset-0 bg-black/50"
-              aria-label="Đóng"
-              onClick={() => setSidebarOpen(false)}
-            />
-            <div className="absolute inset-y-0 left-0 w-[min(100%,20rem)] bg-[var(--os-card)] shadow-xl">
-              {sidebar}
-            </div>
-          </div>
-        )}
-
-        <div className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-5">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Link href="/online-student/dashboard">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-xl border border-[var(--os-muted)]/25 text-xs"
-              >
-                <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Dashboard
-              </Button>
-            </Link>
+        <div className="mx-auto max-w-6xl w-full px-4 py-5 sm:px-6 flex-1">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
             <Button
               variant="ghost"
-              size="sm"
-              className="rounded-xl border border-[var(--os-muted)]/25 text-xs lg:hidden"
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => {
+                setActiveLesson(null)
+                setPlayback(null)
+                setActiveVideo(null)
+              }}
+              className="rounded-xl border border-[var(--os-muted)]/25 text-[var(--os-muted)] hover:text-[var(--os-fg)] text-xs"
             >
-              <List className="h-3.5 w-3.5 mr-1" /> Danh sách bài
+              <ArrowLeft className="h-4 w-4 mr-1" /> Về thư mục
             </Button>
+            <span className="text-[10px] font-mono text-[var(--os-muted)]">
+              {subjectInfo.icon} {subjectInfo.label}
+            </span>
           </div>
-
           <div className="mb-3 rounded-xl border border-[var(--os-warning)]/25 bg-[var(--os-warning)]/10 px-3 py-2">
             <CopyrightNotice className="text-[var(--os-fg)]/90" />
           </div>
-
-          <h1 className="text-xl sm:text-2xl font-bold text-[var(--os-fg)] mb-4 text-balance">
-            {activeLesson?.title || "Chọn bài học"}
+          <h1 className="os-content-text text-xl sm:text-2xl font-bold text-[var(--os-fg)] mb-4 text-balance">
+            {activeLesson.title}
           </h1>
 
-          <div className="space-y-4">
-            {loadingPlayback ? (
-              <div className="aspect-video rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex items-center justify-center">
-                <Loading label="Đang tải video bảo mật…" />
-              </div>
-            ) : activeVideo ? (
-              <div className="space-y-3">
-                <ProtectedVideoPlayer
-                  url={activeVideo.url}
-                  watermarkText={watermark}
-                  onEnded={() =>
-                    activeLesson && handleMarkCompleted(activeLesson.id)
-                  }
-                />
-                {vids.length > 1 && (
-                  <div className="flex flex-wrap gap-2">
-                    {vids.map((vid, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setActiveVideo(vid)}
-                        className={cn(
-                          "rounded-lg border px-3 py-1.5 text-xs font-semibold",
-                          activeVideo.url === vid.url
-                            ? "border-[var(--os-accent)] bg-[var(--os-accent)]/10 text-[var(--os-accent)]"
-                            : "border-[var(--os-border)] text-[var(--os-muted)]"
-                        )}
-                      >
-                        {vid.title || `Phần ${idx + 1}`}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="aspect-video rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex items-center justify-center text-[var(--os-muted)] text-sm">
-                Bài này chưa có video
-              </div>
-            )}
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+            <div className="min-w-0 space-y-4">
+              {loadingPlayback ? (
+                <div className="aspect-video rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex items-center justify-center">
+                  <Loading label="Đang tải video bảo mật…" />
+                </div>
+              ) : activeVideo ? (
+                <div className="space-y-3">
+                  <ProtectedVideoPlayer
+                    url={activeVideo.url}
+                    watermarkText={watermark}
+                    onEnded={() => handleMarkCompleted(activeLesson.id)}
+                  />
+                  {activeVideo.title && (
+                    <p className="text-xs text-[var(--os-muted)]">Đang phát: {activeVideo.title}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="aspect-video rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex items-center justify-center text-[var(--os-muted)] text-sm">
+                  Bài này chưa có video
+                </div>
+              )}
 
-            <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between rounded-xl border border-[var(--os-muted)]/15 bg-[var(--os-card)] p-4">
+                <p className="text-[11px] text-[var(--os-muted)]">
+                  Đánh dấu hoàn thành để theo dõi tiến độ.
+                </p>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!prevLesson}
-                  className="rounded-xl text-xs"
-                  onClick={() => prevLesson && void openLesson(prevLesson)}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-0.5" /> Bài trước
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={!nextLesson}
-                  className="rounded-xl text-xs bg-[var(--os-accent)] text-[var(--os-accent-fg)]"
-                  onClick={() => nextLesson && void openLesson(nextLesson)}
-                >
-                  Bài sau <ChevronRight className="h-4 w-4 ml-0.5" />
-                </Button>
-              </div>
-              {activeLesson && (
-                <Button
-                  size="sm"
                   onClick={() =>
-                    handleMarkCompleted(
-                      activeLesson.id,
-                      !completedLessons.includes(activeLesson.id)
-                    )
+                    handleMarkCompleted(activeLesson.id, !completedLessons.includes(activeLesson.id))
                   }
                   className={cn(
-                    "rounded-xl text-xs font-bold",
+                    "rounded-lg text-xs font-bold shrink-0",
                     completedLessons.includes(activeLesson.id)
                       ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
-                      : "bg-[var(--os-card)] border border-[var(--os-border)]"
+                      : "bg-[var(--os-accent)] text-[var(--os-accent-fg)]"
                   )}
                 >
                   {completedLessons.includes(activeLesson.id) ? (
@@ -751,39 +518,80 @@ function StudyPageInner() {
                     "Đánh dấu hoàn thành"
                   )}
                 </Button>
+              </div>
+
+              {(playback?.description || activeLesson.description) && (
+                <div className="rounded-xl border border-[var(--os-muted)]/15 bg-[var(--os-card)]/50 p-4">
+                  <p className="text-sm text-[var(--os-muted)] whitespace-pre-line">
+                    {playback?.description || activeLesson.description}
+                  </p>
+                </div>
               )}
+
+              <div className="text-center sm:text-left">
+                <a
+                  href={supportZaloUrlWithText(
+                    `Báo lỗi video — ${subjectInfo.label} — ${activeLesson.title}`
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-xs text-[var(--os-accent)] hover:underline"
+                >
+                  <MessageCircle className="h-4 w-4" /> Báo lỗi qua Zalo
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
             </div>
 
-            {(playback?.description || activeLesson?.description) && (
-              <div className="rounded-xl border border-[var(--os-muted)]/15 bg-[var(--os-card)]/50 p-4">
-                <p className="text-sm text-[var(--os-muted)] whitespace-pre-line">
-                  {playback?.description || activeLesson?.description}
-                </p>
-              </div>
-            )}
+            {/* Sidebar: playlist + documents */}
+            <aside className="space-y-4 lg:sticky lg:top-24">
+              {vids.length > 0 && (
+                <div className="rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)] p-3">
+                  <h3 className="text-[10px] font-mono uppercase text-[var(--os-muted)] mb-2 px-1">
+                    Video ({vids.length})
+                  </h3>
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                    {vids.map((vid, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setActiveVideo(vid)}
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-semibold",
+                          activeVideo?.url === vid.url
+                            ? "border-[var(--os-accent)]/40 bg-[var(--os-accent)]/10 text-[var(--os-accent)]"
+                            : "border-[var(--os-muted)]/20 bg-[var(--os-bg)] text-[var(--os-muted)] hover:text-[var(--os-fg)]"
+                        )}
+                      >
+                        <PlayCircle className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{vid.title || `Video ${idx + 1}`}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            <div className="rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)] p-3">
-              <h3 className="text-[10px] font-mono uppercase text-[var(--os-muted)] mb-2 px-1">
-                Tài liệu ({docs.length})
-              </h3>
-              {docs.length === 0 ? (
-                <p className="text-xs text-[var(--os-muted)] italic px-1 py-2">
-                  Không có tài liệu đính kèm.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {docs.map((doc, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between gap-2 rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-bg)] p-2.5"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <FileText className="h-4 w-4 text-[var(--os-accent)] shrink-0" />
-                        <span className="text-xs font-semibold truncate">
-                          {doc.title || `Tài liệu ${idx + 1}`}
-                        </span>
-                      </div>
-                      {activeLesson && (
+              <div className="rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)] p-3">
+                <h3 className="text-[10px] font-mono uppercase text-[var(--os-muted)] mb-2 px-1">
+                  Tài liệu ({docs.length})
+                </h3>
+                {docs.length === 0 ? (
+                  <p className="text-xs text-[var(--os-muted)] italic px-1 py-2">
+                    Không có tài liệu đính kèm.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {docs.map((doc, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between gap-2 rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-bg)] p-2.5"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="h-4 w-4 text-[var(--os-accent)] shrink-0" />
+                          <span className="text-xs font-semibold text-[var(--os-fg)] truncate">
+                            {doc.title || `Tài liệu ${idx + 1}`}
+                          </span>
+                        </div>
                         <a
                           href={`/api/online-study/lessons/${activeLesson.id}/document?index=${idx}&redirect=1`}
                           target="_blank"
@@ -796,39 +604,394 @@ function StudyPageInner() {
                             <Download className="h-3 w-3 mr-0.5" /> Mở
                           </Button>
                         </a>
-                      )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </aside>
+          </div>
+        </div>
+      </OnlineStudentShell>
+    )
+  }
+
+  // ========== DRIVE EXPLORER (full page) ==========
+  const empty = currentFolders.length === 0 && currentLessons.length === 0
+
+  return (
+    <OnlineStudentShell>
+      <OnlineStudentTopbar name={profile?.full_name} onLogout={handleLogout} />
+
+      <div className="mx-auto max-w-6xl w-full px-3 sm:px-6 py-5 flex-1 flex flex-col min-h-0">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/online-student/dashboard" className="shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-xl border border-[var(--os-muted)]/25 h-10 w-10 text-[var(--os-muted)]"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-[var(--os-fg)] truncate flex items-center gap-2">
+                <span>{subjectInfo.icon}</span> {subjectInfo.label}
+              </h1>
+              <p className="text-[11px] text-[var(--os-muted)] font-mono mt-0.5">
+                Kho bài giảng · {folders.length} thư mục · {lessons.length} bài
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <div className="flex bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-1">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  viewMode === "grid" ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]" : "text-[var(--os-muted)]"
+                )}
+                title="Lưới"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  viewMode === "list" ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]" : "text-[var(--os-muted)]"
+                )}
+                title="Danh sách"
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Toolbar: search + path (Drive style) */}
+        <div className="rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] p-3 sm:p-4 mb-4 space-y-3 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--os-muted)]" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={
+                  searchScope === "subject"
+                    ? "Tìm trong cả môn…"
+                    : "Tìm trong thư mục hiện tại…"
+                }
+                className="w-full rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-bg)] pl-10 pr-4 py-2.5 text-sm text-[var(--os-fg)] placeholder-[var(--os-muted)] outline-none focus:ring-1 focus:ring-[var(--os-accent)]"
+              />
+            </div>
+            <div className="flex rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)] p-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setSearchScope("folder")}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors",
+                  searchScope === "folder"
+                    ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]"
+                    : "text-[var(--os-muted)]"
+                )}
+              >
+                Thư mục
+              </button>
+              <button
+                type="button"
+                onClick={() => setSearchScope("subject")}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors",
+                  searchScope === "subject"
+                    ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]"
+                    : "text-[var(--os-muted)]"
+                )}
+              >
+                Cả môn
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 overflow-x-auto text-sm scrollbar-none py-1">
+            {currentFolderId && (
+              <button
+                type="button"
+                onClick={goUp}
+                className="mr-1 p-2 rounded-lg hover:bg-[var(--os-bg)] text-[var(--os-accent)] shrink-0"
+                title="Lên một cấp"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setCurrentFolderId(null)}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shrink-0 font-semibold text-xs sm:text-sm",
+                !currentFolderId
+                  ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]"
+                  : "text-[var(--os-muted)] hover:text-[var(--os-fg)] hover:bg-[var(--os-bg)]"
+              )}
+            >
+              <Home className="h-4 w-4" /> Gốc
+            </button>
+            {breadcrumbs.map((crumb, idx) => (
+              <div key={crumb.id} className="flex items-center gap-1 shrink-0">
+                <ChevronRight className="h-4 w-4 text-[var(--os-muted)]/50" />
+                <button
+                  type="button"
+                  onClick={() => setCurrentFolderId(crumb.id)}
+                  className={cn(
+                    "px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold max-w-[160px] truncate",
+                    idx === breadcrumbs.length - 1
+                      ? "bg-[var(--os-accent)]/15 text-[var(--os-accent)]"
+                      : "text-[var(--os-muted)] hover:text-[var(--os-fg)] hover:bg-[var(--os-bg)]"
+                  )}
+                >
+                  {crumb.name}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Full-page content area */}
+        <div className="flex-1 min-h-[55vh] rounded-2xl border border-[var(--os-muted)]/15 bg-[var(--os-card)]/40 p-4 sm:p-6">
+          {search.trim() && searchScope === "subject" ? (
+            subjectSearchResults.folders.length === 0 &&
+            subjectSearchResults.lessons.length === 0 ? (
+              <EmptyState
+                icon={<Search />}
+                title="Không có kết quả trong môn"
+                description="Thử từ khóa khác hoặc chuyển sang tìm trong thư mục."
+                className="border-0 bg-transparent py-16"
+              />
+            ) : (
+              <div className="space-y-8">
+                {subjectSearchResults.folders.length > 0 && (
+                  <div>
+                    <h3 className="text-[11px] font-mono uppercase tracking-wider text-[var(--os-muted)] mb-3">
+                      Thư mục ({subjectSearchResults.folders.length})
+                    </h3>
+                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                      {subjectSearchResults.folders.map((folder) => (
+                        <button
+                          key={folder.id}
+                          type="button"
+                          onClick={() => {
+                            setCurrentFolderId(folder.id)
+                            setSearch("")
+                            setSearchScope("folder")
+                          }}
+                          className="flex items-center gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)]/50 px-4 py-3 text-left hover:border-[var(--os-accent)]/40"
+                        >
+                          <FolderIcon className="h-5 w-5 text-[var(--os-accent)] shrink-0" />
+                          <span className="text-sm font-semibold text-[var(--os-fg)] truncate">
+                            <span className="os-content-text">{folder.name}</span>
+                          </span>
+                        </button>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                )}
+                {subjectSearchResults.lessons.length > 0 && (
+                  <div>
+                    <h3 className="text-[11px] font-mono uppercase tracking-wider text-[var(--os-muted)] mb-3">
+                      Bài giảng ({subjectSearchResults.lessons.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {subjectSearchResults.lessons.map((lesson) => (
+                        <button
+                          key={lesson.id}
+                          type="button"
+                          onClick={() => {
+                            setCurrentFolderId(lesson.folder_id)
+                            void openLesson(lesson)
+                          }}
+                          className="flex w-full items-center gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)]/50 px-4 py-3 text-left hover:border-[var(--os-accent)]/40"
+                        >
+                          <PlayCircle className="h-5 w-5 text-[var(--os-accent)] shrink-0" />
+                          <span className="text-sm font-semibold text-[var(--os-fg)] truncate">
+                            {lesson.title}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          ) : empty ? (
+            <EmptyState
+              icon={<FolderOpenIcon />}
+              title={search ? "Không có kết quả" : "Thư mục trống"}
+              description={
+                search
+                  ? "Thử từ khóa khác hoặc tìm trong cả môn."
+                  : "Chưa có thư mục con hoặc bài giảng trong vị trí này."
+              }
+              action={
+                currentFolderId ? (
+                  <Button
+                    onClick={goUp}
+                    variant="outline"
+                    className="rounded-xl border-[var(--os-border)] text-[var(--os-fg)] text-xs min-h-11"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Lên thư mục cha
+                  </Button>
+                ) : undefined
+              }
+              className="border-0 bg-transparent py-16"
+            />
+          ) : viewMode === "grid" ? (
+            <div className="space-y-8">
+              {currentFolders.length > 0 && (
+                <div>
+                  <h3 className="text-[11px] font-mono uppercase tracking-wider text-[var(--os-muted)] mb-3">
+                    Thư mục ({currentFolders.length})
+                  </h3>
+                  <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                    {currentFolders.map((folder) => (
+                      <button
+                        key={folder.id}
+                        type="button"
+                        aria-label={`Mở thư mục ${folder.name}`}
+                        onClick={() => {
+                          setSearch("")
+                          setCurrentFolderId(folder.id)
+                        }}
+                        className="group flex flex-col items-start gap-3 rounded-2xl border border-[var(--os-muted)]/15 bg-[var(--os-bg)]/50 p-4 min-h-[120px] text-left hover:border-[var(--os-accent)]/50 hover:bg-[var(--os-bg)] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[var(--os-accent)]/50"
+                      >
+                        <FolderIcon className="h-10 w-10 text-[var(--os-accent)] group-hover:scale-105 transition-transform" />
+                        <span className="text-sm font-bold text-[var(--os-fg)] line-clamp-2 leading-snug w-full">
+                          {folder.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {currentLessons.length > 0 && (
+                <div>
+                  <h3 className="text-[11px] font-mono uppercase tracking-wider text-[var(--os-muted)] mb-3">
+                    Bài giảng ({currentLessons.length})
+                  </h3>
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    {currentLessons.map((lesson) => {
+                      const done = completedLessons.includes(lesson.id)
+                      const hasVideo =
+                        lesson.has_video ||
+                        (lesson.videos && lesson.videos.length > 0) ||
+                        !!lesson.video_url
+                      const hasDoc =
+                        lesson.has_documents ||
+                        (lesson.documents && lesson.documents.length > 0) ||
+                        !!lesson.document_url
+                      return (
+                        <button
+                          key={lesson.id}
+                          type="button"
+                          aria-label={`${done ? "Đã học · " : ""}Mở bài ${lesson.title}`}
+                          onClick={() => void openLesson(lesson)}
+                          className="group flex flex-col gap-3 rounded-2xl border border-[var(--os-muted)]/15 bg-[var(--os-bg)]/40 p-5 text-left hover:border-[var(--os-accent)]/45 hover:bg-[var(--os-bg)] transition-all min-h-[130px] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[var(--os-accent)]/50"
+                        >
+                          <div className="flex items-start justify-between w-full">
+                            {done ? (
+                              <CheckCircle2 className="h-9 w-9 text-emerald-400" />
+                            ) : (
+                              <PlayCircle className="h-9 w-9 text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors" />
+                            )}
+                            <ChevronRight className="h-5 w-5 text-[var(--os-muted)] group-hover:text-[var(--os-accent)]" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-[var(--os-fg)] line-clamp-2 leading-snug">
+                              {lesson.title}
+                            </p>
+                            <div className="flex gap-2 mt-2 flex-wrap">
+                              {hasVideo && (
+                                <span className="text-[10px] font-bold uppercase text-[var(--os-accent)] bg-[var(--os-accent)]/10 px-2 py-0.5 rounded-md">
+                                  Video
+                                </span>
+                              )}
+                              {hasDoc && (
+                                <span className="text-[10px] font-bold uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                                  Tài liệu
+                                </span>
+                              )}
+                              {done && (
+                                <span className="text-[10px] font-mono text-emerald-400/80">Đã học</span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
-
-            {activeLesson && (
-              <a
-                href={supportZaloUrlWithText(
-                  `Báo lỗi video — ${subjectInfo.label} — ${activeLesson.title}`
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-xs text-[var(--os-accent)] hover:underline"
-              >
-                <MessageCircle className="h-4 w-4" /> Báo lỗi qua Zalo
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            )}
-          </div>
+          ) : (
+            <div className="rounded-xl border border-[var(--os-muted)]/15 overflow-hidden divide-y divide-[var(--os-muted)]/10">
+              {currentFolders.map((folder) => (
+                <button
+                  key={folder.id}
+                  type="button"
+                  onClick={() => {
+                    setSearch("")
+                    setCurrentFolderId(folder.id)
+                  }}
+                  className="w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-[var(--os-bg)]/50 transition-colors"
+                >
+                  <FolderIcon className="h-6 w-6 text-[var(--os-accent)] shrink-0" />
+                  <span className="flex-1 text-sm font-semibold text-[var(--os-fg)] truncate">
+                    {folder.name}
+                  </span>
+                  <span className="text-[10px] text-[var(--os-muted)] font-mono shrink-0">Thư mục</span>
+                  <ChevronRight className="h-4 w-4 text-[var(--os-muted)]" />
+                </button>
+              ))}
+              {currentLessons.map((lesson) => {
+                const done = completedLessons.includes(lesson.id)
+                return (
+                  <button
+                    key={lesson.id}
+                    type="button"
+                    onClick={() => void openLesson(lesson)}
+                    className="w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-[var(--os-bg)]/50 transition-colors"
+                  >
+                    {done ? (
+                      <CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0" />
+                    ) : (
+                      <PlayCircle className="h-6 w-6 text-[var(--os-muted)] shrink-0" />
+                    )}
+                    <span className="flex-1 text-sm font-semibold text-[var(--os-fg)] truncate">
+                      {lesson.title}
+                    </span>
+                    <span className="text-[10px] text-[var(--os-muted)] font-mono shrink-0">Bài giảng</span>
+                    <ChevronRight className="h-4 w-4 text-[var(--os-muted)]" />
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
+
     </OnlineStudentShell>
   )
 }
 
-export default function StudyPage() {
+export default function OnlineStudentStudyPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[var(--os-bg)]">
-          <Loading label="Đang tải…" />
+        <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
+          <Loading label="Đang mở kho bài giảng…" />
         </div>
       }
     >
