@@ -29,6 +29,10 @@ export function toOnlineStudyDbSubject(input: string): string {
     tsa: 'dgnl_tsa',
     vact: 'dgnl_vact',
     vatc: 'dgnl_vact', // Drive often labels V-ACT as VATC
+    sp: 'dgnl_sp',
+    'dgnl-sp': 'dgnl_sp',
+    'dgnl_sp': 'dgnl_sp',
+    'su-pham': 'dgnl_sp',
     'dgnl-hsa': 'dgnl_hsa',
     'dgnl-tsa': 'dgnl_tsa',
     'dgnl-vact': 'dgnl_vact',
