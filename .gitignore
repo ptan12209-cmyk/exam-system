@@ -17,11 +17,38 @@
 /.next/
 /out/
 
-# remotion
-/remotion/node_modules/
-/remotion/out/
-/remotion/.remotion/
-# keep public/voice/*.mp3 when generated (optional; can re-run voice:generate)
+# remotion (video production — keep local, do not commit)
+/remotion/
+
+# hyperframes compositions, renders, cache
+/videos/
+**/.hyperframes/
+**/.thumbnails/
+*.hyb
+
+# marketing video scripts / production notes (local only)
+/docs/marketing/
+
+# remotion / hyperframes agent skills (local tooling)
+.agents/skills/remotion-skills/
+.agents/skills/hyperframes*/
+.agents/skills/embedded-captions/
+.agents/skills/faceless-explainer/
+.agents/skills/general-video/
+.agents/skills/media-use/
+.agents/skills/motion-graphics/
+.agents/skills/music-to-video/
+.agents/skills/pr-to-video/
+.agents/skills/product-launch-video/
+.agents/skills/remotion-to-hyperframes/
+.agents/skills/slideshow/
+.agents/skills/talking-head-recut/
+.agents/skills/website-to-video/
+.agents/skills/figma/
+
+# generated audit / fix reports
+scripts/*-report.json
+scripts/dupe-lessons-to-delete.json
 
 
 # production
