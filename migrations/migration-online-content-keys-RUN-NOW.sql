@@ -1,9 +1,7 @@
 -- ============================================================================
--- Migration: Hidden stable keys for online study folders/lessons
--- SAFE ORDER when legacy dups exist:
---   1) ADD columns (this file, first half)
---   2) Wipe or dedupe tree
---   3) CREATE unique indexes (second half / migration-online-content-keys-indexes.sql)
+-- RUN THIS NOW in Supabase SQL Editor (safe with current dups)
+-- Adds content_key / folder_key + safe unique indexes.
+-- Does NOT create path unique index (that fails on dups until wipe).
 -- ============================================================================
 
 ALTER TABLE public.online_lessons
@@ -13,13 +11,11 @@ ALTER TABLE public.online_folders
   ADD COLUMN IF NOT EXISTS folder_key text;
 
 COMMENT ON COLUMN public.online_lessons.content_key IS
-  'Stable machine id: v:stream:{lib}:{id} | v:drive:{id} | d:drive:{id} | d:bunny:{sha1} — not shown in UI';
+  'Stable machine id — not shown in UI';
 
 COMMENT ON COLUMN public.online_folders.folder_key IS
-  'Stable machine id: f:{courseKey}:{dbSubject}:root | f:{courseKey}:{dbSubject}:{sha1(path)} — not shown in UI';
+  'Stable machine id — not shown in UI';
 
--- Partial uniques that only fail if the SAME key was written twice (usually empty pre-wipe).
--- Safe even with path dups; skip if already exist.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_online_lessons_content_key
   ON public.online_lessons (content_key)
   WHERE content_key IS NOT NULL;
@@ -31,6 +27,3 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_online_folders_folder_key
 CREATE UNIQUE INDEX IF NOT EXISTS uq_online_lessons_bunny_video
   ON public.online_lessons (source_bunny_video_id)
   WHERE source_bunny_video_id IS NOT NULL;
-
--- DO NOT create uq_online_folders_course_subject_path here while tree has dups.
--- After wipe (or dedupe), run migration-online-content-keys-indexes.sql
