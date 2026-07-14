@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server"
 import { withErrorHandler, successResponse, ApiError } from "@/lib/api-utils"
 import { checkRateLimit, getClientIP, rateLimitResponse } from "@/lib/rate-limit"
 import { verifyTurnstileToken } from "@/lib/turnstile-utils"
+import { createAndSendOtp } from "@/lib/email-otp"
 
 const MIN_PASSWORD_LENGTH = 8
 
@@ -84,6 +85,8 @@ async function handlePOST(request: NextRequest) {
         class: studentClass || null,
         phone: phone || null,
         email,
+        account_source: "self_register",
+        email_verified_at: null,
       },
       { onConflict: "id" }
     )
@@ -93,12 +96,23 @@ async function handlePOST(request: NextRequest) {
     throw profileError
   }
 
+  // OTP after register (non-blocking if email provider misconfigured in dev)
+  const otpResult = await createAndSendOtp(adminSupabase, {
+    userId,
+    email,
+    fullName,
+  })
+
   return NextResponse.json(
     successResponse({
       userId,
       email,
       role: "student",
-      message: "Đăng ký thành công. Vui lòng đăng nhập.",
+      needsVerification: true,
+      otpSent: otpResult.ok,
+      message: otpResult.ok
+        ? "Đăng ký thành công. Em đã nhận mã OTP 4 số qua email — vui lòng xác thực trong 5 ngày."
+        : "Đăng ký thành công. Không gửi được OTP lúc này; đăng nhập rồi bấm Gửi lại mã trên trang xác thực.",
     })
   )
 }

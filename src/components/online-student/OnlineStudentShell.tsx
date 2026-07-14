@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { OnlineStudentBottomNav } from "@/components/online-student/OnlineStudentBottomNav"
+import { EmailVerifyBanner } from "@/components/online-student/EmailVerifyBanner"
 import Footer from "@/components/Footer"
 import { SupportFab } from "@/components/support/SupportFab"
 import { getOrCreateDeviceId, syncDeviceIdCookie } from "@/lib/device-id"
@@ -45,6 +46,7 @@ export function OnlineStudentShell({
         className
       )}
     >
+      <EmailVerifyBanner />
       <div className="flex min-h-0 flex-1 flex-col">{children}</div>
 
       {!hideFooter && <Footer />}

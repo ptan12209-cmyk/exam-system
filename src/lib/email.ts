@@ -10,7 +10,12 @@ function getResend(): Resend {
 }
 
 // Default sender email (must be verified in Resend)
-const FROM_EMAIL = 'Exam System <onboarding@resend.dev>'; // Change after verifying domain
+function getFromEmail(): string {
+    return (
+        process.env.RESEND_FROM_EMAIL ||
+        'StudyHub <onboarding@resend.dev>'
+    );
+}
 
 export interface SendExamNotificationParams {
     studentEmails: string[];
@@ -44,7 +49,7 @@ export async function sendNewExamNotification({
     try {
         // Send to each student individually (Resend free tier allows batching)
         const { data, error } = await getResend().emails.send({
-            from: FROM_EMAIL,
+            from: getFromEmail(),
             to: studentEmails,
             subject: `📝 Đề thi mới: ${examTitle}`,
             html: `
@@ -120,7 +125,7 @@ export async function sendDeadlineReminder({
 
     try {
         const { error } = await getResend().emails.send({
-            from: FROM_EMAIL,
+            from: getFromEmail(),
             to: studentEmail,
             subject: `⏰ Nhắc nhở: ${examTitle} sắp hết hạn!`,
             html: `
@@ -157,6 +162,56 @@ export async function sendDeadlineReminder({
             return { success: false, error: error.message };
         }
 
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: (err as Error).message };
+    }
+}
+
+export async function sendOtpEmail({
+    to,
+    code,
+    fullName,
+}: {
+    to: string;
+    code: string;
+    fullName?: string;
+}): Promise<{ success: boolean; error?: string }> {
+    if (!process.env.RESEND_API_KEY) {
+        console.warn('RESEND_API_KEY not configured, skipping OTP email');
+        return { success: false, error: 'Email service not configured' };
+    }
+
+    const name = fullName?.trim() || 'bạn';
+
+    try {
+        const { error } = await getResend().emails.send({
+            from: getFromEmail(),
+            to,
+            subject: `${code} — Mã xác thực StudyHub`,
+            html: `
+                <div style="font-family: 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+                    <h1 style="font-size: 20px; color: #0f172a; margin: 0 0 12px;">Xác thực email StudyHub</h1>
+                    <p style="color: #475569; line-height: 1.6; margin: 0 0 16px;">
+                        Xin chào ${name}, mã xác thực 4 số của bạn là:
+                    </p>
+                    <div style="background: #f1f5f9; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 16px;">
+                        <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #0f172a;">${code}</span>
+                    </div>
+                    <p style="color: #64748b; font-size: 14px; line-height: 1.5; margin: 0;">
+                        Mã có hiệu lực trong <strong>10 phút</strong>. Không chia sẻ mã này với bất kỳ ai.
+                    </p>
+                    <p style="color: #94a3b8; font-size: 12px; margin: 20px 0 0;">
+                        Nếu em không đăng ký StudyHub, hãy bỏ qua email này.
+                    </p>
+                </div>
+            `,
+        });
+
+        if (error) {
+            console.error('Resend OTP error:', error);
+            return { success: false, error: error.message };
+        }
         return { success: true };
     } catch (err) {
         return { success: false, error: (err as Error).message };

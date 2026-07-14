@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { BookOpen, Home, MessageCircle, ShoppingCart } from "lucide-react"
+import { BookOpen, Home, MessageCircle, MessageSquarePlus, ShoppingCart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { supportZaloUrlWithText } from "@/lib/support"
 import { getOnlineSubjectInfo } from "@/lib/subjects"
@@ -40,6 +40,7 @@ export function OnlineStudentBottomNav() {
   const studyActive = pathname.startsWith("/online-student/study")
   const homeActive = pathname.startsWith("/online-student/dashboard")
   const payActive = pathname.startsWith("/online-student/payment")
+  const feedbackActive = pathname.startsWith("/online-student/feedback")
 
   const itemClass = (active: boolean) =>
     cn(
@@ -66,6 +67,10 @@ export function OnlineStudentBottomNav() {
           <ShoppingCart className="h-5 w-5" />
           <span>Mua khóa</span>
         </Link>
+        <Link href="/online-student/feedback" className={itemClass(feedbackActive)}>
+          <MessageSquarePlus className="h-5 w-5" />
+          <span>Góp ý</span>
+        </Link>
         <a
           href={supportZaloUrlWithText("Hỗ trợ StudyHub Online")}
           target="_blank"
@@ -73,7 +78,7 @@ export function OnlineStudentBottomNav() {
           className={itemClass(false)}
         >
           <MessageCircle className="h-5 w-5" />
-          <span>Hỗ trợ</span>
+          <span>Zalo</span>
         </a>
       </div>
     </nav>

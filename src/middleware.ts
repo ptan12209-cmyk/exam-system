@@ -5,6 +5,7 @@ import {
   isGamificationRoute,
   isRegistrationOpen,
 } from '@/lib/features'
+import { isVerificationBlocked } from '@/lib/email-verify'
 
 /**
  * Middleware for:
@@ -12,13 +13,34 @@ import {
  * 2. Protecting /teacher/*, /student/*, /arena/*, /live/*, /profile/* routes
  * 3. Role-based access control (student ↔ teacher)
  * 4. Feature locks (gamification, registration)
+ * 5. Email verification grace (hard block after 5 days for self_register)
  */
 
 // Routes that require authentication
-const PROTECTED_PREFIXES = ['/teacher', '/student', '/arena', '/live', '/profile', '/pricing', '/online-student']
+const PROTECTED_PREFIXES = [
+  '/teacher',
+  '/student',
+  '/arena',
+  '/live',
+  '/profile',
+  '/pricing',
+  '/online-student',
+  '/verify-email',
+]
 
 // Routes that should only be accessed when NOT authenticated
-const AUTH_ROUTES = ['/login', '/register']
+const AUTH_ROUTES = ['/login', '/register', '/forgot-password']
+
+// Email-verify hard-gate does not apply on these (authenticated)
+const VERIFY_EXEMPT_PREFIXES = [
+  '/verify-email',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/auth/',
+  '/payment/',
+]
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -65,10 +87,20 @@ export async function middleware(request: NextRequest) {
 
   // IMPORTANT: Do NOT use supabase.auth.getSession() here.
   // Use getUser() which validates the token with the Supabase Auth server.
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  const isProtected = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix))
-  const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route))
+  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route))
+
+  // reset-password is semi-public (user may arrive with recovery session)
+  if (!user && pathname.startsWith('/verify-email')) {
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = '/login'
+    loginUrl.searchParams.set('redirectTo', '/verify-email')
+    return NextResponse.redirect(loginUrl)
+  }
 
   // If user is not authenticated and trying to access protected route → redirect to login
   if (!user && isProtected) {
@@ -80,17 +112,21 @@ export async function middleware(request: NextRequest) {
 
   // If user IS authenticated and visiting login/register → redirect to dashboard
   if (user && isAuthRoute) {
-    // Fetch role to decide where to redirect
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, email_verified_at, account_source, created_at')
       .eq('id', user.id)
       .single()
 
     if (!profile) {
-      // If there is no profile record, DO NOT redirect them to the dashboard.
-      // Let them access `/login` to sign out or sign in with another account.
       return supabaseResponse
+    }
+
+    if (isVerificationBlocked(profile)) {
+      const verifyUrl = request.nextUrl.clone()
+      verifyUrl.pathname = '/verify-email'
+      verifyUrl.searchParams.set('reason', 'deadline')
+      return NextResponse.redirect(verifyUrl)
     }
 
     const dashboardUrl = request.nextUrl.clone()
@@ -102,15 +138,34 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(dashboardUrl)
   }
 
+  // Hard gate: self_register past grace → only verify-email (and exempt paths)
+  if (user) {
+    const exempt = VERIFY_EXEMPT_PREFIXES.some((p) => pathname.startsWith(p))
+    if (!exempt && (isProtected || pathname.startsWith('/student'))) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, email_verified_at, account_source, created_at')
+        .eq('id', user.id)
+        .single()
+
+      if (profile && isVerificationBlocked(profile)) {
+        const verifyUrl = request.nextUrl.clone()
+        verifyUrl.pathname = '/verify-email'
+        verifyUrl.searchParams.set('reason', 'deadline')
+        return NextResponse.redirect(verifyUrl)
+      }
+    }
+  }
+
   // Role-based access control for authenticated users
   if (user && isProtected) {
-    const needsRoleCheck = 
-      pathname.startsWith('/teacher') || 
-      pathname.startsWith('/student') || 
-      pathname.startsWith('/online-student') || 
-      pathname.startsWith('/arena') || 
+    const needsRoleCheck =
+      pathname.startsWith('/teacher') ||
+      pathname.startsWith('/student') ||
+      pathname.startsWith('/online-student') ||
+      pathname.startsWith('/arena') ||
       pathname.startsWith('/live')
-    
+
     if (needsRoleCheck) {
       const { data: profile } = await supabase
         .from('profiles')
@@ -126,12 +181,11 @@ export async function middleware(request: NextRequest) {
             redirectUrl.pathname = '/online-student/dashboard'
             return NextResponse.redirect(redirectUrl)
           }
-          // Redirect all deprecated teacher pages to online study management
-          // Allow only: /teacher/online-study, /teacher/profile (and their subpaths)
-          const isAllowedTeacherPath = 
-            pathname.startsWith('/teacher/online-study') || 
-            pathname.startsWith('/teacher/profile')
-            
+          const isAllowedTeacherPath =
+            pathname.startsWith('/teacher/online-study') ||
+            pathname.startsWith('/teacher/profile') ||
+            pathname.startsWith('/teacher/feedback')
+
           if (!isAllowedTeacherPath) {
             const redirectUrl = request.nextUrl.clone()
             redirectUrl.pathname = '/teacher/online-study'
@@ -146,7 +200,6 @@ export async function middleware(request: NextRequest) {
             redirectUrl.pathname = '/teacher/online-study'
             return NextResponse.redirect(redirectUrl)
           }
-          // Protect profile page but redirect all other student routes to online dashboard
           const isProfilePage = pathname.startsWith('/student/profile')
           if (!isProfilePage) {
             const redirectUrl = request.nextUrl.clone()

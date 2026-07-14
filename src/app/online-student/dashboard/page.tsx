@@ -427,8 +427,8 @@ export default function OnlineStudentDashboard() {
                     </p>
                     <p className="text-[11px] text-[var(--os-muted)] mt-0.5">
                       {continueStudy.lessonId
-                        ? "Mở lại bài bạn đang xem dở"
-                        : "Vào thư mục môn học gần nhất"}
+                        ? "Mở lại bài em đang xem dở"
+                        : "Vào môn học gần nhất"}
                     </p>
                   </div>
                 </div>

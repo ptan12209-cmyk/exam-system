@@ -21,7 +21,8 @@ import {
   PieChart,
   UserCircle,
   Activity,
-  Globe2
+  Globe2,
+  MessageCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
@@ -37,6 +38,7 @@ const NAV_ITEMS = [
   { href: "/teacher/online-study?tab=orders", label: "Đơn hàng", icon: FileText },
   { href: "/teacher/online-study?tab=permissions", label: "Cấp quyền HV", icon: User },
   { href: "/teacher/online-study?tab=payment", label: "Thanh toán & giá", icon: Database },
+  { href: "/teacher/feedback", label: "Góp ý HV", icon: MessageCircle },
 ]
 
 const MANAGE_ITEMS = [

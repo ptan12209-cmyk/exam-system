@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import { Captcha, useCaptcha } from "@/components/Captcha"
 import { ArrowRight, BookOpen, Eye, EyeOff, GraduationCap, Lock, Mail, Phone, Sparkles, User } from "lucide-react"
 import Footer from "@/components/Footer"
@@ -104,7 +105,18 @@ export default function RegisterPage() {
           "Có lỗi xảy ra khi tạo tài khoản"
         throw new Error(typeof msg === "string" ? msg : "Đăng ký thất bại")
       }
-      router.push("/login?registered=1")
+
+      // Auto sign-in then OTP verify page (OTP already sent on register)
+      const supabase = createClient()
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password,
+      })
+      if (signInError) {
+        router.push("/login?registered=1")
+        return
+      }
+      router.push("/verify-email?welcome=1")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đăng ký thất bại")
     } finally {

@@ -35,6 +35,42 @@ export default function LoginPage() {
     }
   }, [])
 
+  const bindDevice = async () => {
+    try {
+      const deviceId = getOrCreateDeviceId()
+      await fetch("/api/auth/device/bind", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-device-id": deviceId,
+        },
+        body: JSON.stringify({
+          deviceId,
+          deviceLabel: getDeviceLabel(),
+        }),
+        credentials: "same-origin",
+      })
+    } catch {
+      /* non-blocking */
+    }
+  }
+
+  const handleGoogle = async () => {
+    setLoading(true)
+    setError(null)
+    const origin = typeof window !== "undefined" ? window.location.origin : ""
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${origin}/auth/callback`,
+      },
+    })
+    if (oauthError) {
+      setError(oauthError.message)
+      setLoading(false)
+    }
+  }
+
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
@@ -53,31 +89,21 @@ export default function LoginPage() {
       return
     }
 
-    // Bind this browser as the sole active device (students only; API skips staff)
-    try {
-      const deviceId = getOrCreateDeviceId()
-      await fetch("/api/auth/device/bind", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-device-id": deviceId,
-        },
-        body: JSON.stringify({
-          deviceId,
-          deviceLabel: getDeviceLabel(),
-        }),
-        credentials: "same-origin",
-      })
-    } catch {
-      /* non-blocking; verify will auto-bind later */
-    }
+    await bindDevice()
 
-    const { data: profile } = await supabase.from("profiles").select("role, nickname").eq("id", data.user.id).single()
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, nickname, email_verified_at, account_source, created_at")
+      .eq("id", data.user.id)
+      .single()
+
     if (profile?.role === "teacher") {
       router.push("/teacher/online-study")
-    } else {
-      router.push("/online-student/dashboard")
+      return
     }
+
+    // Hard-gate after grace is handled by middleware; soft path goes dashboard
+    router.push("/online-student/dashboard")
   }
 
   return (
@@ -147,7 +173,15 @@ export default function LoginPage() {
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium">Mật khẩu</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">Mật khẩu</span>
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-[hsl(var(--muted-foreground))] underline-offset-4 hover:underline hover:text-[hsl(var(--foreground))]"
+                  >
+                    Quên mật khẩu?
+                  </Link>
+                </div>
                 <div className="flex items-center gap-3 rounded-2xl border border-[hsl(var(--border))]/60 px-4 py-3 transition-colors focus-within:border-[hsl(var(--foreground))]/60">
                   <Lock className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
                   <input
@@ -189,6 +223,27 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[hsl(var(--border))]/40" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-[hsl(var(--background))] px-3 text-[hsl(var(--muted-foreground))]">hoặc</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogle}
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-[hsl(var(--border))]/60 px-5 py-3.5 text-sm font-semibold transition-colors hover:bg-[hsl(var(--muted))]/20 disabled:opacity-50"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden>
+                <path fill="#EA4335" d="M12 10.2v3.6h5.1c-.2 1.2-1.5 3.6-5.1 3.6-3.1 0-5.6-2.5-5.6-5.6S8.9 6.2 12 6.2c1.8 0 3 .7 3.7 1.4l2.5-2.4C16.8 3.8 14.6 2.8 12 2.8 6.9 2.8 2.8 6.9 2.8 12S6.9 21.2 12 21.2c5.5 0 9.1-3.9 9.1-9.3 0-.6-.1-1.1-.2-1.7H12z" />
+              </svg>
+              Tiếp tục với Google
+            </button>
 
             <p className="mt-6 text-center text-sm text-[hsl(var(--muted-foreground))]">
               Chưa có tài khoản?{" "}

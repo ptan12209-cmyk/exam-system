@@ -2,10 +2,16 @@
 
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { CheckCircle, XCircle, ArrowLeft, Home, GraduationCap } from "lucide-react"
+import { CheckCircle, XCircle, ArrowLeft, Home, GraduationCap, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Suspense } from "react"
 import { cn } from "@/lib/utils"
+import {
+  SUPPORT_EMAIL,
+  SUPPORT_EMAIL_URL,
+  SUPPORT_ZALO,
+  supportZaloUrlWithText,
+} from "@/lib/support"
 
 function PaymentResultContent() {
     const searchParams = useSearchParams()
@@ -60,15 +66,19 @@ function PaymentResultContent() {
                         </p>
 
                         {success && (
-                            <div className="mb-8 rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/10 p-5 text-left">
-                                <p className="mb-1 font-medium">
-                                    {isOnlineStudy ? "Cảm ơn bạn đã mua khóa học!" : "Cảm ơn bạn đã sử dụng ExamHub!"}
+                            <div className="mb-8 rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--muted))]/10 p-5 text-left space-y-2">
+                                <p className="font-medium">Cảm ơn em đã chọn StudyHub.</p>
+                                <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
+                                    Quyền truy cập đã kích hoạt. Cần hỗ trợ kỹ thuật hoặc thắc mắc đơn hàng: liên hệ Zalo/email hỗ trợ — thầy phản hồi nhanh.
                                 </p>
-                                <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                                    {isOnlineStudy
-                                        ? "Môn học đã được mở khóa tự động. Bạn có thể bắt đầu học ngay."
-                                        : "Gói dịch vụ của bạn đã được kích hoạt. Bạn có thể bắt đầu sử dụng ngay bây giờ."}
+                                <p className="text-sm italic text-[hsl(var(--muted-foreground))]">
+                                    Học viên là trung tâm; mọi góp ý đều được lắng nghe.
                                 </p>
+                                {isOnlineStudy && (
+                                    <p className="text-xs text-[hsl(var(--muted-foreground))] pt-1">
+                                        Môn học đã được mở khóa tự động. Em có thể bắt đầu học ngay.
+                                    </p>
+                                )}
                             </div>
                         )}
 
@@ -88,9 +98,35 @@ function PaymentResultContent() {
                                 </Button>
                             </Link>
                         </div>
+
+                        {success && (
+                            <div className="mt-6 flex flex-col gap-2 text-sm">
+                                <a
+                                    href={supportZaloUrlWithText("Hỗ trợ StudyHub — sau thanh toán")}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center gap-2 font-medium text-[hsl(var(--foreground))] underline-offset-4 hover:underline"
+                                >
+                                    <MessageCircle className="h-4 w-4" />
+                                    Zalo hỗ trợ {SUPPORT_ZALO}
+                                </a>
+                                <Link
+                                    href="/online-student/feedback"
+                                    className="text-center text-[hsl(var(--muted-foreground))] underline-offset-4 hover:underline"
+                                >
+                                    Góp ý để StudyHub tốt hơn
+                                </Link>
+                            </div>
+                        )}
                         
                         <p className="mt-8 text-sm text-[hsl(var(--muted-foreground))]">
-                            Cần hỗ trợ? <a href="mailto:support@examhub.id.vn" className="font-medium text-[hsl(var(--foreground))] underline-offset-4 hover:underline">Liên hệ chúng tôi</a>
+                            Cần hỗ trợ?{" "}
+                            <a
+                                href={SUPPORT_EMAIL_URL}
+                                className="font-medium text-[hsl(var(--foreground))] underline-offset-4 hover:underline"
+                            >
+                                {SUPPORT_EMAIL}
+                            </a>
                         </p>
                     </div>
                 </div>

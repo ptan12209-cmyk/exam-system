@@ -46,13 +46,17 @@ async function handlePOST(request: NextRequest) {
 
   const newStudentId = authData.user.id
 
-  // 2. Cập nhật thêm trường class (lớp học) và đồng bộ trường trong profiles
+  // 2. Cập nhật profile — teacher-provisioned: skip email OTP
+  const now = new Date().toISOString()
   const { error: profileError } = await adminSupabase
     .from("profiles")
     .update({
       full_name: fullName,
       class: studentClass || null,
-      role: "student"
+      role: "student",
+      email: email.toLowerCase().trim(),
+      account_source: "teacher",
+      email_verified_at: now,
     })
     .eq("id", newStudentId)
 
