@@ -58,6 +58,8 @@ export type ImportItem = {
   folderKey?: string
   /** Subject root machine id */
   rootFolderKey?: string
+  /** Pipeline quality: A import; B/F rejected */
+  quality?: string
 }
 
 export type ImportPayload = {
@@ -554,6 +556,29 @@ export async function importOnlineStudyItems(
             remotePath: item.remotePath,
           })
         : ''
+
+      // Production harden: require content_key when column exists (prevents silent dupe inserts)
+      if (hasContentKey && !contentKey) {
+        result.errors.push({
+          index,
+          driveFileId: item.driveFileId,
+          error: 'contentKey required (stable id missing)',
+        })
+        result.skipped++
+        continue
+      }
+
+      // Reject non-A quality if client sends quality field
+      const q = String((item as { quality?: string }).quality || '').toUpperCase()
+      if (q === 'F' || q === 'B') {
+        result.errors.push({
+          index,
+          driveFileId: item.driveFileId,
+          error: `quality ${q} rejected by import gate`,
+        })
+        result.skipped++
+        continue
+      }
 
       const lessonOrder = naturalOrderIndex(title)
       const rowBase: Record<string, unknown> = {
