@@ -1,10 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { GraduationCap } from "lucide-react"
+import { usePathname } from "next/navigation"
+import { GraduationCap, MessageSquarePlus } from "lucide-react"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { cn } from "@/lib/utils"
 
 interface OnlineStudentTopbarProps {
   readonly name?: string | null
@@ -13,6 +15,9 @@ interface OnlineStudentTopbarProps {
 }
 
 export function OnlineStudentTopbar({ name, onLogout }: Readonly<OnlineStudentTopbarProps>) {
+  const pathname = usePathname()
+  const feedbackActive = pathname?.startsWith("/online-student/feedback")
+
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--os-border)] bg-[var(--os-card)]">
       <div className="h-1 w-full bg-[var(--os-accent)]" aria-hidden />
@@ -36,6 +41,19 @@ export function OnlineStudentTopbar({ name, onLogout }: Readonly<OnlineStudentTo
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Desktop / tablet: clear text CTA (mobile vẫn có bottom nav) */}
+          <Link
+            href="/online-student/feedback"
+            className={cn(
+              "hidden sm:inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+              feedbackActive
+                ? "border-[var(--os-accent)]/40 bg-[var(--os-accent)]/10 text-[var(--os-accent)]"
+                : "border-[var(--os-border)] text-[var(--os-muted)] hover:border-[var(--os-accent)]/40 hover:text-[var(--os-fg)]"
+            )}
+          >
+            <MessageSquarePlus className="h-3.5 w-3.5" />
+            Góp ý
+          </Link>
           <ThemeToggle />
           <div className="relative border-r border-[var(--os-border)] pr-3 sm:pr-4">
             <NotificationBell />
