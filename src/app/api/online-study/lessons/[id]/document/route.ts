@@ -163,6 +163,9 @@ async function handleGET(
     headers.set("Cache-Control", "private, max-age=120")
     headers.set("X-Content-Type-Options", "nosniff")
     headers.set("X-Doc-Via", via)
+    // Allow same-origin iframe preview (overrides site-wide DENY when possible)
+    headers.set("X-Frame-Options", "SAMEORIGIN")
+    headers.set("Content-Security-Policy", "frame-ancestors 'self'")
     const len = res.headers.get("content-length")
     if (len) headers.set("Content-Length", len)
 

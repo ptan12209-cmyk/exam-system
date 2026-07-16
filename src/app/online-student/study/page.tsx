@@ -126,6 +126,10 @@ function StudyPageInner() {
   const [activeVideo, setActiveVideo] = useState<{ title: string; url: string } | null>(null)
   /** Index of document shown in-app (proxy PDF), null = none */
   const [previewDocIndex, setPreviewDocIndex] = useState<number | null>(null)
+  /** blob: URL for iframe (avoids CSP frame-ancestors on HTML error pages) */
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
 
   // Soft keyboard deterrents only. Do NOT use outerWidth/innerWidth heuristics:
   // browser zoom, DPI scale, and OS chrome all trigger false "DevTools" locks.
@@ -396,6 +400,90 @@ function StudyPageInner() {
   const documentProxyUrl = (lessonId: string, index: number) =>
     `/api/online-study/lessons/${lessonId}/document?index=${index}&proxy=1`
 
+  // Load PDF via authenticated fetch → blob URL (iframe cannot use x-device-id header;
+  // site CSP frame-ancestors 'none' also blocks framing HTML error/login pages)
+  useEffect(() => {
+    if (previewDocIndex === null || !activeLesson) {
+      setPreviewBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return null
+      })
+      setPreviewError(null)
+      setPreviewLoading(false)
+      return
+    }
+
+    let cancelled = false
+    let objectUrl: string | null = null
+
+    const run = async () => {
+      setPreviewLoading(true)
+      setPreviewError(null)
+      setPreviewBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return null
+      })
+      try {
+        const res = await onlineStudyFetch(
+          documentProxyUrl(activeLesson.id, previewDocIndex)
+        )
+        if (!res.ok) {
+          const text = await res.text().catch(() => "")
+          let msg = `Không tải được PDF (${res.status})`
+          try {
+            const j = JSON.parse(text)
+            msg = j?.error?.message || j?.error || j?.message || msg
+          } catch {
+            if (text && text.length < 200 && !text.includes("<")) msg = text
+          }
+          throw new Error(typeof msg === "string" ? msg : "Không tải được PDF")
+        }
+        const buf = await res.arrayBuffer()
+        if (cancelled) return
+        const type =
+          res.headers.get("content-type") ||
+          (String(docsTitleHint(activeLesson, previewDocIndex)).match(/\.pdf$/i)
+            ? "application/pdf"
+            : "application/pdf")
+        const blob = new Blob([buf], {
+          type: type.includes("pdf") ? "application/pdf" : type || "application/pdf",
+        })
+        // Guard: HTML error page mistaken as success
+        const head = new TextDecoder().decode(buf.slice(0, 20))
+        if (/^\s*</.test(head) || head.includes("<!DOCTYPE") || head.includes("<html")) {
+          throw new Error(
+            "Server trả về trang HTML thay vì PDF (auth/CSP). Thử tải lại hoặc mở tab mới."
+          )
+        }
+        objectUrl = URL.createObjectURL(blob)
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl)
+          return
+        }
+        setPreviewBlobUrl(objectUrl)
+      } catch (e) {
+        if (!cancelled) {
+          const msg = e instanceof Error ? e.message : "Không xem trước được PDF"
+          setPreviewError(msg)
+          toastError(msg)
+        }
+      } finally {
+        if (!cancelled) setPreviewLoading(false)
+      }
+    }
+
+    void run()
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-fetch when lesson/index change
+  }, [previewDocIndex, activeLesson?.id])
+
+  function docsTitleHint(lesson: CatalogLesson, index: number) {
+    return playback?.documents?.[index]?.title || lesson.title || "document.pdf"
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push("/login")
@@ -544,15 +632,37 @@ function StudyPageInner() {
                       </a>
                     </div>
                   </div>
-                  <div className="rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] overflow-hidden min-h-[70vh]">
-                    <iframe
-                      title={docs[previewDocIndex].title || "PDF preview"}
-                      src={documentProxyUrl(activeLesson.id, previewDocIndex)}
-                      className="w-full h-[min(80vh,900px)] min-h-[70vh] bg-white"
-                    />
+                  <div className="rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] overflow-hidden min-h-[70vh] relative">
+                    {previewLoading && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--os-card)]/90">
+                        <Loading label="Đang tải PDF…" />
+                      </div>
+                    )}
+                    {previewError && !previewLoading && (
+                      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 p-6 text-center">
+                        <p className="text-sm text-red-400 max-w-md">{previewError}</p>
+                        <a
+                          href={documentProxyUrl(activeLesson.id, previewDocIndex)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button className="rounded-xl bg-[var(--os-accent)] text-[var(--os-accent-fg)] text-xs font-bold">
+                            Mở tab mới (proxy)
+                          </Button>
+                        </a>
+                      </div>
+                    )}
+                    {previewBlobUrl && !previewError && (
+                      <iframe
+                        title={docs[previewDocIndex].title || "PDF preview"}
+                        src={previewBlobUrl}
+                        className="w-full h-[min(80vh,900px)] min-h-[70vh] bg-white"
+                      />
+                    )}
                   </div>
                   <p className="text-[10px] text-[var(--os-muted)]">
-                    Xem trước trong trang · file lớn có thể mất vài giây để tải.
+                    Xem trước trong trang (blob) · file lớn có thể mất vài giây · không phụ thuộc CDN
+                    pull zone.
                   </p>
                 </div>
               ) : docs.length > 0 ? (

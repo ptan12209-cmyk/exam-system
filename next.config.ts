@@ -49,9 +49,28 @@ const nextConfig: NextConfig = {
     ];
 
     return [
+      // PDF document proxy must be embeddable same-origin (in-app preview iframe)
+      {
+        source: '/api/online-study/lessons/:id/document',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'private, max-age=120',
+          },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Override site-wide DENY so iframe preview works
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self'; default-src 'none'; sandbox",
+          },
+        ],
+      },
       {
         // Only apply no-cache to HTML pages, not static assets
-        source: '/((?!_next/static|_next/image|icons|fonts|favicon\\.ico|manifest\\.json|sw\\.js).*)',
+        // Exclude document proxy (handled above) from frame-ancestors none
+        source:
+          '/((?!_next/static|_next/image|icons|fonts|favicon\\.ico|manifest\\.json|sw\\.js|api/online-study/lessons/.*/document).*)',
         headers: [
           // private + must-revalidate: browser may revalidate without public CDN caching auth HTML
           {
