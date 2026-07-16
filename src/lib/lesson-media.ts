@@ -22,12 +22,17 @@ export function sanitizeLessonForCatalog(lesson: LessonMediaRow) {
   const hasVideo = videos.length > 0 || !!lesson.video_url
   const hasDocuments = documents.length > 0 || !!lesson.document_url
 
+  const sourceKind =
+    typeof lesson.source_kind === 'string' ? lesson.source_kind : null
+
   return {
     id: lesson.id,
     folder_id: lesson.folder_id,
     title: lesson.title,
     description: lesson.description ?? null,
     order_index: lesson.order_index ?? 1,
+    // For UI: video = bài giảng, pdf = tài liệu
+    source_kind: sourceKind,
     has_video: hasVideo,
     video_count: videos.length || (lesson.video_url ? 1 : 0),
     has_documents: hasDocuments,

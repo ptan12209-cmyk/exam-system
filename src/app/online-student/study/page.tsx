@@ -48,6 +48,11 @@ import { useToast } from "@/components/ui/toast"
 import { CopyrightNotice } from "@/components/Footer"
 import { cn } from "@/lib/utils"
 import { cacheGet, cacheSet } from "@/lib/client-swr-cache"
+import {
+  getOnlineLessonMediaKind,
+  getOnlineLessonTypeLabel,
+  isDocumentLesson,
+} from "@/lib/online-lesson-kind"
 import { EmptyState } from "@/components/online-student/EmptyState"
 import { ErrorState } from "@/components/online-student/ErrorState"
 import {
@@ -70,6 +75,7 @@ interface CatalogLesson {
   title: string
   description: string | null
   order_index: number
+  source_kind?: string | null
   has_video?: boolean
   video_count?: number
   has_documents?: boolean
@@ -802,7 +808,7 @@ function StudyPageInner() {
                 {subjectSearchResults.lessons.length > 0 && (
                   <div>
                     <h3 className="text-[11px] font-mono uppercase tracking-wider text-[var(--os-muted)] mb-3">
-                      Bài giảng ({subjectSearchResults.lessons.length})
+                      Nội dung ({subjectSearchResults.lessons.length})
                     </h3>
                     <div className="space-y-2">
                       {subjectSearchResults.lessons.map((lesson) => (
@@ -815,7 +821,11 @@ function StudyPageInner() {
                           }}
                           className="flex w-full items-center gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)]/50 px-4 py-3 text-left hover:border-[var(--os-accent)]/40"
                         >
-                          <PlayCircle className="h-5 w-5 text-[var(--os-accent)] shrink-0" />
+                          {isDocumentLesson(lesson) ? (
+                            <FileText className="h-5 w-5 text-emerald-400 shrink-0" />
+                          ) : (
+                            <PlayCircle className="h-5 w-5 text-[var(--os-accent)] shrink-0" />
+                          )}
                           <span className="text-sm font-semibold text-[var(--os-fg)] truncate">
                             {lesson.title}
                           </span>
@@ -879,11 +889,17 @@ function StudyPageInner() {
               {currentLessons.length > 0 && (
                 <div>
                   <h3 className="text-[11px] font-mono uppercase tracking-wider text-[var(--os-muted)] mb-3">
-                    Bài giảng ({currentLessons.length})
+                    Nội dung ({currentLessons.length})
+                    <span className="font-normal normal-case ml-2 opacity-80">
+                      · {currentLessons.filter((l) => getOnlineLessonMediaKind(l) !== "document").length} bài giảng
+                      · {currentLessons.filter((l) => isDocumentLesson(l)).length} tài liệu
+                    </span>
                   </h3>
                   <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {currentLessons.map((lesson) => {
                       const done = completedLessons.includes(lesson.id)
+                      const isDoc = isDocumentLesson(lesson)
+                      const typeLabel = getOnlineLessonTypeLabel(lesson)
                       const hasVideo =
                         lesson.has_video ||
                         (lesson.videos && lesson.videos.length > 0) ||
@@ -896,13 +912,15 @@ function StudyPageInner() {
                         <button
                           key={lesson.id}
                           type="button"
-                          aria-label={`${done ? "Đã học · " : ""}Mở bài ${lesson.title}`}
+                          aria-label={`${done ? "Đã học · " : ""}Mở ${typeLabel} ${lesson.title}`}
                           onClick={() => void openLesson(lesson)}
                           className="group flex flex-col gap-3 rounded-2xl border border-[var(--os-muted)]/15 bg-[var(--os-bg)]/40 p-5 text-left hover:border-[var(--os-accent)]/45 hover:bg-[var(--os-bg)] transition-all min-h-[130px] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[var(--os-accent)]/50"
                         >
                           <div className="flex items-start justify-between w-full">
                             {done ? (
                               <CheckCircle2 className="h-9 w-9 text-emerald-400" />
+                            ) : isDoc ? (
+                              <FileText className="h-9 w-9 text-emerald-400/80 group-hover:text-emerald-400 transition-colors" />
                             ) : (
                               <PlayCircle className="h-9 w-9 text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors" />
                             )}
@@ -913,6 +931,16 @@ function StudyPageInner() {
                               {lesson.title}
                             </p>
                             <div className="flex gap-2 mt-2 flex-wrap">
+                              <span
+                                className={cn(
+                                  "text-[10px] font-bold uppercase px-2 py-0.5 rounded-md",
+                                  isDoc
+                                    ? "text-emerald-400 bg-emerald-500/10"
+                                    : "text-[var(--os-accent)] bg-[var(--os-accent)]/10"
+                                )}
+                              >
+                                {typeLabel}
+                              </span>
                               {hasVideo && (
                                 <span className="text-[10px] font-bold uppercase text-[var(--os-accent)] bg-[var(--os-accent)]/10 px-2 py-0.5 rounded-md">
                                   Video
@@ -920,7 +948,7 @@ function StudyPageInner() {
                               )}
                               {hasDoc && (
                                 <span className="text-[10px] font-bold uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                                  Tài liệu
+                                  PDF
                                 </span>
                               )}
                               {done && (
@@ -957,6 +985,8 @@ function StudyPageInner() {
               ))}
               {currentLessons.map((lesson) => {
                 const done = completedLessons.includes(lesson.id)
+                const isDoc = isDocumentLesson(lesson)
+                const typeLabel = getOnlineLessonTypeLabel(lesson)
                 return (
                   <button
                     key={lesson.id}
@@ -966,13 +996,22 @@ function StudyPageInner() {
                   >
                     {done ? (
                       <CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0" />
+                    ) : isDoc ? (
+                      <FileText className="h-6 w-6 text-emerald-400 shrink-0" />
                     ) : (
                       <PlayCircle className="h-6 w-6 text-[var(--os-muted)] shrink-0" />
                     )}
                     <span className="flex-1 text-sm font-semibold text-[var(--os-fg)] truncate">
                       {lesson.title}
                     </span>
-                    <span className="text-[10px] text-[var(--os-muted)] font-mono shrink-0">Bài giảng</span>
+                    <span
+                      className={cn(
+                        "text-[10px] font-mono shrink-0",
+                        isDoc ? "text-emerald-400" : "text-[var(--os-muted)]"
+                      )}
+                    >
+                      {typeLabel}
+                    </span>
                     <ChevronRight className="h-4 w-4 text-[var(--os-muted)]" />
                   </button>
                 )

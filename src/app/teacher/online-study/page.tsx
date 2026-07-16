@@ -28,6 +28,11 @@ import type {
   FolderTreeNode,
   StudyTab,
 } from "@/components/teacher/online-study/types"
+import {
+  getOnlineLessonMediaKind,
+  getOnlineLessonTypeLabel,
+  isDocumentLesson,
+} from "@/lib/online-lesson-kind"
 
 const LazyAccessSecurityPanel = dynamic(
   () =>
@@ -1424,15 +1429,28 @@ function TeacherOnlineStudyPage() {
                       </div>
                     )}
 
-                    {/* Lessons list */}
+                    {/* Lessons list — video = Bài giảng, pdf = Tài liệu */}
                     {currentLessons.length > 0 && (
                       <div>
-                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--os-muted)] font-mono mb-4">Bài giảng ({currentLessons.length})</h4>
+                        {(() => {
+                          const nVideo = currentLessons.filter((l) => getOnlineLessonMediaKind(l) !== "document").length
+                          const nDoc = currentLessons.filter((l) => isDocumentLesson(l)).length
+                          return (
+                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--os-muted)] font-mono mb-4">
+                          Nội dung ({currentLessons.length})
+                          <span className="font-normal normal-case tracking-normal ml-2 text-[var(--os-muted)]/80">
+                            · {nVideo} bài giảng · {nDoc} tài liệu
+                          </span>
+                        </h4>
+                          )
+                        })()}
                         
                         {viewMode === "grid" ? (
                           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {currentLessons.map(lesson => {
                               const checked = selectedLessonIds.has(lesson.id)
+                              const isDoc = isDocumentLesson(lesson)
+                              const typeLabel = getOnlineLessonTypeLabel(lesson)
                               return (
                               <div
                                 key={lesson.id}
@@ -1450,7 +1468,7 @@ function TeacherOnlineStudyPage() {
                                       onClick={() => toggleLessonSelect(lesson.id)}
                                       className="mt-0.5 p-0.5 rounded text-[var(--os-muted)] hover:text-[var(--os-accent)]"
                                       title={checked ? "Bỏ chọn" : "Chọn để xóa"}
-                                      aria-label={checked ? "Bỏ chọn bài giảng" : "Chọn bài giảng"}
+                                      aria-label={checked ? `Bỏ chọn ${typeLabel}` : `Chọn ${typeLabel}`}
                                     >
                                       {checked ? (
                                         <CheckSquare className="h-4 w-4 text-[var(--os-accent)]" />
@@ -1458,13 +1476,17 @@ function TeacherOnlineStudyPage() {
                                         <Square className="h-4 w-4" />
                                       )}
                                     </button>
-                                    <PlayCircle className="h-9 w-9 text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors" />
+                                    {isDoc ? (
+                                      <FileText className="h-9 w-9 text-emerald-400/80 group-hover:text-emerald-400 transition-colors" />
+                                    ) : (
+                                      <PlayCircle className="h-9 w-9 text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors" />
+                                    )}
                                   </div>
                                   <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button 
                                       onClick={() => openEditLesson(lesson)}
                                       className="p-1.5 rounded-lg bg-[var(--os-card)] text-[var(--os-muted)] hover:text-[var(--os-accent)] border border-[var(--os-muted)]/20"
-                                      title="Sửa bài giảng"
+                                      title={isDoc ? "Sửa tài liệu" : "Sửa bài giảng"}
                                     >
                                       <Edit3 className="h-3.5 w-3.5" />
                                     </button>
@@ -1481,8 +1503,20 @@ function TeacherOnlineStudyPage() {
                                 <div className="min-w-0 mt-3">
                                   <h5 className="font-bold text-sm text-[var(--os-fg)] line-clamp-2 leading-snug">{lesson.title}</h5>
                                   <div className="flex gap-2 mt-2 flex-wrap">
-                                    {(lesson.video_url || (lesson.videos && lesson.videos.length > 0)) && <span className="text-[10px] uppercase font-bold text-[var(--os-accent)] bg-[var(--os-accent)]/10 px-2 py-0.5 rounded-md">Video</span>}
-                                    {(lesson.document_url || (lesson.documents && lesson.documents.length > 0)) && <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">Tài liệu</span>}
+                                    <span className={cn(
+                                      "text-[10px] uppercase font-bold px-2 py-0.5 rounded-md",
+                                      isDoc
+                                        ? "text-emerald-400 bg-emerald-500/10"
+                                        : "text-[var(--os-accent)] bg-[var(--os-accent)]/10"
+                                    )}>
+                                      {typeLabel}
+                                    </span>
+                                    {(lesson.video_url || (lesson.videos && lesson.videos.length > 0)) && (
+                                      <span className="text-[10px] uppercase font-bold text-[var(--os-accent)] bg-[var(--os-accent)]/10 px-2 py-0.5 rounded-md">Video</span>
+                                    )}
+                                    {(lesson.document_url || (lesson.documents && lesson.documents.length > 0)) && (
+                                      <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">PDF</span>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -1493,6 +1527,8 @@ function TeacherOnlineStudyPage() {
                           <div className="border border-[var(--os-muted)]/10 rounded-xl overflow-hidden divide-y divide-[var(--os-muted)]/10 bg-[var(--os-bg)]/10">
                             {currentLessons.map(lesson => {
                               const checked = selectedLessonIds.has(lesson.id)
+                              const isDoc = isDocumentLesson(lesson)
+                              const typeLabel = getOnlineLessonTypeLabel(lesson)
                               return (
                               <div
                                 key={lesson.id}
@@ -1506,7 +1542,7 @@ function TeacherOnlineStudyPage() {
                                     type="button"
                                     onClick={() => toggleLessonSelect(lesson.id)}
                                     className="shrink-0 p-0.5 text-[var(--os-muted)] hover:text-[var(--os-accent)]"
-                                    aria-label={checked ? "Bỏ chọn bài giảng" : "Chọn bài giảng"}
+                                    aria-label={checked ? `Bỏ chọn ${typeLabel}` : `Chọn ${typeLabel}`}
                                   >
                                     {checked ? (
                                       <CheckSquare className="h-4 w-4 text-[var(--os-accent)]" />
@@ -1514,9 +1550,19 @@ function TeacherOnlineStudyPage() {
                                       <Square className="h-4 w-4" />
                                     )}
                                   </button>
-                                  <PlayCircle className="h-4.5 w-4.5 text-[var(--os-muted)] shrink-0" />
+                                  {isDoc ? (
+                                    <FileText className="h-4.5 w-4.5 text-emerald-400 shrink-0" />
+                                  ) : (
+                                    <PlayCircle className="h-4.5 w-4.5 text-[var(--os-muted)] shrink-0" />
+                                  )}
                                   <span className="text-xs font-semibold text-[var(--os-fg)] truncate">{lesson.title}</span>
-                                  <span className="text-[9px] font-mono text-[var(--os-muted)]">Bài: {lesson.order_index}</span>
+                                  <span className={cn(
+                                    "text-[9px] font-mono shrink-0 uppercase",
+                                    isDoc ? "text-emerald-400/90" : "text-[var(--os-muted)]"
+                                  )}>
+                                    {typeLabel}
+                                  </span>
+                                  <span className="text-[9px] font-mono text-[var(--os-muted)]">#{lesson.order_index}</span>
                                   <div className="flex gap-1.5 shrink-0">
                                     {lesson.video_url && <Video className="h-3 w-3 text-[var(--os-accent)]" />}
                                     {lesson.document_url && <FileText className="h-3 w-3 text-emerald-400" />}

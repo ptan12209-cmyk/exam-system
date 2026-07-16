@@ -16,6 +16,8 @@ export interface DbLesson {
   video_url: string | null
   document_url: string | null
   order_index: number
+  /** Import pipeline: video | pdf | document | … */
+  source_kind?: string | null
   videos?: Array<{ title: string; url: string }>
   documents?: Array<{ title: string; url: string }>
 }
