@@ -124,6 +124,8 @@ function StudyPageInner() {
   const [playback, setPlayback] = useState<PlaybackPayload | null>(null)
   const [loadingPlayback, setLoadingPlayback] = useState(false)
   const [activeVideo, setActiveVideo] = useState<{ title: string; url: string } | null>(null)
+  /** Index of document shown in-app (proxy PDF), null = none */
+  const [previewDocIndex, setPreviewDocIndex] = useState<number | null>(null)
 
   // Soft keyboard deterrents only. Do NOT use outerWidth/innerWidth heuristics:
   // browser zoom, DPI scale, and OS chrome all trigger false "DevTools" locks.
@@ -362,18 +364,23 @@ function StudyPageInner() {
     setActiveLesson(lesson)
     setPlayback(null)
     setActiveVideo(null)
+    setPreviewDocIndex(null)
     setLoadingPlayback(true)
     try {
       const res = await onlineStudyFetch(`/api/online-study/lessons/${lesson.id}/playback`)
       const data = await res.json()
       if (!res.ok || !data.success) {
-        const msg = data?.error?.message || data?.error || "Không tải được video"
+        const msg = data?.error?.message || data?.error || "Không tải được nội dung"
         throw new Error(typeof msg === "string" ? msg : "Playback failed")
       }
       const p = data.data as PlaybackPayload
       setPlayback(p)
       if (p.videos && p.videos.length > 0) {
         setActiveVideo(p.videos[0])
+        setPreviewDocIndex(null)
+      } else if (p.documents && p.documents.length > 0) {
+        // Document-only lesson → auto preview first PDF in-app
+        setPreviewDocIndex(0)
       }
     } catch (e) {
       console.error(e)
@@ -385,6 +392,9 @@ function StudyPageInner() {
       setLoadingPlayback(false)
     }
   }
+
+  const documentProxyUrl = (lessonId: string, index: number) =>
+    `/api/online-study/lessons/${lessonId}/document?index=${index}&proxy=1`
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -462,6 +472,7 @@ function StudyPageInner() {
                 setActiveLesson(null)
                 setPlayback(null)
                 setActiveVideo(null)
+                setPreviewDocIndex(null)
               }}
               className="rounded-xl border border-[var(--os-muted)]/25 text-[var(--os-muted)] hover:text-[var(--os-fg)] text-xs"
             >
@@ -482,9 +493,9 @@ function StudyPageInner() {
             <div className="min-w-0 space-y-4">
               {loadingPlayback ? (
                 <div className="aspect-video rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex items-center justify-center">
-                  <Loading label="Đang tải video bảo mật…" />
+                  <Loading label="Đang tải nội dung…" />
                 </div>
-              ) : activeVideo ? (
+              ) : activeVideo && previewDocIndex === null ? (
                 <div className="space-y-3">
                   <ProtectedVideoPlayer
                     url={activeVideo.url}
@@ -495,9 +506,72 @@ function StudyPageInner() {
                     <p className="text-xs text-[var(--os-muted)]">Đang phát: {activeVideo.title}</p>
                   )}
                 </div>
+              ) : previewDocIndex !== null && docs[previewDocIndex] ? (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-[var(--os-fg)] truncate min-w-0">
+                      <FileText className="h-3.5 w-3.5 inline mr-1 text-emerald-400" />
+                      {docs[previewDocIndex].title || `Tài liệu ${previewDocIndex + 1}`}
+                    </p>
+                    <div className="flex gap-2 shrink-0">
+                      {vids.length > 0 && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 text-[10px] rounded-lg border border-[var(--os-muted)]/25"
+                          onClick={() => {
+                            setPreviewDocIndex(null)
+                            if (vids[0]) setActiveVideo(vids[0])
+                          }}
+                        >
+                          Về video
+                        </Button>
+                      )}
+                      <a
+                        href={documentProxyUrl(activeLesson.id, previewDocIndex)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex"
+                      >
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-8 text-[10px] rounded-lg bg-[var(--os-accent)] text-[var(--os-accent-fg)] font-bold"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" /> Tab mới
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] overflow-hidden min-h-[70vh]">
+                    <iframe
+                      title={docs[previewDocIndex].title || "PDF preview"}
+                      src={documentProxyUrl(activeLesson.id, previewDocIndex)}
+                      className="w-full h-[min(80vh,900px)] min-h-[70vh] bg-white"
+                    />
+                  </div>
+                  <p className="text-[10px] text-[var(--os-muted)]">
+                    Xem trước trong trang · file lớn có thể mất vài giây để tải.
+                  </p>
+                </div>
+              ) : docs.length > 0 ? (
+                <div className="min-h-[40vh] rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex flex-col items-center justify-center gap-3 p-6 text-center">
+                  <FileText className="h-10 w-10 text-emerald-400/80" />
+                  <p className="text-sm text-[var(--os-muted)]">
+                    Bài này có {docs.length} tài liệu. Chọn &quot;Xem trước&quot; ở cột bên.
+                  </p>
+                  <Button
+                    type="button"
+                    className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold"
+                    onClick={() => setPreviewDocIndex(0)}
+                  >
+                    Xem tài liệu đầu tiên
+                  </Button>
+                </div>
               ) : (
                 <div className="aspect-video rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] flex items-center justify-center text-[var(--os-muted)] text-sm">
-                  Bài này chưa có video
+                  Bài này chưa có video / tài liệu
                 </div>
               )}
 
@@ -537,7 +611,7 @@ function StudyPageInner() {
               <div className="text-center sm:text-left">
                 <a
                   href={supportZaloUrlWithText(
-                    `Báo lỗi video — ${subjectInfo.label} — ${activeLesson.title}`
+                    `Báo lỗi học liệu — ${subjectInfo.label} — ${activeLesson.title}`
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -561,10 +635,13 @@ function StudyPageInner() {
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => setActiveVideo(vid)}
+                        onClick={() => {
+                          setActiveVideo(vid)
+                          setPreviewDocIndex(null)
+                        }}
                         className={cn(
                           "flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-semibold",
-                          activeVideo?.url === vid.url
+                          activeVideo?.url === vid.url && previewDocIndex === null
                             ? "border-[var(--os-accent)]/40 bg-[var(--os-accent)]/10 text-[var(--os-accent)]"
                             : "border-[var(--os-muted)]/20 bg-[var(--os-bg)] text-[var(--os-muted)] hover:text-[var(--os-fg)]"
                         )}
@@ -590,26 +667,47 @@ function StudyPageInner() {
                     {docs.map((doc, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between gap-2 rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-bg)] p-2.5"
+                        className={cn(
+                          "rounded-xl border p-2.5 space-y-2",
+                          previewDocIndex === idx
+                            ? "border-emerald-500/40 bg-emerald-500/5"
+                            : "border-[var(--os-muted)]/20 bg-[var(--os-bg)]"
+                        )}
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <FileText className="h-4 w-4 text-[var(--os-accent)] shrink-0" />
+                          <FileText className="h-4 w-4 text-emerald-400 shrink-0" />
                           <span className="text-xs font-semibold text-[var(--os-fg)] truncate">
                             {doc.title || `Tài liệu ${idx + 1}`}
                           </span>
                         </div>
-                        <a
-                          href={`/api/online-study/lessons/${activeLesson.id}/document?index=${idx}&redirect=1`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
+                        <div className="flex flex-wrap gap-1.5">
                           <Button
+                            type="button"
                             size="sm"
-                            className="rounded-lg bg-[var(--os-accent)] text-[var(--os-accent-fg)] text-[10px] font-bold h-8"
+                            onClick={() => {
+                              setPreviewDocIndex(idx)
+                              setActiveVideo(null)
+                            }}
+                            className="rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold h-8 flex-1"
                           >
-                            <Download className="h-3 w-3 mr-0.5" /> Mở
+                            Xem trước
                           </Button>
-                        </a>
+                          <a
+                            href={documentProxyUrl(activeLesson.id, idx)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex flex-1"
+                          >
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="rounded-lg border border-[var(--os-muted)]/25 text-[10px] font-bold h-8 w-full"
+                            >
+                              <Download className="h-3 w-3 mr-0.5" /> Tab mới
+                            </Button>
+                          </a>
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -7,11 +7,21 @@ import { buildPlaybackPayload, type LessonMediaRow } from "@/lib/lesson-media"
 import { maybeSignDocumentUrl } from "@/lib/document-sign"
 import { checkRateLimit, getClientIP, rateLimitResponse } from "@/lib/rate-limit"
 import { requireSingleDevice } from "@/lib/device-binding"
+import {
+  fetchDocumentUpstream,
+  isBunnyCdnUrl,
+  bunnyStorageConfigured,
+} from "@/lib/bunny-storage"
+
+/** Large PDFs via Storage proxy */
+export const maxDuration = 60
 
 /**
  * GET /api/online-study/lessons/[id]/document?index=0
- * Entitled open of a lesson document URL + audit log.
- * Prefer this over raw doc URLs when linking from the study UI.
+ *   &proxy=1 | &preview=1 | &redirect=1  → stream file bytes (inline PDF)
+ *   (default) → JSON { title, url } where url is same-origin proxy for Bunny CDN
+ *
+ * Bunny pull zone DNS may fail; prefer Storage proxy when configured.
  */
 async function handleGET(
   request: NextRequest,
@@ -36,6 +46,10 @@ async function handleGET(
   const indexRaw = request.nextUrl.searchParams.get("index")
   const index = Math.max(0, parseInt(indexRaw || "0", 10) || 0)
   const redirect = request.nextUrl.searchParams.get("redirect") === "1"
+  const proxy =
+    request.nextUrl.searchParams.get("proxy") === "1" ||
+    request.nextUrl.searchParams.get("preview") === "1" ||
+    redirect
 
   if (!lessonId) {
     throw new ApiError("BAD_REQUEST", "Thiếu lesson id", 400)
@@ -86,12 +100,10 @@ async function handleGET(
     throw new ApiError("NOT_FOUND", "Không tìm thấy tài liệu", 404)
   }
 
-  // V4b: re-sign Supabase Storage URL at open time (short TTL)
   const admin = createAdminClient()
   const signed = await maybeSignDocumentUrl(admin, doc.url, 1800)
   const finalUrl = signed.url
 
-  // Only allow http(s) redirects (block javascript: etc.)
   let safeUrl: URL
   try {
     safeUrl = new URL(finalUrl)
@@ -114,23 +126,64 @@ async function handleGET(
         index,
         title: doc.title,
         signed: signed.signed,
+        proxy,
       },
     })
   } catch {
     /* ignore */
   }
 
-  if (redirect) {
-    return NextResponse.redirect(safeUrl.toString(), 302)
+  // Stream bytes (preview / open) — bypass broken CDN hostname via Storage when possible
+  if (proxy) {
+    const { res, via } = await fetchDocumentUpstream(safeUrl.toString())
+    if (!res || !res.ok || !res.body) {
+      throw new ApiError(
+        "BAD_GATEWAY",
+        bunnyStorageConfigured()
+          ? "Không tải được tài liệu từ Bunny Storage. Kiểm tra path/key."
+          : "Không tải được tài liệu. CDN có thể lỗi DNS — cấu hình BUNNY_STORAGE_* trên server.",
+        502
+      )
+    }
+
+    const rawName = String(doc.title || "tai-lieu.pdf")
+    const safeName = rawName.replace(/[^\w.\u00C0-\u1EF9\s()-]/gi, "_").slice(0, 120)
+    const upstreamType = res.headers.get("content-type") || ""
+    const contentType =
+      upstreamType.includes("pdf") || /\.pdf$/i.test(safeName)
+        ? "application/pdf"
+        : upstreamType || "application/octet-stream"
+
+    const headers = new Headers()
+    headers.set("Content-Type", contentType)
+    headers.set(
+      "Content-Disposition",
+      `inline; filename*=UTF-8''${encodeURIComponent(safeName)}`
+    )
+    headers.set("Cache-Control", "private, max-age=120")
+    headers.set("X-Content-Type-Options", "nosniff")
+    headers.set("X-Doc-Via", via)
+    const len = res.headers.get("content-length")
+    if (len) headers.set("Content-Length", len)
+
+    return new NextResponse(res.body, { status: 200, headers })
   }
+
+  // JSON: prefer same-origin proxy URL for Bunny so clients never hit broken pull-zone DNS
+  const preferProxy = isBunnyCdnUrl(safeUrl.toString()) || bunnyStorageConfigured()
+  const clientUrl = preferProxy
+    ? `/api/online-study/lessons/${lessonId}/document?index=${index}&proxy=1`
+    : safeUrl.toString()
 
   return NextResponse.json(
     successResponse({
       title: doc.title,
-      url: safeUrl.toString(),
+      url: clientUrl,
+      absolute_url: safeUrl.toString(),
       index,
       signed: signed.signed,
       expires_in: signed.expires_in,
+      proxy_recommended: preferProxy,
     })
   )
 }
