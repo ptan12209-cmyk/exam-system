@@ -1,6 +1,6 @@
 "use client"
 
-import { LucideIcon, Home, FileText, User, Swords, Eye, CalendarDays } from "lucide-react"
+import { LucideIcon, Home, FileText, User, Swords, UserPlus, CalendarDays } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -16,10 +16,28 @@ interface NavItem {
 
 const studentNavItems: NavItem[] = [
     {
-        href: "/online-student/dashboard",
+        href: "/student/dashboard",
         label: "Trang chủ",
         icon: Home,
-        activePattern: /^\/online-student\/dashboard/
+        activePattern: /^\/student\/dashboard/
+    },
+    {
+        href: "/student/exams",
+        label: "Đề thi",
+        icon: FileText,
+        activePattern: /^\/student\/exams/
+    },
+    {
+        href: "/arena",
+        label: "Đấu trường",
+        icon: Swords,
+        activePattern: /^\/arena/
+    },
+    {
+        href: "/student/timetable",
+        label: "TKB",
+        icon: CalendarDays,
+        activePattern: /^\/student\/timetable/
     },
     {
         href: "/student/profile",
@@ -31,10 +49,28 @@ const studentNavItems: NavItem[] = [
 
 const teacherNavItems: NavItem[] = [
     {
-        href: "/teacher/study",
+        href: "/teacher/dashboard",
         label: "Trang chủ",
         icon: Home,
-        activePattern: /^\/teacher\/study/
+        activePattern: /^\/teacher\/dashboard/
+    },
+    {
+        href: "/teacher/exams/create",
+        label: "Tạo đề",
+        icon: FileText,
+        activePattern: /^\/teacher\/exams\/create/
+    },
+    {
+        href: "/teacher/arena",
+        label: "Đấu trường",
+        icon: Swords,
+        activePattern: /^\/teacher\/arena/
+    },
+    {
+        href: "/teacher/students",
+        label: "Học sinh",
+        icon: UserPlus,
+        activePattern: /^\/teacher\/(students|monitor)/
     },
     {
         href: "/teacher/profile",
@@ -49,8 +85,6 @@ export function MobileNav() {
     const supabase = useMemo(() => createClient(), [])
     const [unsubmittedCount, setUnsubmittedCount] = useState(0)
 
-    // Online portal has its own OnlineStudentBottomNav — avoid double bars
-    const isOnlineStudent = !!pathname?.startsWith("/online-student")
     // Only show on logged-in areas (student or teacher subpaths, or arena/resources)
     const isStudentArea =
         !!pathname &&
@@ -121,7 +155,7 @@ export function MobileNav() {
         }
     }, [isStudentArea, supabase])
 
-    if (!pathname || isOnlineStudent) return null
+    if (!pathname) return null
 
     if (!isStudentArea && !isTeacherArea) {
         return null

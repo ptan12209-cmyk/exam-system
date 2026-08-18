@@ -13,7 +13,7 @@ function getResend(): Resend {
 function getFromEmail(): string {
     return (
         process.env.RESEND_FROM_EMAIL ||
-        'StudyHub <onboarding@resend.dev>'
+        'ExamHub <onboarding@resend.dev>'
     );
 }
 
@@ -188,10 +188,10 @@ export async function sendOtpEmail({
         const { error } = await getResend().emails.send({
             from: getFromEmail(),
             to,
-            subject: `${code} — Mã xác thực StudyHub`,
+            subject: `${code} — Mã xác thực ExamHub`,
             html: `
                 <div style="font-family: 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-                    <h1 style="font-size: 20px; color: #0f172a; margin: 0 0 12px;">Xác thực email StudyHub</h1>
+                    <h1 style="font-size: 20px; color: #0f172a; margin: 0 0 12px;">Xác thực email ExamHub</h1>
                     <p style="color: #475569; line-height: 1.6; margin: 0 0 16px;">
                         Xin chào ${name}, mã xác thực 4 số của bạn là:
                     </p>
@@ -202,7 +202,7 @@ export async function sendOtpEmail({
                         Mã có hiệu lực trong <strong>10 phút</strong>. Không chia sẻ mã này với bất kỳ ai.
                     </p>
                     <p style="color: #94a3b8; font-size: 12px; margin: 20px 0 0;">
-                        Nếu em không đăng ký StudyHub, hãy bỏ qua email này.
+                        Nếu em không đăng ký ExamHub, hãy bỏ qua email này.
                     </p>
                 </div>
             `,

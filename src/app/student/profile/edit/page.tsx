@@ -17,6 +17,7 @@ import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
 import { getUserStats } from "@/lib/gamification"
 import { cn } from "@/lib/utils"
+import { ONLINE_STUDY_ENABLED } from "@/lib/features"
 
 const instrumentSerif = { className: "font-instrument-serif" }
 const jetbrainsMono = { className: "font-jetbrains-mono" }
@@ -109,10 +110,10 @@ export default function StudentProfileEditPage() {
       }
       
       if (formData.bio && formData.bio.length > 200) throw new Error("Giới thiệu tối đa 200 ký tự")
-      if (formData.discord_id.trim() && !/^\d{17,20}$/.test(formData.discord_id.trim())) {
+      if (ONLINE_STUDY_ENABLED && formData.discord_id.trim() && !/^\d{17,20}$/.test(formData.discord_id.trim())) {
         throw new Error("Discord ID không hợp lệ. Vui lòng nhập dãy từ 17-20 chữ số.")
       }
-      if (formData.discord_study_channel_id.trim() && !/^\d{17,20}$/.test(formData.discord_study_channel_id.trim())) {
+      if (ONLINE_STUDY_ENABLED && formData.discord_study_channel_id.trim() && !/^\d{17,20}$/.test(formData.discord_study_channel_id.trim())) {
         throw new Error("ID Kênh Voice Discord học tập riêng không hợp lệ. Vui lòng nhập dãy từ 17-20 chữ số.")
       }
 
@@ -129,8 +130,12 @@ export default function StudentProfileEditPage() {
         bio: formData.bio || null,
         phone: formData.phone || null,
         avatar_url: formData.avatar_url || null,
-        discord_id: formData.discord_id.trim() || null,
-        discord_study_channel_id: formData.discord_study_channel_id.trim() || null,
+        ...(ONLINE_STUDY_ENABLED
+          ? {
+              discord_id: formData.discord_id.trim() || null,
+              discord_study_channel_id: formData.discord_study_channel_id.trim() || null,
+            }
+          : {}),
       }).eq("id", user.id)
 
       if (updateError) {
@@ -241,15 +246,15 @@ export default function StudentProfileEditPage() {
               <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} placeholder="0123456789" className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
             </div>
 
-            <div className="space-y-2">
+            {ONLINE_STUDY_ENABLED && <div className="space-y-2">
               <Label htmlFor="discord_id" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Discord ID</Label>
               <Input id="discord_id" value={formData.discord_id} onChange={(e) => setFormData((prev) => ({ ...prev, discord_id: e.target.value }))} placeholder="Ví dụ: 123456789012345678" className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
-            </div>
+            </div>}
 
-            <div className="space-y-2">
+            {ONLINE_STUDY_ENABLED && <div className="space-y-2">
               <Label htmlFor="discord_study_channel_id" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">ID Kênh Voice Discord riêng</Label>
               <Input id="discord_study_channel_id" value={formData.discord_study_channel_id} onChange={(e) => setFormData((prev) => ({ ...prev, discord_study_channel_id: e.target.value }))} placeholder="Ví dụ: 987654321098765432" className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
-            </div>
+            </div>}
           </div>
 
           <div className="space-y-2">

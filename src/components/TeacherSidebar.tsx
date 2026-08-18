@@ -2,27 +2,24 @@
 
 import { useState, useCallback } from "react"
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { 
-  BarChart3, 
-  BookOpen, 
+import {
+  Activity,
+  CalendarDays,
   FileText,
-  ChevronRight, 
-  ChevronsLeft, 
-  ChevronsRight, 
-  LogOut, 
-  Plus, 
-  Swords, 
-  User, 
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  LogOut,
+  Plus,
+  Swords,
   GraduationCap,
   LayoutDashboard,
   Database,
   PieChart,
   UserCircle,
-  Activity,
-  Globe2,
-  MessageCircle,
+  UserPlus,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
@@ -34,16 +31,19 @@ interface TeacherSidebarProps {
 }
 
 const NAV_ITEMS = [
-  { href: "/teacher/online-study", label: "Học liệu online", icon: Globe2 },
-  { href: "/teacher/online-study?tab=orders", label: "Đơn hàng", icon: FileText },
-  { href: "/teacher/online-study?tab=permissions", label: "Cấp quyền HV", icon: User },
-  { href: "/teacher/online-study?tab=payment", label: "Thanh toán & giá", icon: Database },
-  { href: "/teacher/feedback", label: "Góp ý HV", icon: MessageCircle },
+  { href: "/teacher/dashboard", label: "Tổng quan", icon: LayoutDashboard },
+  { href: "/teacher/exams", label: "Quản lý đề thi", icon: FileText },
+  { href: "/teacher/exams/create", label: "Tạo đề mới", icon: Plus },
 ]
 
 const MANAGE_ITEMS = [
+  { href: "/teacher/students", label: "Cấp tài khoản HS", icon: UserPlus },
+  { href: "/teacher/monitor", label: "Quản lý học sinh", icon: Activity },
+  { href: "/teacher/exam-bank", label: "Ngân hàng đề", icon: Database },
+  { href: "/teacher/analytics", label: "Thống kê kết quả", icon: PieChart },
+  { href: "/teacher/arena", label: "Đấu trường", icon: Swords },
+  { href: "/teacher/timetable", label: "Thời khóa biểu", icon: CalendarDays },
   { href: "/teacher/profile", label: "Hồ sơ giáo viên", icon: UserCircle },
-  { href: "/teacher/online-study?tab=security", label: "Bảo mật truy cập", icon: Activity },
 ]
 
 function SidebarLink({ 
@@ -93,26 +93,17 @@ function SidebarLink({
   )
 }
 
-function linkIsActive(href: string, pathname: string, tab: string | null) {
-  const [path, query] = href.split("?")
-  if (!pathname.startsWith(path)) return false
-  if (!query) {
-    // bare /teacher/online-study → active on lectures (default)
-    if (path === "/teacher/online-study") {
-      return !tab || tab === "lectures"
-    }
-    return pathname === path || pathname.startsWith(`${path}/`)
+function linkIsActive(href: string, pathname: string) {
+  if (href === "/teacher/dashboard") return pathname === href
+  if (href === "/teacher/exams") {
+    return pathname === href ||
+      (pathname.startsWith(`${href}/`) && !pathname.startsWith("/teacher/exams/create"))
   }
-  const params = new URLSearchParams(query)
-  const wantTab = params.get("tab")
-  if (wantTab) return (tab || "lectures") === wantTab
-  return true
+  return pathname === href || pathname.startsWith(`${href}/`)
 }
 
 export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setCollapsed: externalSetCollapsed }: TeacherSidebarProps) {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const currentTab = searchParams?.get("tab")
   const router = useRouter()
   const [internalCollapsed, setInternalCollapsed] = useState(false)
   
@@ -184,7 +175,7 @@ export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setColl
               href={item.href} 
               label={item.label} 
               icon={item.icon} 
-              active={linkIsActive(item.href, pathname || "", currentTab)} 
+              active={linkIsActive(item.href, pathname || "")}
               collapsed={collapsed} 
             />
           ))}
@@ -201,7 +192,7 @@ export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setColl
                 href={item.href} 
                 label={item.label} 
                 icon={item.icon} 
-                active={linkIsActive(item.href, pathname || "", currentTab)} 
+                active={linkIsActive(item.href, pathname || "")}
                 collapsed={collapsed} 
               />
             ))}
@@ -219,7 +210,7 @@ export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setColl
       <div className="p-4 pt-0 space-y-3">
         {!collapsed && (
           <p className="px-1 text-[9px] leading-relaxed text-[hsl(var(--muted-foreground))]">
-            © {new Date().getFullYear()} StudyHub · Bản quyền nội dung được bảo hộ.
+            © {new Date().getFullYear()} ExamHub · Hệ thống bài tập trực tuyến.
           </p>
         )}
         <button

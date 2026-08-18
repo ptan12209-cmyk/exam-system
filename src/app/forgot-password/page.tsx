@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
       <main className="mx-auto flex max-w-md flex-col px-6 py-16">
         <div className="mb-6 flex items-center gap-2">
           <GraduationCap className="h-6 w-6" />
-          <span className="font-semibold">StudyHub</span>
+          <span className="font-semibold">ExamHub</span>
         </div>
         <h1 className="text-3xl font-semibold tracking-tight">Quên mật khẩu</h1>
         <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">

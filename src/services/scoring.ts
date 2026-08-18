@@ -74,12 +74,22 @@ export function calculateScore(
         sa_student_answers.forEach(studentSa => {
             const correctSa = exam.sa_answers?.find((s) => s.question === studentSa.question)
             if (correctSa) {
-                const correctVal = parseFloat(correctSa.answer.toString().replace(',', '.'))
-                const studentVal = parseFloat(studentSa.answer.replace(',', '.'))
+                const correctText = correctSa.answer.toString().trim()
+                const studentText = studentSa.answer.trim()
+                const normalizedCorrect = correctText.replace(',', '.')
+                const normalizedStudent = studentText.replace(',', '.')
+                const correctVal = Number(normalizedCorrect)
+                const studentVal = Number(normalizedStudent)
+                const bothNumeric = normalizedCorrect !== '' && normalizedStudent !== ''
+                    && Number.isFinite(correctVal) && Number.isFinite(studentVal)
 
-                // 5% tolerance for numerical answers
+                // Numerical answers retain the existing 5% tolerance. Text
+                // answers are compared case-insensitively after whitespace trim.
                 const tolerance = Math.abs(correctVal) * 0.05
-                if (!isNaN(studentVal) && Math.abs(correctVal - studentVal) <= tolerance) {
+                if (
+                    (bothNumeric && Math.abs(correctVal - studentVal) <= tolerance)
+                    || (!bothNumeric && correctText.localeCompare(studentText, 'vi', { sensitivity: 'base' }) === 0)
+                ) {
                     saCorrect++
                 }
             }

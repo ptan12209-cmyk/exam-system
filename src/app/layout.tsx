@@ -51,14 +51,14 @@ const ibmPlex = IBM_Plex_Sans({
 })
 
 export const metadata: Metadata = {
-  title: "StudyHub - Hệ thống học tập & bài giảng online",
+  title: "ExamHub - Hệ thống bài tập và kiểm tra trực tuyến",
   description:
-    "Nền tảng học trực tuyến thông minh - Xem video bài giảng, ôn tập tài liệu hiệu quả",
+    "Nền tảng giao bài, làm bài, chấm điểm và quản lý tiến độ học sinh",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "StudyHub",
+    title: "ExamHub",
   },
 }
 

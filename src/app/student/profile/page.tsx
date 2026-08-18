@@ -17,7 +17,7 @@ import { STUDENT_STAT_COLORS } from "@/lib/student-styles"
 import { StudentShell } from "@/components/student/StudentShell"
 import { StudentTopbar } from "@/components/student/StudentTopbar"
 import { StudentNavTabs } from "@/components/student/StudentNavTabs"
-import { Award, BookOpen, Edit, Flame, Smartphone, Star, Swords, User } from "lucide-react"
+import { Award, BarChart3, BookOpen, Edit, Flame, ListTodo, Smartphone, Star, Swords, User } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
 
@@ -102,10 +102,10 @@ export default function ProfilePage() {
   }
 
   const quickLinks = [
-    { href: "/student/achievements", label: "Hộp thành tích", icon: Award },
-    { href: "/student/rewards", label: "Cửa hàng đổi quà", icon: User },
-    { href: "/arena", label: "Đấu trường Arena", icon: Swords },
     { href: "/student/exams", label: "Đề thi của tôi", icon: BookOpen },
+    { href: "/student/analytics", label: "Thống kê kết quả", icon: BarChart3 },
+    { href: "/student/checklist", label: "Nhiệm vụ được giao", icon: ListTodo },
+    { href: "/arena", label: "Đấu trường Arena", icon: Swords },
   ]
 
   return (
@@ -134,7 +134,7 @@ export default function ProfilePage() {
               Hồ sơ cá nhân
             </h1>
             <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] max-w-2xl">
-              Quản lý thông tin tài khoản cá nhân và hồ sơ tự học trực tuyến của bạn.
+              Quản lý thông tin tài khoản và truy cập nhanh các bài tập, kết quả của bạn.
             </p>
           </div>
 
@@ -160,18 +160,7 @@ export default function ProfilePage() {
 
         {/* Quick Links Grid */}
         <section className="mt-8 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <Link 
-            href="/online-student/dashboard" 
-            className="flex items-center gap-3 rounded-xl border border-[#8C87A2]/20 bg-[#15131F] p-4 hover:border-[#C18CFF]/50 transition-colors group"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#8C87A2]/20 bg-[#0B0A13] text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors">
-              <BookOpen className="h-4 w-4" />
-            </div>
-            <span className="text-xs font-bold text-[#F1EDF9]">Học trực tuyến (Video bài giảng)</span>
-          </Link>
-
-          {/* Các Quick Link cũ (TẠM ẨN) */}
-          {/* {quickLinks.map((item) => (
+          {quickLinks.map((item) => (
             <Link 
               key={item.href} 
               href={item.href} 
@@ -182,7 +171,7 @@ export default function ProfilePage() {
               </div>
               <span className="text-xs font-bold text-[#F1EDF9]">{item.label}</span>
             </Link>
-          ))} */}
+          ))}
         </section>
 
         {/* Main Details Section */}

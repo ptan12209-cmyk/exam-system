@@ -2,18 +2,21 @@
  * Product feature flags — flip without deleting code paths.
  */
 
-/** Gamification UI is locked; backend stats may still update silently. */
+/** Gamification UI and public APIs are locked for the core-exam product. */
 export const GAMIFICATION_ENABLED = false
 
 /**
- * Public self-registration. Locked until reopen date so visitors
- * can only overview courses/landing before buy flow reopens.
- * Reminder: docs/REMINDER_OPEN_REGISTRATION_2026-07-29.md
+ * Video lessons, course materials and course checkout are paused while
+ * ExamHub focuses on assignments, tests and student management.
+ * Keep the implementation in place so it can be re-enabled later.
+ */
+export const ONLINE_STUDY_ENABLED = false
+
+/**
+ * Public student registration for the assignment platform.
+ * Teachers remain provisioned separately and cannot self-select that role.
  */
 export const REGISTRATION_ENABLED = false
-
-/** ISO date (local VN calendar): reopen self-registration */
-export const REGISTRATION_REOPEN_DATE = "2026-07-29"
 
 /**
  * 1 thiết bị / 1 tài khoản (học viên).
@@ -27,12 +30,65 @@ export const SINGLE_DEVICE_ENABLED = true
  * Teacher online-study: Bunny security ops checklist.
  * UI also has show/hide (localStorage). Set false to remove entirely.
  */
-export const BUNNY_SECURITY_CHECKLIST_ENABLED = true
+export const BUNNY_SECURITY_CHECKLIST_ENABLED = false
+
+/** UI routes that belong to the paused online-course product. */
+export const ONLINE_STUDY_ROUTE_PREFIXES = [
+  "/online-student",
+  "/teacher/online-study",
+  "/teacher/study",
+  "/resources",
+  "/pricing",
+  "/payment",
+  "/landing",
+  "/marketing/reels",
+  "/live",
+  "/settings/discord",
+  "/student/co-study",
+] as const
+
+/** APIs that expose online-course content, access or checkout operations. */
+export const ONLINE_STUDY_API_PREFIXES = [
+  "/api/online-study",
+  "/api/study",
+  "/api/study-sessions",
+  "/api/subscriptions",
+  "/api/payments",
+  "/api/spaced-repetition",
+  "/api/ai",
+  "/api/discord",
+] as const
+
+function matchesPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`)
+}
+
+export function isOnlineStudyRoute(pathname: string): boolean {
+  return ONLINE_STUDY_ROUTE_PREFIXES.some((prefix) =>
+    matchesPrefix(pathname, prefix)
+  )
+}
+
+export function isOnlineStudyApiRoute(pathname: string): boolean {
+  return ONLINE_STUDY_API_PREFIXES.some((prefix) =>
+    matchesPrefix(pathname, prefix)
+  )
+}
 
 /** Routes hidden / redirected while gamification is locked */
 export const GAMIFICATION_ROUTE_PREFIXES = [
   "/student/achievements",
   "/student/rewards",
+] as const
+
+/** APIs that belong exclusively to the locked gamification product. */
+export const GAMIFICATION_API_PREFIXES = [
+  "/api/achievements",
+  "/api/challenges",
+  "/api/daily-checkin",
+  "/api/discord/daily-checkin",
+  "/api/rewards",
+  "/api/titles",
 ] as const
 
 export function isGamificationRoute(pathname: string): boolean {
@@ -41,13 +97,12 @@ export function isGamificationRoute(pathname: string): boolean {
   )
 }
 
+export function isGamificationApiRoute(pathname: string): boolean {
+  return GAMIFICATION_API_PREFIXES.some((prefix) =>
+    matchesPrefix(pathname, prefix)
+  )
+}
+
 export function isRegistrationOpen(): boolean {
-  if (REGISTRATION_ENABLED) return true
-  // Auto-open after reopen date (inclusive, Vietnam calendar day)
-  try {
-    const reopen = new Date(`${REGISTRATION_REOPEN_DATE}T00:00:00+07:00`)
-    return Date.now() >= reopen.getTime()
-  } catch {
-    return REGISTRATION_ENABLED
-  }
+  return REGISTRATION_ENABLED
 }

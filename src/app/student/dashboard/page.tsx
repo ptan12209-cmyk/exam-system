@@ -16,14 +16,10 @@ import {
   CheckCircle,
   Award,
   ListTodo,
-  Timer,
-  Video,
   AlertCircle,
   GraduationCap,
   Sparkles,
   Calendar,
-  Globe2,
-  ArrowLeft
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
@@ -303,9 +299,9 @@ export default function StudentDashboard() {
                   </span>
                 </div>
                 
-                <Link href="/student/portal">
+                <Link href="/student/exams">
                   <Button variant="ghost" size="sm" className="h-8 rounded-xl border border-[#8C87A2]/20 text-[10px] font-bold hover:bg-[#0B0A13] text-[#8C87A2] hover:text-[#F1EDF9] flex items-center gap-1 shrink-0">
-                    <ArrowLeft className="h-3.5 w-3.5" /> Cổng học tập
+                    <FileText className="h-3.5 w-3.5" /> Xem đề được giao
                   </Button>
                 </Link>
               </div>
@@ -425,7 +421,7 @@ export default function StudentDashboard() {
             </p>
           </div>
 
-          {/* Card 4: Streak (gamification) or online study CTA */}
+          {/* Card 4: Streak (gamification) or pending assignments */}
           {GAMIFICATION_ENABLED ? (
             <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
               <div className="flex items-center justify-between">
@@ -438,17 +434,14 @@ export default function StudentDashboard() {
               <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Kỷ lục: {maxStreak} ngày</p>
             </div>
           ) : (
-            <Link
-              href="/online-student/dashboard"
-              className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors block"
-            >
+            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Học online</span>
-                <Globe2 className="h-4 w-4 text-[#C18CFF]" />
+                <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Đề chưa làm</span>
+                <FileText className="h-4 w-4 text-[#C18CFF]" />
               </div>
-              <p className="text-xl font-bold tracking-tight text-[#F1EDF9] mt-3">Vào portal</p>
-              <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Video bài giảng & tài liệu</p>
-            </Link>
+              <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">{unsubmittedExams.length}</p>
+              <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Bài tập đang chờ hoàn thành</p>
+            </div>
           )}
         </section>
 
@@ -605,11 +598,11 @@ export default function StudentDashboard() {
 
             {/* Quick Navigation Tools */}
             <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
-              <h3 className={cn("text-2xl text-[#F1EDF9] font-normal mb-4", instrumentSerif.className)}>Công cụ học tập</h3>
+              <h3 className={cn("text-2xl text-[#F1EDF9] font-normal mb-4", instrumentSerif.className)}>Công cụ làm bài</h3>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { href: "/online-student/dashboard", label: "Học Online", icon: Globe2 },
-                  { href: "/resources", label: "Tài liệu học tập", icon: BookOpen },
+                  { href: "/student/exams", label: "Đề thi được giao", icon: FileText },
+                  { href: "/student/analytics", label: "Thống kê kết quả", icon: Trophy },
                   { href: "/arena", label: "Đấu trường thi đấu", icon: Swords },
                   { href: "https://theieltsdictionary.com/", label: "Từ điển IELTS", icon: GraduationCap, isExternal: true },
                   ...(GAMIFICATION_ENABLED
@@ -617,8 +610,6 @@ export default function StudentDashboard() {
                     : []),
                   { href: "/student/timetable", label: "Thời khóa biểu", icon: Calendar },
                   { href: "/student/checklist", label: "Checklist / Nhiệm vụ", icon: ListTodo },
-                  { href: "/student/co-study", label: "Pomodoro học tập", icon: Timer },
-                  { href: "/live", label: "Lớp học trực tiếp", icon: Video },
                 ].map((item) => {
                   const itemContent = (
                     <div className="flex flex-col justify-between p-3.5 h-20 bg-[#0B0A13] hover:bg-[#0B0A13]/80 border border-[#8C87A2]/20 hover:border-[#C18CFF]/50 rounded-xl transition-all duration-200 group">

@@ -31,7 +31,7 @@ export function StudentShell({
       {!hideSupport && (
         <SupportFab
           offsetBottomNav
-          zaloMessage="Hỗ trợ StudyHub - khu vực học sinh"
+          zaloMessage="Hỗ trợ ExamHub - khu vực học sinh"
         />
       )}
     </div>

@@ -17,6 +17,7 @@ import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { MAP_SUBJECT_TO_DB, MAP_DB_TO_SUBJECT, SUBJECTS } from "@/lib/subjects"
+import { calculateScore } from "@/services/scoring"
 
 const OPTIONS = ["A", "B", "C", "D"] as const
 
@@ -168,7 +169,7 @@ export default function EditExamPage() {
 
       const { data: submissions } = await supabase
         .from("submissions")
-        .select("id, answers, tf_answers, sa_answers")
+        .select("id, student_answers, tf_student_answers, sa_student_answers")
         .eq("exam_id", examId)
 
       if (!submissions?.length) {
@@ -179,56 +180,25 @@ export default function EditExamPage() {
 
       let updatedCount = 0
       for (const sub of submissions) {
-        let correctCount = 0
-        const totalQuestions = mcCount + tfCount + saCount
-
-        if (sub.answers && mcAnswers.length > 0) {
-          const studentMc = sub.answers as string[]
-          for (let i = 0; i < mcAnswers.length; i++) {
-            if (mcAnswers[i] && studentMc[i]?.toUpperCase() === mcAnswers[i]) {
-              correctCount++
-            }
+        const result = calculateScore(
+          (sub.student_answers || []) as (string | null)[],
+          (sub.tf_student_answers || []) as TFAnswer[],
+          (sub.sa_student_answers || []) as { question: number; answer: string }[],
+          {
+            mc_answers: mcAnswerObjects as { question: number; answer: string }[],
+            tf_answers: finalTfAnswers,
+            sa_answers: finalSaAnswers,
           }
-        }
-
-        if (sub.tf_answers && finalTfAnswers.length > 0) {
-          const studentTf = sub.tf_answers as TFAnswer[]
-          for (const correct of finalTfAnswers) {
-            const student = studentTf.find((t) => t.question === correct.question)
-            if (student) {
-              let subCorrect = 0
-              if (student.a === correct.a) subCorrect++
-              if (student.b === correct.b) subCorrect++
-              if (student.c === correct.c) subCorrect++
-              if (student.d === correct.d) subCorrect++
-              let tfScore = 0
-              if (subCorrect === 1) tfScore = 0.1
-              else if (subCorrect === 2) tfScore = 0.25
-              else if (subCorrect === 3) tfScore = 0.5
-              else if (subCorrect === 4) tfScore = 1.0
-              correctCount += tfScore
-            }
-          }
-        }
-
-        if (sub.sa_answers && finalSaAnswers.length > 0) {
-          const studentSa = sub.sa_answers as SAAnswer[]
-          for (const correct of finalSaAnswers) {
-            const student = studentSa.find((s) => s.question === correct.question)
-            if (student) {
-              const correctVal = correct.answer?.toString().trim().toLowerCase()
-              const studentVal = student.answer?.toString().trim().toLowerCase()
-              if (correctVal && studentVal && correctVal === studentVal) {
-                correctCount++
-              }
-            }
-          }
-        }
-
-        const score = totalQuestions > 0 ? (correctCount / totalQuestions) * 10 : 0
+        )
         await supabase
           .from("submissions")
-          .update({ score, correct_count: Math.round(correctCount * 100) / 100 })
+          .update({
+            score: result.score,
+            correct_count: Math.round(result.totalCorrect),
+            mc_correct: result.details.mc.correct,
+            tf_correct: Math.round(result.details.tf.correct),
+            sa_correct: result.details.sa.correct,
+          })
           .eq("id", sub.id)
         updatedCount++
       }

@@ -19,13 +19,19 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const { verified: captchaVerified, onVerify, onExpire } = useCaptcha()
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search)
+      if (params.get("notice") === "teacher-issued-account") {
+        setNotice("Đăng ký công khai đã được tắt. Hãy dùng tài khoản do giáo viên cung cấp.")
+      }
       if (params.get("error") === "profile_not_found") {
-        setError("Tài khoản này chưa có thông tin hồ sơ trong hệ thống (có thể do cơ sở dữ liệu đã được làm mới). Vui lòng Đăng ký lại tài khoản này.")
+        setError("Tài khoản chưa được giáo viên cấp hoặc đã bị vô hiệu hóa. Vui lòng liên hệ giáo viên quản lý.")
+      } else if (params.get("error") === "account_disabled") {
+        setError("Tài khoản chưa được giáo viên kích hoạt. Vui lòng liên hệ giáo viên quản lý.")
       } else if (params.get("error") === "device_kicked") {
         setError(
           params.get("msg") ||
@@ -55,22 +61,6 @@ export default function LoginPage() {
     }
   }
 
-  const handleGoogle = async () => {
-    setLoading(true)
-    setError(null)
-    const origin = typeof window !== "undefined" ? window.location.origin : ""
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${origin}/auth/callback`,
-      },
-    })
-    if (oauthError) {
-      setError(oauthError.message)
-      setLoading(false)
-    }
-  }
-
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
@@ -89,21 +79,28 @@ export default function LoginPage() {
       return
     }
 
-    await bindDevice()
-
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("role, nickname, email_verified_at, account_source, created_at")
+      .select("role, account_status")
       .eq("id", data.user.id)
       .single()
 
-    if (profile?.role === "teacher") {
-      router.push("/teacher/online-study")
+    if (profileError || !profile || profile.account_status !== "active") {
+      await supabase.auth.signOut()
+      setError("Tài khoản chưa được giáo viên cấp hoặc đang bị vô hiệu hóa.")
+      setLoading(false)
       return
     }
 
-    // Hard-gate after grace is handled by middleware; soft path goes dashboard
-    router.push("/online-student/dashboard")
+    await bindDevice()
+
+    if (profile?.role === "teacher" || profile?.role === "admin") {
+      router.push("/teacher/dashboard")
+      return
+    }
+
+    // Hard-gate after grace is handled by middleware; soft path goes dashboard.
+    router.push("/student/dashboard")
   }
 
   return (
@@ -120,13 +117,13 @@ export default function LoginPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[hsl(var(--border))]/60">
               <GraduationCap className="h-4 w-4" />
             </div>
-            <span className="text-lg font-semibold tracking-tight">StudyHub</span>
+            <span className="text-lg font-semibold tracking-tight">ExamHub</span>
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link href="/register" className="text-sm text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]">
-              Đăng ký
-            </Link>
+            <span className="hidden text-xs text-[hsl(var(--muted-foreground))] sm:inline">
+              Tài khoản do giáo viên cấp
+            </span>
           </div>
         </div>
       </header>
@@ -151,11 +148,12 @@ export default function LoginPage() {
           <section className="rounded-2xl p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)] md:p-8">
             <div className="mb-8">
               <h2 className="text-2xl font-semibold tracking-tight">Đăng nhập</h2>
-              <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Nhập email và mật khẩu để vào đúng dashboard.</p>
+              <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Dùng email và mật khẩu do giáo viên quản lý cung cấp.</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-5">
               {error && <div className="rounded-2xl border border-red-500/20 bg-red-500/8 px-4 py-3 text-sm text-red-500">{error}</div>}
+              {notice && !error && <div className="rounded-2xl border border-sky-500/20 bg-sky-500/8 px-4 py-3 text-sm text-sky-600 dark:text-sky-300">{notice}</div>}
 
               <label className="block space-y-2">
                 <span className="text-sm font-medium">Email</span>
@@ -224,39 +222,15 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[hsl(var(--border))]/40" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-[hsl(var(--background))] px-3 text-[hsl(var(--muted-foreground))]">hoặc</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleGoogle}
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-[hsl(var(--border))]/60 px-5 py-3.5 text-sm font-semibold transition-colors hover:bg-[hsl(var(--muted))]/20 disabled:opacity-50"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden>
-                <path fill="#EA4335" d="M12 10.2v3.6h5.1c-.2 1.2-1.5 3.6-5.1 3.6-3.1 0-5.6-2.5-5.6-5.6S8.9 6.2 12 6.2c1.8 0 3 .7 3.7 1.4l2.5-2.4C16.8 3.8 14.6 2.8 12 2.8 6.9 2.8 2.8 6.9 2.8 12S6.9 21.2 12 21.2c5.5 0 9.1-3.9 9.1-9.3 0-.6-.1-1.1-.2-1.7H12z" />
-              </svg>
-              Tiếp tục với Google
-            </button>
-
-            <p className="mt-6 text-center text-sm text-[hsl(var(--muted-foreground))]">
-              Chưa có tài khoản?{" "}
-              <Link href="/register" className="font-medium text-[hsl(var(--foreground))] underline-offset-4 hover:underline">
-                Đăng ký ngay
-              </Link>
+            <p className="mt-6 rounded-2xl border border-[hsl(var(--border))]/50 bg-[hsl(var(--muted))]/15 px-4 py-3 text-center text-sm text-[hsl(var(--muted-foreground))]">
+              Chưa có tài khoản? Liên hệ giáo viên để được cấp thông tin đăng nhập.
             </p>
           </section>
         </div>
       </main>
 
       <Footer compact />
-      <SupportFab offsetBottomNav={false} zaloMessage="Hỗ trợ StudyHub - đăng nhập" />
+      <SupportFab offsetBottomNav={false} zaloMessage="Hỗ trợ ExamHub - đăng nhập" />
     </div>
   )
 }

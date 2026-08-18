@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
 // Use supabase service_role key to bypass RLS policies for automatic proctoring updates
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+function createSupabaseAdmin(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  return url && key ? createClient(url, key) : null
+}
 
 const REQUIRED_MINUTES = 130 // 2 hours 10 minutes of active voice time is the threshold for a 2.5-hour class
 const STREAK_THRESHOLD_MINUTES = 60 // Cần ít nhất 60 phút học thực chất để tính 1 ngày streak
@@ -27,6 +28,11 @@ export async function POST(req: Request) {
 
     if (!discord_id || !status) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    const supabaseAdmin = createSupabaseAdmin()
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: "Discord study sync is not configured" }, { status: 503 })
     }
 
     // 2. Fetch student profile linked to this discord_id
@@ -195,7 +201,7 @@ export async function POST(req: Request) {
       }
 
       // Tính toán streak khi học sinh offline
-      await updateStreak(profile)
+      await updateStreak(profile, supabaseAdmin)
     }
 
     // 4. Auto-complete the ca học task if study duration meets the threshold
@@ -259,7 +265,10 @@ export async function POST(req: Request) {
 }
 
 // Tính toán và cập nhật chuỗi ngày học streak
-async function updateStreak(profile: { id: string; discord_streak: number | null; last_discord_study_date: string | null }) {
+async function updateStreak(
+  profile: { id: string; discord_streak: number | null; last_discord_study_date: string | null },
+  supabaseAdmin: SupabaseClient
+) {
   const todayStr = new Date().toISOString().split('T')[0]
 
   // Lấy tổng thời gian học thực trong ngày hôm nay

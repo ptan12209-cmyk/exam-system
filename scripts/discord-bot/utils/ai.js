@@ -1,9 +1,7 @@
 /**
  * AI Utility - Handles requests to Google Gemini API via V98Store (OpenAI compatible endpoint).
  */
-const fetch = require('node-fetch'); // Let's check if node-fetch is needed or if we can use standard fetch. Wait, Node 18+ has fetch natively! But in index.js we saw it uses native fetch. Let's use global fetch (standard in Node 18+) or fallback to axios or require('node-fetch') if needed. Wait, package.json had "axios" but not "node-fetch". Since Next.js 16.1 is in package.json, Node.js version must be 18+, which has global fetch natively. So we can use the native global `fetch`.
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "sk-ewNhLj4fTcPUGWDstbRMibwnhjtZ5gB4q4CxMhEQ0gg5xZlx";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GEMINI_BASE_URL = process.env.GEMINI_BASE_URL || "https://v98store.com";
 
 /**
@@ -16,6 +14,10 @@ const GEMINI_BASE_URL = process.env.GEMINI_BASE_URL || "https://v98store.com";
  */
 async function askGemini(messages, systemPrompt = '', temperature = 0.2, model = 'gemini-2.0-flash') {
   try {
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is not configured');
+    }
+
     const formattedMessages = [];
     
     if (systemPrompt) {

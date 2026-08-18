@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 export function CopyrightNotice({ className }: { className?: string }) {
   return (
     <p className={cn("text-[10px] leading-relaxed text-[var(--os-muted)]", className)}>
-      © {new Date().getFullYear()} StudyHub · luyende.id.vn. Nội dung thuộc bản quyền.
+      © {new Date().getFullYear()} ExamHub · luyende.id.vn. Bảo lưu mọi quyền.
       Nghiêm cấm sao chép, ghi hình, phát tán trái phép.
     </p>
   )
@@ -44,14 +44,14 @@ export default function Footer({
       >
         <div className="text-left max-w-xl">
           <p className="text-sm font-semibold text-[var(--os-fg)]">
-            StudyHub Education Portal
+            ExamHub Assessment Platform
           </p>
           <p className="mt-1 text-xs text-[var(--os-muted)]">
-            © {year} StudyHub · luyende.id.vn. Bảo lưu mọi quyền.
+            © {year} ExamHub · luyende.id.vn. Bảo lưu mọi quyền.
           </p>
           {!compact && (
             <p className="mt-2 text-[10px] leading-relaxed text-[var(--os-muted)]/90">
-              Nội dung bài giảng, video và tài liệu thuộc bản quyền StudyHub.
+              Đề thi, câu hỏi và dữ liệu học tập thuộc bản quyền ExamHub.
               Nghiêm cấm sao chép, ghi hình, phát tán trái phép.
             </p>
           )}

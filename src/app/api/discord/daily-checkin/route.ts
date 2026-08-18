@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+function getSupabaseAdmin(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error("Discord check-in is not configured")
+  return createClient(url, key)
+}
 
 // Utility to calculate level from XP
 function calculateLevel(xp: number): number {
@@ -12,6 +15,7 @@ function calculateLevel(xp: number): number {
 
 // Replicating check_and_unlock_achievements in TypeScript to bypass RPC RLS block
 async function checkAndUnlockAchievements(userId: string, stats: any) {
+  const supabaseAdmin = getSupabaseAdmin()
   // Get all achievements
   const { data: achievements } = await supabaseAdmin
     .from("achievements")
@@ -99,6 +103,8 @@ export async function POST(req: Request) {
     if (!discord_id) {
       return NextResponse.json({ error: "Missing discord_id" }, { status: 400 })
     }
+
+    const supabaseAdmin = getSupabaseAdmin()
 
     // 2. Find student profile by discord_id
     const { data: profile, error: profileError } = await supabaseAdmin

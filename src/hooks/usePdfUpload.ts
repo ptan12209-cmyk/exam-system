@@ -4,9 +4,9 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Hook quản lý upload và parse file PDF cho bài thi.
+ * Hook quản lý upload file PDF đề thi.
  * Nhận client Supabase và callback onError, cung cấp state cho file PDF,
- * URL, file PDF đáp án, trạng thái upload/parse, và hàm handlePdfUpload.
+ * URL, trạng thái upload và hàm handlePdfUpload.
  *
  * @param supabase - Client Supabase đã khởi tạo.
  * @param onError - Callback nhận thông báo lỗi (string | null).
@@ -18,12 +18,8 @@ export function usePdfUpload(
   supabase: ReturnType<typeof createClient>,
   onError: (msg: string | null) => void
 ) {
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [answerPdfFile, setAnswerPdfFile] = useState<File | null>(null);
   const [uploadingPdf, setUploadingPdf] = useState(false);
-  const [parsingPdf, setParsingPdf] = useState(false);
-  const [parseSuccess, setParseSuccess] = useState(false);
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -33,7 +29,6 @@ export function usePdfUpload(
       return;
     }
 
-    setPdfFile(file);
     setUploadingPdf(true);
     onError(null);
 
@@ -55,19 +50,14 @@ export function usePdfUpload(
       setPdfUrl(publicUrl);
     } catch (err) {
       onError("Lỗi upload file: " + (err as Error).message);
-      setPdfFile(null);
     } finally {
       setUploadingPdf(false);
     }
   };
 
   return {
-    pdfFile, setPdfFile,
     pdfUrl, setPdfUrl,
-    answerPdfFile, setAnswerPdfFile,
-    uploadingPdf, setUploadingPdf,
-    parsingPdf, setParsingPdf,
-    parseSuccess, setParseSuccess,
+    uploadingPdf,
     handlePdfUpload,
   };
 }

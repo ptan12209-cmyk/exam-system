@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/toast"
 import { usePdfUpload } from "@/hooks/usePdfUpload"
 import { createClient } from "@/lib/supabase/client"
 import { parseAnswerKey } from "@/lib/exam-utils"
-import { parsePdfAnswers } from "@/lib/pdf-parser"
+import type { ParsedAnswerJson } from "@/lib/answer-json"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,10 +16,10 @@ import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { TeacherBottomNav } from "@/components/BottomNav"
-import { ArrowLeft, GraduationCap, Loader2, Wand2, Eye, Sparkles, X } from "lucide-react"
+import { ArrowLeft, GraduationCap, Loader2, Wand2, Eye, X } from "lucide-react"
 import { StepIndicator, ExamInfoForm, PdfUploader, ScheduleFields, AnswerEntry } from "./_components"
 import type { Option, TFAnswer, SAAnswer } from "@/types/exam"
-import { MAP_SUBJECT_TO_DB, MAP_DB_TO_SUBJECT } from "@/lib/subjects"
+import { MAP_DB_TO_SUBJECT } from "@/lib/subjects"
 
 export default function CreateExamPage() {
   const router = useRouter()
@@ -126,14 +126,6 @@ export default function CreateExamPage() {
     success(`Đã nhập thành công cấu trúc đề và ${bankExam.total_questions} đáp án từ "${bankExam.title}"!`)
   }
 
-  // Hierarchy states
-  const [selectedChapterId, setSelectedChapterId] = useState<string>("")
-  const [selectedLessonId, setSelectedLessonId] = useState<string>("")
-  const [selectedSectionId, setSelectedSectionId] = useState<string>("")
-  const [availableChapters, setAvailableChapters] = useState<any[]>([])
-  const [availableLessons, setAvailableLessons] = useState<any[]>([])
-  const [availableSections, setAvailableSections] = useState<any[]>([])
-
   const {
     correctAnswers, setCorrectAnswers,
     mcAnswers, setMcAnswers,
@@ -142,39 +134,10 @@ export default function CreateExamPage() {
   } = useAnswerForm()
 
   const {
-    pdfFile, setPdfFile,
     pdfUrl, setPdfUrl,
-    answerPdfFile, setAnswerPdfFile,
-    uploadingPdf, setUploadingPdf,
-    parsingPdf, setParsingPdf,
-    parseSuccess, setParseSuccess,
+    uploadingPdf,
     handlePdfUpload,
   } = usePdfUpload(supabase, setError)
-
-  // Cascade: load chapters when grade+subject available
-  useEffect(() => {
-    if (!targetGrade || !subject) { setAvailableChapters([]); return }
-    const dbSubject = MAP_SUBJECT_TO_DB[subject] || subject
-    fetch(`/api/study/chapters?subject=${dbSubject}&grade=${targetGrade}`)
-      .then(r => r.json()).then(d => { if (d.data) setAvailableChapters(d.data); else setAvailableChapters([]) })
-      .catch(() => setAvailableChapters([]))
-  }, [targetGrade, subject])
-
-  // Cascade: load lessons when chapter changes
-  useEffect(() => {
-    if (!selectedChapterId) { setAvailableLessons([]); setAvailableSections([]); return }
-    fetch(`/api/study/lessons?chapter_id=${selectedChapterId}`)
-      .then(r => r.json()).then(d => { if (d.data) setAvailableLessons(d.data); else setAvailableLessons([]) })
-      .catch(() => setAvailableLessons([]))
-  }, [selectedChapterId])
-
-  // Cascade: load sections when lesson changes
-  useEffect(() => {
-    if (!selectedLessonId) { setAvailableSections([]); return }
-    fetch(`/api/study/sections?lesson_id=${selectedLessonId}`)
-      .then(r => r.json()).then(d => { if (d.data) setAvailableSections(d.data); else setAvailableSections([]) })
-      .catch(() => setAvailableSections([]))
-  }, [selectedLessonId])
 
   const handleMcCountChange = (newCount: number) => {
     setMcCount(newCount)
@@ -205,70 +168,22 @@ export default function CreateExamPage() {
     )
   }
 
-  const handleParsePdf = async (fileToUse?: File) => {
-    const targetFile = fileToUse || answerPdfFile || pdfFile
-    if (!targetFile) {
-      setError("Vui lòng upload file PDF đáp án trước")
-      return
-    }
-    setParsingPdf(true)
+  const handleJsonImport = (answers: ParsedAnswerJson) => {
     setError(null)
-    setParseSuccess(false)
-    try {
-      const data = await parsePdfAnswers(targetFile)
-      const mcData = data.multiple_choice || []
-      const parsedMc = mcData
-        .filter((a: string) => ["A", "B", "C", "D"].includes(String(a).toUpperCase()))
-        .map((a: string) => a.toUpperCase() as Option)
-
-      if (parsedMc.length > 0) {
-        setMcAnswers(parsedMc)
-        setCorrectAnswers(parsedMc)
-        setMcCount(parsedMc.length)
-      }
-
-      const tfData = data.true_false || []
-      if (tfData.length > 0) {
-        setTfAnswers(
-          tfData.map((tf: any, index) => {
-            const answers = tf.answers || tf;
-            return {
-              question: parsedMc.length + 1 + index,
-              a: answers.a ?? true,
-              b: answers.b ?? true,
-              c: answers.c ?? true,
-              d: answers.d ?? true,
-            };
-          })
-        )
-        setTfCount(tfData.length)
-        setEnableTF(true)
-      }
-
-      const saData = data.short_answer || []
-      if (saData.length > 0) {
-        const tfLen = tfData.length
-        setSaAnswers(
-          saData.map((sa, index) => ({ question: parsedMc.length + tfLen + 1 + index, answer: sa.answer }))
-        )
-        setSaCount(saData.length)
-        setEnableSA(true)
-      }
-
-      if (parsedMc.length || tfData.length || saData.length) {
-        setParseSuccess(true)
-      } else {
-        throw new Error("Không tìm thấy đáp án trong PDF")
-      }
-    } catch (err) {
-      setError(
-        (err as Error).name === "AbortError"
-          ? "Quá thời gian chờ (90s)."
-          : "Lỗi parse PDF: " + (err as Error).message
-      )
-    } finally {
-      setParsingPdf(false)
-    }
+    const mc = answers.multipleChoice.map((item) => item.answer as Option)
+    setMcCount(mc.length)
+    setMcAnswers(mc)
+    setCorrectAnswers(mc)
+    setTfCount(answers.trueFalse.length)
+    setTfAnswers(answers.trueFalse)
+    setEnableTF(answers.trueFalse.length > 0)
+    setSaCount(answers.shortAnswer.length)
+    setSaAnswers(answers.shortAnswer)
+    setEnableSA(answers.shortAnswer.length > 0)
+    setAnswerTab(
+      mc.length > 0 ? "mc" : answers.trueFalse.length > 0 ? "tf" : "sa"
+    )
+    success("JSON hợp lệ và đã được nạp vào biểu mẫu đáp án.")
   }
 
   const handleSave = async (publish = false) => {
@@ -340,9 +255,6 @@ export default function CreateExamPage() {
           score_visibility_threshold: scoreVisibilityMode === "threshold" ? scoreThreshold : null,
           security_level: securityLevel,
           assigned_to: assignedTo,
-          chapter_id: selectedChapterId || null,
-          lesson_id: selectedLessonId || null,
-          section_id: selectedSectionId || null,
         })
         .select()
         .single()
@@ -434,15 +346,6 @@ export default function CreateExamPage() {
               onTargetClassesChange={setTargetClasses}
               assignedTo={assignedTo}
               onAssignedToChange={setAssignedTo}
-              selectedChapterId={selectedChapterId}
-              onChapterChange={setSelectedChapterId}
-              selectedLessonId={selectedLessonId}
-              onLessonChange={setSelectedLessonId}
-              selectedSectionId={selectedSectionId}
-              onSectionChange={setSelectedSectionId}
-              availableChapters={availableChapters}
-              availableLessons={availableLessons}
-              availableSections={availableSections}
             />
             <div className="mt-6 grid gap-6 md:grid-cols-3">
               <PdfUploader uploadingPdf={uploadingPdf} pdfUrl={pdfUrl} onUpload={handlePdfUpload} />
@@ -533,11 +436,7 @@ export default function CreateExamPage() {
             answerTab={answerTab}
             onAnswerTabChange={setAnswerTab}
             totalQuestions={totalQuestions}
-            answerPdfFile={answerPdfFile}
-            onAnswerPdfFileChange={setAnswerPdfFile}
-            parsingPdf={parsingPdf}
-            parseSuccess={parseSuccess}
-            onParsePdf={handleParsePdf}
+            onJsonImport={handleJsonImport}
             sendNotification={sendNotification}
             onSendNotificationChange={setSendNotification}
             securityLevel={securityLevel}

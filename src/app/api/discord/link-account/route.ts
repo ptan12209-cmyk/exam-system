@@ -2,9 +2,12 @@ import { NextResponse } from "next/server"
 import { createClient as createServerClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-const supabaseAdmin = createAdminClient(supabaseUrl, supabaseServiceKey)
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error("Discord linking is not configured")
+  return createAdminClient(url, key)
+}
 
 export async function POST(req: Request) {
   try {
@@ -14,6 +17,8 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 401 })
     }
+
+    const supabaseAdmin = getSupabaseAdmin()
 
     const { token } = await req.json()
     if (!token || typeof token !== "string" || token.trim().length !== 8) {

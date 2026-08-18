@@ -19,6 +19,7 @@ import {
 import { Loading } from "@/components/shared/Loading"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/hooks/useAuth"
+import { ONLINE_STUDY_ENABLED } from "@/lib/features"
 
 // Recharts components
 import { 
@@ -54,7 +55,7 @@ export default function TeacherDashboard() {
   const [discordStatus, setDiscordStatus] = useState<{ online: boolean; active_members?: ActiveMember[] } | null>(null)
   
   useEffect(() => {
-    if (!user) return
+    if (!user || !ONLINE_STUDY_ENABLED) return
     const fetchDiscordStatus = async () => {
       try {
         const res = await fetch("/api/study-sessions/bot-control", {
@@ -134,11 +135,11 @@ export default function TeacherDashboard() {
           .select(`
             id, 
             status, 
-            started_at,
+            start_time,
             exam:exams(title, subject, duration, total_questions)
           `)
-          .eq("host_id", user.id)
-          .order("started_at", { ascending: true })
+          .eq("created_by", user.id)
+          .order("start_time", { ascending: true })
         if (arenasData) {
           setArenas(arenasData)
         }
@@ -182,7 +183,7 @@ export default function TeacherDashboard() {
   }, [activeStudentsThisWeek, totalStudents])
 
   const upcomingArenasCount = useMemo(() => {
-    return arenas.filter(a => a.status === "waiting").length
+    return arenas.filter(a => a.status === "upcoming").length
   }, [arenas])
 
   // --- Chart 1: 7-day Activity Data ---
@@ -260,7 +261,7 @@ export default function TeacherDashboard() {
   }, [submissions])
 
   const waitingArenas = useMemo(() => {
-    return arenas.filter(a => a.status === "waiting")
+    return arenas.filter(a => a.status === "upcoming")
   }, [arenas])
 
   const formatTimeSpent = (dateStr?: string) => {
@@ -597,10 +598,10 @@ export default function TeacherDashboard() {
         </section>
 
         {/* Row 4 — Discord monitor widget & Waiting Arenas */}
-        <section className="mt-6 grid gap-6 lg:grid-cols-2">
+        <section className={cn("mt-6 grid gap-6", ONLINE_STUDY_ENABLED && "lg:grid-cols-2")}>
           
           {/* Discord monitoring widget */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-6">
+          {ONLINE_STUDY_ENABLED && <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-6">
             <div className="flex items-center justify-between border-b border-[#8C87A2]/10 pb-4 mb-4">
               <h3 className="text-sm font-bold text-[#F1EDF9] flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Đài Giám Sát Discord Voice
@@ -645,7 +646,7 @@ export default function TeacherDashboard() {
                 <span>Không kết nối được với Discord Bot. Vui lòng kiểm tra trạng thái bot.</span>
               </div>
             )}
-          </div>
+          </div>}
 
           {/* Waiting Arena Sessions */}
           <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-6">
@@ -667,7 +668,7 @@ export default function TeacherDashboard() {
                       <div className="mt-1 flex items-center gap-3 text-[10px] text-[#8C87A2]">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {new Date(arena.started_at || "").toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          {new Date(arena.start_time || "").toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />

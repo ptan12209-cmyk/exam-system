@@ -47,7 +47,7 @@ function VerifyEmailInner() {
 
       if (cancelled) return
       if (profile && isEmailVerified(profile)) {
-        router.replace("/online-student/dashboard")
+        router.replace(profile?.role === "teacher" ? "/teacher/dashboard" : "/student/dashboard")
         return
       }
       setEmail(profile?.email || user.email || null)
@@ -89,7 +89,7 @@ function VerifyEmailInner() {
       if (!res.ok || !data.success) {
         throw new Error(data?.error?.message || "Xác thực thất bại")
       }
-      router.replace("/online-student/dashboard?verified=1")
+      router.replace("/student/dashboard?verified=1")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Xác thực thất bại")
     } finally {
@@ -124,7 +124,7 @@ function VerifyEmailInner() {
       <header className="border-b border-[hsl(var(--border))]/25 px-6 py-4">
         <Link href="/" className="inline-flex items-center gap-2">
           <GraduationCap className="h-5 w-5" />
-          <span className="font-semibold">StudyHub</span>
+          <span className="font-semibold">ExamHub</span>
         </Link>
       </header>
 
@@ -200,7 +200,7 @@ function VerifyEmailInner() {
           </button>
 
           <p className="text-center text-xs text-[hsl(var(--muted-foreground))]">
-            <Link href="/online-student/dashboard" className="underline-offset-4 hover:underline">
+            <Link href="/student/dashboard" className="underline-offset-4 hover:underline">
               Về trang chủ
             </Link>
             {" · "}

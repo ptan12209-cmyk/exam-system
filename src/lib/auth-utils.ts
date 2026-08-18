@@ -24,11 +24,11 @@ export async function requireRole(
 ): Promise<void> {
     const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, account_status')
         .eq('id', userId)
         .single()
 
-    if (!profile || !roles.includes(profile.role)) {
+    if (!profile || profile.account_status !== 'active' || !roles.includes(profile.role)) {
         throw new ApiError('FORBIDDEN', 'Insufficient permissions', 403)
     }
 }
