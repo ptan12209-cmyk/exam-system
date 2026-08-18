@@ -17,6 +17,7 @@ import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
 import { AnimatedSelect } from "@/components/ui/animated-select"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { ONLINE_STUDY_ENABLED } from "@/lib/features"
 
 // Decomposed sub-components
 import { useMonitorData } from "./_hooks/useMonitorData"
@@ -203,7 +204,7 @@ export default function TeacherMonitorPage() {
                 >
                   <Eye className="h-4 w-4" /> Tổng quan
                 </button>
-                <button 
+                {ONLINE_STUDY_ENABLED && <button
                   onClick={() => setStudentTab("discord")} 
                   className={cn(
                     "px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2", 
@@ -212,7 +213,7 @@ export default function TeacherMonitorPage() {
                 >
                   <Activity className="h-4 w-4" /> Giám sát Discord
                   {afkWarning && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />}
-                </button>
+                </button>}
                 <button 
                   onClick={() => setStudentTab("timetable")} 
                   className={cn(
@@ -248,7 +249,7 @@ export default function TeacherMonitorPage() {
 
             {/* Tab Content */}
             {studentTab === "overview" && <OverviewTab data={data} />}
-            {studentTab === "discord" && (
+            {ONLINE_STUDY_ENABLED && studentTab === "discord" && (
               <DiscordTab 
                 processedDiscordLogs={processedDiscordLogs} 
                 discordLogs={discordLogs} 
@@ -296,7 +297,7 @@ export default function TeacherMonitorPage() {
               await handleLinkStudent(e);
             }} className="p-5 space-y-4">
               <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
-                Nhập chính xác địa chỉ email của học sinh để kết nối tài khoản. Học sinh phải đã đăng ký tài khoản trên hệ thống.
+                Nhập chính xác email của học sinh đã được giáo viên cấp tài khoản để kết nối quản lý.
               </p>
 
               <div className="space-y-2">

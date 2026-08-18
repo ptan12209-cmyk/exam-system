@@ -46,7 +46,7 @@ export function TeacherShell({
       {!hideSupport && (
         <SupportFab
           offsetBottomNav
-          zaloMessage="Hỗ trợ StudyHub - khu vực giáo viên"
+          zaloMessage="Hỗ trợ ExamHub - khu vực giáo viên"
           className="lg:bottom-6"
         />
       )}

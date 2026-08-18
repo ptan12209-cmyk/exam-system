@@ -15,6 +15,7 @@ import { StudentTopbar } from "@/components/student/StudentTopbar"
 import { StudentNavTabs } from "@/components/student/StudentNavTabs"
 import { Trophy, CheckCircle2, XCircle, Home, Medal, Share2, RotateCcw, Lock } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
+import { GAMIFICATION_ENABLED } from "@/lib/features"
 
 import type { Exam, Submission } from "@/types"
 
@@ -99,52 +100,54 @@ export default function ExamResultPage() {
         )
       }
 
-      // Fetch user stats for the topbar
-      const { stats } = await getUserStats(user.id)
-      setStudentStats(stats)
+      if (GAMIFICATION_ENABLED) {
+        // Gamification remains in the codebase but is not executed while locked.
+        const { stats } = await getUserStats(user.id)
+        setStudentStats(stats)
 
-      const xpAwardedKey = `xp_awarded_${examId}_${user.id}_${currentSubmission.id}`
-      if (!localStorage.getItem(xpAwardedKey)) {
-        try {
-          const result = await updateStudentStats(user.id, currentSubmission.score)
-          setXpGained(result.xpGained)
-          setNewLevel(result.newLevel)
-          if (result.leveledUp) setShowLevelUp(true)
-          
-          // Re-fetch updated stats after checkin/update
-          const { stats: updatedStats } = await getUserStats(user.id)
-          setStudentStats(updatedStats)
+        const xpAwardedKey = `xp_awarded_${examId}_${user.id}_${currentSubmission.id}`
+        if (!localStorage.getItem(xpAwardedKey)) {
+          try {
+            const result = await updateStudentStats(user.id, currentSubmission.score)
+            setXpGained(result.xpGained)
+            setNewLevel(result.newLevel)
+            if (result.leveledUp) setShowLevelUp(true)
 
-          // Check for newly unlocked badges
-          if (result.newBadges && result.newBadges.length > 0) {
-            const { data: badgeData } = await supabase
-              .from("badges")
-              .select("*")
-              .in("name", result.newBadges)
-            if (badgeData) {
-              setUnlockedBadges(badgeData)
+            // Re-fetch updated stats after checkin/update
+            const { stats: updatedStats } = await getUserStats(user.id)
+            setStudentStats(updatedStats)
+
+            // Check for newly unlocked badges
+            if (result.newBadges && result.newBadges.length > 0) {
+              const { data: badgeData } = await supabase
+                .from("badges")
+                .select("*")
+                .in("name", result.newBadges)
+              if (badgeData) {
+                setUnlockedBadges(badgeData)
+              }
             }
-          }
 
-          // Check for newly unlocked achievements
-          const { data: achievementData } = await supabase.rpc("check_and_unlock_achievements", {
-            p_user_id: user.id
-          })
-          if (achievementData && achievementData.unlocked && achievementData.unlocked.length > 0) {
-            const { data: achData } = await supabase
-              .from("achievements")
-              .select("*")
-              .in("name", achievementData.unlocked)
-            if (achData) {
-              achData.forEach((ach: any) => {
-                unlock(ach)
-              })
+            // Check for newly unlocked achievements
+            const { data: achievementData } = await supabase.rpc("check_and_unlock_achievements", {
+              p_user_id: user.id
+            })
+            if (achievementData && achievementData.unlocked && achievementData.unlocked.length > 0) {
+              const { data: achData } = await supabase
+                .from("achievements")
+                .select("*")
+                .in("name", achievementData.unlocked)
+              if (achData) {
+                achData.forEach((ach: any) => {
+                  unlock(ach)
+                })
+              }
             }
-          }
 
-          localStorage.setItem(xpAwardedKey, "true")
-        } catch (error) {
-          console.error("Failed to update stats:", error)
+            localStorage.setItem(xpAwardedKey, "true")
+          } catch (error) {
+            console.error("Failed to update stats:", error)
+          }
         }
       }
 
@@ -191,15 +194,15 @@ export default function ExamResultPage() {
 
   return (
     <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9]", inter.className)}>
-      {xpGained !== null && xpGained > 0 && <XpGainAnimation xpGained={xpGained} onComplete={() => setXpGained(null)} />}
-      {showLevelUp && <LevelUpAnimation newLevel={newLevel} onComplete={() => setShowLevelUp(false)} />}
-      {unlockedBadges.length > 0 && currentBadgeIndex < unlockedBadges.length && (
+      {GAMIFICATION_ENABLED && xpGained !== null && xpGained > 0 && <XpGainAnimation xpGained={xpGained} onComplete={() => setXpGained(null)} />}
+      {GAMIFICATION_ENABLED && showLevelUp && <LevelUpAnimation newLevel={newLevel} onComplete={() => setShowLevelUp(false)} />}
+      {GAMIFICATION_ENABLED && unlockedBadges.length > 0 && currentBadgeIndex < unlockedBadges.length && (
         <NewBadgeAnimation 
           badge={unlockedBadges[currentBadgeIndex]} 
           onComplete={() => setCurrentBadgeIndex(prev => prev + 1)} 
         />
       )}
-      {AchievementPopup}
+      {GAMIFICATION_ENABLED && AchievementPopup}
 
       {/* Topbar */}
       <StudentTopbar

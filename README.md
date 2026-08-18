@@ -1,6 +1,6 @@
 # 🎓 ExamHub - Hệ Thống Thi Trắc Nghiệm Online
 
-> Nền tảng luyện đề thi trực tuyến hiện đại, tích hợp gamification và đấu trường realtime
+> Nền tảng giao bài, làm bài, chấm điểm và quản lý học sinh trực tuyến
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.1-black.svg)
@@ -28,17 +28,29 @@
 **ExamHub** là hệ thống thi trắc nghiệm online được thiết kế dành cho giáo viên và học sinh, với mục tiêu:
 
 - 📚 **Luyện đề hiệu quả**: Kho đề thi đa dạng, hỗ trợ 8+ môn học
-- 🎮 **Gamification**: Hệ thống XP, huy hiệu, bảng xếp hạng tạo động lực học tập
+- 👥 **Quản lý học sinh**: Liên kết tài khoản, giao nhiệm vụ và theo dõi kết quả
 - ⚔️ **Đấu trường realtime**: Thi đấu trực tiếp với bạn bè
-- 📺 **Live class**: Học trực tiếp qua YouTube Live tích hợp
+- 📊 **Phân tích kết quả**: Phổ điểm, bài nộp và thống kê theo từng đề
 
 ### Đối Tuyên Sử Dụng
 
 | Vai trò | Chức năng chính |
 |---------|-----------------|
-| **Học sinh** | Làm đề, xem kết quả, tham gia đấu trường, nhận thành tích |
-| **Giáo viên** | Tạo đề, quản lý ngân hàng câu hỏi, xem thống kê, live dạy |
+| **Học sinh** | Nhận đề, làm bài, xem kết quả và theo dõi tiến độ |
+| **Giáo viên** | Tạo/giao đề, quản lý học sinh, chấm bài và xem thống kê |
 | **Admin** | Quản lý toàn hệ thống, cấu hình |
+
+---
+
+## 🔒 Trạng Thái Sản Phẩm
+
+Repo hiện chạy ở chế độ **core exam** (`ONLINE_STUDY_ENABLED = false` trong
+`src/lib/features.ts`). Các trang/API khóa học video, học liệu, live/co-study và
+thanh toán khóa học được giữ lại trong mã nguồn nhưng bị chặn ở middleware.
+
+Các luồng đang mở: đăng nhập bằng tài khoản giáo viên cấp, dashboard, đề thi,
+ngân hàng câu hỏi, làm bài, chấm điểm, thống kê, đấu trường,
+checklist/thời khóa biểu và quản lý học sinh.
 
 ---
 
@@ -48,33 +60,31 @@
 
 | Tính năng | Mô tả |
 |-----------|-------|
-| **Dashboard** | Tổng quan tiến độ học tập, XP, streak |
+| **Dashboard** | Tổng quan đề được giao, bài đã làm và điểm số |
 | **Làm đề thi** | Làm bài với timer, xem trước đề trên modal |
 | **Xem kết quả** | Phân tích chi tiết từng câu đúng/sai |
 | **Đấu trường** | Thi đấu realtime với người khác |
-| **Thành tích** | Thu thập huy hiệu, danh hiệu đặc biệt |
-| **Shop phần thưởng** | Đổi XP lấy quà |
-| **Điểm danh hàng ngày** | Bonus XP mỗi ngày |
 | **Thống kê cá nhân** | Biểu đồ tiến bộ theo thời gian |
+| **Checklist** | Theo dõi nhiệm vụ giáo viên giao |
+| **Thời khóa biểu** | Xem lịch học và lịch kiểm tra |
 
 ### 👨‍🏫 Dành Cho Giáo Viên
 
 | Tính năng | Mô tả |
 |-----------|-------|
 | **Dashboard** | Tổng quan đề thi, số lượng nộp bài |
-| **Tạo đề thi** | Tạo đề thủ công hoặc upload PDF (AI trích xuất) |
+| **Tạo đề thi** | Upload PDF đề và nạp một JSON đáp án gồm trắc nghiệm, đúng/sai, trả lời ngắn |
 | **Ngân hàng đề** | Quản lý, sửa, xóa đề thi |
 | **Chấm bài** | Tự động chấm điểm, xem chi tiết bài nộp |
+| **Quản lý học sinh** | Cấp/khóa tài khoản, giao nhiệm vụ và theo dõi tiến độ |
 | **Đấu trường** | Tạo phòng thi đấu cho học sinh |
 | **Thống kê** | Phân tích kết quả theo lớp, đề, câu hỏi |
-| **YouTube Live** | Tích hợp live stream dạy học |
 | **Thông báo** | Gửi thông báo đến học sinh |
 
 ### 🌐 Tính Năng Chung
 
 | Tính năng | Mô tả |
 |-----------|-------|
-| **Kho tài liệu** | Upload và chia sẻ tài liệu PDF |
 | **Dark mode** | Giao diện sáng/tối |
 | **Responsive** | Tương thích mobile/tablet/desktop |
 | **PWA** | Cài đặt như app native |
@@ -103,11 +113,10 @@
 | **Row Level Security** | Bảo mật dữ liệu |
 | **Edge Functions** | Serverless functions |
 
-### AI & APIs
+### API tích hợp
 | Service | Mục đích |
 |---------|----------|
-| **Google Gemini** | Trích xuất câu hỏi từ PDF |
-| **YouTube Data API** | Live streaming |
+| **Supabase Auth Admin** | Giáo viên cấp và quản lý tài khoản học sinh |
 
 ### Deployment
 | Platform | Mục đích |
@@ -120,10 +129,11 @@
 
 ## 📁 Cấu Trúc Chi Tiết Toàn Bộ Dự Án (All-in-One Repo Structure)
 
-Mã nguồn dự án được tổ chức dạng Monorepo tích hợp đầy đủ cả Frontend (Next.js App Router), API Backend, Database Migrations, AI Worker (Python), và Discord Bot giám sát học tập.
+Mã nguồn dự án được tổ chức dạng Monorepo tích hợp Frontend Next.js App Router, API Backend, Supabase và các công cụ giám sát học sinh.
 
 ```
 exam-system/
+├── supabase-core-exam.sql                # SQL duy nhất rebuild database core exam
 ├── migrations/                           # Lưu trữ toàn bộ các tệp Migrations của Supabase PostgreSQL
 │   ├── combined_database_schema.sql      # Schema CSDL hợp nhất toàn hệ thống
 │   ├── migration-checklist-timetable.sql # Khởi tạo bảng checklist và thời khóa biểu gốc
@@ -181,7 +191,7 @@ exam-system/
 │   │   │   ├── challenges/               # API danh sách thử thách hàng ngày
 │   │   │   ├── daily-checkin/            # API điểm danh tích lũy Streak
 │   │   │   ├── exams/                    # API quản lý đề thi trắc nghiệm
-│   │   │   ├── extract-questions/        # API trích xuất câu hỏi từ PDF qua AI
+│   │   │   ├── teacher/students/         # API giáo viên cấp và quản lý tài khoản học sinh
 │   │   │   ├── parent/                   # API liên kết phụ huynh giám sát
 │   │   │   ├── profile/                  # API cập nhật hồ sơ người dùng
 │   │   │   ├── rewards/                  # API mua sắm quà bằng XP
@@ -206,18 +216,16 @@ exam-system/
 │   ├── lib/                              # Thư viện tiện ích, cấu hình và lớp kết nối
 │   │   ├── supabase/                     # Supabase clients (client.ts & server.ts)
 │   │   ├── gamification/                 # Logic tính toán XP, Level, Huy hiệu, Streak
-│   │   ├── pdf-parser.ts                 # Trình phân tích cấu trúc PDF
+│   │   ├── answer-json.ts                # Kiểm tra và chuẩn hóa JSON đáp án 3 dạng câu hỏi
 │   │   └── subjects.ts                   # Định nghĩa danh sách các môn học
 │   └── services/                         # Tầng xử lý nghiệp vụ kết nối trực tiếp Supabase Database
 │       ├── exam-server.ts                # Nghiệp vụ liên quan đến quản lý và chấm điểm đề thi
 │       ├── scoring.ts                    # Công cụ chấm điểm trắc nghiệm tự động
 │       └── user-server.ts                # Nghiệp vụ quản lý thông tin hồ sơ và vai trò học sinh
 │
-├── worker/                               # Python Background Worker trích xuất câu hỏi từ PDF qua AI
-│   ├── gemini_service.py                 # Hàm gọi Google Gemini API phân tích nội dung đề thi
-│   ├── pdf_parser.py                     # Đọc văn bản từ tệp PDF tải lên
-│   ├── main.py                           # FastAPI Server nhận file và điều phối xử lý trích xuất
-│   └── requirements.txt                  # Danh sách thư viện Python cần thiết
+├── worker/                               # Health service cũ; không còn endpoint AI/PDF
+│   ├── main.py                           # FastAPI health endpoint
+│   └── requirements.txt                  # Dependencies tối thiểu
 │
 ├── package.json                          # Tệp quản lý các dependencies và scripts chạy dự án Web
 ├── vercel.json                           # Cấu hình deploy ứng dụng Web lên Vercel Cloud
@@ -249,11 +257,21 @@ Tạo file `.env.local`:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-GEMINI_API_KEY=your_gemini_api_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+GEMINI_API_KEY=your_gemini_api_key # optional, Discord bot only
 ```
 
 ### Bước 4: Chạy Migrations
-Chạy các file SQL trong thư mục gốc theo thứ tự trong Supabase SQL Editor.
+Sao lưu dữ liệu, sau đó chạy **duy nhất** file `supabase-core-exam.sql` trong
+Supabase SQL Editor. File này xóa và tạo lại toàn bộ schema `public` nhưng không
+xóa `auth.users` hay file trong Storage.
+
+Trong Supabase Dashboard → Authentication, tắt **Allow new users to sign up**.
+Nếu cần kích hoạt tài khoản giáo viên đầu tiên, chạy sau khi file SQL hoàn tất:
+
+```sql
+select public.promote_auth_user_to_teacher('teacher@example.com');
+```
 
 ### Bước 5: Chạy Development Server
 ```bash
@@ -278,8 +296,8 @@ Truy cập: `http://localhost:3000`
 ### Authentication
 | Endpoint | Method | Mô tả |
 |----------|--------|-------|
-| `/api/auth/signup` | POST | Đăng ký |
-| `/api/auth/login` | POST | Đăng nhập |
+| `/api/auth/register` | POST | Luôn trả 403; đăng ký công khai bị khóa |
+| `/api/teacher/students` | GET/POST/PATCH | Giáo viên cấp và khóa/mở tài khoản học sinh |
 
 ### Gamification
 | Endpoint | Method | Mô tả |
@@ -293,7 +311,6 @@ Truy cập: `http://localhost:3000`
 ### Content
 | Endpoint | Method | Mô tả |
 |----------|--------|-------|
-| `/api/extract-questions` | POST | AI trích xuất câu hỏi từ PDF |
 | `/api/upload-avatar` | POST | Upload ảnh đại diện |
 | `/api/send-notification` | POST | Gửi thông báo |
 

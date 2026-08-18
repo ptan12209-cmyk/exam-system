@@ -5,9 +5,6 @@ import { checkRateLimit, getClientIP, rateLimitResponse } from "@/lib/rate-limit
 
 /** Only forward known worker path prefixes (SSRF / open-proxy mitigation) */
 const ALLOWED_PATH_PREFIXES = [
-  "extract",
-  "extract-answers",
-  "extract-questions",
   "health",
   "docs",
   "openapi",
@@ -120,7 +117,7 @@ async function handleProxy(
     }
     console.error("[Worker Proxy] Error forwarding request:", error);
     return NextResponse.json(
-      { error: "Failed to connect to PDF Worker" },
+      { error: "Failed to connect to worker service" },
       { status: 502 }
     );
   }

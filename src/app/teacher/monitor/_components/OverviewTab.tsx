@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import type { useMonitorData } from "../_hooks/useMonitorData"
 import { PRIORITIES, STATUSES, formatSeconds, DAILY_TARGET_SECONDS } from "../_types"
+import { ONLINE_STUDY_ENABLED } from "@/lib/features"
 
 type MonitorData = ReturnType<typeof useMonitorData>
 
@@ -114,7 +115,7 @@ export function OverviewTab({ data }: OverviewTabProps) {
             </div>
 
             {/* Discord Presence & Class Target */}
-            {(() => {
+            {ONLINE_STUDY_ENABLED && (() => {
               const DISCORD_TARGET_SECONDS = 130 * 60
               const discordSecs = session?.discord_duration || 0
               const discordMins = Math.floor(discordSecs / 60)

@@ -2,7 +2,11 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import {
   GAMIFICATION_ENABLED,
+  ONLINE_STUDY_ENABLED,
+  isGamificationApiRoute,
   isGamificationRoute,
+  isOnlineStudyApiRoute,
+  isOnlineStudyRoute,
   isRegistrationOpen,
 } from '@/lib/features'
 import { isVerificationBlocked } from '@/lib/email-verify'
@@ -12,7 +16,7 @@ import { isVerificationBlocked } from '@/lib/email-verify'
  * 1. Refreshing Supabase auth tokens on every request
  * 2. Protecting /teacher/*, /student/*, /arena/*, /live/*, /profile/* routes
  * 3. Role-based access control (student ↔ teacher)
- * 4. Feature locks (gamification, registration)
+ * 4. Feature locks (online study, gamification, registration)
  * 5. Email verification grace (hard block after 5 days for self_register)
  */
 
@@ -23,8 +27,6 @@ const PROTECTED_PREFIXES = [
   '/arena',
   '/live',
   '/profile',
-  '/pricing',
-  '/online-student',
   '/verify-email',
 ]
 
@@ -39,17 +41,68 @@ const VERIFY_EXEMPT_PREFIXES = [
   '/forgot-password',
   '/reset-password',
   '/auth/',
-  '/payment/',
 ]
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Public registration temporarily locked (overview-only period)
+  // Stop paused online-course endpoints before they reach content, access or
+  // checkout handlers. Core exam APIs remain available.
+  if (!ONLINE_STUDY_ENABLED && isOnlineStudyApiRoute(pathname)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: 'FEATURE_DISABLED',
+          message: 'Tính năng học liệu online đang tạm khóa.',
+        },
+      },
+      { status: 503 }
+    )
+  }
+
+  if (!GAMIFICATION_ENABLED && isGamificationApiRoute(pathname)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: 'FEATURE_DISABLED',
+          message: 'Tính năng thành tích và phần thưởng đang tạm khóa.',
+        },
+      },
+      { status: 503 }
+    )
+  }
+
+  // Keep the implementation in the repository, but remove every public entry
+  // point while the product focuses on assignments and student management.
+  if (!ONLINE_STUDY_ENABLED && isOnlineStudyRoute(pathname)) {
+    const url = request.nextUrl.clone()
+    if (pathname.startsWith('/teacher/')) {
+      url.pathname = '/teacher/dashboard'
+    } else if (pathname.startsWith('/online-student')) {
+      url.pathname = '/student/dashboard'
+    } else {
+      url.pathname = '/'
+    }
+    url.search = ''
+    url.searchParams.set('online-study', 'paused')
+    return NextResponse.redirect(url)
+  }
+
+  if (pathname === '/student/portal') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/student/dashboard'
+    url.search = ''
+    return NextResponse.redirect(url)
+  }
+
+  // Public registration is disabled; student accounts are teacher-issued.
   if (!isRegistrationOpen() && pathname.startsWith('/register')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
-    url.searchParams.set('dang-ky', 'tam-khoa')
+    url.pathname = '/login'
+    url.search = ''
+    url.searchParams.set('notice', 'teacher-issued-account')
     return NextResponse.redirect(url)
   }
 
@@ -114,11 +167,15 @@ export async function middleware(request: NextRequest) {
   if (user && isAuthRoute) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, email_verified_at, account_source, created_at')
+      .select('role, account_status, email_verified_at, account_source, created_at')
       .eq('id', user.id)
       .single()
 
     if (!profile) {
+      return supabaseResponse
+    }
+
+    if (profile.account_status !== 'active') {
       return supabaseResponse
     }
 
@@ -131,9 +188,9 @@ export async function middleware(request: NextRequest) {
 
     const dashboardUrl = request.nextUrl.clone()
     if (profile.role === 'teacher') {
-      dashboardUrl.pathname = '/teacher/online-study'
+      dashboardUrl.pathname = '/teacher/dashboard'
     } else {
-      dashboardUrl.pathname = '/online-student/dashboard'
+      dashboardUrl.pathname = '/student/dashboard'
     }
     return NextResponse.redirect(dashboardUrl)
   }
@@ -144,9 +201,17 @@ export async function middleware(request: NextRequest) {
     if (!exempt && (isProtected || pathname.startsWith('/student'))) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, email_verified_at, account_source, created_at')
+        .select('role, account_status, email_verified_at, account_source, created_at')
         .eq('id', user.id)
         .single()
+
+      if (profile && profile.account_status !== 'active') {
+        const loginUrl = request.nextUrl.clone()
+        loginUrl.pathname = '/login'
+        loginUrl.search = ''
+        loginUrl.searchParams.set('error', 'account_disabled')
+        return NextResponse.redirect(loginUrl)
+      }
 
       if (profile && isVerificationBlocked(profile)) {
         const verifyUrl = request.nextUrl.clone()
@@ -162,33 +227,30 @@ export async function middleware(request: NextRequest) {
     const needsRoleCheck =
       pathname.startsWith('/teacher') ||
       pathname.startsWith('/student') ||
-      pathname.startsWith('/online-student') ||
       pathname.startsWith('/arena') ||
       pathname.startsWith('/live')
 
     if (needsRoleCheck) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, account_status')
         .eq('id', user.id)
         .single()
 
       if (profile) {
+        if (profile.account_status !== 'active') {
+          const loginUrl = request.nextUrl.clone()
+          loginUrl.pathname = '/login'
+          loginUrl.search = ''
+          loginUrl.searchParams.set('error', 'account_disabled')
+          return NextResponse.redirect(loginUrl)
+        }
+
         // Accessing teacher routes
         if (pathname.startsWith('/teacher')) {
           if (profile.role !== 'teacher') {
             const redirectUrl = request.nextUrl.clone()
-            redirectUrl.pathname = '/online-student/dashboard'
-            return NextResponse.redirect(redirectUrl)
-          }
-          const isAllowedTeacherPath =
-            pathname.startsWith('/teacher/online-study') ||
-            pathname.startsWith('/teacher/profile') ||
-            pathname.startsWith('/teacher/feedback')
-
-          if (!isAllowedTeacherPath) {
-            const redirectUrl = request.nextUrl.clone()
-            redirectUrl.pathname = '/teacher/online-study'
+            redirectUrl.pathname = '/student/dashboard'
             return NextResponse.redirect(redirectUrl)
           }
         }
@@ -197,35 +259,9 @@ export async function middleware(request: NextRequest) {
         if (pathname.startsWith('/student')) {
           if (profile.role !== 'student' && profile.role !== 'online_student') {
             const redirectUrl = request.nextUrl.clone()
-            redirectUrl.pathname = '/teacher/online-study'
+            redirectUrl.pathname = '/teacher/dashboard'
             return NextResponse.redirect(redirectUrl)
           }
-          const isProfilePage = pathname.startsWith('/student/profile')
-          if (!isProfilePage) {
-            const redirectUrl = request.nextUrl.clone()
-            redirectUrl.pathname = '/online-student/dashboard'
-            return NextResponse.redirect(redirectUrl)
-          }
-        }
-
-        // Accessing online student routes - allow both student and online_student roles
-        if (pathname.startsWith('/online-student')) {
-          if (profile.role !== 'online_student' && profile.role !== 'student') {
-            const redirectUrl = request.nextUrl.clone()
-            redirectUrl.pathname = '/login'
-            return NextResponse.redirect(redirectUrl)
-          }
-        }
-
-        // Accessing deprecated public/shared protected routes (like arena or live)
-        if (pathname.startsWith('/arena') || pathname.startsWith('/live')) {
-          const redirectUrl = request.nextUrl.clone()
-          if (profile.role === 'teacher') {
-            redirectUrl.pathname = '/teacher/online-study'
-          } else {
-            redirectUrl.pathname = '/online-student/dashboard'
-          }
-          return NextResponse.redirect(redirectUrl)
         }
       }
     }
@@ -241,8 +277,22 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, icons, manifest.json, sw.js (PWA files)
-     * - api routes (handled separately)
+     * - most api routes (paused online-study APIs are matched explicitly)
      */
     '/((?!_next/static|_next/image|favicon\\.ico|icons|manifest\\.json|sw\\.js|api).*)',
+    '/api/online-study/:path*',
+    '/api/study/:path*',
+    '/api/study-sessions/:path*',
+    '/api/subscriptions/:path*',
+    '/api/payments/:path*',
+    '/api/spaced-repetition/:path*',
+    '/api/ai/:path*',
+    '/api/discord/:path*',
+    '/api/achievements/:path*',
+    '/api/challenges/:path*',
+    '/api/daily-checkin/:path*',
+    '/api/discord/daily-checkin/:path*',
+    '/api/rewards/:path*',
+    '/api/titles/:path*',
   ],
 }

@@ -17,17 +17,35 @@ describe("feature flags module", () => {
 
   it("exports required flags and helpers", () => {
     expect(typeof features.GAMIFICATION_ENABLED).toBe("boolean")
+    expect(typeof features.ONLINE_STUDY_ENABLED).toBe("boolean")
     expect(typeof features.REGISTRATION_ENABLED).toBe("boolean")
-    expect(typeof features.REGISTRATION_REOPEN_DATE).toBe("string")
     expect(typeof features.SINGLE_DEVICE_ENABLED).toBe("boolean")
     expect(typeof features.BUNNY_SECURITY_CHECKLIST_ENABLED).toBe("boolean")
+    expect(Array.isArray(features.ONLINE_STUDY_ROUTE_PREFIXES)).toBe(true)
+    expect(Array.isArray(features.ONLINE_STUDY_API_PREFIXES)).toBe(true)
+    expect(typeof features.isOnlineStudyRoute).toBe("function")
+    expect(typeof features.isOnlineStudyApiRoute).toBe("function")
     expect(Array.isArray(features.GAMIFICATION_ROUTE_PREFIXES)).toBe(true)
+    expect(Array.isArray(features.GAMIFICATION_API_PREFIXES)).toBe(true)
     expect(typeof features.isGamificationRoute).toBe("function")
+    expect(typeof features.isGamificationApiRoute).toBe("function")
     expect(typeof features.isRegistrationOpen).toBe("function")
   })
 
-  it("isRegistrationOpen respects REGISTRATION_ENABLED override", () => {
-    // When flag is false, result depends on date — just ensure boolean
-    expect(typeof features.isRegistrationOpen()).toBe("boolean")
+  it("keeps public registration permanently disabled", () => {
+    expect(features.REGISTRATION_ENABLED).toBe(false)
+    expect(features.isRegistrationOpen()).toBe(false)
+  })
+
+  it("classifies online-study UI and API paths without blocking exam routes", () => {
+    expect(features.isOnlineStudyRoute("/online-student/dashboard")).toBe(true)
+    expect(features.isOnlineStudyRoute("/teacher/online-study")).toBe(true)
+    expect(features.isOnlineStudyRoute("/settings/discord")).toBe(true)
+    expect(features.isOnlineStudyRoute("/student/exams")).toBe(false)
+    expect(features.isOnlineStudyApiRoute("/api/online-study/lessons")).toBe(true)
+    expect(features.isOnlineStudyApiRoute("/api/spaced-repetition/due")).toBe(true)
+    expect(features.isOnlineStudyApiRoute("/api/exams/submit")).toBe(false)
+    expect(features.isGamificationApiRoute("/api/achievements")).toBe(true)
+    expect(features.isGamificationApiRoute("/api/exams/submit")).toBe(false)
   })
 })

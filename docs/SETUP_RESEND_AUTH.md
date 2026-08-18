@@ -1,4 +1,8 @@
-# Hướng dẫn setup Auth: Resend OTP + Google + Reset password
+# Hướng dẫn setup Auth: Resend OTP + Google + Reset password (tài liệu cũ)
+
+> Public registration và Google OAuth provisioning hiện đã bị khóa. Tài khoản
+> học sinh chỉ được giáo viên cấp tại `/teacher/students`; phần OTP bên dưới chỉ
+> còn để tham khảo khi bảo trì dữ liệu cũ.
 
 Áp dụng sau khi đã deploy code (migration + env). Làm lần lượt.
 
@@ -48,11 +52,11 @@ NEXT_PUBLIC_APP_URL=https://luyende.id.vn
 
 6. Redeploy Vercel sau khi thêm env.
 
-**Test OTP**
+**Test email khôi phục / xác minh**
 
-- Đăng ký tài khoản mới (self-register)
-- Check inbox / spam: subject dạng `1234 — Mã xác thực StudyHub`
-- Nếu chưa có `RESEND_API_KEY`, server log in dev sẽ in `DEV OTP for email@...: ####`
+- Dùng một tài khoản đã được giáo viên cấp; đăng ký công khai đã bị tắt.
+- Kiểm tra inbox / spam với email xác minh hoặc khôi phục mật khẩu.
+- Nếu chưa có `RESEND_API_KEY`, server log ở môi trường dev sẽ in mã OTP kiểm thử.
 
 ---
 

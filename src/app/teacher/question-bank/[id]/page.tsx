@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Plus, Loader2, Edit, Trash, HelpCircle, Check, X, Upload } from "lucide-react"
+import { ArrowLeft, Plus, Loader2, Edit, Trash, HelpCircle, Check, X } from "lucide-react"
 import Latex from "react-latex-next"
 import "katex/dist/katex.min.css"
 import { MAP_SUBJECT_TO_DB } from "@/lib/subjects"
@@ -53,9 +53,6 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
     
     // SA states
     const [saCorrect, setSaCorrect] = useState("")
-
-    // AI PDF states
-    const [uploadingPdf, setUploadingPdf] = useState(false)
 
     // Selection states for categorization
     const [bankSubject, setBankSubject] = useState("")
@@ -156,74 +153,12 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
         setLoading(true)
         const { data } = await supabase
             .from("questions")
-            .select(`
-                *,
-                study_chapters(title),
-                study_lessons(title),
-                study_sections(title)
-            `)
+            .select("*")
             .eq("bank_id", bankId)
             .order("created_at", { ascending: false })
         
         if (data) setQuestions(data)
         setLoading(false)
-    }
-
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
-
-        setUploadingPdf(true)
-        try {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) throw new Error("Unauthorized")
-
-            const formData = new FormData()
-            formData.append("file", file)
-
-            const workerUrl = process.env.NEXT_PUBLIC_PDF_WORKER_URL || "http://localhost:8000"
-            const res = await fetch(`${workerUrl}/extract-bank-questions`, {
-                method: "POST",
-                body: formData
-            })
-
-            if (!res.ok) throw new Error("Failed to extract questions from PDF")
-
-            const result = await res.json()
-            const extractedQuestions = result.questions || []
-
-            if (extractedQuestions.length === 0) {
-                warning("Không tìm thấy câu hỏi nào trong file PDF!")
-                return
-            }
-
-            // Bulk insert
-            const insertData = extractedQuestions.map((q: any) => ({
-                bank_id: bankId,
-                teacher_id: user.id,
-                question_type: q.question_type || 'mc',
-                difficulty: 2, // Default
-                content: q.content,
-                options: q.options || null,
-                correct_answer: q.correct_answer,
-                explanation: q.explanation || "",
-                chapter_id: selectedChapterId || null,
-                lesson_id: selectedLessonId || null,
-                section_id: selectedSectionId || null
-            }))
-
-            const { error } = await supabase.from("questions").insert(insertData)
-            if (error) throw error
-
-            success(`Đã thêm thành công ${extractedQuestions.length} câu hỏi từ PDF!`)
-            fetchQuestions()
-        } catch (error) {
-            console.error(error)
-            toastError("Có lỗi xảy ra khi đọc file PDF bằng AI.")
-        } finally {
-            setUploadingPdf(false)
-            e.target.value = "" // reset
-        }
     }
 
     const handleSaveQuestion = async () => {
@@ -319,13 +254,6 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
                     Tổng số: <span className="font-bold text-indigo-600">{questions.length}</span> câu hỏi
                 </div>
                 <div className="flex gap-2">
-                    <div className="relative">
-                        <input type="file" accept="application/pdf" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileUpload} disabled={uploadingPdf} />
-                        <Button variant="outline" disabled={uploadingPdf} className="pointer-events-none">
-                            {uploadingPdf ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                            Nhập từ PDF (AI)
-                        </Button>
-                    </div>
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
                             <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
@@ -494,7 +422,7 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
                             <div className="space-y-2">
                                 <Label>Giải thích đáp án (Không bắt buộc)</Label>
                                 <Textarea 
-                                    placeholder="Giải thích chi tiết tại sao lại chọn đáp án này để AI Tutor có thể tham khảo..." 
+                                    placeholder="Giải thích chi tiết để học sinh tham khảo sau khi làm bài..."
                                     value={qExplanation} 
                                     onChange={e => setQExplanation(e.target.value)} 
                                 />

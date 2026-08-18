@@ -26,10 +26,8 @@ import {
   FileText,
   HelpCircle,
   Plus,
-  Sparkles,
   Trash2,
   Upload,
-  Wand2,
   X,
   Share2,
   CalendarDays,
@@ -40,16 +38,15 @@ import {
 
 import { SUBJECTS, MAP_SUBJECT_TO_DB, MAP_DB_TO_SUBJECT } from "@/lib/subjects"
 import { cn } from "@/lib/utils"
+import type { ParsedAnswerJson } from "@/lib/answer-json"
+import { AnswerJsonImporter } from "@/app/teacher/exams/create/_components/AnswerJsonImporter"
 
 import type { ExamInBank } from "@/types"
-
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || "http://localhost:8000"
 
 export default function ExamBankPage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const answerPdfRef = useRef<HTMLInputElement>(null)
 
   const { success, error: toastError, warning } = useToast()
   const [fullName, setFullName] = useState("")
@@ -58,9 +55,7 @@ export default function ExamBankPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploadingPdf, setUploadingPdf] = useState(false)
-  const [answerPdfFile, setAnswerPdfFile] = useState<File | null>(null)
-  const [scanning, setScanning] = useState(false)
-  const [scanResult, setScanResult] = useState<{ multiple_choice?: string[]; true_false?: string[] } | null>(null)
+  const [importedAnswers, setImportedAnswers] = useState<ParsedAnswerJson | null>(null)
   const [title, setTitle] = useState("")
   const [subject, setSubject] = useState("toan")
   const [description, setDescription] = useState("")
@@ -208,34 +203,24 @@ export default function ExamBankPage() {
     setAnswerKey("")
     setTotalQuestions(30)
     setEditingId(null)
-    setAnswerPdfFile(null)
-    setScanResult(null)
+    setImportedAnswers(null)
     setTargetGrade(null)
     setSelectedChapterId("")
     setSelectedLessonId("")
     setSelectedSectionId("")
   }
 
-  const handleAIScan = async () => {
-    if (!answerPdfFile) return warning("Vui lòng chọn file PDF đáp án")
-    setScanning(true)
-    setScanResult(null)
-    try {
-      const formData = new FormData()
-      formData.append("file", answerPdfFile)
-      const response = await fetch(`${WORKER_URL}/extract-answers`, { method: "POST", body: formData })
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-      const data = await response.json()
-      setScanResult(data)
-      if (data.multiple_choice?.length) {
-        setAnswerKey(data.multiple_choice.map((ans: string, idx: number) => `${idx + 1}${ans}`).join(","))
-        setTotalQuestions(data.multiple_choice.length)
-      }
-    } catch (err) {
-      toastError("Lỗi quét AI: " + (err as Error).message + "\n\nĐảm bảo Python worker đang chạy!")
-    } finally {
-      setScanning(false)
-    }
+  const handleJsonImport = (answers: ParsedAnswerJson) => {
+    setImportedAnswers(answers)
+    setAnswerKey(
+      answers.multipleChoice
+        .map((item) => `${item.question}${item.answer}`)
+        .join(",")
+    )
+    setTotalQuestions(
+      answers.multipleChoice.length + answers.trueFalse.length + answers.shortAnswer.length
+    )
+    success("Đã nạp JSON đáp án vào Kho đề.")
   }
 
   const handleEdit = (exam: ExamInBank) => {
@@ -250,6 +235,30 @@ export default function ExamBankPage() {
     setSelectedChapterId(exam.chapter_id ?? "")
     setSelectedLessonId(exam.lesson_id ?? "")
     setSelectedSectionId(exam.section_id ?? "")
+    const existingAnswers: ParsedAnswerJson = {
+      multipleChoice: (exam.mc_answers || []).map((item) => ({
+        question: Number(item.question),
+        answer: String(item.answer),
+      })),
+      trueFalse: (exam.tf_answers || []).map((item) => ({
+        question: Number(item.question),
+        a: Boolean(item.a),
+        b: Boolean(item.b),
+        c: Boolean(item.c),
+        d: Boolean(item.d),
+      })),
+      shortAnswer: (exam.sa_answers || []).map((item) => ({
+        question: Number(item.question),
+        answer: String(item.answer),
+      })),
+    }
+    setImportedAnswers(
+      existingAnswers.multipleChoice.length ||
+        existingAnswers.trueFalse.length ||
+        existingAnswers.shortAnswer.length
+        ? existingAnswers
+        : null
+    )
     setShowCreate(true)
   }
 
@@ -283,12 +292,16 @@ export default function ExamBankPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title) return warning("Vui lòng nhập tên đề thi")
+    if (!editingId && !importedAnswers) return warning("Vui lòng kiểm tra và nạp JSON đáp án")
     setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Not authenticated")
       const parsedAnswers = parseAnswerKey(answerKey)
-      const questions = Object.entries(parsedAnswers).map(([num, ans]) => ({ question: `Câu ${num}`, options: ["A", "B", "C", "D"], answer: ans }))
+      const mcAnswers = importedAnswers?.multipleChoice || Object.entries(parsedAnswers).map(([num, ans]) => ({ question: Number(num), answer: ans }))
+      const tfAnswers = importedAnswers?.trueFalse || []
+      const saAnswers = importedAnswers?.shortAnswer || []
+      const questions = mcAnswers.map(({ question, answer }) => ({ question: `Câu ${question}`, options: ["A", "B", "C", "D"], answer }))
       
       const dbSubject = MAP_SUBJECT_TO_DB[subject] || subject
       const data = {
@@ -297,6 +310,10 @@ export default function ExamBankPage() {
         description: description || null,
         pdf_url: pdfUrl || null,
         answer_key: answerKey || null,
+        correct_answers: mcAnswers.map((item) => item.answer),
+        mc_answers: mcAnswers,
+        tf_answers: tfAnswers,
+        sa_answers: saAnswers,
         total_questions: totalQuestions,
         questions: questions.length > 0 ? questions : null,
         status: "published",
@@ -362,6 +379,11 @@ export default function ExamBankPage() {
 
       const dbSubject = MAP_SUBJECT_TO_DB[publishingExam.subject] || publishingExam.subject
       const parsedAnswers = parseAnswerKey(publishingExam.answer_key || "")
+      const mcAnswers = publishingExam.mc_answers?.length
+        ? publishingExam.mc_answers
+        : Object.entries(parsedAnswers).map(([num, answer]) => ({ question: Number(num), answer }))
+      const tfAnswers = publishingExam.tf_answers || []
+      const saAnswers = publishingExam.sa_answers || []
 
       const newExamData = {
         teacher_id: user.id,
@@ -370,13 +392,10 @@ export default function ExamBankPage() {
         subject: dbSubject,
         duration: 45, // Default duration
         total_questions: publishingExam.total_questions,
-        correct_answers: Object.values(parsedAnswers).length > 0 ? Object.values(parsedAnswers) : null,
-        mc_answers: Object.entries(parsedAnswers).map(([num, ans]) => ({
-          question: parseInt(num),
-          answer: ans
-        })),
-        tf_answers: [],
-        sa_answers: [],
+        correct_answers: mcAnswers.map((item) => item.answer),
+        mc_answers: mcAnswers,
+        tf_answers: tfAnswers,
+        sa_answers: saAnswers,
         pdf_url: publishingExam.pdf_url,
         status: "published",
         is_scheduled: publishIsScheduled,
@@ -401,8 +420,10 @@ export default function ExamBankPage() {
       if (insertError) throw insertError
 
       // Copy individual question records into questions table for preview / advanced result reviews
-      if (Object.keys(parsedAnswers).length > 0) {
-        const questionRecords = Object.entries(parsedAnswers).map(([num, ans], idx) => {
+      if (mcAnswers.length > 0) {
+        const questionRecords = mcAnswers.map((item, idx) => {
+          const num = item.question
+          const ans = item.answer
           let ansInt = 0
           if (ans === "A") ansInt = 0
           else if (ans === "B") ansInt = 1
@@ -411,6 +432,7 @@ export default function ExamBankPage() {
 
           return {
             exam_id: newExam.id,
+            teacher_id: user.id,
             question_text: `Câu ${num}`,
             options: ["A", "B", "C", "D"],
             correct_answer: ansInt,
@@ -746,18 +768,10 @@ export default function ExamBankPage() {
                   {pdfUrl && <p className="mt-2 flex items-center text-sm text-emerald-600"><CheckCircle className="mr-1 h-3 w-3" />Đã tải lên: {pdfUrl.split("/").pop()}</p>}
                 </section>
 
-                <section className="rounded-2xl border border-violet-200/50 dark:border-violet-950/40 bg-violet-50/40 dark:bg-violet-950/20 p-4">
-                  <Label className="mb-2 flex items-center gap-2 font-semibold text-violet-700 dark:text-violet-400"><Wand2 className="h-4 w-4" />File đáp án & Quét AI</Label>
-                  <div className="mb-3 flex gap-2">
-                    <Input type="file" accept=".pdf" ref={answerPdfRef} onChange={(e) => setAnswerPdfFile(e.target.files?.[0] || null)} className="rounded-xl" />
-                    <Button type="button" onClick={handleAIScan} disabled={!answerPdfFile || scanning} className="rounded-full bg-violet-600 text-white hover:bg-violet-700">{scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}Quét AI</Button>
-                  </div>
-                  {scanResult && <div className="mb-3 rounded-xl border border-violet-200/50 bg-[hsl(var(--card))] p-3 text-sm"><p className="font-medium text-emerald-600">✓ Tìm thấy: {scanResult.multiple_choice?.length || 0} câu trắc nghiệm</p>{scanResult.true_false?.length ? <p className="font-medium text-indigo-600">+ {scanResult.true_false.length} câu đúng/sai</p> : null}</div>}
-                  <div className="space-y-2">
-                    <div className="flex justify-between"><Label className="text-xs font-medium">Chuỗi đáp án</Label><span className="text-xs text-[hsl(var(--muted-foreground))]">Định dạng: 1A,2B,3C...</span></div>
-                    <Textarea value={answerKey} onChange={(e) => setAnswerKey(e.target.value)} placeholder="1A,2B,3C,4D..." className="rounded-xl font-mono text-sm resize-none" rows={3} />
-                  </div>
-                </section>
+                <AnswerJsonImporter
+                  initialAnswers={importedAnswers}
+                  onImport={handleJsonImport}
+                />
 
                 <div className="space-y-2">
                   <Label>Tổng số câu hỏi</Label>

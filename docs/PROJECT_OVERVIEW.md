@@ -4,9 +4,7 @@ Văn bản này trình bày đặc tả chi tiết về hệ thống kỹ thuậ
 
 ## 1. Giới Thiệu Tổng Quan (Executive Summary)
 
-**ExamHub** là một nền tảng EdTech thế hệ mới tập trung vào trải nghiệm Học-thông-qua-Chơi (Gamified Learning). Dự án được xây dựng dựa trên nguyên tắc **Microservices Architecture** với sự tách biệt rõ ràng giữa Frontend (Next.js) và Backend Xử lý nặng (Python AI Worker).
-
-Khác với các hệ thống Learning Management System (LMS) truyền thống, ExamHub áp dụng AI (Google Gemini) để giải bài toán hóc búa nhất của giáo viên: "Số hóa đề thi". Thông qua việc đẩy mạnh tự động hóa, ExamHub giúp giảm 90% thời gian tạo đề và chuẩn hóa ma trận tự động.
+**ExamHub** là hệ thống giao bài và làm bài trực tuyến, tập trung vào ba nhu cầu: giáo viên cấp tài khoản, tạo đề và quản lý kết quả học sinh. Các màn hình học liệu online và đăng ký công khai được khóa bằng feature flag/middleware.
 
 ## 2. Kiến Trúc Hệ Thống (System Architecture)
 
@@ -16,8 +14,8 @@ Dự án áp dụng mô hình 3-Tier linh hoạt:
 
 1.  **Client Tier (Frontend):** Vận hành trên Next.js 16.1 App Router. Xử lý toàn bộ UI/UX, Gamification Animation, và Single Page Application routing. Được host trên hệ thống Vercel Network.
 2.  **Logic Tier (Services):**
-    *   **Supabase Edge/PostgREST:** Xử lý trực tiếp 95% các tác vụ API CRUD tiêu chuẩn (Tạo/Xem/Xóa bài thi) mà không cần viết REST API rườm rà.
-    *   **Python AI Worker:** 1 Microservice chạy độc lập trên Render, chuyên nhận Request chứa tệp PDF, chuyển hình ảnh qua pdf2image, giao tiếp với Gemini Core để bóc tách Dữ liệu thành JSON và trả ngược về Frontend.
+    *   **Next.js API Routes:** xác thực thao tác nhạy cảm như cấp tài khoản, nộp bài và chấm điểm.
+    *   **Supabase Edge/PostgREST:** xử lý các thao tác CRUD có Row Level Security bảo vệ.
 3.  **Data Tier (Database):** CSDL PostgreSQL Serverless của Supabase. Tích hợp chặt chẽ với Supabase Auth, Row Level Security (RLS) để cô lập dữ liệu người dùng.
 
 ## 3. Đặc Tả Dữ Liệu & Bảo Mật (Database & RLS)
@@ -27,22 +25,18 @@ Sức mạnh bảo mật của ExamHub đều nằm dưới tầng Database, ch�
 *   **Bảng `profiles`**: Bản đồ hoá từ `auth.users`. Quyền `role` (teacher/student) quyết định mọi hành động vĩ mô trên website.
 *   **Bảng `exams` & `submissions`**: 
     - Đề thi (`exams`) giữ quan hệ `1:N` với Bài Nộp (`submissions`). RLS Policy cài chặt chẽ luật: Học sinh chỉ xem được điểm của bản thân mình (Trừ khi đó là Arena Mode).
-    - Submissions có Constraint `unique(exam_id, student_id)`: Chống gian lận không nộp bài 2 lần.
-*   **Bảng Gamification (`achievements`, `user_rewards`)**: Tính toán điểm cống hiến (XP) một cách tự động khi có biến động trong bảng submissions thông qua  PostgreSQL **Triggers** và **Functions** thay vì dùng code JS (giảm nghẽn Backend ảo). 
+    - Submissions có Constraint `unique(exam_id, student_id, attempt_number)` để quản lý chính xác từng lượt làm bài.
+*   **Bảng `parent_student_links`**: xác định học sinh nào thuộc quyền quản lý của từng giáo viên.
 
-## 4. Workflow Bóc Tách Đề Thi AI (AI Extraction Workflow)
+## 4. Workflow Nạp Đáp Án Bằng JSON
 
-Tính năng xương sống của ExamHub được luân chuyển dữ liệu như sau:
+Việc quét đáp án bằng AI đã bị loại bỏ. Giáo viên chủ động dán một JSON duy nhất gồm tối đa ba nhóm câu hỏi:
 
-1.  **[Frontend]** Giáo viên upload 1 tệp `Đề_và_Đáp_án.pdf`.
-2.  **[Storage]** Next.js tức thì đẩy tệp này lên Supabase Bucket `exam-pdfs` và lấy về URL công khai.
-3.  **[Worker API]** Trình duyệt gọi POST thẳng tới Python Worker (`https://exam-system-xxx.onrender.com/extract-answers`) và đẩy nguyên mẫu FormData.
-4.  **[Python Parser]** 
-    - Worker nhận file trên RAM (BytesIO).
-    - Thư viện `pdfplumber` quét toàn bộ Text ẩn. Nếu không có text -> Bật chế độ ảnh.
-    - Gọi API Proxy `v98store` kết nối với bộ não **Gemini-3-Flash-Preview/Gemini-2.5-Pro**. Nhồi đoạn Prompt cực gắt định dạng Tiếng Việt + Yêu cầu JSON chuẩn đầu ra.
-    - Chụp Fallback bằng Regex/Dict nếu mạng AI bị rớt (`503/429`).
-5.  **[Frontend]** Nhận bộ JSON, Auto điền vào Form tạo đề. Giáo viên bấm "Xác nhận", đẩy vào CSDL gốc.
+1. **`multiple_choice`**: câu trắc nghiệm với đáp án `A`–`D`.
+2. **`true_false`**: mỗi câu có bốn mệnh đề `a`–`d` nhận giá trị boolean.
+3. **`short_answer`**: đáp án ngắn dạng chuỗi hoặc số.
+
+Frontend kiểm tra schema, số thứ tự liên tục và chuẩn hóa dữ liệu ngay trên máy. Chỉ sau khi JSON hợp lệ, hệ thống mới nạp đáp án vào biểu mẫu tạo đề hoặc ngân hàng đề; nội dung JSON không được gửi tới dịch vụ AI bên ngoài.
 
 ## 5. Danh Mục Công Nghệ (Tech Stack Insights)
 
@@ -58,10 +52,6 @@ Tính năng xương sống của ExamHub được luân chuyển dữ liệu nh�
     # Tab 1: Khởi động UI Client
     npm install && npm run dev
     
-    # Tab 2: Khởi động AI API (Python)
-    cd worker
-    .\venv\Scripts\Activate.ps1
-    uvicorn main:app --reload --port 8000
     ```
-2.  **Liên kết biến môi trường**: Phải nhớ quy luật: `NEXT_PUBLIC_APP_URL` là địa chỉ nơi khách hàng truy cập, `NEXT_PUBLIC_WORKER_URL` là địa chỉ Python Worker.
-3.  **Scale (Mở Lớn)**: Với kiến trúc hiện tại, Frontend có thể mở rộng tự do trên Vercel Edge. Supabase hoàn toàn chịu tải 10,000 requests/s. Điểm cần giới hạn duy nhất là **Python Worker**, có thể Upgrade Instance trên Render khi lượng giáo viên upload tệp vượt quá 100 người/phút cùng lúc để chống treo RAM.
+2.  **Liên kết biến môi trường**: `NEXT_PUBLIC_APP_URL` là địa chỉ website; `SUPABASE_SERVICE_ROLE_KEY` chỉ được cấu hình phía server để giáo viên cấp tài khoản.
+3.  **Database**: sao lưu dữ liệu rồi chạy duy nhất `supabase-core-exam.sql` trong Supabase SQL Editor.

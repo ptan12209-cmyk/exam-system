@@ -5,5 +5,4 @@ export { NotificationServerService } from './notification-server';
 export { PaymentServerService } from './payment-server';
 export { AvatarServerService } from './avatar-server';
 export { TitleServerService } from './title-server';
-export { ExtractQuestionsServerService } from './extract-questions-server';
 export { ParentServerService } from './parent-server';

@@ -109,9 +109,9 @@ export default function PricingPage() {
                 Đăng nhập
               </Button>
             </Link>
-            <Link href="/register">
+            <Link href="/login">
               <Button className="rounded-full bg-[hsl(var(--foreground))] px-5 text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90">
-                Đăng ký ngay
+                Đăng nhập
               </Button>
             </Link>
           </div>

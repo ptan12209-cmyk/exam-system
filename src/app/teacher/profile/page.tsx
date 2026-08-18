@@ -99,18 +99,12 @@ export default function TeacherProfilePage() {
         </section>
 
         <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Link href="/teacher/online-study" className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 transition-transform hover:-translate-y-0.5">
-            <BookOpen className="mb-3 h-5 w-5" />
-            <p className="text-sm font-medium">Quản lý học liệu & bài giảng online</p>
-          </Link>
-
-          {/* Các nút hành động cũ (TẠM ẨN) */}
-          {/* {[{ href: "/teacher/dashboard", label: "Tổng quan", icon: BarChart3 }, { href: "/teacher/exams/create", label: "Tạo đề mới", icon: Plus }, { href: "/teacher/exam-bank", label: "Ngân hàng đề", icon: BookOpen }, { href: "/teacher/arena", label: "Đấu trường", icon: Swords }].map((item) => (
+          {[{ href: "/teacher/dashboard", label: "Tổng quan", icon: BarChart3 }, { href: "/teacher/exams/create", label: "Tạo đề mới", icon: Plus }, { href: "/teacher/exam-bank", label: "Ngân hàng đề", icon: BookOpen }, { href: "/teacher/monitor", label: "Quản lý học sinh", icon: Users }].map((item) => (
             <Link key={item.href} href={item.href} className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 transition-transform hover:-translate-y-0.5">
               <item.icon className="mb-3 h-5 w-5" />
               <p className="text-sm font-medium">{item.label}</p>
             </Link>
-          ))} */}
+          ))}
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">

@@ -28,7 +28,7 @@ type SupportFabProps = {
 export function SupportFab({
   className,
   offsetBottomNav = true,
-  zaloMessage = "Xin chào StudyHub, em cần hỗ trợ",
+  zaloMessage = "Xin chào ExamHub, em cần hỗ trợ",
 }: SupportFabProps) {
   const [open, setOpen] = useState(false)
   const zaloHref = supportZaloUrlWithText(zaloMessage)

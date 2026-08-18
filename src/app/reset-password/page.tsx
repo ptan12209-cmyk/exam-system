@@ -44,7 +44,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
       <header className="border-b border-[hsl(var(--border))]/25 px-6 py-4">
         <Link href="/login" className="inline-flex items-center gap-2 font-semibold">
-          <GraduationCap className="h-5 w-5" /> StudyHub
+          <GraduationCap className="h-5 w-5" /> ExamHub
         </Link>
       </header>
       <main className="mx-auto max-w-md px-6 py-16">

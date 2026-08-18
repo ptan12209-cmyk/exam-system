@@ -5,11 +5,9 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import {
     User,
-    BarChart3,
-    Swords,
-    Gift,
+    LayoutDashboard,
+    FileText,
     LogOut,
-    Settings,
     ChevronDown
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -76,10 +74,12 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
 
     const menuItems = role === "student" ? [
         { href: "/student/profile", icon: User, label: "Hồ sơ của tôi" },
-        { href: "/online-student/dashboard", icon: BarChart3, label: "Học online" },
+        { href: "/student/dashboard", icon: LayoutDashboard, label: "Tổng quan bài tập" },
+        { href: "/student/exams", icon: FileText, label: "Đề thi của tôi" },
     ] : [
         { href: "/teacher/profile", icon: User, label: "Hồ sơ của tôi" },
-        { href: "/teacher/online-study", icon: BarChart3, label: "Quản lý học liệu" },
+        { href: "/teacher/dashboard", icon: LayoutDashboard, label: "Tổng quan quản lý" },
+        { href: "/teacher/exams", icon: FileText, label: "Quản lý đề thi" },
     ]
 
     const initials = userName

@@ -61,7 +61,7 @@ export default function TeacherFeedbackPage() {
         .eq("id", user.id)
         .single()
       if (profile?.role !== "teacher" && profile?.role !== "admin") {
-        router.push("/online-student/dashboard")
+        router.push("/student/dashboard")
         return
       }
       load()

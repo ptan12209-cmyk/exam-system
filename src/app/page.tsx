@@ -1,539 +1,184 @@
-"use client"
-
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
-import { Suspense, useMemo } from "react"
 import {
   ArrowRight,
-  BookOpen,
-  Check,
+  BarChart3,
+  CheckCircle2,
+  ClipboardCheck,
+  FileUp,
   GraduationCap,
-  Layers,
-  MessageCircle,
-  Sparkles,
+  ShieldCheck,
   Users,
 } from "lucide-react"
-import {
-  INTRO_SUBJECTS,
-  PAYMENT_TRUST_HINT,
-  PRICING,
-  SUBJECTS_WITHOUT_DGNL,
-  formatVnd,
-  type CourseSubject,
-} from "@/data/courses-intro"
-import {
-  SUPPORT_ZALO,
-  SUPPORT_ZALO_URL,
-  supportZaloUrlWithText,
-} from "@/lib/support"
-import { isRegistrationOpen, REGISTRATION_REOPEN_DATE } from "@/lib/features"
-import { cn } from "@/lib/utils"
+import Footer from "@/components/Footer"
+import { Navbar } from "@/components/Navbar"
 
-const ACCENT = "oklch(0.75 0.18 290)"
-const BG = "#060510"
+const features = [
+  {
+    icon: FileUp,
+    title: "Tạo và giao đề nhanh",
+    description:
+      "Tải đề PDF, nhập đáp án hoặc chọn câu hỏi từ ngân hàng để phát hành bài tập cho đúng khối và lớp.",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "Làm bài trực tuyến",
+    description:
+      "Học sinh nhận đề, làm bài có giới hạn thời gian, lưu tiến độ và xem kết quả sau khi nộp.",
+  },
+  {
+    icon: BarChart3,
+    title: "Chấm điểm và phân tích",
+    description:
+      "Tự động chấm điểm, xem phổ điểm, từng bài nộp và câu hỏi học sinh thường làm sai.",
+  },
+  {
+    icon: Users,
+    title: "Quản lý học sinh",
+    description:
+      "Liên kết tài khoản học sinh, giao nhiệm vụ, theo dõi hoạt động, kết quả và thời khóa biểu.",
+  },
+]
 
-function SubjectArt({ subject }: { subject: CourseSubject }) {
-  const h = subject.hue
+const workflow = [
+  "Giáo viên tạo hoặc chọn đề từ ngân hàng câu hỏi",
+  "Phát hành đề theo khối, lớp và thời gian làm bài",
+  "Học sinh làm bài, hệ thống ghi nhận và chấm điểm",
+  "Giáo viên theo dõi kết quả và hỗ trợ từng học sinh",
+]
+
+export default function HomePage() {
   return (
-    <div
-      className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl"
-      style={{
-        background: `linear-gradient(145deg, oklch(0.35 0.12 ${h}), oklch(0.18 0.06 ${h}))`,
-        boxShadow: `0 12px 40px oklch(0.4 0.12 ${h} / 0.35)`,
-      }}
-      aria-hidden
-    >
-      <span className="text-3xl drop-shadow-sm">{subject.icon}</span>
-      <div
-        className="pointer-events-none absolute -right-1 -top-1 h-6 w-6 rounded-full opacity-70"
-        style={{ background: `oklch(0.75 0.14 ${h})` }}
-      />
-      <div
-        className="pointer-events-none absolute -bottom-2 -left-2 h-10 w-10 rounded-xl opacity-30"
-        style={{ background: `oklch(0.6 0.1 ${h})` }}
-      />
-    </div>
-  )
-}
+    <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+      <Navbar />
 
-function IntroBanner() {
-  const sp = useSearchParams()
-  const locked = sp.get("dang-ky") === "tam-khoa"
-  if (!locked && isRegistrationOpen()) return null
-  if (!locked && !isRegistrationOpen()) {
-    return (
-      <div className="border-b border-amber-500/25 bg-amber-500/10 px-4 py-2.5 text-center text-[12px] text-amber-100/90">
-        Đăng ký tài khoản tạm khóa. Dự kiến mở lại{" "}
-        <strong className="text-amber-50">
-          {new Date(`${REGISTRATION_REOPEN_DATE}T00:00:00+07:00`).toLocaleDateString(
-            "vi-VN",
-            { day: "numeric", month: "long", year: "numeric" }
-          )}
-        </strong>
-        . Liên hệ Zalo để được tư vấn mua khóa.
-      </div>
-    )
-  }
-  return (
-    <div className="border-b border-amber-500/25 bg-amber-500/10 px-4 py-2.5 text-center text-[12px] text-amber-100/90">
-      Đăng ký đang tạm khóa. Thầy mở lại theo lịch — xem{" "}
-      <span className="font-mono text-amber-50">docs/REMINDER_OPEN_REGISTRATION_2026-07-29.md</span>
-    </div>
-  )
-}
+      <main>
+        <section className="relative overflow-hidden px-6 pb-24 pt-24 md:px-10 md:pb-32 md:pt-32">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute left-[-12rem] top-[-10rem] h-[34rem] w-[34rem] rounded-full bg-[hsl(var(--primary))]/10 blur-[120px]" />
+            <div className="absolute bottom-[-16rem] right-[-10rem] h-[38rem] w-[38rem] rounded-full bg-[hsl(var(--accent))]/10 blur-[140px]" />
+          </div>
 
-function CoursesIntroPage() {
-  const regOpen = isRegistrationOpen()
-  const stem = useMemo(
-    () => INTRO_SUBJECTS.filter((s) => s.group === "stem" || s.group === "language"),
-    []
-  )
-  const social = useMemo(
-    () => INTRO_SUBJECTS.filter((s) => s.group === "social"),
-    []
-  )
-  const dgnl = useMemo(
-    () => INTRO_SUBJECTS.filter((s) => s.group === "dgnl"),
-    []
-  )
-
-  const zaloBuy = supportZaloUrlWithText(
-    "Em quan tâm khóa học online StudyHub, muốn được tư vấn gói và thanh toán."
-  )
-
-  return (
-    <div className="min-h-[100dvh] text-[#e8e4f0]" style={{ background: BG }}>
-      <Suspense fallback={null}>
-        <IntroBanner />
-      </Suspense>
-
-      {/* Nav */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#060510]/90 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold"
-              style={{ background: "oklch(0.75 0.18 290 / 0.15)", color: ACCENT }}
-            >
-              S
-            </div>
+          <div className="relative mx-auto grid max-w-7xl gap-14 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
             <div>
-              <p className="text-[14px] font-semibold leading-none">StudyHub</p>
-              <p className="mt-0.5 text-[10px] text-[#8C87A2]">Khóa học online</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/landing"
-              className="hidden text-[13px] font-medium text-[#8C87A2] hover:text-white sm:inline"
-            >
-              Xem trang nền tảng
-            </Link>
-            <a
-              href={zaloBuy}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-[12px] font-semibold sm:px-4 sm:text-[13px]"
-              style={{ background: ACCENT, color: BG }}
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              Tư vấn Zalo
-            </a>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero */}
-      <section className="relative overflow-hidden px-4 pb-16 pt-12 sm:px-6 sm:pt-16 md:pb-20">
-        <div
-          className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[min(900px,100%)] -translate-x-1/2 rounded-full opacity-50"
-          style={{
-            background:
-              "radial-gradient(circle, oklch(0.75 0.18 290 / 0.18), transparent 70%)",
-          }}
-        />
-        <div className="relative mx-auto max-w-3xl text-center">
-          <p
-            className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em]"
-            style={{ color: ACCENT }}
-          >
-            Chương trình học online 2025–2026
-          </p>
-          <h1 className="text-[clamp(1.85rem,5vw,3rem)] font-medium leading-[1.12] tracking-[-0.03em] text-balance">
-            Khóa học video bám sát{" "}
-            <span className="font-serif-italic" style={{ color: ACCENT }}>
-              THPT
-            </span>
-            <br />
-            &amp; luyện{" "}
-            <span className="font-serif-italic" style={{ color: ACCENT }}>
-              ĐGNL
-            </span>
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[#8C87A2] text-pretty">
-            Xem rõ môn học, giáo viên phụ trách và bảng giá. Học theo video + tài liệu trên
-            cổng StudyHub — linh hoạt thời gian, không ép tiến độ tập trung.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <a
-              href="#bang-gia"
-              className="inline-flex h-12 w-full max-w-xs items-center justify-center gap-2 rounded-xl text-[14px] font-semibold sm:w-auto sm:px-8"
-              style={{ background: ACCENT, color: BG }}
-            >
-              Xem bảng giá
-              <ArrowRight className="h-4 w-4" />
-            </a>
-            <Link
-              href="/landing"
-              className="inline-flex h-12 w-full max-w-xs items-center justify-center rounded-xl border border-white/15 text-[14px] font-medium text-[#e8e4f0] hover:bg-white/[0.04] sm:w-auto sm:px-8"
-            >
-              Xem trang nền tảng
-            </Link>
-          </div>
-          <p className="mt-4 text-[12px] text-[#8C87A2]/80">
-            {regOpen
-              ? "Có thể đăng ký tài khoản ngay."
-              : `Đăng ký tài khoản tạm khóa · dự kiến mở ${REGISTRATION_REOPEN_DATE.split("-").reverse().join("/")}. Liên hệ Zalo để mua khóa.`}
-          </p>
-        </div>
-      </section>
-
-      {/* Highlights */}
-      <section className="border-y border-white/[0.06] px-4 py-10 sm:px-6">
-        <div className="mx-auto grid max-w-5xl gap-4 sm:grid-cols-3">
-          {[
-            {
-              icon: BookOpen,
-              t: "Video + tài liệu",
-              d: "Mỗi môn có thư mục bài giảng, playlist và file ôn tập.",
-            },
-            {
-              icon: Users,
-              t: "Giáo viên theo môn",
-              d: "Mỗi môn có thầy/cô phụ trách nội dung chuyên sâu.",
-            },
-            {
-              icon: Layers,
-              t: "Mua lẻ hoặc combo",
-              d: "Linh hoạt 1 môn, 3 môn, hoặc full (có/không ĐGNL).",
-            },
-          ].map((item) => (
-            <div
-              key={item.t}
-              className="rounded-2xl border border-white/[0.07] p-5"
-              style={{ background: "oklch(0.11 0.02 290)" }}
-            >
-              <item.icon className="mb-3 h-5 w-5" style={{ color: ACCENT }} />
-              <p className="text-[15px] font-semibold">{item.t}</p>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-[#8C87A2]">{item.d}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Subjects */}
-      <section id="mon-hoc" className="px-4 py-16 sm:px-6 md:py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10 max-w-xl">
-            <p
-              className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em]"
-              style={{ color: ACCENT }}
-            >
-              Các môn học
-            </p>
-            <h2 className="text-[clamp(1.5rem,3vw,2.25rem)] font-medium tracking-[-0.02em]">
-              Nội dung & giáo viên phụ trách
-            </h2>
-            <p className="mt-2 text-[14px] text-[#8C87A2]">
-              Tên giáo viên có thể cập nhật trong{" "}
-              <code className="rounded bg-white/5 px-1 text-[12px]">src/data/courses-intro.ts</code>
-              .
-            </p>
-          </div>
-
-          <SubjectBlock title="Khối tự nhiên & Anh" subjects={stem} />
-          <SubjectBlock title="Khối xã hội" subjects={social} className="mt-12" />
-          <SubjectBlock
-            title="Đánh giá năng lực (ĐGNL)"
-            subjects={dgnl}
-            className="mt-12"
-            note="Gói ĐGNL tính riêng hoặc gộp trong combo 599k."
-          />
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section id="bang-gia" className="border-t border-white/[0.06] px-4 py-16 sm:px-6 md:py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-10 text-center">
-            <p
-              className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em]"
-              style={{ color: ACCENT }}
-            >
-              Bảng giá
-            </p>
-            <h2 className="text-[clamp(1.5rem,3vw,2.25rem)] font-medium tracking-[-0.02em]">
-              Chọn gói phù hợp
-            </h2>
-            <p className="mx-auto mt-2 max-w-lg text-[14px] text-[#8C87A2]">
-              Bảng giá đang mở <strong className="text-[#e8e4f0]/90">tham khảo</strong> — toàn bộ gói
-              «Sắp mở», chưa nhận đăng ký / Zalo mua. Ưu đãi: lẻ −15% · 3 môn −25% · gói −30% · full+ĐGNL −40%.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {Object.values(PRICING).map((plan) => {
-              const saved = plan.originalPrice - plan.price
-              const canContact = plan.contactEnabled
-              return (
-              <div
-                key={plan.id}
-                className={cn(
-                  "relative flex flex-col rounded-2xl border p-5 sm:p-6",
-                  !canContact && "opacity-95",
-                  plan.highlight
-                    ? "border-[oklch(0.75_0.18_290/0.45)] bg-[oklch(0.75_0.18_290/0.08)]"
-                    : "border-white/[0.07] bg-[oklch(0.11_0.02_290)]"
-                )}
-              >
-                <div className="absolute -top-2.5 left-3 right-3 flex flex-wrap gap-1.5">
-                  {plan.badge ? (
-                    <span
-                      className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-                      style={
-                        canContact
-                          ? { background: ACCENT, color: BG }
-                          : {
-                              background: "oklch(0.45 0.04 290)",
-                              color: "#e8e4f0",
-                            }
-                      }
-                    >
-                      {plan.badge}
-                    </span>
-                  ) : null}
-                  <span className="rounded-full bg-rose-500/90 px-2 py-0.5 text-[10px] font-bold tabular-nums text-white">
-                    −{plan.discountPercent}%
-                  </span>
-                </div>
-                <p className="mt-2 text-[13px] font-semibold text-[#e8e4f0]">{plan.name}</p>
-                <p className="mt-2 text-[12px] tabular-nums text-[#8C87A2] line-through decoration-white/30">
-                  {formatVnd(plan.originalPrice)}
-                </p>
-                <p
-                  className="mt-0.5 text-2xl font-bold tracking-tight tabular-nums sm:text-[1.65rem]"
-                  style={{ color: ACCENT }}
-                >
-                  {formatVnd(plan.price)}
-                </p>
-                <p className="mt-1 text-[11px] font-medium text-emerald-400/90">
-                  Tiết kiệm {formatVnd(saved)}
-                </p>
-                <p className="mt-3 flex-1 text-[12px] leading-relaxed text-[#8C87A2]">
-                  {plan.note}
-                </p>
-                {canContact ? (
-                  <a
-                    href={supportZaloUrlWithText(
-                      `Em muốn mua gói: ${plan.name} — giá ưu đãi ${formatVnd(plan.price)} (gốc ${formatVnd(plan.originalPrice)}, −${plan.discountPercent}%)`
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-5 inline-flex h-10 items-center justify-center rounded-xl text-[13px] font-semibold"
-                    style={
-                      plan.highlight
-                        ? { background: ACCENT, color: BG }
-                        : {
-                            border: "1px solid rgba(255,255,255,0.12)",
-                            color: "#e8e4f0",
-                          }
-                    }
-                  >
-                    Nhắn Zalo mua gói
-                  </a>
-                ) : (
-                  <div
-                    className="mt-5 inline-flex h-auto min-h-10 flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-white/15 px-3 py-2 text-center"
-                    aria-disabled
-                  >
-                    <span className="text-[12px] font-semibold text-[#8C87A2]">
-                      Chỉ xem tham khảo
-                    </span>
-                    <span className="text-[10px] text-[#8C87A2]/75">
-                      Chưa mở liên hệ / mua chính thức
-                    </span>
-                  </div>
-                )}
+              <div className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))]/70 bg-[hsl(var(--card))]/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[hsl(var(--muted-foreground))]">
+                <ShieldCheck className="h-4 w-4 text-[hsl(var(--primary))]" />
+                Hệ thống bài tập trực tuyến
               </div>
-              )
-            })}
-          </div>
-
-          <div
-            className="mt-6 rounded-2xl border border-amber-500/20 bg-amber-500/[0.07] p-4 text-[13px] leading-relaxed text-amber-50/90 sm:p-5"
-          >
-            <p className="font-semibold text-amber-50">Lưu ý khi thanh toán</p>
-            <p className="mt-1.5 text-[12.5px] text-amber-100/85">{PAYMENT_TRUST_HINT}</p>
-          </div>
-
-          <div
-            className="mt-4 rounded-2xl border border-white/[0.07] p-5 text-[13px] leading-relaxed text-[#8C87A2]"
-            style={{ background: "oklch(0.11 0.02 290)" }}
-          >
-            <p className="font-semibold text-[#e8e4f0]">Ghi chú nhanh</p>
-            <ul className="mt-2 space-y-1.5">
-              <li className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                Môn thường (không ĐGNL): {SUBJECTS_WITHOUT_DGNL.map((s) => s.label).join(", ")}.
-              </li>
-              <li className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                Ưu đãi (tham khảo): lẻ −15%, 3 môn −25%, gói −30%, ĐGNL riêng −30%, full+ĐGNL −40%.
-              </li>
-              <li className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                <strong className="text-[#e8e4f0]">Tất cả gói đang «Sắp mở»</strong> — chưa mở liên hệ /
-                mua. Giá chỉ để preview chiến lược marketing.
-              </li>
-              <li className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                ĐGNL (V-ACT, HSA, TSA, Sư phạm): gói riêng{" "}
-                <strong className="text-[#e8e4f0]">199.000đ</strong> hoặc full{" "}
-                <strong className="text-[#e8e4f0]">599.000đ</strong>.
-              </li>
-              <li className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT }} />
-                Sau khi mở bán: thanh toán tự động; Zalo{" "}
-                <a href={SUPPORT_ZALO_URL} className="font-semibold" style={{ color: ACCENT }}>
-                  {SUPPORT_ZALO}
-                </a>{" "}
-                chỉ khi cần tư vấn.
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA to landing */}
-      <section className="border-t border-white/[0.06] px-4 py-16 sm:px-6">
-        <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
-          <Sparkles className="mb-4 h-6 w-6" style={{ color: ACCENT }} />
-          <h2 className="text-[clamp(1.35rem,3vw,1.85rem)] font-medium tracking-tight text-balance">
-            Muốn xem giao diện cổng học trông như thế nào?
-          </h2>
-          <p className="mt-2 max-w-md text-[14px] text-[#8C87A2]">
-            Trang nền tảng giới thiệu không gian học video, thư mục bài giảng và cách học
-            online trên StudyHub.
-          </p>
-          <Link
-            href="/landing"
-            className="mt-6 inline-flex h-12 items-center gap-2 rounded-xl px-8 text-[14px] font-semibold transition-all hover:brightness-110"
-            style={{ background: ACCENT, color: BG }}
-          >
-            Xem trang nền tảng
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          {!regOpen && (
-            <p className="mt-4 text-[12px] text-[#8C87A2]/75">
-              Tạo tài khoản tạm thời chưa mở — thầy sẽ bật lại khoảng{" "}
-              {REGISTRATION_REOPEN_DATE.split("-").reverse().join("/")}.
-            </p>
-          )}
-        </div>
-      </section>
-
-      <footer className="border-t border-white/[0.06] px-4 py-8 text-center text-[12px] text-[#8C87A2] sm:px-6">
-        <p className="flex items-center justify-center gap-2">
-          <GraduationCap className="h-4 w-4" style={{ color: ACCENT }} />
-          StudyHub · Học online THPT
-        </p>
-        <p className="mt-2">
-          Zalo hỗ trợ:{" "}
-          <a href={SUPPORT_ZALO_URL} className="font-semibold" style={{ color: ACCENT }}>
-            {SUPPORT_ZALO}
-          </a>
-        </p>
-        <p className="mt-3 text-[11px] text-[#8C87A2]/60">
-          © {new Date().getFullYear()} StudyHub · luyende.id.vn
-        </p>
-      </footer>
-    </div>
-  )
-}
-
-function SubjectBlock({
-  title,
-  subjects,
-  className,
-  note,
-}: {
-  title: string
-  subjects: CourseSubject[]
-  className?: string
-  note?: string
-}) {
-  return (
-    <div className={className}>
-      <h3 className="mb-4 text-[13px] font-semibold uppercase tracking-wider text-[#8C87A2]">
-        {title}
-      </h3>
-      {note && <p className="mb-4 text-[12px] text-[#8C87A2]/80">{note}</p>}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {subjects.map((s) => (
-          <article
-            key={s.value}
-            className="rounded-2xl border border-white/[0.07] p-5 transition-colors hover:border-white/[0.12]"
-            style={{ background: "oklch(0.11 0.02 290)" }}
-          >
-            <SubjectArt subject={s} />
-            <h4 className="text-center text-[16px] font-semibold text-[#e8e4f0]">
-              {s.label}
-            </h4>
-            <p className="mt-2 text-center text-[12px] leading-relaxed text-[#8C87A2]">
-              {s.blurb}
-            </p>
-            <div className="mt-4 border-t border-white/[0.06] pt-3">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-[#8C87A2]/70">
-                Giáo viên · {s.teachers.length} khóa
+              <h1 className="mt-7 max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-6xl lg:text-7xl">
+                Giao bài rõ ràng.
+                <span className="mt-2 block text-[hsl(var(--muted-foreground))]">
+                  Theo sát từng học sinh.
+                </span>
+              </h1>
+              <p className="mt-7 max-w-2xl text-base leading-7 text-[hsl(var(--muted-foreground))] sm:text-lg">
+                ExamHub giúp giáo viên tạo đề, giao bài, chấm điểm và theo dõi
+                tiến độ trong một nơi; học sinh chỉ cần đăng nhập và bắt đầu làm bài.
               </p>
-              <ul
-                className={cn(
-                  "mt-2 space-y-1.5",
-                  s.teachers.length > 5 && "max-h-40 overflow-y-auto pr-1"
-                )}
-              >
-                {s.teachers.map((t) => (
-                  <li key={`${t.name}-${t.role}`} className="flex flex-col gap-0.5">
-                    <span className="text-[12.5px] font-medium leading-snug text-[#e8e4f0]">
-                      {t.name}
-                    </span>
-                    {t.role ? (
-                      <span className="text-[10.5px] leading-snug text-[#8C87A2]">{t.role}</span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[hsl(var(--foreground))] px-6 py-3.5 text-sm font-semibold text-[hsl(var(--background))] transition-transform hover:scale-[1.02]"
+                >
+                  Vào hệ thống <ArrowRight className="h-4 w-4" />
+                </Link>
+                <span className="inline-flex items-center justify-center rounded-full border border-[hsl(var(--border))] px-6 py-3.5 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                  Tài khoản học sinh do giáo viên cấp
+                </span>
+              </div>
             </div>
-          </article>
-        ))}
-      </div>
-    </div>
-  )
-}
 
-export default function Page() {
-  return (
-    <Suspense
-      fallback={
-        <div
-          className="flex min-h-[100dvh] items-center justify-center text-sm text-[#8C87A2]"
-          style={{ background: BG }}
-        >
-          Đang tải…
-        </div>
-      }
-    >
-      <CoursesIntroPage />
-    </Suspense>
+            <div className="rounded-3xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/80 p-5 shadow-[0_40px_100px_-50px_rgba(0,0,0,0.55)] backdrop-blur">
+              <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/50 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--primary))]/10">
+                    <GraduationCap className="h-5 w-5 text-[hsl(var(--primary))]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Bảng điều khiển giáo viên</p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">Tổng quan lớp học hôm nay</p>
+                  </div>
+                </div>
+                <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-500">
+                  Đang hoạt động
+                </span>
+              </div>
+
+              <div className="mt-5 grid grid-cols-3 gap-3">
+                {[
+                  ["12", "Đề đã giao"],
+                  ["86", "Bài đã nộp"],
+                  ["8.1", "Điểm trung bình"],
+                ].map(([value, label]) => (
+                  <div key={label} className="rounded-2xl border border-[hsl(var(--border))]/50 bg-[hsl(var(--background))]/50 p-4">
+                    <p className="text-2xl font-semibold">{value}</p>
+                    <p className="mt-1 text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">{label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {[
+                  ["Kiểm tra 15 phút · Toán 12", "28/32 đã nộp"],
+                  ["Ôn tập chương Dao động", "24/30 đã nộp"],
+                  ["Bài tập Hóa hữu cơ", "19/27 đã nộp"],
+                ].map(([title, status]) => (
+                  <div key={title} className="flex items-center justify-between gap-4 rounded-2xl border border-[hsl(var(--border))]/40 px-4 py-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-[hsl(var(--primary))]" />
+                      <span className="truncate text-xs font-medium">{title}</span>
+                    </div>
+                    <span className="shrink-0 text-[10px] text-[hsl(var(--muted-foreground))]">{status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="border-y border-[hsl(var(--border))]/40 bg-[hsl(var(--card))]/35 px-6 py-24 md:px-10">
+          <div className="mx-auto max-w-7xl">
+            <div className="max-w-3xl">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[hsl(var(--primary))]">Tính năng cốt lõi</p>
+              <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
+                Mọi thứ cần thiết để vận hành lớp bài tập online
+              </h2>
+            </div>
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {features.map((feature) => (
+                <article key={feature.title} className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/60 p-6">
+                  <feature.icon className="h-6 w-6 text-[hsl(var(--primary))]" />
+                  <h3 className="mt-5 text-lg font-semibold">{feature.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-[hsl(var(--muted-foreground))]">{feature.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="px-6 py-24 md:px-10">
+          <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[hsl(var(--primary))]">Quy trình</p>
+              <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em]">Từ đề bài đến dữ liệu tiến bộ</h2>
+              <p className="mt-5 text-sm leading-6 text-[hsl(var(--muted-foreground))]">
+                Luồng làm việc ngắn gọn cho giáo viên và dễ hiểu cho học sinh.
+              </p>
+            </div>
+            <ol className="space-y-3">
+              {workflow.map((step, index) => (
+                <li key={step} className="flex items-center gap-4 rounded-2xl border border-[hsl(var(--border))]/60 p-5">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--foreground))] text-sm font-bold text-[hsl(var(--background))]">
+                    {index + 1}
+                  </span>
+                  <span className="text-sm font-medium sm:text-base">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
+    </div>
   )
 }

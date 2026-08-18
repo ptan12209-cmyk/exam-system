@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Clock, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import { Clock, Sparkles } from "lucide-react";
+import type { ParsedAnswerJson } from "@/lib/answer-json";
+import { AnswerJsonImporter } from "./AnswerJsonImporter";
 import { OPTIONS, type Option, type TFAnswer, type SAAnswer } from "./types";
 
 interface AnswerEntryProps {
@@ -23,11 +23,7 @@ interface AnswerEntryProps {
   answerTab: "mc" | "tf" | "sa";
   onAnswerTabChange: (tab: "mc" | "tf" | "sa") => void;
   totalQuestions: number;
-  answerPdfFile: File | null;
-  onAnswerPdfFileChange: (file: File | null) => void;
-  parsingPdf: boolean;
-  parseSuccess: boolean;
-  onParsePdf: (fileToUse?: File) => Promise<void>;
+  onJsonImport: (answers: ParsedAnswerJson) => void;
   sendNotification: boolean;
   onSendNotificationChange: (checked: boolean) => void;
   securityLevel: number;
@@ -50,19 +46,13 @@ export function AnswerEntry({
   answerTab,
   onAnswerTabChange,
   totalQuestions,
-  answerPdfFile,
-  onAnswerPdfFileChange,
-  parsingPdf,
-  parseSuccess,
-  onParsePdf,
+  onJsonImport,
   sendNotification,
   onSendNotificationChange,
   securityLevel,
   onSecurityLevelChange,
   onImportFromBank,
 }: AnswerEntryProps) {
-  const answerPdfRef = useRef<HTMLInputElement>(null);
-
   return (
     <section className="mt-8 rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-6">
       <div className="flex flex-wrap items-center gap-3">
@@ -97,7 +87,7 @@ export function AnswerEntry({
               : "bg-[hsl(var(--muted))]/20 text-[hsl(var(--muted-foreground))]"
           )}
         >
-          Tự luận
+          Trả lời ngắn
         </button>
         {onImportFromBank && (
           <button
@@ -115,36 +105,7 @@ export function AnswerEntry({
       </div>
 
       <div className="mt-6 space-y-6">
-        <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-4">
-          <Label className="mb-2 block">PDF đáp án</Label>
-          <div className="flex gap-2">
-            <Input
-              ref={answerPdfRef}
-              type="file"
-              accept=".pdf"
-              onChange={(e) => onAnswerPdfFileChange(e.target.files?.[0] || null)}
-              className="rounded-xl"
-            />
-            <Button
-              type="button"
-              onClick={() => void onParsePdf()}
-              disabled={parsingPdf}
-              className="rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--foreground))]/90"
-            >
-              {parsingPdf ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-          {parseSuccess && (
-            <p className="mt-2 flex items-center gap-2 text-sm text-emerald-600">
-              <CheckCircle2 className="h-4 w-4" />
-              Đã quét đáp án thành công
-            </p>
-          )}
-        </div>
+        <AnswerJsonImporter onImport={onJsonImport} />
 
         {answerTab === "mc" && (
           <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-4">
@@ -255,7 +216,7 @@ export function AnswerEntry({
         {answerTab === "sa" && (
           <div className="rounded-2xl border border-[hsl(var(--border))]/60 p-4">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold">Tự luận / Ngắn</h3>
+              <h3 className="font-semibold">Trả lời ngắn</h3>
               <span className="text-sm text-[hsl(var(--muted-foreground))]">{saCount} câu</span>
             </div>
             <div className="space-y-3">

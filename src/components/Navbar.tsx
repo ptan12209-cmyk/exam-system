@@ -24,18 +24,11 @@ export function Navbar({ showAuth = true }: NavbarProps) {
                     <div className="flex items-center gap-2 sm:gap-3">
                         <ThemeToggle />
                         {showAuth && (
-                            <>
-                                <Link href="/login">
-                                    <Button variant="ghost" className="hidden sm:inline-flex font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
-                                        Đăng nhập
-                                    </Button>
-                                </Link>
-                                <Link href="/register">
-                                    <Button className="font-semibold">
-                                        Bắt đầu miễn phí
-                                    </Button>
-                                </Link>
-                            </>
+                            <Link href="/login">
+                                <Button className="font-semibold">
+                                    Đăng nhập
+                                </Button>
+                            </Link>
                         )}
                     </div>
                 </div>

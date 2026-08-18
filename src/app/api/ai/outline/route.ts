@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // V98Store API (OpenAI compatible format)
-const V98_API_KEY = process.env.GEMINI_API_KEY || "sk-ewNhLj4fTcPUGWDstbRMibwnhjtZ5gB4q4CxMhEQ0gg5xZlx";
+const V98_API_KEY = process.env.GEMINI_API_KEY;
 const V98_BASE_URL = process.env.GEMINI_BASE_URL || "https://v98store.com";
 
 const SYSTEM_PROMPT = `Bạn là chuyên gia phân tích giáo trình học thuật cấp THPT tại Việt Nam.
@@ -27,6 +27,10 @@ CHỈ TRẢ VỀ JSON ARRAY CHỨA CÁC BLOCK (BẮT ĐẦU BẰNG [ VÀ KẾT T
 
 export async function POST(request: NextRequest) {
   try {
+    if (!V98_API_KEY) {
+      return NextResponse.json({ error: "AI outline service is disabled" }, { status: 503 });
+    }
+
     const body = await request.json();
     const { title, subject } = body;
 

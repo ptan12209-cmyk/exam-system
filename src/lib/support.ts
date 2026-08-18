@@ -1,4 +1,4 @@
-/** Official support contacts — StudyHub / luyende.id.vn */
+/** Official support contacts — ExamHub / luyende.id.vn */
 
 export const SUPPORT_ZALO = "0975744812"
 export const SUPPORT_EMAIL = "aptan872@gmail.com"

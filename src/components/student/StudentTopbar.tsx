@@ -46,7 +46,7 @@ export function StudentTopbar({
 
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Link
-          href="/online-student/dashboard"
+          href="/student/dashboard"
           className="group flex items-center gap-3 transition-transform active:scale-95 shrink-0"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--os-border)] bg-[var(--os-bg)] shadow-sm transition-all duration-300 group-hover:rotate-12 group-hover:border-[var(--os-accent)]">
