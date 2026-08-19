@@ -447,6 +447,28 @@ export default function ExamBankPage() {
         if (questionsError) throw questionsError
       }
 
+      if (newExam) {
+        try {
+          const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
+          const deadlineStr = publishIsScheduled && publishEndTime ? new Date(publishEndTime).toLocaleString("vi-VN") : undefined
+          await fetch("/api/send-notification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              examId: newExam.id,
+              examTitle: publishingExam.title.trim(),
+              teacherName: profile?.full_name || "Giáo viên",
+              deadline: deadlineStr,
+              targetClasses: classesArray,
+              targetGrade: publishGrade === "all" ? null : Number(publishGrade),
+              assignedTo: publishAssignedTo,
+            }),
+          })
+        } catch (notifErr) {
+          console.warn("Lỗi gửi thông báo email:", notifErr)
+        }
+      }
+
       success("Đăng tải đề thi thành công!")
       setPublishingExam(null)
       // Reset publish states

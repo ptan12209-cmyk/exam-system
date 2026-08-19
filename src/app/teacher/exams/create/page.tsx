@@ -260,27 +260,33 @@ export default function CreateExamPage() {
         .single()
 
       if (insertError) throw insertError
+
+      if (publish && sendNotification && data) {
+        try {
+          const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
+          const deadlineStr = isScheduled && endTime ? new Date(endTime).toLocaleString("vi-VN") : undefined
+          await fetch("/api/send-notification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              examId: data.id,
+              examTitle: title.trim(),
+              teacherName: profile?.full_name || "Giáo viên",
+              deadline: deadlineStr,
+              targetClasses: classesArray,
+              targetGrade,
+              assignedTo,
+            }),
+          })
+        } catch (notifErr) {
+          console.warn("Lỗi gửi thông báo email:", notifErr)
+        }
+      }
+
       if (data) {
         setCreatedExamId(data.id)
         setShowLinkDialog(true)
         router.push("/teacher/dashboard")
-      }
-
-      if (publish && sendNotification && data) {
-        const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
-        const { data: students } = await supabase.from("profiles").select("id").eq("role", "student")
-        if (students?.length) {
-          await supabase.from("notifications").insert(
-            students.map((s: { id: string }) => ({
-              user_id: s.id,
-              title: `Đề thi mới: ${title.trim()}`,
-              message: `${profile?.full_name || "Giáo viên"} đã đăng đề thi mới`,
-              type: "exam",
-              link: `/student/exams/${data.id}/take`,
-              is_read: false,
-            }))
-          )
-        }
       }
     } catch (err) {
       setError("Lỗi lưu đề thi: " + (err as Error).message)
