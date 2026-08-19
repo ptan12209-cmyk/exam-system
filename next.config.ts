@@ -33,11 +33,12 @@ const nextConfig: NextConfig = {
         value: [
           "default-src 'self'",
           "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
+          "worker-src 'self' blob:",
           "style-src 'self' 'unsafe-inline'",
           "img-src 'self' data: blob: https://*.supabase.co https://*.youtube.com https://i.ytimg.com https://*.cloudfront.net https://image.mux.com",
           "font-src 'self' data:",
-          "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://api-merchant.payos.vn https://*.cloudfront.net https://stream.mux.com",
-          "frame-src 'self' https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://iframe.mediadelivery.net https://*.mediadelivery.net https://challenges.cloudflare.com",
+          "connect-src 'self' blob: data: https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://api-merchant.payos.vn https://*.cloudfront.net https://stream.mux.com",
+          "frame-src 'self' blob: data: https://*.supabase.co https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://iframe.mediadelivery.net https://*.mediadelivery.net https://challenges.cloudflare.com",
           // Landing hero/feature clips (CloudFront) + Bunny/Mux players
           "media-src 'self' blob: https://*.supabase.co https://*.mediadelivery.net https://*.cloudfront.net https://stream.mux.com",
           "object-src 'none'",
