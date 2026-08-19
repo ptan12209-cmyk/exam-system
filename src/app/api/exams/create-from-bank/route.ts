@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         }))
 
         const tfAnswers = tfQuestions.map((q, idx) => ({
-            question: mc_count + idx + 1,
+            question: idx + 1,
             a: q.correct_answer?.a ?? true,
             b: q.correct_answer?.b ?? false,
             c: q.correct_answer?.c ?? true,
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         }))
 
         const saAnswers = saQuestions.map((q, idx) => ({
-            question: mc_count + tf_count + idx + 1,
+            question: idx + 1,
             answer: q.correct_answer // Expected string/number
         }))
 

@@ -10,7 +10,7 @@ describe("parseAnswerJson", () => {
       { question: 2, answer: "C" },
     ])
     expect(result.trueFalse[0]).toEqual({
-      question: 3,
+      question: 1,
       a: true,
       b: false,
       c: true,
@@ -23,19 +23,25 @@ describe("parseAnswerJson", () => {
     const result = parseAnswerJson(JSON.stringify({
       multiple_choice: [{ question: 1, answer: " b " }],
       true_false: [],
-      short_answer: [{ question: 2, answer: 3.14 }],
+      short_answer: [{ question: 1, answer: 3.14 }],
     }))
 
     expect(result.multipleChoice[0].answer).toBe("B")
     expect(result.shortAnswer[0].answer).toBe("3.14")
   })
 
-  it("rejects gaps and duplicate question numbers", () => {
+  it("rejects gaps and duplicate question numbers within a group", () => {
     expect(() => parseAnswerJson(JSON.stringify({
-      multiple_choice: [{ question: 1, answer: "A" }],
-      true_false: [{ question: 1, a: true, b: true, c: false, d: false }],
+      multiple_choice: [{ question: 1, answer: "A" }, { question: 3, answer: "B" }],
+      true_false: [],
       short_answer: [],
     }))).toThrow("phải là câu 2")
+
+    expect(() => parseAnswerJson(JSON.stringify({
+      multiple_choice: [],
+      true_false: [{ question: 2, a: true, b: true, c: false, d: false }],
+      short_answer: [],
+    }))).toThrow("phải là câu 1")
   })
 
   it("rejects malformed JSON and invalid options", () => {

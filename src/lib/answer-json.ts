@@ -44,11 +44,11 @@ export const ANSWER_JSON_SAMPLE = JSON.stringify(
       { question: 2, answer: "C" },
     ],
     true_false: [
-      { question: 3, a: true, b: false, c: true, d: false },
+      { question: 1, a: true, b: false, c: true, d: false },
     ],
     short_answer: [
-      { question: 4, answer: "42" },
-      { question: 5, answer: "-1.5" },
+      { question: 1, answer: "42" },
+      { question: 2, answer: "-1.5" },
     ],
   },
   null,
@@ -61,14 +61,13 @@ function formatIssue(error: z.ZodError): string {
   return `${path}: ${issue.message}`
 }
 
-function assertSequentialQuestions(groups: number[][]): void {
-  const actual = groups.flat()
-  const expected = Array.from({ length: actual.length }, (_, index) => index + 1)
-  const invalidIndex = actual.findIndex((question, index) => question !== expected[index])
+function assertSequentialGroup(questions: number[], groupName: string): void {
+  const expected = Array.from({ length: questions.length }, (_, index) => index + 1)
+  const invalidIndex = questions.findIndex((question, index) => question !== expected[index])
 
   if (invalidIndex !== -1) {
     throw new Error(
-      `Số câu phải liên tục theo thứ tự trắc nghiệm → đúng/sai → trả lời ngắn. Vị trí ${invalidIndex + 1} phải là câu ${expected[invalidIndex]}, hiện đang là câu ${actual[invalidIndex]}.`
+      `Số câu trong phần ${groupName} phải bắt đầu từ 1 và liên tục tăng dần (1, 2, 3...). Vị trí ${invalidIndex + 1} phải là câu ${expected[invalidIndex]}, hiện đang là câu ${questions[invalidIndex]}.`
     )
   }
 }
@@ -92,11 +91,18 @@ export function parseAnswerJson(input: string): ParsedAnswerJson {
     throw new Error("JSON phải có ít nhất một đáp án.")
   }
 
-  assertSequentialQuestions([
+  assertSequentialGroup(
     multiple_choice.map((item) => item.question),
+    "trắc nghiệm"
+  )
+  assertSequentialGroup(
     true_false.map((item) => item.question),
+    "đúng/sai"
+  )
+  assertSequentialGroup(
     short_answer.map((item) => item.question),
-  ])
+    "trả lời ngắn"
+  )
 
   return {
     multipleChoice: multiple_choice,

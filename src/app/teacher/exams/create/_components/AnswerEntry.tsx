@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -150,7 +150,7 @@ export function AnswerEntry({
             </div>
             <div className="space-y-4">
               {Array.from({ length: tfCount }, (_, i) => {
-                const baseQ = mcCount + i + 1;
+                const baseQ = i + 1;
                 const item = tfAnswers[i] || {
                   question: baseQ,
                   a: true,
@@ -221,20 +221,19 @@ export function AnswerEntry({
             </div>
             <div className="space-y-3">
               {Array.from({ length: saCount }, (_, i) => {
-                const effectiveTf = enableTF ? tfCount : 0;
-                const baseQ = mcCount + effectiveTf + i + 1;
+                const baseQ = i + 1;
                 const item = saAnswers[i] || { question: baseQ, answer: "" };
                 return (
                   <div
                     key={i}
                     className="rounded-2xl border border-[hsl(var(--border))]/60 p-4"
                   >
-                    <Label className="mb-2 block">Câu {item.question}</Label>
+                    <Label className="mb-2 block">Câu {baseQ}</Label>
                     <Input
                       value={String(item.answer)}
                       onChange={(e) => {
                         const next = [...saAnswers];
-                        next[i] = { ...item, answer: e.target.value };
+                        next[i] = { ...item, question: baseQ, answer: e.target.value };
                         onSaAnswersChange(next);
                       }}
                       className="rounded-xl"

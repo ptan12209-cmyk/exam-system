@@ -151,7 +151,7 @@ export default function CreateExamPage() {
     setEnableTF(newCount > 0)
     setTfAnswers(
       Array.from({ length: newCount }, (_, i) => {
-        const baseQ = mcCount + 1 + i
+        const baseQ = 1 + i
         return tfAnswers[i] || { question: baseQ, a: true, b: true, c: true, d: true }
       })
     )
@@ -162,7 +162,7 @@ export default function CreateExamPage() {
     setEnableSA(newCount > 0)
     setSaAnswers(
       Array.from({ length: newCount }, (_, i) => {
-        const baseQ = mcCount + (newCount > 0 ? tfCount : 0) + 1 + i
+        const baseQ = 1 + i
         return saAnswers[i] || { question: baseQ, answer: "" }
       })
     )
@@ -203,7 +203,7 @@ export default function CreateExamPage() {
 
       const finalTfAnswers = enableTF
         ? Array.from({ length: tfCount }, (_, i) => {
-            const baseQ = mcCount + 1 + i;
+            const baseQ = 1 + i;
             const existing = tfAnswers.find((t) => t.question === baseQ) || tfAnswers[i] || {};
             return {
               question: baseQ,
@@ -217,7 +217,7 @@ export default function CreateExamPage() {
 
       const finalSaAnswers = enableSA
         ? Array.from({ length: saCount }, (_, i) => {
-            const baseQ = mcCount + effectiveTf + 1 + i;
+            const baseQ = 1 + i;
             const existing = saAnswers.find((s) => s.question === baseQ) || saAnswers[i] || {};
             return {
               question: baseQ,

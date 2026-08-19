@@ -71,8 +71,8 @@ export default function EditExamPage() {
       .catch(() => setAvailableSections([]))
   }, [selectedLessonId])
   const handleMcCountChange = (newCount: number) => { setMcCount(newCount); setMcAnswers(Array.from({ length: newCount }, (_, i) => mcAnswers[i] || null)) }
-  const handleTfCountChange = (newCount: number) => { setTfCount(newCount); setTfAnswers(Array.from({ length: newCount }, (_, i) => tfAnswers[i] || { question: mcCount + 1 + i, a: true, b: true, c: true, d: true })) }
-  const handleSaCountChange = (newCount: number) => { setSaCount(newCount); setSaAnswers(Array.from({ length: newCount }, (_, i) => saAnswers[i] || { question: mcCount + tfCount + 1 + i, answer: "" })) }
+  const handleTfCountChange = (newCount: number) => { setTfCount(newCount); setTfAnswers(Array.from({ length: newCount }, (_, i) => tfAnswers[i] || { question: 1 + i, a: true, b: true, c: true, d: true })) }
+  const handleSaCountChange = (newCount: number) => { setSaCount(newCount); setSaAnswers(Array.from({ length: newCount }, (_, i) => saAnswers[i] || { question: 1 + i, answer: "" })) }
   const handleSave = async () => {
     if (!title.trim()) {
       setError("Vui lòng nhập tên đề thi")
@@ -87,7 +87,7 @@ export default function EditExamPage() {
 
       const finalTfAnswers = tfCount > 0
         ? Array.from({ length: tfCount }, (_, i) => {
-            const qNum = mcCount + 1 + i
+            const qNum = 1 + i
             const existing = tfAnswers.find((t) => t.question === qNum) || tfAnswers[i] || {}
             return {
               question: qNum,
@@ -101,7 +101,7 @@ export default function EditExamPage() {
 
       const finalSaAnswers = saCount > 0
         ? Array.from({ length: saCount }, (_, i) => {
-            const qNum = mcCount + tfCount + 1 + i
+            const qNum = 1 + i
             const existing = saAnswers.find((s) => s.question === qNum) || saAnswers[i] || {}
             return {
               question: qNum,
@@ -150,11 +150,11 @@ export default function EditExamPage() {
         .filter((a) => a.answer !== null)
       const finalTfAnswers = tfAnswers.map((tf, i) => ({
         ...tf,
-        question: mcCount + 1 + i,
+        question: 1 + i,
       }))
       const finalSaAnswers = saAnswers.map((sa, i) => ({
         ...sa,
-        question: mcCount + tfCount + 1 + i,
+        question: 1 + i,
       }))
 
       await supabase
@@ -530,7 +530,7 @@ export default function EditExamPage() {
             {answerTab === "tf" && (
               <div className="space-y-4">
                 {Array.from({ length: tfCount }, (_, i) => { 
-                  const qNum = mcCount + 1 + i; 
+                  const qNum = 1 + i; 
                   const answer = tfAnswers[i] || { question: qNum, a: true, b: true, c: true, d: true }; 
                   return (
                     <div key={i} className="rounded-xl border border-[hsl(var(--border))]/60 p-5 hover:bg-[hsl(var(--muted))]/5 transition-colors">
@@ -573,7 +573,7 @@ export default function EditExamPage() {
             {answerTab === "sa" && (
               <div className="space-y-3">
                 {Array.from({ length: saCount }, (_, i) => { 
-                  const qNum = mcCount + tfCount + 1 + i; 
+                  const qNum = 1 + i; 
                   const answer = saAnswers[i] || { question: qNum, answer: "" }; 
                   return (
                     <div key={i} className="flex items-center gap-6 rounded-2xl border border-[hsl(var(--border))]/60 p-4 transition-colors hover:bg-[hsl(var(--muted))]/5">
