@@ -30,18 +30,34 @@ describe("parseAnswerJson", () => {
     expect(result.shortAnswer[0].answer).toBe("3.14")
   })
 
+  it("allows custom starting question numbers for any section", () => {
+    const result = parseAnswerJson(JSON.stringify({
+      multiple_choice: [{ question: 21, answer: "A" }, { question: 22, answer: "B" }],
+      true_false: [{ question: 5, a: true, b: false, c: true, d: false }],
+      short_answer: [{ question: 10, answer: "42" }, { question: 11, answer: "99" }],
+    }))
+
+    expect(result.multipleChoice).toEqual([
+      { question: 21, answer: "A" },
+      { question: 22, answer: "B" },
+    ])
+    expect(result.trueFalse[0].question).toBe(5)
+    expect(result.shortAnswer[0].question).toBe(10)
+    expect(result.shortAnswer[1].question).toBe(11)
+  })
+
   it("rejects gaps and duplicate question numbers within a group", () => {
     expect(() => parseAnswerJson(JSON.stringify({
-      multiple_choice: [{ question: 1, answer: "A" }, { question: 3, answer: "B" }],
+      multiple_choice: [{ question: 5, answer: "A" }, { question: 7, answer: "B" }],
       true_false: [],
       short_answer: [],
-    }))).toThrow("phải là câu 2")
+    }))).toThrow("phải là câu 6")
 
     expect(() => parseAnswerJson(JSON.stringify({
       multiple_choice: [],
-      true_false: [{ question: 2, a: true, b: true, c: false, d: false }],
+      true_false: [{ question: 2, a: true, b: true, c: false, d: false }, { question: 2, a: true, b: false, c: true, d: false }],
       short_answer: [],
-    }))).toThrow("phải là câu 1")
+    }))).toThrow("phải là câu 3")
   })
 
   it("rejects malformed JSON and invalid options", () => {

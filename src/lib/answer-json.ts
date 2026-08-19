@@ -62,12 +62,14 @@ function formatIssue(error: z.ZodError): string {
 }
 
 function assertSequentialGroup(questions: number[], groupName: string): void {
-  const expected = Array.from({ length: questions.length }, (_, index) => index + 1)
+  if (questions.length === 0) return
+  const start = questions[0]
+  const expected = Array.from({ length: questions.length }, (_, index) => start + index)
   const invalidIndex = questions.findIndex((question, index) => question !== expected[index])
 
   if (invalidIndex !== -1) {
     throw new Error(
-      `Số câu trong phần ${groupName} phải bắt đầu từ 1 và liên tục tăng dần (1, 2, 3...). Vị trí ${invalidIndex + 1} phải là câu ${expected[invalidIndex]}, hiện đang là câu ${questions[invalidIndex]}.`
+      `Số câu trong phần ${groupName} phải liên tục tăng dần (bắt đầu từ câu ${start}). Vị trí ${invalidIndex + 1} phải là câu ${expected[invalidIndex]}, hiện đang là câu ${questions[invalidIndex]}.`
     )
   }
 }
