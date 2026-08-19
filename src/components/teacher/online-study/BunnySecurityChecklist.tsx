@@ -43,8 +43,8 @@ export function BunnySecurityChecklist() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] px-4 py-2.5">
         <div className="flex items-center gap-2 text-[12px] text-[#C8C4D8]">
           <ShieldCheck className="h-4 w-4 text-amber-300/90" />
-          <span className="font-medium text-[#F1EDF9]/90">Checklist bảo mật Bunny</span>
-          <span className="text-[10px] text-[#8C87A2]">(đã ẩn)</span>
+          <span className="font-medium text-[var(--os-fg)]/90">Checklist bảo mật Bunny</span>
+          <span className="text-[10px] text-[var(--os-muted)]">(đã ẩn)</span>
         </div>
         <button
           type="button"
@@ -71,14 +71,14 @@ export function BunnySecurityChecklist() {
         </div>
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <h2 className="text-sm font-bold text-[#F1EDF9]">
+            <h2 className="text-sm font-bold text-[var(--os-fg)]">
               Checklist bảo mật video Bunny
             </h2>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => toggle(false)}
-                className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1 text-[11px] font-medium text-[#8C87A2] hover:bg-white/5 hover:text-[#F1EDF9]"
+                className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1 text-[11px] font-medium text-[var(--os-muted)] hover:bg-white/5 hover:text-[var(--os-fg)]"
                 title="Ẩn checklist (có thể hiện lại sau)"
               >
                 <ChevronUp className="h-3.5 w-3.5" />
@@ -87,25 +87,25 @@ export function BunnySecurityChecklist() {
               <button
                 type="button"
                 onClick={() => toggle(false)}
-                className="rounded-lg p-1 text-[#8C87A2] hover:bg-white/5 hover:text-[#F1EDF9]"
+                className="rounded-lg p-1 text-[var(--os-muted)] hover:bg-white/5 hover:text-[var(--os-fg)]"
                 aria-label="Đóng checklist"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
           </div>
-          <p className="text-[11px] text-[#8C87A2] leading-relaxed">
+          <p className="text-[11px] text-[var(--os-muted)] leading-relaxed">
             Cấu hình trên{" "}
             <a
               href="https://dash.bunny.net"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#C18CFF] underline underline-offset-2"
+              className="text-[var(--os-accent)] underline underline-offset-2"
             >
               Bunny dashboard
             </a>
             {" "}— app chỉ cấp URL có quyền qua playback API. Domain site:{" "}
-            <code className="rounded bg-[#0B0A13] px-1.5 py-0.5 font-mono text-[10px] text-amber-200">
+            <code className="rounded bg-[var(--os-bg)] px-1.5 py-0.5 font-mono text-[10px] text-amber-200">
               luyende.id.vn
             </code>
           </p>
@@ -113,14 +113,14 @@ export function BunnySecurityChecklist() {
             <li className="flex gap-2">
               <span className="text-amber-400 shrink-0">1.</span>
               <span>
-                Stream library → <strong className="text-[#F1EDF9]">Security</strong> → bật{" "}
-                <strong className="text-[#F1EDF9]">Token Authentication</strong>
+                Stream library → <strong className="text-[var(--os-fg)]">Security</strong> → bật{" "}
+                <strong className="text-[var(--os-fg)]">Token Authentication</strong>
               </span>
             </li>
             <li className="flex gap-2">
               <span className="text-amber-400 shrink-0">2.</span>
               <span>
-                Copy <strong className="text-[#F1EDF9]">Token security key</strong> → Vercel env{" "}
+                Copy <strong className="text-[var(--os-fg)]">Token security key</strong> → Vercel env{" "}
                 <code className="font-mono text-[10px] text-amber-200">BUNNY_STREAM_TOKEN_KEY</code>
               </span>
             </li>
@@ -139,7 +139,7 @@ export function BunnySecurityChecklist() {
             <li className="flex gap-2 sm:col-span-2">
               <span className="text-amber-400 shrink-0">5.</span>
               <span>
-                Dán link <strong className="text-[#F1EDF9]">embed/play</strong> Bunny (app tự chuẩn hóa, bỏ token cũ)
+                Dán link <strong className="text-[var(--os-fg)]">embed/play</strong> Bunny (app tự chuẩn hóa, bỏ token cũ)
               </span>
             </li>
           </ul>

@@ -362,12 +362,12 @@ export default function EditExamPage() {
                     className={cn(
                       "flex flex-col items-center justify-center p-3 text-center transition-all cursor-pointer rounded-xl border",
                       assignedTo === "x"
-                        ? "border-[#C18CFF] bg-[#C18CFF]/10 text-[#C18CFF]"
+                        ? "border-[var(--os-accent)] bg-[var(--os-accent)]/10 text-[var(--os-accent)]"
                         : "border-[hsl(var(--border))]/60 hover:border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
                     )}
                   >
                     <span className="font-semibold text-xs flex items-center gap-1">
-                      Thí sinh tự do (TSTD) <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#C18CFF] animate-pulse"></span>
+                      Thí sinh tự do (TSTD) <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--os-accent)] animate-pulse"></span>
                     </span>
                   </button>
                 </div>

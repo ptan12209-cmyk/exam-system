@@ -127,12 +127,12 @@ export function ExamInfoForm({
             className={cn(
               "flex flex-col items-center justify-center p-4 rounded-xl border transition-all text-center cursor-pointer",
               assignedTo === "x"
-                ? "border-[#C18CFF] bg-[#C18CFF]/10 text-[#C18CFF]"
+                ? "border-[var(--os-accent)] bg-[var(--os-accent)]/10 text-[var(--os-accent)]"
                 : "border-[hsl(var(--border))]/60 hover:border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
             )}
           >
             <span className="font-semibold text-sm flex items-center gap-1.5">
-              Thí sinh tự do (TSTD) <span className="inline-block w-2 h-2 rounded-full bg-[#C18CFF] animate-pulse"></span>
+              Thí sinh tự do (TSTD) <span className="inline-block w-2 h-2 rounded-full bg-[var(--os-accent)] animate-pulse"></span>
             </span>
             <span className="text-xs opacity-75 mt-1">Giao riêng cho thí sinh tự do (Học sinh X)</span>
           </button>

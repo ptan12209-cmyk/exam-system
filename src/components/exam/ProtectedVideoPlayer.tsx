@@ -108,7 +108,7 @@ export function ProtectedVideoPlayer({
   // paddingTop 56.25% is more reliable than aspect-video on some mobile WebViews
   const shell = (child: ReactNode) => (
     <div
-      className="relative w-full overflow-hidden rounded-xl border border-[#8C87A2]/20 bg-black select-none"
+      className="relative w-full overflow-hidden rounded-xl border border-[var(--os-muted)]/20 bg-black select-none"
       style={{ paddingTop: "56.25%" }}
       onContextMenu={(e) => {
         e.preventDefault()
@@ -158,7 +158,7 @@ export function ProtectedVideoPlayer({
           href={embedUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="block text-center text-[11px] text-[#C18CFF] underline underline-offset-2 sm:hidden"
+          className="block text-center text-[11px] text-[var(--os-accent)] underline underline-offset-2 sm:hidden"
         >
           Video trắng? Chạm để mở trình phát full màn hình
         </a>

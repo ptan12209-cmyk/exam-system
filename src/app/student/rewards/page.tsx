@@ -67,14 +67,14 @@ export default function RewardsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#C18CFF]" />
+      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--os-accent)]" />
       </div>
     )
   }
 
   return (
-    <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9]", inter.className)}>
+    <StudentShell className={cn("bg-[var(--os-bg)] text-[var(--os-fg)]", inter.className)}>
       {/* Topbar */}
       <StudentTopbar
         name={fullName}
@@ -92,30 +92,30 @@ export default function RewardsPage() {
         {/* Title Header Section */}
         <section className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
           <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/20 bg-[#15131F] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[#8C87A2]">
-              <Gift className="h-3.5 w-3.5 text-[#C18CFF]" /> Rewards Shop
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--os-border)] bg-[var(--os-card)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--os-muted)]">
+              <Gift className="h-3.5 w-3.5 text-[var(--os-accent)]" /> Rewards Shop
             </div>
-            <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight", instrumentSerif.className)}>
+            <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[var(--os-fg)] font-normal leading-tight", instrumentSerif.className)}>
               Đổi phần thưởng
             </h1>
-            <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] max-w-2xl">
+            <p className="mt-3 text-sm sm:text-base leading-relaxed text-[var(--os-muted)] max-w-2xl">
               Tích lũy điểm kinh nghiệm XP từ việc làm bài tập để mở khóa các danh hiệu và phần thưởng độc quyền từ giáo viên.
             </p>
           </div>
 
           {/* Current Balance Card */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
-            <span className="text-[10px] text-[#8C87A2] uppercase font-mono">ĐIỂM XP HIỆN TẠI</span>
-            <div className="mt-2 text-3xl font-bold font-mono text-[#F1EDF9]">{studentStats.xp.toLocaleString()} XP</div>
+          <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-2xl p-6 shadow-sm">
+            <span className="text-[10px] text-[var(--os-muted)] uppercase font-mono">ĐIỂM XP HIỆN TẠI</span>
+            <div className="mt-2 text-3xl font-bold font-mono text-[var(--os-fg)]">{studentStats.xp.toLocaleString()} XP</div>
             
             <div className="mt-4 space-y-2">
-              <div className="h-1.5 w-full rounded-full bg-[#0B0A13] overflow-hidden border border-[#8C87A2]/20">
+              <div className="h-1.5 w-full rounded-full bg-[var(--os-bg)] overflow-hidden border border-[var(--os-border)]">
                 <div 
-                  className="h-full bg-[#C18CFF]" 
+                  className="h-full bg-[var(--os-accent)]" 
                   style={{ width: `${xpProgress.percent}%` }}
                 />
               </div>
-              <div className="flex justify-between text-[9px] text-[#8C87A2] font-mono">
+              <div className="flex justify-between text-[9px] text-[var(--os-muted)] font-mono">
                 <span>Cấp {studentStats.level}</span>
                 <span>Còn {xpProgress.nextTotal - studentStats.xp} XP lên cấp {studentStats.level + 1}</span>
               </div>
@@ -129,20 +129,20 @@ export default function RewardsPage() {
             <Link 
               key={item.href} 
               href={item.href} 
-              className="flex items-center gap-3 rounded-xl border border-[#8C87A2]/20 bg-[#15131F] p-4 hover:border-[#C18CFF]/50 transition-colors group"
+              className="flex items-center gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] p-4 hover:border-[var(--os-accent)]/50 transition-colors group"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#8C87A2]/20 bg-[#0B0A13] text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--os-border)] bg-[var(--os-bg)] text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors">
                 <item.icon className="h-4 w-4" />
               </div>
-              <span className="text-xs font-bold text-[#F1EDF9]">{item.label}</span>
+              <span className="text-xs font-bold text-[var(--os-fg)]">{item.label}</span>
             </Link>
           ))}
         </section>
 
         {/* Rewards Shop Grid */}
-        <section className="mt-8 rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-6 md:p-8 shadow-sm">
-          <h2 className="text-lg font-bold text-[#F1EDF9] mb-6 flex items-center gap-2">
-            <Gift className="h-5 w-5 text-[#C18CFF]" /> Cửa hàng đổi quà
+        <section className="mt-8 rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)] p-6 md:p-8 shadow-sm">
+          <h2 className="text-lg font-bold text-[var(--os-fg)] mb-6 flex items-center gap-2">
+            <Gift className="h-5 w-5 text-[var(--os-accent)]" /> Cửa hàng đổi quà
           </h2>
           <RewardsShop initialXp={studentStats.xp} />
         </section>

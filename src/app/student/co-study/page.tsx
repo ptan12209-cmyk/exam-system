@@ -787,7 +787,7 @@ export default function CoStudyRoomsPage() {
   if (loading) return <Loading fullPage label="Đang kết nối phòng học..." />
 
   return (
-    <StudentShell className="bg-[#0B0A13] text-[#F1EDF9]">
+    <StudentShell className="bg-[var(--os-bg)] text-[var(--os-fg)]">
       <StudentTopbar
         name={profile?.full_name || ""}
         userXp={studentStats.xp}

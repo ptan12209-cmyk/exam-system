@@ -63,11 +63,11 @@ export function ReelStage({ reel, children, renderScene }: Props) {
       {!recordMode && (
         <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c18cff]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--os-accent)]">
               Marketing · {reel.id.toUpperCase()}
             </p>
             <h1 className="text-lg font-semibold tracking-tight">{reel.title}</h1>
-            <p className="text-[12px] text-[#8c87a2]">{reel.purpose}</p>
+            <p className="text-[12px] text-[var(--os-muted)]">{reel.purpose}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
@@ -79,7 +79,7 @@ export function ReelStage({ reel, children, renderScene }: Props) {
             <button
               type="button"
               onClick={() => setRecordMode(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#c18cff] px-3 py-1.5 text-[12px] font-bold text-[#0b0a13]"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--os-accent)] px-3 py-1.5 text-[12px] font-bold text-[var(--os-accent-fg)]"
             >
               <Video className="h-3.5 w-3.5" />
               Chế độ quay
@@ -113,19 +113,19 @@ export function ReelStage({ reel, children, renderScene }: Props) {
           {/* Progress bar */}
           <div className="absolute left-0 right-0 top-0 z-20 h-1 bg-white/10">
             <div
-              className="h-full bg-[#c18cff] transition-[width] duration-75"
+              className="h-full bg-[var(--os-accent)] transition-[width] duration-75"
               style={{ width: `${progress * 100}%` }}
             />
           </div>
 
           {/* Brand chip */}
           <div className="absolute left-4 top-4 z-20 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#c18cff]/20 text-[13px] font-bold text-[#c18cff]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--os-accent)]/20 text-[13px] font-bold text-[var(--os-accent)]">
               S
             </div>
             <div>
               <p className="text-[12px] font-semibold leading-none">{MARKETING.brand}</p>
-              <p className="mt-0.5 text-[10px] text-[#8c87a2]">{MARKETING.domain}</p>
+              <p className="mt-0.5 text-[10px] text-[var(--os-muted)]">{MARKETING.domain}</p>
             </div>
           </div>
 
@@ -179,7 +179,7 @@ export function ReelStage({ reel, children, renderScene }: Props) {
                 <RotateCcw className="h-4 w-4" />
                 Phát lại
               </button>
-              <span className="font-mono text-[12px] tabular-nums text-[#8c87a2]">
+              <span className="font-mono text-[12px] tabular-nums text-[var(--os-muted)]">
                 {t.toFixed(1)}s / {reel.durationSec}s
               </span>
             </div>
@@ -187,7 +187,7 @@ export function ReelStage({ reel, children, renderScene }: Props) {
             {/* Script panel */}
             <div className="w-full max-w-2xl space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#c18cff]">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--os-accent)]">
                   Voice-over (giọng nam · anh / các em)
                 </p>
                 <p className="mt-2 whitespace-pre-line text-[14px] leading-relaxed text-[#e8e4f0]/95">
@@ -195,10 +195,10 @@ export function ReelStage({ reel, children, renderScene }: Props) {
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#8c87a2]">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--os-muted)]">
                   Phụ đề (SRT timing)
                 </p>
-                <ul className="mt-2 space-y-1 font-mono text-[11px] text-[#8c87a2]">
+                <ul className="mt-2 space-y-1 font-mono text-[11px] text-[var(--os-muted)]">
                   {reel.srt.map((s) => (
                     <li key={s.start}>
                       [{s.start.toFixed(1)}–{s.end.toFixed(1)}] {s.text}
@@ -206,7 +206,7 @@ export function ReelStage({ reel, children, renderScene }: Props) {
                   ))}
                 </ul>
               </div>
-              <p className="text-[12px] text-[#8c87a2]">
+              <p className="text-[12px] text-[var(--os-muted)]">
                 <strong className="text-[#c8c4d8]">Quay:</strong> bấm «Chế độ quay» → fullscreen /
                 OBS crop khung dọc → Phát → đọc voice theo phụ đề. Export 1080×1920, 30fps.
               </p>

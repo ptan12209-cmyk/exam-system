@@ -84,14 +84,14 @@ export default function AchievementsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
         <Loading label="Đang tổng hợp thành tích..." />
       </div>
     )
   }
 
   return (
-    <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9]", inter.className)}>
+    <StudentShell className={cn("bg-[var(--os-bg)] text-[var(--os-fg)]", inter.className)}>
       {/* Topbar */}
       <StudentTopbar
         name={fullName}
@@ -109,33 +109,33 @@ export default function AchievementsPage() {
         {/* Header Section */}
         <section className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
           <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/20 bg-[#15131F] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[#8C87A2]">
-              <Award className="h-4 w-4 text-[#C18CFF]" /> Achievements
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--os-border)] bg-[var(--os-card)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--os-muted)]">
+              <Award className="h-4 w-4 text-[var(--os-accent)]" /> Achievements
             </div>
-            <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight", instrumentSerif.className)}>
+            <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[var(--os-fg)] font-normal leading-tight", instrumentSerif.className)}>
               Thành tích học tập
             </h1>
-            <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] max-w-2xl">
+            <p className="mt-3 text-sm sm:text-base leading-relaxed text-[var(--os-muted)] max-w-2xl">
               Theo dõi tiến độ, điểm kinh nghiệm XP và những cột mốc vinh quang bạn đã đạt được trong hành trình chinh phục tri thức.
             </p>
           </div>
 
           {/* XP Progress Card */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
+          <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-2xl p-6 shadow-sm">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs text-[#8C87A2] font-mono">TỔNG XP ĐÃ TÍCH LŨY</span>
-              <span className="text-xs text-[#C18CFF] font-bold">Cấp {studentStats.level}</span>
+              <span className="text-xs text-[var(--os-muted)] font-mono">TỔNG XP ĐÃ TÍCH LŨY</span>
+              <span className="text-xs text-[var(--os-accent)] font-bold">Cấp {studentStats.level}</span>
             </div>
-            <div className="text-3xl font-bold font-mono text-[#F1EDF9]">{xp.toLocaleString()} XP</div>
+            <div className="text-3xl font-bold font-mono text-[var(--os-fg)]">{xp.toLocaleString()} XP</div>
             
             <div className="mt-4 space-y-2">
-              <div className="h-2 w-full rounded-full bg-[#0B0A13] overflow-hidden border border-[#8C87A2]/20">
+              <div className="h-2 w-full rounded-full bg-[var(--os-bg)] overflow-hidden border border-[var(--os-border)]">
                 <div 
-                  className="h-full bg-[#C18CFF] transition-all duration-700 ease-out" 
+                  className="h-full bg-[var(--os-accent)] transition-all duration-700 ease-out" 
                   style={{ width: `${xpProgress.percent}%` }}
                 />
               </div>
-              <div className="flex justify-between text-[10px] text-[#8C87A2] font-mono">
+              <div className="flex justify-between text-[10px] text-[var(--os-muted)] font-mono">
                 <span>Tiến trình cấp: {xpProgress.current} / {xpProgress.required} XP</span>
                 <span>Còn {xpProgress.nextTotal - xp} XP lên cấp {studentStats.level + 1}</span>
               </div>
@@ -149,14 +149,14 @@ export default function AchievementsPage() {
             <Link 
               key={item.href} 
               href={item.href} 
-              className="flex items-center gap-3.5 rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-5 hover:border-[#C18CFF]/50 transition-colors group"
+              className="flex items-center gap-3.5 rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)] p-5 hover:border-[var(--os-accent)]/50 transition-colors group"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13] text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)] text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors">
                 <item.icon className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-bold text-[#F1EDF9]">{item.label}</p>
-                <p className="text-[10px] text-[#8C87A2] mt-0.5 font-mono">Truy cập nhanh</p>
+                <p className="text-sm font-bold text-[var(--os-fg)]">{item.label}</p>
+                <p className="text-[10px] text-[var(--os-muted)] mt-0.5 font-mono">Truy cập nhanh</p>
               </div>
             </Link>
           ))}
@@ -166,12 +166,12 @@ export default function AchievementsPage() {
         <div className="mt-8 grid gap-8 lg:grid-cols-[1.4fr_0.6fr] lg:items-start">
           
           {/* Left Block: Badges / Achievements List */}
-          <section className="overflow-hidden rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]">
-            <div className="border-b border-[#8C87A2]/20 p-5 bg-[#0B0A13]/30">
-              <h2 className="flex items-center gap-2 text-lg font-bold text-[#F1EDF9]">
-                <Award className="h-5 w-5 text-[#C18CFF]" /> Bộ sưu tập huy hiệu
+          <section className="overflow-hidden rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)]">
+            <div className="border-b border-[var(--os-border)] p-5 bg-[var(--os-bg)]/30">
+              <h2 className="flex items-center gap-2 text-lg font-bold text-[var(--os-fg)]">
+                <Award className="h-5 w-5 text-[var(--os-accent)]" /> Bộ sưu tập huy hiệu
               </h2>
-              <p className="text-xs text-[#8C87A2] mt-0.5">Các cột mốc quan trọng được tự động mở khóa.</p>
+              <p className="text-xs text-[var(--os-muted)] mt-0.5">Các cột mốc quan trọng được tự động mở khóa.</p>
             </div>
             <div className="p-5">
               <AchievementsGrid />
@@ -181,10 +181,10 @@ export default function AchievementsPage() {
           {/* Right Block: Daily Checkin & Fast Actions */}
           <div className="space-y-6">
             {/* Daily Checkin Panel */}
-            <section className="overflow-hidden rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]">
-              <div className="border-b border-[#8C87A2]/20 p-5 bg-[#0B0A13]/30">
-                <h2 className="flex items-center gap-2 text-sm font-bold text-[#F1EDF9]">
-                  <Flame className="h-5 w-5 text-[#C18CFF]" /> Điểm danh tích lũy
+            <section className="overflow-hidden rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)]">
+              <div className="border-b border-[var(--os-border)] p-5 bg-[var(--os-bg)]/30">
+                <h2 className="flex items-center gap-2 text-sm font-bold text-[var(--os-fg)]">
+                  <Flame className="h-5 w-5 text-[var(--os-accent)]" /> Điểm danh tích lũy
                 </h2>
               </div>
               <div className="p-5">
@@ -193,19 +193,19 @@ export default function AchievementsPage() {
             </section>
 
             {/* Quick Action Navigation */}
-            <section className="overflow-hidden rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]">
-              <div className="border-b border-[#8C87A2]/20 p-5 bg-[#0B0A13]/30">
-                <h2 className="text-sm font-bold text-[#F1EDF9]">Tiện ích mở rộng</h2>
+            <section className="overflow-hidden rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)]">
+              <div className="border-b border-[var(--os-border)] p-5 bg-[var(--os-bg)]/30">
+                <h2 className="text-sm font-bold text-[var(--os-fg)]">Tiện ích mở rộng</h2>
               </div>
               <div className="space-y-2 p-4">
-                <Link href="/student/rewards" className="flex items-center gap-3 rounded-xl border border-[#8C87A2]/30 bg-[#0B0A13] px-4 py-3 font-semibold text-[#8C87A2] hover:text-[#F1EDF9] hover:border-[#C18CFF] hover:bg-[#C18CFF]/15 transition-all">
-                  <Gift className="h-4 w-4 text-[#C18CFF]" /> Shop đổi thưởng
+                <Link href="/student/rewards" className="flex items-center gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)] px-4 py-3 font-semibold text-[var(--os-muted)] hover:text-[var(--os-fg)] hover:border-[var(--os-accent)] hover:bg-[var(--os-accent)]/15 transition-all">
+                  <Gift className="h-4 w-4 text-[var(--os-accent)]" /> Shop đổi thưởng
                 </Link>
-                <Link href="/student/profile" className="flex items-center gap-3 rounded-xl border border-[#8C87A2]/30 bg-[#0B0A13] px-4 py-3 font-semibold text-[#8C87A2] hover:text-[#F1EDF9] hover:border-[#C18CFF] hover:bg-[#C18CFF]/15 transition-all">
-                  <User className="h-4 w-4 text-[#C18CFF]" /> Hồ sơ cá nhân
+                <Link href="/student/profile" className="flex items-center gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)] px-4 py-3 font-semibold text-[var(--os-muted)] hover:text-[var(--os-fg)] hover:border-[var(--os-accent)] hover:bg-[var(--os-accent)]/15 transition-all">
+                  <User className="h-4 w-4 text-[var(--os-accent)]" /> Hồ sơ cá nhân
                 </Link>
-                <Link href="/arena" className="flex items-center gap-3 rounded-xl border border-[#8C87A2]/30 bg-[#0B0A13] px-4 py-3 font-semibold text-[#8C87A2] hover:text-[#F1EDF9] hover:border-[#C18CFF] hover:bg-[#C18CFF]/15 transition-all">
-                  <Swords className="h-4 w-4 text-[#C18CFF]" /> Vào đấu trường Arena
+                <Link href="/arena" className="flex items-center gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)] px-4 py-3 font-semibold text-[var(--os-muted)] hover:text-[var(--os-fg)] hover:border-[var(--os-accent)] hover:bg-[var(--os-accent)]/15 transition-all">
+                  <Swords className="h-4 w-4 text-[var(--os-accent)]" /> Vào đấu trường Arena
                 </Link>
               </div>
             </section>

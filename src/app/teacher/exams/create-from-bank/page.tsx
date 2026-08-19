@@ -111,7 +111,7 @@ export default function CreateExamFromBankPage() {
     }
 
     return (
-        <TeacherShell onLogout={handleLogout} className="bg-[#0B0A13] text-[#F1EDF9]">
+        <TeacherShell onLogout={handleLogout} className="bg-[var(--os-bg)] text-[var(--os-fg)]">
             {/* Header cho Mobile */}
             <header className="fixed inset-x-0 top-0 z-50 border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/75 px-4 backdrop-blur-md lg:hidden safe-top">
                 <div className="flex h-16 items-center justify-between">

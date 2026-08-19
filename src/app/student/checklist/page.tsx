@@ -601,7 +601,7 @@ export default function StudyChecklistPage() {
   if (loading) return <Loading fullPage label="Đang đồng bộ Planner..." />
 
   return (
-    <StudentShell className="bg-[#0B0A13] text-[#F1EDF9]">
+    <StudentShell className="bg-[var(--os-bg)] text-[var(--os-fg)]">
       <StudentTopbar
         name={fullName}
         userXp={studentStats.xp}

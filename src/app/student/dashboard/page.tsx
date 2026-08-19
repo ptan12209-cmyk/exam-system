@@ -163,17 +163,16 @@ export default function StudentDashboard() {
     fetchData()
   }, [user, profile, router, supabase])
 
-  // Helper for dynamic timing badges (Dream Engine flat style)
   const getExamTimeBadge = (exam: Exam) => {
     if (!exam.is_scheduled || !exam.start_time) {
-      return { label: "Tự do", className: "bg-[#8C87A2]/10 text-[#8C87A2] border-[#8C87A2]/20" }
+      return { label: "Tự do", className: "bg-[var(--os-card-elevated)] text-[var(--os-muted)] border-[var(--os-border)]" }
     }
     const now = Date.now()
     const start = new Date(exam.start_time).getTime()
     const end = exam.end_time ? new Date(exam.end_time).getTime() : Infinity
 
     if (now > end) {
-      return { label: "Quá hạn", className: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/20" }
+      return { label: "Quá hạn", className: "bg-red-500/10 text-red-500 border-red-500/20" }
     }
 
     const startDate = new Date(exam.start_time)
@@ -185,14 +184,14 @@ export default function StudentDashboard() {
     const isTomorrow = startDate.toDateString() === tomorrow.toDateString()
 
     if (isToday) {
-      return { label: "Hôm nay", className: "bg-[#C18CFF]/15 text-[#C18CFF] border-[#C18CFF]/30 animate-pulse" }
+      return { label: "Hôm nay", className: "bg-[var(--os-accent)]/15 text-[var(--os-accent)] border-[var(--os-accent)]/30 animate-pulse" }
     }
     if (isTomorrow) {
-      return { label: "Ngày mai", className: "bg-[#8C87A2]/10 text-[#F1EDF9] border-[#8C87A2]/20" }
+      return { label: "Ngày mai", className: "bg-[var(--os-card-elevated)] text-[var(--os-fg)] border-[var(--os-border)]" }
     }
     return { 
       label: startDate.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }), 
-      className: "bg-[#8C87A2]/5 text-[#8C87A2] border-[#8C87A2]/20" 
+      className: "bg-[var(--os-bg)] text-[var(--os-muted)] border-[var(--os-border)]" 
     }
   }
 
@@ -224,24 +223,16 @@ export default function StudentDashboard() {
   }, [submissions])
 
   const averageScore = useMemo(() => {
-    if (submissions.length === 0) return 0
-    const total = submissions.reduce((sum, s) => sum + s.score, 0)
-    return parseFloat((total / submissions.length).toFixed(1))
+    if (submissions.length === 0) return "--"
+    const total = submissions.reduce((acc, curr) => acc + (curr.score || 0), 0)
+    return (total / submissions.length).toFixed(1)
   }, [submissions])
 
   const bestScore = useMemo(() => {
     if (submissions.length === 0) return "--"
-    return Math.max(...submissions.map((submission) => submission.score)).toFixed(1)
+    const max = Math.max(...submissions.map(s => s.score || 0))
+    return max.toFixed(1)
   }, [submissions])
-
-  const rank = useMemo(() => {
-    const level = studentStats.level
-    if (level >= 40) return { name: "Diamond", color: "text-[#B9F2FF]", border: "border-[#B9F2FF]/60 bg-[#B9F2FF]/10" }
-    if (level >= 30) return { name: "Platinum", color: "text-[#E8E8E8]", border: "border-[#E8E8E8]/60 bg-[#E8E8E8]/10" }
-    if (level >= 20) return { name: "Gold", color: "text-[#FFD700]", border: "border-[#FFD700]/60 bg-[#FFD700]/10" }
-    if (level >= 10) return { name: "Silver", color: "text-[#C0C0C0]", border: "border-[#C0C0C0]/60 bg-[#C0C0C0]/10" }
-    return { name: "Bronze", color: "text-[#CD7F32]", border: "border-[#CD7F32]/60 bg-[#CD7F32]/10" }
-  }, [studentStats.level])
 
   const xpProgress = useMemo(() => {
     const currentLevel = studentStats.level
@@ -258,16 +249,25 @@ export default function StudentDashboard() {
     }
   }, [studentStats.level, userXp])
 
+  const rank = useMemo(() => {
+    const level = studentStats.level
+    if (level >= 30) return { name: "Thần Thoại", color: "text-red-500", border: "border-red-500/50" }
+    if (level >= 20) return { name: "Cao Thủ", color: "text-amber-500", border: "border-amber-500/50" }
+    if (level >= 10) return { name: "Tinh Anh", color: "text-purple-500", border: "border-purple-500/50" }
+    if (level >= 5) return { name: "Chiến Binh", color: "text-blue-500", border: "border-blue-500/50" }
+    return { name: "Tân Binh", color: "text-[var(--os-muted)]", border: "border-[var(--os-border)]" }
+  }, [studentStats.level])
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
-        <Loading label="Khởi động không gian học tập..." />
+      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
+        <Loading label="Đang tải dữ liệu học sinh..." />
       </div>
     )
   }
 
   return (
-    <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9]", inter.className)}>
+    <StudentShell className={cn("bg-[var(--os-bg)] text-[var(--os-fg)]", inter.className)}>
       {/* Topbar Component */}
       <StudentTopbar
         name={profile?.full_name}
@@ -289,26 +289,26 @@ export default function StudentDashboard() {
         <section className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr] lg:items-stretch">
           
           {/* Welcome Hero Card */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 lg:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden">
+          <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-2xl p-6 lg:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden">
             <div>
               <div className="flex items-center justify-between gap-4 mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#C18CFF]" />
-                  <span className={cn("text-[9px] font-bold uppercase tracking-[0.25em] text-[#8C87A2]", jetbrainsMono.className)}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--os-accent)]" />
+                  <span className={cn("text-[9px] font-bold uppercase tracking-[0.25em] text-[var(--os-muted)]", jetbrainsMono.className)}>
                     {profile?.nickname === "X" ? "Dream Engine Edition" : "ExamHub Student Panel"}
                   </span>
                 </div>
                 
                 <Link href="/student/exams">
-                  <Button variant="ghost" size="sm" className="h-8 rounded-xl border border-[#8C87A2]/20 text-[10px] font-bold hover:bg-[#0B0A13] text-[#8C87A2] hover:text-[#F1EDF9] flex items-center gap-1 shrink-0">
+                  <Button variant="ghost" size="sm" className="h-8 rounded-xl border border-[var(--os-border)] text-[10px] font-bold hover:bg-[var(--os-bg)] text-[var(--os-muted)] hover:text-[var(--os-fg)] flex items-center gap-1 shrink-0">
                     <FileText className="h-3.5 w-3.5" /> Xem đề được giao
                   </Button>
                 </Link>
               </div>
-              <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight", instrumentSerif.className)}>
+              <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[var(--os-fg)] font-normal leading-tight", instrumentSerif.className)}>
                 {profile?.nickname === "X" ? "Chào mừng trở lại, X! 👋" : `Xin chào, ${profile?.full_name || "bạn"} 👋`}
               </h1>
-              <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] italic max-w-xl">
+              <p className="mt-3 text-sm sm:text-base leading-relaxed text-[var(--os-muted)] italic max-w-xl">
                 {profile?.nickname === "X" 
                   ? '"Học nhi thời tập chi, bất diệc duyệt hồ? Học mà thường ôn tập, chẳng cũng vui lắm sao?" – Khổng Tử' 
                   : '"Hành trình vạn dặm bắt đầu từ một bước chân. Mỗi câu hỏi đúng mang bạn đến gần hơn mục tiêu."'}
@@ -318,17 +318,17 @@ export default function StudentDashboard() {
             {/* Quick Actions */}
             <div className="mt-8 flex flex-wrap gap-3">
               <a href="#available-exams">
-                <Button className="rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold px-5 py-4 transition-all duration-200 shadow-sm">
+                <Button className="rounded-xl bg-[var(--os-accent)] hover:opacity-90 text-[var(--os-accent-fg)] font-semibold px-5 py-4 transition-all duration-200 shadow-sm">
                   {profile?.nickname === "X" ? "Làm đề giao riêng" : "Luyện tập ngay"}
                 </Button>
               </a>
               <Link href="/student/timetable">
-                <Button variant="outline" className="rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent px-5 py-4 transition-all">
+                <Button variant="outline" className="rounded-xl border-[var(--os-border)] hover:border-[var(--os-accent)] text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent px-5 py-4 transition-all">
                   Xem thời khóa biểu
                 </Button>
               </Link>
               <Link href="/student/analytics">
-                <Button variant="outline" className="rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent px-5 py-4 transition-all">
+                <Button variant="outline" className="rounded-xl border-[var(--os-border)] hover:border-[var(--os-accent)] text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent px-5 py-4 transition-all">
                   Xem chi tiết tiến độ
                 </Button>
               </Link>
@@ -340,15 +340,15 @@ export default function StudentDashboard() {
             <ThptCountdown className="flex-1" />
 
             {GAMIFICATION_ENABLED && (
-              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+              <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-2xl p-6 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center gap-4">
-                  <div className={cn("relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 shadow-sm bg-[#0B0A13]", rank.border)}>
+                  <div className={cn("relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 shadow-sm bg-[var(--os-bg)]", rank.border)}>
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url ?? undefined} alt={profile.full_name ?? undefined} className="h-full w-full rounded-full object-cover" />
                     ) : (
-                      <span className="text-2xl font-bold text-[#F1EDF9]">{profile?.full_name?.[0] || (profile?.nickname === "X" ? "X" : "H")}</span>
+                      <span className="text-2xl font-bold text-[var(--os-fg)]">{profile?.full_name?.[0] || (profile?.nickname === "X" ? "X" : "H")}</span>
                     )}
-                    <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#15131F] border border-[#8C87A2]/40 text-[10px] font-bold text-[#C18CFF]">
+                    <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--os-card)] border border-[var(--os-border)] text-[10px] font-bold text-[var(--os-accent)]">
                       {studentStats.level}
                     </div>
                   </div>
@@ -356,27 +356,27 @@ export default function StudentDashboard() {
                     <span className={cn("text-xs font-bold uppercase tracking-widest", rank.color)}>
                       {rank.name} Rank
                     </span>
-                    <h3 className="text-xl font-bold text-[#F1EDF9] mt-0.5">{profile?.full_name || "Học sinh"}</h3>
-                    <p className="text-xs text-[#8C87A2] mt-0.5">
+                    <h3 className="text-xl font-bold text-[var(--os-fg)] mt-0.5">{profile?.full_name || "Học sinh"}</h3>
+                    <p className="text-xs text-[var(--os-muted)] mt-0.5">
                       Lớp: {profile?.class || "Chưa thiết lập"}
                     </p>
                   </div>
                 </div>
                 <div className="mt-6 space-y-2">
-                  <div className="flex justify-between text-xs font-mono text-[#8C87A2]">
+                  <div className="flex justify-between text-xs font-mono text-[var(--os-muted)]">
                     <span>Tiến trình cấp {studentStats.level}</span>
                     <span>
-                      <strong className="text-[#C18CFF]">{xpProgress.current}</strong> / {xpProgress.required} XP
+                      <strong className="text-[var(--os-accent)]">{xpProgress.current}</strong> / {xpProgress.required} XP
                     </span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-[#0B0A13] overflow-hidden border border-[#8C87A2]/20">
+                  <div className="h-2 w-full rounded-full bg-[var(--os-bg)] overflow-hidden border border-[var(--os-border)]">
                     <div
-                      className="h-full bg-[#C18CFF] transition-all duration-700 ease-out"
+                      className="h-full bg-[var(--os-accent)] transition-all duration-700 ease-out"
                       style={{ width: `${xpProgress.percent}%` }}
                     />
                   </div>
                 </div>
-                <div className="mt-6 border-t border-[#8C87A2]/25 pt-4">
+                <div className="mt-6 border-t border-[var(--os-border)] pt-4">
                   <DailyCheckIn onComplete={({ xp }) => setUserXp((prev) => prev + xp)} />
                 </div>
               </div>
@@ -387,60 +387,60 @@ export default function StudentDashboard() {
         {/* Row 2: KPI Metrics Cards */}
         <section className="mt-6 grid gap-4 grid-cols-2 lg:grid-cols-4">
           {/* Card 1: Exams Completed */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+          <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-xl p-5 hover:border-[var(--os-accent)]/50 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">📝 Đề đã làm</span>
-              <FileText className="h-4 w-4 text-[#8C87A2]" />
+              <span className="text-[10px] font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">📝 Đề đã làm</span>
+              <FileText className="h-4 w-4 text-[var(--os-muted)]" />
             </div>
-            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">{submissions.length}</p>
-            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium font-mono">Tuần này: +{submissionsThisWeek}</p>
+            <p className="text-3xl font-bold tracking-tight text-[var(--os-fg)] mt-3">{submissions.length}</p>
+            <p className="text-xs text-[var(--os-muted)] mt-1.5 font-medium font-mono">Tuần này: +{submissionsThisWeek}</p>
           </div>
 
           {/* Card 2: Average Score */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+          <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-xl p-5 hover:border-[var(--os-accent)]/50 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">⭐ Điểm TB</span>
-              <Trophy className="h-4 w-4 text-[#C18CFF]" />
+              <span className="text-[10px] font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">⭐ Điểm TB</span>
+              <Trophy className="h-4 w-4 text-[var(--os-accent)]" />
             </div>
-            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">{averageScore} <span className="text-lg font-normal text-[#8C87A2]">/10</span></p>
-            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium font-mono">Kỷ lục điểm: {bestScore}</p>
+            <p className="text-3xl font-bold tracking-tight text-[var(--os-fg)] mt-3">{averageScore} <span className="text-lg font-normal text-[var(--os-muted)]">/10</span></p>
+            <p className="text-xs text-[var(--os-muted)] mt-1.5 font-medium font-mono">Kỷ lục điểm: {bestScore}</p>
           </div>
 
           {/* Card 3: Class Rank */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+          <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-xl p-5 hover:border-[var(--os-accent)]/50 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">🏆 Hạng lớp</span>
-              <Award className="h-4 w-4 text-[#C18CFF]" />
+              <span className="text-[10px] font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">🏆 Hạng lớp</span>
+              <Award className="h-4 w-4 text-[var(--os-accent)]" />
             </div>
-            <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">
+            <p className="text-3xl font-bold tracking-tight text-[var(--os-fg)] mt-3">
               {classRank !== null ? `#${classRank}` : "--"}{" "}
-              <span className="text-lg font-normal text-[#8C87A2]">/{classSize ?? "--"}</span>
+              <span className="text-lg font-normal text-[var(--os-muted)]">/{classSize ?? "--"}</span>
             </p>
-            <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">
+            <p className="text-xs text-[var(--os-muted)] mt-1.5 font-medium">
               {classRank !== null && classSize ? `Top ${Math.round((classRank / classSize) * 100)}% của lớp` : "Đang tính..."}
             </p>
           </div>
 
           {/* Card 4: Streak (gamification) or pending assignments */}
           {GAMIFICATION_ENABLED ? (
-            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+            <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-xl p-5 hover:border-[var(--os-accent)]/50 transition-colors">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Streak</span>
-                <Sparkles className="h-4 w-4 text-[#C18CFF]" />
+                <span className="text-[10px] font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">Streak</span>
+                <Sparkles className="h-4 w-4 text-[var(--os-accent)]" />
               </div>
-              <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">
-                {studentStats.streak_days} <span className="text-lg font-normal text-[#8C87A2]">ngày</span>
+              <p className="text-3xl font-bold tracking-tight text-[var(--os-fg)] mt-3">
+                {studentStats.streak_days} <span className="text-lg font-normal text-[var(--os-muted)]">ngày</span>
               </p>
-              <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Kỷ lục: {maxStreak} ngày</p>
+              <p className="text-xs text-[var(--os-muted)] mt-1.5 font-medium">Kỷ lục: {maxStreak} ngày</p>
             </div>
           ) : (
-            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+            <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-xl p-5 hover:border-[var(--os-accent)]/50 transition-colors">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Đề chưa làm</span>
-                <FileText className="h-4 w-4 text-[#C18CFF]" />
+                <span className="text-[10px] font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">Đề chưa làm</span>
+                <FileText className="h-4 w-4 text-[var(--os-accent)]" />
               </div>
-              <p className="text-3xl font-bold tracking-tight text-[#F1EDF9] mt-3">{unsubmittedExams.length}</p>
-              <p className="text-xs text-[#8C87A2] mt-1.5 font-medium">Bài tập đang chờ hoàn thành</p>
+              <p className="text-3xl font-bold tracking-tight text-[var(--os-fg)] mt-3">{unsubmittedExams.length}</p>
+              <p className="text-xs text-[var(--os-muted)] mt-1.5 font-medium">Bài tập đang chờ hoàn thành</p>
             </div>
           )}
         </section>
@@ -452,38 +452,38 @@ export default function StudentDashboard() {
           <div className="space-y-8">
             
             {/* Assigned Exams Timeline */}
-            <div id="available-exams" className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl overflow-hidden shadow-sm">
-              <div className="flex flex-col gap-4 border-b border-[#8C87A2]/20 p-6 lg:flex-row lg:items-center lg:justify-between">
+            <div id="available-exams" className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-2xl overflow-hidden shadow-sm">
+              <div className="flex flex-col gap-4 border-b border-[var(--os-border)] p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <h2 className={cn("text-3xl text-[#F1EDF9] font-normal", instrumentSerif.className)}>
+                  <h2 className={cn("text-3xl text-[var(--os-fg)] font-normal", instrumentSerif.className)}>
                     {profile?.nickname === "X" ? "Nhiệm vụ đề thi của X" : "Đề thi có sẵn"}
                   </h2>
-                  <p className="text-xs text-[#8C87A2] mt-1">
+                  <p className="text-xs text-[var(--os-muted)] mt-1">
                     {profile?.nickname === "X" ? "Các đề thi độc quyền được giáo viên giao trực tiếp" : "Chọn đề thi và bắt đầu luyện tập"}
                   </p>
                 </div>
                 
                 {/* Search Bar */}
-                <div className="flex items-center gap-2 rounded-xl border border-[#8C87A2]/30 bg-[#0B0A13] px-3 py-1.5 w-full max-w-xs">
-                  <Search className="h-4 w-4 text-[#8C87A2]" />
+                <div className="flex items-center gap-2 rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)] px-3 py-1.5 w-full max-w-xs">
+                  <Search className="h-4 w-4 text-[var(--os-muted)]" />
                   <input
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={profile?.nickname === "X" ? "Tìm đề thi..." : "Tìm kiếm đề thi..."}
-                    className="bg-transparent text-xs w-full outline-none text-[#F1EDF9] placeholder-[#8C87A2]"
+                    className="bg-transparent text-xs w-full outline-none text-[var(--os-fg)] placeholder-[var(--os-muted)]"
                   />
                 </div>
               </div>
 
               {/* Subject Filters */}
-              <div className="flex gap-1.5 overflow-x-auto border-b border-[#8C87A2]/20 p-4">
+              <div className="flex gap-1.5 overflow-x-auto border-b border-[var(--os-border)] p-4">
                 <button
                   onClick={() => setSelectedSubject("all")}
                   className={cn(
                     "rounded-lg px-3.5 py-1.5 text-[10px] font-bold tracking-wider uppercase transition-all whitespace-nowrap border",
                     selectedSubject === "all"
-                      ? "bg-[#C18CFF] text-[#0B0A13] border-transparent shadow-sm"
-                      : "border-[#8C87A2]/40 text-[#8C87A2] hover:border-[#C18CFF]"
+                      ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)] border-transparent shadow-sm"
+                      : "border-[var(--os-border)] text-[var(--os-muted)] hover:border-[var(--os-accent)]"
                   )}
                 >
                   Tất cả
@@ -495,8 +495,8 @@ export default function StudentDashboard() {
                     className={cn(
                       "rounded-lg px-3.5 py-1.5 text-[10px] font-bold tracking-wider uppercase transition-all whitespace-nowrap border",
                       selectedSubject === subject.value
-                        ? "bg-[#C18CFF] text-[#0B0A13] border-transparent shadow-sm"
-                        : "border-[#8C87A2]/40 text-[#8C87A2] hover:border-[#C18CFF]"
+                        ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)] border-transparent shadow-sm"
+                        : "border-[var(--os-border)] text-[var(--os-muted)] hover:border-[var(--os-accent)]"
                     )}
                   >
                     {subject.label}
@@ -507,28 +507,28 @@ export default function StudentDashboard() {
               {/* Exams Listing */}
               {filteredExams.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-                  <FileText className="mb-4 h-12 w-12 text-[#8C87A2]/20" />
-                  <h3 className="text-base font-semibold text-[#F1EDF9]">Không tìm thấy đề thi phù hợp</h3>
-                  <p className="mt-1 text-xs text-[#8C87A2] max-w-xs">Hãy đổi bộ lọc môn học hoặc từ khóa tìm kiếm.</p>
+                  <FileText className="mb-4 h-12 w-12 text-[var(--os-muted)]/20" />
+                  <h3 className="text-base font-semibold text-[var(--os-fg)]">Không tìm thấy đề thi phù hợp</h3>
+                  <p className="mt-1 text-xs text-[var(--os-muted)] max-w-xs">Hãy đổi bộ lọc môn học hoặc từ khóa tìm kiếm.</p>
                 </div>
               ) : (
-                <div className="divide-y divide-[#8C87A2]/10 bg-[#15131F]">
+                <div className="divide-y divide-[var(--os-border)] bg-[var(--os-card)]">
                   {filteredExams.map((exam) => {
                     const subjectInfo = getSubjectInfo(exam.subject || "other")
                     const submitted = hasSubmitted(exam.id)
                     const submission = getSubmission(exam.id)
 
                     return (
-                      <div key={exam.id} className="flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between hover:bg-[#0B0A13]/40 transition-colors">
+                      <div key={exam.id} className="flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between hover:bg-[var(--os-bg)]/40 transition-colors">
                         <div className="flex items-start gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13]">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)]">
                             <span className="text-xl">{subjectInfo.icon}</span>
                           </div>
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="text-sm sm:text-base font-bold text-[#F1EDF9]">{exam.title}</h3>
+                              <h3 className="text-sm sm:text-base font-bold text-[var(--os-fg)]">{exam.title}</h3>
                               {submitted && submission && (
-                                <span className={cn("rounded-lg border border-[#C18CFF]/40 bg-[#C18CFF]/10 px-2 py-0.5 text-[9px] font-bold tracking-wider text-[#C18CFF]", jetbrainsMono.className)}>
+                                <span className={cn("rounded-lg border border-[var(--os-accent)]/40 bg-[var(--os-accent)]/10 px-2 py-0.5 text-[9px] font-bold tracking-wider text-[var(--os-accent)]", jetbrainsMono.className)}>
                                   {submission.score.toFixed(1)} ĐIỂM
                                 </span>
                               )}
@@ -538,7 +538,7 @@ export default function StudentDashboard() {
                                 </span>
                               )}
                             </div>
-                            <div className={cn("mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-[#8C87A2]", jetbrainsMono.className)}>
+                            <div className={cn("mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-[var(--os-muted)]", jetbrainsMono.className)}>
                               <span className="flex items-center gap-1.5">
                                 <BookOpen className="h-3 w-3" />
                                 {subjectInfo.label}
@@ -560,19 +560,19 @@ export default function StudentDashboard() {
                           {submitted ? (
                             <>
                               <Link href={`/student/exams/${exam.id}/result`}>
-                                <Button variant="outline" size="sm" className="rounded-lg border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent text-xs transition-colors">
+                                <Button variant="outline" size="sm" className="rounded-lg border-[var(--os-border)] hover:border-[var(--os-accent)] text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent text-xs transition-colors">
                                   Xem kết quả
                                 </Button>
                               </Link>
                               <Link href={`/student/exams/${exam.id}/take`}>
-                                <Button size="sm" className="rounded-lg bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold text-xs transition-colors">
+                                <Button size="sm" className="rounded-lg bg-[var(--os-accent)] hover:opacity-90 text-[var(--os-accent-fg)] font-semibold text-xs transition-colors">
                                   Làm lại
                                 </Button>
                               </Link>
                             </>
                           ) : (
                             <Link href={`/student/exams/${exam.id}/take`}>
-                              <Button size="sm" className="rounded-lg bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold text-xs px-4 transition-colors">
+                              <Button size="sm" className="rounded-lg bg-[var(--os-accent)] hover:opacity-90 text-[var(--os-accent-fg)] font-semibold text-xs px-4 transition-colors">
                                 Làm bài
                               </Button>
                             </Link>
@@ -591,14 +591,14 @@ export default function StudentDashboard() {
           <div className="space-y-6">
             
             {GAMIFICATION_ENABLED && (
-              <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
+              <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-2xl p-6 shadow-sm">
                 <ChallengesWidget limit={3} />
               </div>
             )}
 
             {/* Quick Navigation Tools */}
-            <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
-              <h3 className={cn("text-2xl text-[#F1EDF9] font-normal mb-4", instrumentSerif.className)}>Công cụ làm bài</h3>
+            <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-2xl p-6 shadow-sm">
+              <h3 className={cn("text-2xl text-[var(--os-fg)] font-normal mb-4", instrumentSerif.className)}>Công cụ làm bài</h3>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { href: "/student/exams", label: "Đề thi được giao", icon: FileText },
@@ -612,9 +612,9 @@ export default function StudentDashboard() {
                   { href: "/student/checklist", label: "Checklist / Nhiệm vụ", icon: ListTodo },
                 ].map((item) => {
                   const itemContent = (
-                    <div className="flex flex-col justify-between p-3.5 h-20 bg-[#0B0A13] hover:bg-[#0B0A13]/80 border border-[#8C87A2]/20 hover:border-[#C18CFF]/50 rounded-xl transition-all duration-200 group">
-                      <item.icon className="h-4.5 w-4.5 text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors" />
-                      <span className="text-xs font-semibold text-[#F1EDF9]">{item.label}</span>
+                    <div className="flex flex-col justify-between p-3.5 h-20 bg-[var(--os-bg)] hover:bg-[var(--os-bg)]/80 border border-[var(--os-border)] hover:border-[var(--os-accent)]/50 rounded-xl transition-all duration-200 group">
+                      <item.icon className="h-4.5 w-4.5 text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors" />
+                      <span className="text-xs font-semibold text-[var(--os-fg)]">{item.label}</span>
                     </div>
                   )
                   return item.isExternal ? (

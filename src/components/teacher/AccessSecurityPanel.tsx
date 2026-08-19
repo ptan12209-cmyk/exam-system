@@ -83,10 +83,10 @@ export function AccessSecurityPanel() {
           <div className="flex items-center gap-2">
             <ShieldAlert className="h-5 w-5 text-red-400" />
             <div>
-              <h2 className="text-sm font-bold text-[#F1EDF9]">
+              <h2 className="text-sm font-bold text-[var(--os-fg)]">
                 Cảnh báo bất thường (V4c)
               </h2>
-              <p className="text-[11px] text-[#8C87A2]">
+              <p className="text-[11px] text-[var(--os-muted)]">
                 Multi-IP · volume cao · burst 10 phút — cửa sổ {hours}h
               </p>
             </div>
@@ -95,7 +95,7 @@ export function AccessSecurityPanel() {
             <select
               value={hours}
               onChange={(e) => setHours(Number(e.target.value))}
-              className="h-9 rounded-lg border border-[#8C87A2]/25 bg-[#0B0A13] px-2 text-xs text-[#F1EDF9]"
+              className="h-9 rounded-lg border border-[var(--os-muted)]/25 bg-[var(--os-bg)] px-2 text-xs text-[var(--os-fg)]"
             >
               <option value={24}>24 giờ</option>
               <option value={48}>48 giờ</option>
@@ -106,7 +106,7 @@ export function AccessSecurityPanel() {
               size="sm"
               variant="ghost"
               onClick={() => void load()}
-              className="h-9 rounded-lg border border-[#8C87A2]/25 text-[#8C87A2]"
+              className="h-9 rounded-lg border border-[var(--os-muted)]/25 text-[var(--os-muted)]"
             >
               <RefreshCw className="h-3.5 w-3.5 mr-1" /> Làm mới
             </Button>
@@ -115,7 +115,7 @@ export function AccessSecurityPanel() {
 
         {loading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-[#C18CFF]" />
+            <Loader2 className="h-6 w-6 animate-spin text-[var(--os-accent)]" />
           </div>
         ) : anomalies.length === 0 ? (
           <p className="text-xs text-emerald-400/90 py-4 text-center">
@@ -140,19 +140,19 @@ export function AccessSecurityPanel() {
                           a.severity === "high" ? "text-red-400" : "text-amber-400"
                         }`}
                       />
-                      <span className="text-[10px] font-mono uppercase text-[#8C87A2]">
+                      <span className="text-[10px] font-mono uppercase text-[var(--os-muted)]">
                         {a.kind} · {a.severity}
                       </span>
                     </div>
-                    <p className="text-sm font-semibold text-[#F1EDF9] mt-1">
+                    <p className="text-sm font-semibold text-[var(--os-fg)] mt-1">
                       {a.user?.full_name || "Học viên"}{" "}
-                      <span className="text-[11px] font-normal text-[#8C87A2]">
+                      <span className="text-[11px] font-normal text-[var(--os-muted)]">
                         {a.user?.email || a.user_id.slice(0, 8)}
                       </span>
                     </p>
                     <p className="text-[11px] text-[#C8C4D8] mt-0.5">{a.message}</p>
                     {Array.isArray(a.detail.ips) && a.detail.ips.length > 0 && (
-                      <p className="text-[10px] font-mono text-[#8C87A2] mt-1 truncate">
+                      <p className="text-[10px] font-mono text-[var(--os-muted)] mt-1 truncate">
                         IP: {(a.detail.ips as string[]).join(", ")}
                       </p>
                     )}
@@ -165,14 +165,14 @@ export function AccessSecurityPanel() {
       </div>
 
       {/* Access log table */}
-      <div className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F]/10 overflow-hidden">
-        <div className="p-4 border-b border-[#8C87A2]/20 bg-[#15131F]/50 flex flex-wrap items-center justify-between gap-3">
+      <div className="rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)]/10 overflow-hidden">
+        <div className="p-4 border-b border-[var(--os-muted)]/20 bg-[var(--os-card)]/50 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-[#C18CFF]" />
-            <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2] font-mono">
+            <Activity className="h-4 w-4 text-[var(--os-accent)]" />
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--os-muted)] font-mono">
               Access logs (V4a)
             </span>
-            <span className="text-[10px] bg-[#0B0A13] px-2 py-0.5 rounded border border-[#8C87A2]/20 text-[#8C87A2] font-mono">
+            <span className="text-[10px] bg-[var(--os-bg)] px-2 py-0.5 rounded border border-[var(--os-muted)]/20 text-[var(--os-muted)] font-mono">
               {total} bản ghi
             </span>
           </div>
@@ -181,7 +181,7 @@ export function AccessSecurityPanel() {
             onChange={(e) =>
               setActionFilter(e.target.value as "" | "playback" | "document")
             }
-            className="h-8 rounded-lg border border-[#8C87A2]/25 bg-[#0B0A13] px-2 text-xs text-[#F1EDF9]"
+            className="h-8 rounded-lg border border-[var(--os-muted)]/25 bg-[var(--os-bg)] px-2 text-xs text-[var(--os-fg)]"
           >
             <option value="">Tất cả action</option>
             <option value="playback">playback</option>
@@ -197,18 +197,18 @@ export function AccessSecurityPanel() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-[#C18CFF]" />
-            <p className="mt-2 text-xs text-[#8C87A2]">Đang tải logs…</p>
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--os-accent)]" />
+            <p className="mt-2 text-xs text-[var(--os-muted)]">Đang tải logs…</p>
           </div>
         ) : logs.length === 0 ? (
-          <div className="text-center py-16 text-sm text-[#8C87A2] italic">
+          <div className="text-center py-16 text-sm text-[var(--os-muted)] italic">
             Chưa có lượt truy cập được ghi nhận.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-[#8C87A2]/10 bg-[#0B0A13]/30 text-[#8C87A2] uppercase font-mono tracking-wider">
+                <tr className="border-b border-[var(--os-muted)]/10 bg-[var(--os-bg)]/30 text-[var(--os-muted)] uppercase font-mono tracking-wider">
                   <th className="p-3 font-bold">Thời gian</th>
                   <th className="p-3 font-bold">Học viên</th>
                   <th className="p-3 font-bold">Bài học</th>
@@ -216,7 +216,7 @@ export function AccessSecurityPanel() {
                   <th className="p-3 font-bold">IP</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#8C87A2]/10">
+              <tbody className="divide-y divide-[var(--os-muted)]/10">
                 {logs.map((row) => {
                   const name =
                     row.profiles?.full_name ||
@@ -224,22 +224,22 @@ export function AccessSecurityPanel() {
                     (row.user_id ? row.user_id.slice(0, 8) : "—")
                   const lesson = row.online_lessons?.title || "—"
                   return (
-                    <tr key={row.id} className="hover:bg-[#15131F]/40">
-                      <td className="p-3 font-mono text-[#8C87A2] whitespace-nowrap">
+                    <tr key={row.id} className="hover:bg-[var(--os-card)]/40">
+                      <td className="p-3 font-mono text-[var(--os-muted)] whitespace-nowrap">
                         {new Date(row.created_at).toLocaleString("vi-VN", {
                           dateStyle: "short",
                           timeStyle: "medium",
                         })}
                       </td>
                       <td className="p-3">
-                        <p className="font-semibold text-[#F1EDF9]">{name}</p>
+                        <p className="font-semibold text-[var(--os-fg)]">{name}</p>
                         {row.profiles?.email && (
-                          <p className="text-[10px] text-[#8C87A2]">
+                          <p className="text-[10px] text-[var(--os-muted)]">
                             {row.profiles.email}
                           </p>
                         )}
                       </td>
-                      <td className="p-3 text-[#F1EDF9] max-w-[200px] truncate">
+                      <td className="p-3 text-[var(--os-fg)] max-w-[200px] truncate">
                         {lesson}
                       </td>
                       <td className="p-3">
@@ -247,7 +247,7 @@ export function AccessSecurityPanel() {
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border font-mono text-[10px] ${
                             row.action === "document"
                               ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
-                              : "border-[#C18CFF]/30 text-[#C18CFF] bg-[#C18CFF]/10"
+                              : "border-[var(--os-accent)]/30 text-[var(--os-accent)] bg-[var(--os-accent)]/10"
                           }`}
                         >
                           {row.action === "document" ? (
@@ -258,7 +258,7 @@ export function AccessSecurityPanel() {
                           {row.action}
                         </span>
                       </td>
-                      <td className="p-3 font-mono text-[#8C87A2]">
+                      <td className="p-3 font-mono text-[var(--os-muted)]">
                         {row.ip || "—"}
                       </td>
                     </tr>
@@ -270,7 +270,7 @@ export function AccessSecurityPanel() {
         )}
       </div>
 
-      <p className="text-[10px] text-[#8C87A2] leading-relaxed">
+      <p className="text-[10px] text-[var(--os-muted)] leading-relaxed">
         V4b: tài liệu trên Supabase Storage được cấp signed URL TTL ngắn khi playback/mở.
         Link ngoài (Drive, Bunny file…) vẫn mở qua proxy có audit — nên chuyển PDF quan trọng
         sang bucket private Supabase để ký URL.

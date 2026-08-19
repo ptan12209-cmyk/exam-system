@@ -240,8 +240,8 @@ export default function TeacherDashboard() {
     return [
       { name: "Xuất sắc (≥9)", value: xuatSac, color: "#10B981" },
       { name: "Giỏi (7-8.9)", value: gioi, color: "#3B82F6" },
-      { name: "Khá (5-6.9)", value: kha, color: "#C18CFF" },
-      { name: "Trung bình (3-4.9)", value: trungBinh, color: "#8C87A2" },
+      { name: "Khá (5-6.9)", value: kha, color: "var(--os-accent)" },
+      { name: "Trung bình (3-4.9)", value: trungBinh, color: "var(--os-muted)" },
       { name: "Yếu (<3)", value: yeu, color: "#EF4444" }
     ].filter(item => item.value > 0)
   }, [submissions])
@@ -279,20 +279,20 @@ export default function TeacherDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
         <Loading label="Khởi động bảng điều khiển Giáo viên..." />
       </div>
     )
   }
 
   return (
-    <TeacherShell onLogout={handleLogout} className={cn("bg-[#0B0A13] text-[#F1EDF9]", inter.className)}>
+    <TeacherShell onLogout={handleLogout} className={cn("bg-[var(--os-bg)] text-[var(--os-fg)]", inter.className)}>
       {/* Mobile Top Header */}
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-[#8C87A2]/20 bg-[#0B0A13]/90 px-4 backdrop-blur-md lg:hidden safe-top">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--os-muted)]/20 bg-[var(--os-bg)]/90 px-4 backdrop-blur-md lg:hidden safe-top">
         <div className="flex h-16 items-center justify-between">
           <Link href="/teacher/dashboard" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#8C87A2]/20">
-              <BarChart3 className="h-4 w-4 text-[#C18CFF]" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--os-muted)]/20">
+              <BarChart3 className="h-4 w-4 text-[var(--os-accent)]" />
             </div>
             <span className="text-lg font-bold tracking-tighter">ExamHub</span>
           </Link>
@@ -308,12 +308,12 @@ export default function TeacherDashboard() {
         {/* Title Header Section */}
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
           <div>
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/20 bg-[#15131F] px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#8C87A2]">
-              <BarChart3 className="h-3.5 w-3.5 text-[#C18CFF]" /> Teacher Overview
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--os-muted)]/20 bg-[var(--os-card)] px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--os-muted)]">
+              <BarChart3 className="h-3.5 w-3.5 text-[var(--os-accent)]" /> Teacher Overview
             </p>
-            <h1 className={cn("text-4xl md:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight", instrumentSerif.className)}>
+            <h1 className={cn("text-4xl md:text-5xl lg:text-6xl text-[var(--os-fg)] font-normal leading-tight", instrumentSerif.className)}>
               Xin chào, {profile?.full_name || "Thầy/Cô"}
-              <span className="mt-2 block max-w-2xl font-serif-italic text-2xl md:text-3xl text-[#8C87A2]">
+              <span className="mt-2 block max-w-2xl font-serif-italic text-2xl md:text-3xl text-[var(--os-muted)]">
                 không gian giám sát & phân tích học tập tinh gọn.
               </span>
             </h1>
@@ -322,7 +322,7 @@ export default function TeacherDashboard() {
           {/* Quick Actions Shortcuts */}
           <div className="flex items-center gap-3 justify-end">
             <Link href="/teacher/exams/create">
-              <Button className="rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] px-5 py-5 text-xs font-bold shadow-md">
+              <Button className="rounded-xl bg-[var(--os-accent)] hover:bg-[var(--os-accent)]/90 text-[var(--os-accent-fg)] px-5 py-5 text-xs font-bold shadow-md">
                 <Plus className="mr-2 h-4 w-4 shrink-0" strokeWidth={2.5} /> Soạn đề thi mới
               </Button>
             </Link>
@@ -333,12 +333,12 @@ export default function TeacherDashboard() {
         <section className="mt-8 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           
           {/* KPI 1 */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-5 hover:border-[var(--os-accent)]/30 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2]">📝 Đề thi đã tạo</span>
-              <FileText className="h-4 w-4 text-[#C18CFF]" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--os-muted)]">📝 Đề thi đã tạo</span>
+              <FileText className="h-4 w-4 text-[var(--os-accent)]" />
             </div>
-            <div className={cn("mt-4 text-3xl font-bold font-mono text-[#F1EDF9]", jetbrainsMono.className)}>
+            <div className={cn("mt-4 text-3xl font-bold font-mono text-[var(--os-fg)]", jetbrainsMono.className)}>
               {exams.length}
             </div>
             <p className="mt-1 text-[10px] text-emerald-400 font-mono">
@@ -347,12 +347,12 @@ export default function TeacherDashboard() {
           </div>
 
           {/* KPI 2 */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-5 hover:border-[var(--os-accent)]/30 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2]">📬 Bài nộp chưa xem</span>
-              <Clock className="h-4 w-4 text-[#C18CFF]" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--os-muted)]">📬 Bài nộp chưa xem</span>
+              <Clock className="h-4 w-4 text-[var(--os-accent)]" />
             </div>
-            <div className={cn("mt-4 text-3xl font-bold font-mono text-[#F1EDF9]", jetbrainsMono.className)}>
+            <div className={cn("mt-4 text-3xl font-bold font-mono text-[var(--os-fg)]", jetbrainsMono.className)}>
               {newSubmissionsCount}
             </div>
             <p className="mt-1 text-[10px] text-amber-400 font-mono">
@@ -361,26 +361,26 @@ export default function TeacherDashboard() {
           </div>
 
           {/* KPI 3 */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-5 hover:border-[var(--os-accent)]/30 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2]">👥 Học sinh hoạt động</span>
-              <Users className="h-4 w-4 text-[#C18CFF]" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--os-muted)]">👥 Học sinh hoạt động</span>
+              <Users className="h-4 w-4 text-[var(--os-accent)]" />
             </div>
-            <div className={cn("mt-4 text-3xl font-bold font-mono text-[#F1EDF9]", jetbrainsMono.className)}>
+            <div className={cn("mt-4 text-3xl font-bold font-mono text-[var(--os-fg)]", jetbrainsMono.className)}>
               {activeStudentsThisWeek}
             </div>
-            <p className="mt-1 text-[10px] text-[#C18CFF] font-mono">
+            <p className="mt-1 text-[10px] text-[var(--os-accent)] font-mono">
               {activeStudentsPercent}% tương tác tích cực
             </p>
           </div>
 
           {/* KPI 4 */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-5 hover:border-[#C18CFF]/30 transition-colors">
+          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-5 hover:border-[var(--os-accent)]/30 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#8C87A2]">⚔️ Đấu trường</span>
-              <Swords className="h-4 w-4 text-[#C18CFF]" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--os-muted)]">⚔️ Đấu trường</span>
+              <Swords className="h-4 w-4 text-[var(--os-accent)]" />
             </div>
-            <div className={cn("mt-4 text-3xl font-bold font-mono text-[#F1EDF9]", jetbrainsMono.className)}>
+            <div className={cn("mt-4 text-3xl font-bold font-mono text-[var(--os-fg)]", jetbrainsMono.className)}>
               {arenas.length}
             </div>
             <p className="mt-1 text-[10px] text-amber-400 font-mono">
@@ -393,27 +393,27 @@ export default function TeacherDashboard() {
         <section className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           
           {/* Left Chart: Activity 7 Days */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-6">
-            <h3 className="text-sm font-bold text-[#F1EDF9] mb-4 flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-[#C18CFF]" /> Hoạt động làm bài (7 ngày qua)
+          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-6">
+            <h3 className="text-sm font-bold text-[var(--os-fg)] mb-4 flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-[var(--os-accent)]" /> Hoạt động làm bài (7 ngày qua)
             </h3>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={dailyActivityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#8C87A2" opacity={0.08} />
-                  <XAxis dataKey="name" stroke="#8C87A2" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#8C87A2" fontSize={10} tickLine={false} axisLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--os-muted)" opacity={0.08} />
+                  <XAxis dataKey="name" stroke="var(--os-muted)" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--os-muted)" fontSize={10} tickLine={false} axisLine={false} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#15131F",
+                      backgroundColor: "var(--os-card)",
                       borderColor: "rgba(140, 135, 162, 0.2)",
                       borderRadius: "12px",
                     }}
-                    labelStyle={{ color: "#F1EDF9", fontWeight: "bold", fontSize: "11px" }}
-                    itemStyle={{ color: "#F1EDF9", fontSize: "11px" }}
+                    labelStyle={{ color: "var(--os-fg)", fontWeight: "bold", fontSize: "11px" }}
+                    itemStyle={{ color: "var(--os-fg)", fontSize: "11px" }}
                   />
                   <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
-                  <Line name="Lượt nộp bài" type="monotone" dataKey="Lượt nộp" stroke="#C18CFF" strokeWidth={2.5} activeDot={{ r: 5 }} />
+                  <Line name="Lượt nộp bài" type="monotone" dataKey="Lượt nộp" stroke="var(--os-accent)" strokeWidth={2.5} activeDot={{ r: 5 }} />
                   <Line name="Học sinh tương tác" type="monotone" dataKey="Học sinh" stroke="#F59E0B" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
@@ -421,10 +421,10 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Right Chart: Score Distribution Pie */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-6 relative flex flex-col justify-between">
+          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-6 relative flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-[#F1EDF9] mb-4 flex items-center gap-2">
-                <Award className="h-4 w-4 text-[#C18CFF]" /> Phân phối điểm số bài nộp
+              <h3 className="text-sm font-bold text-[var(--os-fg)] mb-4 flex items-center gap-2">
+                <Award className="h-4 w-4 text-[var(--os-accent)]" /> Phân phối điểm số bài nộp
               </h3>
             </div>
             
@@ -450,8 +450,8 @@ export default function TeacherDashboard() {
                   </ResponsiveContainer>
                   {/* Center Donut Overlay */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-[10px] text-[#8C87A2] uppercase tracking-wider font-mono">Điểm TB</span>
-                    <span className="text-2xl font-bold font-mono text-[#F1EDF9]">{averageScore}</span>
+                    <span className="text-[10px] text-[var(--os-muted)] uppercase tracking-wider font-mono">Điểm TB</span>
+                    <span className="text-2xl font-bold font-mono text-[var(--os-fg)]">{averageScore}</span>
                   </div>
                 </div>
 
@@ -461,15 +461,15 @@ export default function TeacherDashboard() {
                     <div key={index} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                        <span className="text-[#8C87A2]">{item.name}</span>
+                        <span className="text-[var(--os-muted)]">{item.name}</span>
                       </div>
-                      <span className="font-bold font-mono text-[#F1EDF9]">{item.value} bài</span>
+                      <span className="font-bold font-mono text-[var(--os-fg)]">{item.value} bài</span>
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="text-center py-16 text-xs text-[#8C87A2] italic my-auto">
+              <div className="text-center py-16 text-xs text-[var(--os-muted)] italic my-auto">
                 Chưa có dữ liệu bài nộp nào để hiển thị biểu đồ phân bố điểm.
               </div>
             )}
@@ -480,12 +480,12 @@ export default function TeacherDashboard() {
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
           
           {/* Column 1: Recent Exams */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-6">
-            <div className="flex items-center justify-between border-b border-[#8C87A2]/10 pb-4 mb-4">
-              <h3 className="text-sm font-bold text-[#F1EDF9] flex items-center gap-2">
-                <FileText className="h-4.5 w-4.5 text-[#C18CFF]" /> Đề thi soạn gần đây
+          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-6">
+            <div className="flex items-center justify-between border-b border-[var(--os-muted)]/10 pb-4 mb-4">
+              <h3 className="text-sm font-bold text-[var(--os-fg)] flex items-center gap-2">
+                <FileText className="h-4.5 w-4.5 text-[var(--os-accent)]" /> Đề thi soạn gần đây
               </h3>
-              <Link href="/teacher/exams" className="text-xs text-[#C18CFF] hover:underline flex items-center gap-1">
+              <Link href="/teacher/exams" className="text-xs text-[var(--os-accent)] hover:underline flex items-center gap-1">
                 Xem tất cả <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
@@ -495,14 +495,14 @@ export default function TeacherDashboard() {
                 {recentExams.map((exam) => {
                   const subjectInfo = getSubjectInfo(exam.subject || "other")
                   return (
-                    <div key={exam.id} className="flex items-center justify-between p-3 rounded-xl bg-[#0B0A13] border border-[#8C87A2]/15">
+                    <div key={exam.id} className="flex items-center justify-between p-3 rounded-xl bg-[var(--os-bg)] border border-[var(--os-muted)]/15">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#8C87A2]/20 bg-[#15131F] text-lg">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--os-muted)]/20 bg-[var(--os-card)] text-lg">
                           {subjectInfo.icon}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-[#F1EDF9] truncate max-w-[160px]">{exam.title}</span>
+                            <span className="text-xs font-bold text-[var(--os-fg)] truncate max-w-[160px]">{exam.title}</span>
                             <span className={cn(
                               "text-[8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
                               exam.status === "published" 
@@ -512,7 +512,7 @@ export default function TeacherDashboard() {
                               {exam.status === "published" ? "Phát hành" : "Nháp"}
                             </span>
                           </div>
-                          <div className="mt-1 text-[10px] text-[#8C87A2] flex items-center gap-2">
+                          <div className="mt-1 text-[10px] text-[var(--os-muted)] flex items-center gap-2">
                             <span>{exam.duration} phút</span>
                             <span>•</span>
                             <span>{exam.total_questions} câu</span>
@@ -521,7 +521,7 @@ export default function TeacherDashboard() {
                       </div>
                       
                       <Link href={`/teacher/exams/${exam.id}/scores`}>
-                        <Button size="sm" variant="outline" className="h-7 rounded-lg border-[#8C87A2]/30 text-[10px] font-bold bg-transparent text-[#8C87A2] hover:text-[#C18CFF] hover:border-[#C18CFF]">
+                        <Button size="sm" variant="outline" className="h-7 rounded-lg border-[var(--os-muted)]/30 text-[10px] font-bold bg-transparent text-[var(--os-muted)] hover:text-[var(--os-accent)] hover:border-[var(--os-accent)]">
                           Xem
                         </Button>
                       </Link>
@@ -530,19 +530,19 @@ export default function TeacherDashboard() {
                 })}
               </div>
             ) : (
-              <div className="text-center py-12 text-xs text-[#8C87A2] italic">
+              <div className="text-center py-12 text-xs text-[var(--os-muted)] italic">
                 Thầy/Cô chưa tạo đề thi nào.
               </div>
             )}
           </div>
 
           {/* Column 2: Recent Submissions */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-6">
-            <div className="flex items-center justify-between border-b border-[#8C87A2]/10 pb-4 mb-4">
-              <h3 className="text-sm font-bold text-[#F1EDF9] flex items-center gap-2">
-                <Users className="h-4.5 w-4.5 text-[#C18CFF]" /> Lượt nộp bài mới nhất
+          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-6">
+            <div className="flex items-center justify-between border-b border-[var(--os-muted)]/10 pb-4 mb-4">
+              <h3 className="text-sm font-bold text-[var(--os-fg)] flex items-center gap-2">
+                <Users className="h-4.5 w-4.5 text-[var(--os-accent)]" /> Lượt nộp bài mới nhất
               </h3>
-              <Link href="/teacher/analytics" className="text-xs text-[#C18CFF] hover:underline flex items-center gap-1">
+              <Link href="/teacher/analytics" className="text-xs text-[var(--os-accent)] hover:underline flex items-center gap-1">
                 Xem tất cả <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
@@ -553,35 +553,35 @@ export default function TeacherDashboard() {
                   const hasAvatar = !!sub.student?.avatar_url
                   const initials = sub.student?.full_name?.charAt(0).toUpperCase() || "?"
                   return (
-                    <div key={sub.id} className="flex items-center justify-between p-3 rounded-xl bg-[#0B0A13] border border-[#8C87A2]/15">
+                    <div key={sub.id} className="flex items-center justify-between p-3 rounded-xl bg-[var(--os-bg)] border border-[var(--os-muted)]/15">
                       <div className="flex items-center gap-3 min-w-0">
                         {hasAvatar ? (
-                          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-[#8C87A2]/20">
+                          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-[var(--os-muted)]/20">
                             <img src={sub.student.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
                           </div>
                         ) : (
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#8C87A2]/20 bg-[#15131F] text-xs font-bold text-[#C18CFF]">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--os-muted)]/20 bg-[var(--os-card)] text-xs font-bold text-[var(--os-accent)]">
                             {initials}
                           </div>
                         )}
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-[#F1EDF9] truncate max-w-[120px]">{sub.student?.full_name || "Ẩn danh"}</span>
+                            <span className="text-xs font-bold text-[var(--os-fg)] truncate max-w-[120px]">{sub.student?.full_name || "Ẩn danh"}</span>
                             {sub.student?.class && (
-                              <span className="text-[9px] font-mono bg-[#8C87A2]/10 text-[#8C87A2] px-1.5 py-0.5 rounded">
+                              <span className="text-[9px] font-mono bg-[var(--os-muted)]/10 text-[var(--os-muted)] px-1.5 py-0.5 rounded">
                                 Lớp {sub.student.class}
                               </span>
                             )}
                           </div>
-                          <p className="mt-0.5 text-[10px] text-[#8C87A2] truncate max-w-[180px]" title={sub.exam?.title}>
+                          <p className="mt-0.5 text-[10px] text-[var(--os-muted)] truncate max-w-[180px]" title={sub.exam?.title}>
                             Đề: {sub.exam?.title || "Không rõ"}
                           </p>
                         </div>
                       </div>
 
                       <div className="text-right">
-                        <span className="text-sm font-bold font-mono text-[#C18CFF]">{sub.score.toFixed(1)}</span>
-                        <p className="text-[8px] text-[#8C87A2] mt-0.5 font-mono">
+                        <span className="text-sm font-bold font-mono text-[var(--os-accent)]">{sub.score.toFixed(1)}</span>
+                        <p className="text-[8px] text-[var(--os-muted)] mt-0.5 font-mono">
                           {formatTimeSpent(sub.submitted_at)}
                         </p>
                       </div>
@@ -590,7 +590,7 @@ export default function TeacherDashboard() {
                 })}
               </div>
             ) : (
-              <div className="text-center py-12 text-xs text-[#8C87A2] italic">
+              <div className="text-center py-12 text-xs text-[var(--os-muted)] italic">
                 Chưa có lượt nộp bài thi nào.
               </div>
             )}
@@ -601,12 +601,12 @@ export default function TeacherDashboard() {
         <section className={cn("mt-6 grid gap-6", ONLINE_STUDY_ENABLED && "lg:grid-cols-2")}>
           
           {/* Discord monitoring widget */}
-          {ONLINE_STUDY_ENABLED && <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-6">
-            <div className="flex items-center justify-between border-b border-[#8C87A2]/10 pb-4 mb-4">
-              <h3 className="text-sm font-bold text-[#F1EDF9] flex items-center gap-2">
+          {ONLINE_STUDY_ENABLED && <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-6">
+            <div className="flex items-center justify-between border-b border-[var(--os-muted)]/10 pb-4 mb-4">
+              <h3 className="text-sm font-bold text-[var(--os-fg)] flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Đài Giám Sát Discord Voice
               </h3>
-              <Link href="/teacher/monitor" className="text-xs text-[#C18CFF] hover:underline flex items-center gap-1">
+              <Link href="/teacher/monitor" className="text-xs text-[var(--os-accent)] hover:underline flex items-center gap-1">
                 Chi tiết <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
@@ -615,13 +615,13 @@ export default function TeacherDashboard() {
               <div className="space-y-4">
                 {discordStatus.active_members && discordStatus.active_members.length > 0 ? (
                   <div className="space-y-3.5">
-                    <p className="text-xs text-[#8C87A2]">
-                      Hiện tại có <strong className="text-[#F1EDF9]">{discordStatus.active_members.length}</strong> học sinh đang trong phòng voice học tập:
+                    <p className="text-xs text-[var(--os-muted)]">
+                      Hiện tại có <strong className="text-[var(--os-fg)]">{discordStatus.active_members.length}</strong> học sinh đang trong phòng voice học tập:
                     </p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {discordStatus.active_members.map((member) => (
-                        <div key={member.discord_id} className="flex items-center justify-between p-2 rounded-lg bg-[#0B0A13] border border-[#8C87A2]/15 text-xs">
-                          <span className="font-semibold text-[#F1EDF9] truncate max-w-[120px]">👤 {member.username}</span>
+                        <div key={member.discord_id} className="flex items-center justify-between p-2 rounded-lg bg-[var(--os-bg)] border border-[var(--os-muted)]/15 text-xs">
+                          <span className="font-semibold text-[var(--os-fg)] truncate max-w-[120px]">👤 {member.username}</span>
                           <span className={cn(
                             "px-1.5 py-0.5 rounded text-[8px] font-mono font-bold uppercase",
                             member.status === "AFK" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" :
@@ -635,13 +635,13 @@ export default function TeacherDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-[#8C87A2] italic gap-2">
+                  <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-[var(--os-muted)] italic gap-2">
                     <span>Không có học sinh nào đang tham gia phòng voice.</span>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-[#8C87A2] italic gap-2">
+              <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-[var(--os-muted)] italic gap-2">
                 <AlertCircle className="h-5 w-5 text-amber-500" />
                 <span>Không kết nối được với Discord Bot. Vui lòng kiểm tra trạng thái bot.</span>
               </div>
@@ -649,12 +649,12 @@ export default function TeacherDashboard() {
           </div>}
 
           {/* Waiting Arena Sessions */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-xl p-6">
-            <div className="flex items-center justify-between border-b border-[#8C87A2]/10 pb-4 mb-4">
-              <h3 className="text-sm font-bold text-[#F1EDF9] flex items-center gap-2">
-                <Swords className="h-4.5 w-4.5 text-[#C18CFF]" /> Trận Đấu Trường chờ kích hoạt
+          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-6">
+            <div className="flex items-center justify-between border-b border-[var(--os-muted)]/10 pb-4 mb-4">
+              <h3 className="text-sm font-bold text-[var(--os-fg)] flex items-center gap-2">
+                <Swords className="h-4.5 w-4.5 text-[var(--os-accent)]" /> Trận Đấu Trường chờ kích hoạt
               </h3>
-              <Link href="/teacher/arena" className="text-xs text-[#C18CFF] hover:underline flex items-center gap-1">
+              <Link href="/teacher/arena" className="text-xs text-[var(--os-accent)] hover:underline flex items-center gap-1">
                 Quản lý <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
@@ -662,10 +662,10 @@ export default function TeacherDashboard() {
             {waitingArenas.length > 0 ? (
               <div className="space-y-3.5">
                 {waitingArenas.slice(0, 3).map((arena) => (
-                  <div key={arena.id} className="p-3.5 rounded-xl bg-[#0B0A13] border border-[#8C87A2]/15 flex items-center justify-between">
+                  <div key={arena.id} className="p-3.5 rounded-xl bg-[var(--os-bg)] border border-[var(--os-muted)]/15 flex items-center justify-between">
                     <div>
-                      <h4 className="text-xs font-bold text-[#F1EDF9]">{arena.exam?.title || "Trận đấu Arena"}</h4>
-                      <div className="mt-1 flex items-center gap-3 text-[10px] text-[#8C87A2]">
+                      <h4 className="text-xs font-bold text-[var(--os-fg)]">{arena.exam?.title || "Trận đấu Arena"}</h4>
+                      <div className="mt-1 flex items-center gap-3 text-[10px] text-[var(--os-muted)]">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           {new Date(arena.start_time || "").toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
@@ -678,7 +678,7 @@ export default function TeacherDashboard() {
                     </div>
                     
                     <Link href={`/teacher/arena`}>
-                      <Button size="sm" className="h-8 rounded-lg bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] text-[10px] font-bold px-3">
+                      <Button size="sm" className="h-8 rounded-lg bg-[var(--os-accent)] hover:bg-[var(--os-accent)]/90 text-[var(--os-accent-fg)] text-[10px] font-bold px-3">
                         Vào phòng điều hành
                       </Button>
                     </Link>
@@ -686,10 +686,10 @@ export default function TeacherDashboard() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-10 text-xs text-[#8C87A2] italic flex flex-col items-center justify-center gap-3">
+              <div className="text-center py-10 text-xs text-[var(--os-muted)] italic flex flex-col items-center justify-center gap-3">
                 <span>Không có trận Đấu Trường nào đang chờ kích hoạt.</span>
                 <Link href="/teacher/arena">
-                  <Button size="sm" variant="outline" className="h-8 rounded-lg border-[#8C87A2]/30 text-[10px] font-bold bg-transparent text-[#8C87A2] hover:text-[#C18CFF] hover:border-[#C18CFF]">
+                  <Button size="sm" variant="outline" className="h-8 rounded-lg border-[var(--os-muted)]/30 text-[10px] font-bold bg-transparent text-[var(--os-muted)] hover:text-[var(--os-accent)] hover:border-[var(--os-accent)]">
                     Tạo phòng Arena mới
                   </Button>
                 </Link>

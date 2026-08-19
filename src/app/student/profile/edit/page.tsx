@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
@@ -154,14 +154,14 @@ export default function StudentProfileEditPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
         <Loading label="Đang tải hồ sơ..." />
       </div>
     )
   }
 
   return (
-    <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9]", inter.className)}>
+    <StudentShell className={cn("bg-[var(--os-bg)] text-[var(--os-fg)]", inter.className)}>
       {/* Topbar */}
       <StudentTopbar
         name={formData.full_name}
@@ -179,24 +179,24 @@ export default function StudentProfileEditPage() {
         {/* Back Link Header */}
         <div className="mb-6 flex items-center gap-4">
           <Link href="/student/profile">
-            <Button variant="outline" size="icon" className="rounded-xl border-[#8C87A2]/30 bg-[#15131F] text-[#8C87A2] hover:text-[#C18CFF] hover:border-[#C18CFF] transition-all">
+            <Button variant="outline" size="icon" className="rounded-xl border-[var(--os-border)] bg-[var(--os-card)] text-[var(--os-muted)] hover:text-[var(--os-accent)] hover:border-[var(--os-accent)] transition-all">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <div>
-            <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/20 bg-[#15131F] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[#8C87A2]">
-              <User className="h-3 w-3 text-[#C18CFF]" /> Profile Settings
+            <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-[var(--os-border)] bg-[var(--os-card)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--os-muted)]">
+              <User className="h-3 w-3 text-[var(--os-accent)]" /> Profile Settings
             </div>
-            <h1 className={cn("text-3xl text-[#F1EDF9] font-bold tracking-tight", instrumentSerif.className)}>Chỉnh sửa hồ sơ</h1>
+            <h1 className={cn("text-3xl text-[var(--os-fg)] font-bold tracking-tight", instrumentSerif.className)}>Chỉnh sửa hồ sơ</h1>
           </div>
         </div>
 
         {/* Settings Form Container */}
-        <form onSubmit={handleSubmit} className="rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-8 space-y-8 shadow-sm">
+        <form onSubmit={handleSubmit} className="rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)] p-8 space-y-8 shadow-sm">
           
           {/* Avatar Area */}
-          <div className="flex flex-col items-center border-b border-[#8C87A2]/10 pb-6">
-            <Label className="mb-4 block text-xs font-bold uppercase tracking-widest text-[#8C87A2] font-mono">Ảnh đại diện</Label>
+          <div className="flex flex-col items-center border-b border-[var(--os-border)] pb-6">
+            <Label className="mb-4 block text-xs font-bold uppercase tracking-widest text-[var(--os-muted)] font-mono">Ảnh đại diện</Label>
             <AvatarUpload 
               currentUrl={formData.avatar_url} 
               onUploadComplete={(url) => setFormData((prev) => ({ ...prev, avatar_url: url }))} 
@@ -206,71 +206,71 @@ export default function StudentProfileEditPage() {
 
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="full_name" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Họ và tên <span className="text-red-500">*</span></Label>
-              <Input id="full_name" value={formData.full_name} onChange={(e) => setFormData((prev) => ({ ...prev, full_name: e.target.value }))} required className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
+              <Label htmlFor="full_name" className="text-xs font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">Họ và tên <span className="text-red-500">*</span></Label>
+              <Input id="full_name" value={formData.full_name} onChange={(e) => setFormData((prev) => ({ ...prev, full_name: e.target.value }))} required className="rounded-xl border-[var(--os-border)] bg-[var(--os-bg)] text-[var(--os-fg)] focus:border-[var(--os-accent)] focus:ring-[var(--os-accent)]" />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nickname" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Biệt danh</Label>
-              <Input id="nickname" value={formData.nickname} onChange={(e) => setFormData((prev) => ({ ...prev, nickname: e.target.value }))} placeholder="vd: hoc_sinh_gioi" maxLength={20} className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
-              <p className="text-[9px] text-[#8C87A2] font-mono px-1 italic">Dùng chữ cái, số và dấu gạch dưới</p>
+              <Label htmlFor="nickname" className="text-xs font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">Biệt danh</Label>
+              <Input id="nickname" value={formData.nickname} onChange={(e) => setFormData((prev) => ({ ...prev, nickname: e.target.value }))} placeholder="vd: hoc_sinh_gioi" maxLength={20} className="rounded-xl border-[var(--os-border)] bg-[var(--os-bg)] text-[var(--os-fg)] focus:border-[var(--os-accent)] focus:ring-[var(--os-accent)]" />
+              <p className="text-[9px] text-[var(--os-muted)] font-mono px-1 italic">Dùng chữ cái, số và dấu gạch dưới</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="grade-select" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Khối lớp {!isX && <span className="text-red-500">*</span>}</Label>
+              <Label htmlFor="grade-select" className="text-xs font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">Khối lớp {!isX && <span className="text-red-500">*</span>}</Label>
               <select
                 id="grade-select"
                 value={formData.grade}
                 onChange={(e) => setFormData((prev) => ({ ...prev, grade: e.target.value }))}
-                className="w-full rounded-xl border border-[#8C87A2]/30 bg-[#0B0A13] px-4 py-3 text-sm text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-1 focus:ring-[#C18CFF] outline-none transition-all cursor-pointer font-medium"
+                className="w-full rounded-xl border border-[var(--os-border)] bg-[var(--os-bg)] px-4 py-3 text-sm text-[var(--os-fg)] focus:border-[var(--os-accent)] focus:ring-1 focus:ring-[var(--os-accent)] outline-none transition-all cursor-pointer font-medium"
                 required={!isX}
               >
                 {isX ? (
-                  <option value="" className="bg-[#15131F]">-- Không chọn (Mở khóa toàn bộ khối) --</option>
+                  <option value="" className="bg-[var(--os-card)]">-- Không chọn (Mở khóa toàn bộ khối) --</option>
                 ) : (
-                  <option value="" disabled className="bg-[#15131F]">-- Chọn khối --</option>
+                  <option value="" disabled className="bg-[var(--os-card)]">-- Chọn khối --</option>
                 )}
                 {Array.from({ length: 7 }, (_, i) => i + 6).map((g) => (
-                  <option key={g} value={g} className="bg-[#15131F]">Khối {g}</option>
+                  <option key={g} value={g} className="bg-[var(--os-card)]">Khối {g}</option>
                 ))}
               </select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="class_suffix" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Tên lớp {!isX && <span className="text-red-500">*</span>}</Label>
-              <Input id="class_suffix" value={formData.class_suffix} onChange={(e) => setFormData((prev) => ({ ...prev, class_suffix: e.target.value }))} placeholder="vd: A1, B2" required={!isX} className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
+              <Label htmlFor="class_suffix" className="text-xs font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">Tên lớp {!isX && <span className="text-red-500">*</span>}</Label>
+              <Input id="class_suffix" value={formData.class_suffix} onChange={(e) => setFormData((prev) => ({ ...prev, class_suffix: e.target.value }))} placeholder="vd: A1, B2" required={!isX} className="rounded-xl border-[var(--os-border)] bg-[var(--os-bg)] text-[var(--os-fg)] focus:border-[var(--os-accent)] focus:ring-[var(--os-accent)]" />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Số điện thoại</Label>
-              <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} placeholder="0123456789" className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
+              <Label htmlFor="phone" className="text-xs font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">Số điện thoại</Label>
+              <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} placeholder="0123456789" className="rounded-xl border-[var(--os-border)] bg-[var(--os-bg)] text-[var(--os-fg)] focus:border-[var(--os-accent)] focus:ring-[var(--os-accent)]" />
             </div>
 
             {ONLINE_STUDY_ENABLED && <div className="space-y-2">
-              <Label htmlFor="discord_id" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Discord ID</Label>
-              <Input id="discord_id" value={formData.discord_id} onChange={(e) => setFormData((prev) => ({ ...prev, discord_id: e.target.value }))} placeholder="Ví dụ: 123456789012345678" className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
+              <Label htmlFor="discord_id" className="text-xs font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">Discord ID</Label>
+              <Input id="discord_id" value={formData.discord_id} onChange={(e) => setFormData((prev) => ({ ...prev, discord_id: e.target.value }))} placeholder="Ví dụ: 123456789012345678" className="rounded-xl border-[var(--os-border)] bg-[var(--os-bg)] text-[var(--os-fg)] focus:border-[var(--os-accent)] focus:ring-[var(--os-accent)]" />
             </div>}
 
             {ONLINE_STUDY_ENABLED && <div className="space-y-2">
-              <Label htmlFor="discord_study_channel_id" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">ID Kênh Voice Discord riêng</Label>
-              <Input id="discord_study_channel_id" value={formData.discord_study_channel_id} onChange={(e) => setFormData((prev) => ({ ...prev, discord_study_channel_id: e.target.value }))} placeholder="Ví dụ: 987654321098765432" className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF]" />
+              <Label htmlFor="discord_study_channel_id" className="text-xs font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">ID Kênh Voice Discord riêng</Label>
+              <Input id="discord_study_channel_id" value={formData.discord_study_channel_id} onChange={(e) => setFormData((prev) => ({ ...prev, discord_study_channel_id: e.target.value }))} placeholder="Ví dụ: 987654321098765432" className="rounded-xl border-[var(--os-border)] bg-[var(--os-bg)] text-[var(--os-fg)] focus:border-[var(--os-accent)] focus:ring-[var(--os-accent)]" />
             </div>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bio" className="text-xs font-bold text-[#8C87A2] uppercase tracking-wider font-mono">Giới thiệu bản thân</Label>
-            <Textarea id="bio" value={formData.bio} onChange={(e) => setFormData((prev) => ({ ...prev, bio: e.target.value }))} placeholder="Viết vài dòng ngắn giới thiệu về bản thân bạn..." maxLength={200} rows={4} className="rounded-xl border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] focus:border-[#C18CFF] focus:ring-[#C18CFF] resize-none" />
-            <div className="flex justify-end"><span className="text-[9px] font-bold text-[#8C87A2] uppercase tracking-widest font-mono">{formData.bio.length}/200</span></div>
+            <Label htmlFor="bio" className="text-xs font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">Giới thiệu bản thân</Label>
+            <Textarea id="bio" value={formData.bio} onChange={(e) => setFormData((prev) => ({ ...prev, bio: e.target.value }))} placeholder="Viết vài dòng ngắn giới thiệu về bản thân bạn..." maxLength={200} rows={4} className="rounded-xl border-[var(--os-border)] bg-[var(--os-bg)] text-[var(--os-fg)] focus:border-[var(--os-accent)] focus:ring-[var(--os-accent)] resize-none" />
+            <div className="flex justify-end"><span className="text-[9px] font-bold text-[var(--os-muted)] uppercase tracking-widest font-mono">{formData.bio.length}/200</span></div>
           </div>
 
           {error && <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-bold text-red-400 animate-in fade-in slide-in-from-top-2">{error}</div>}
           {success && <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-400 animate-in fade-in slide-in-from-top-2">Đã lưu hồ sơ thành công. Đang quay lại...</div>}
 
-          <div className="flex gap-4 pt-4 border-t border-[#8C87A2]/10">
+          <div className="flex gap-4 pt-4 border-t border-[var(--os-border)]">
             <Link href="/student/profile" className="flex-1">
-              <Button type="button" variant="outline" className="w-full rounded-xl border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent py-6 font-bold" disabled={saving}>Hủy</Button>
+              <Button type="button" variant="outline" className="w-full rounded-xl border-[var(--os-border)] text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent py-6 font-bold" disabled={saving}>Hủy</Button>
             </Link>
-            <Button type="submit" disabled={saving} className="flex-1 rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] py-6 font-bold shadow-md">
+            <Button type="submit" disabled={saving} className="flex-1 rounded-xl bg-[var(--os-accent)] hover:opacity-90 text-[var(--os-accent-fg)] py-6 font-bold shadow-md">
               {saving ? <><DotmSquare1 size={16} dotSize={2} className="mr-2" />Đang lưu</> : <><Save className="mr-2 h-4 w-4" />Lưu thay đổi</>}
             </Button>
           </div>
