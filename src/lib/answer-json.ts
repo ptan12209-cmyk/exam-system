@@ -61,19 +61,6 @@ function formatIssue(error: z.ZodError): string {
   return `${path}: ${issue.message}`
 }
 
-function assertSequentialGroup(questions: number[], groupName: string): void {
-  if (questions.length === 0) return
-  const start = questions[0]
-  const expected = Array.from({ length: questions.length }, (_, index) => start + index)
-  const invalidIndex = questions.findIndex((question, index) => question !== expected[index])
-
-  if (invalidIndex !== -1) {
-    throw new Error(
-      `Số câu trong phần ${groupName} phải liên tục tăng dần (bắt đầu từ câu ${start}). Vị trí ${invalidIndex + 1} phải là câu ${expected[invalidIndex]}, hiện đang là câu ${questions[invalidIndex]}.`
-    )
-  }
-}
-
 export function parseAnswerJson(input: string): ParsedAnswerJson {
   let raw: unknown
   try {
@@ -92,19 +79,6 @@ export function parseAnswerJson(input: string): ParsedAnswerJson {
   if (total === 0) {
     throw new Error("JSON phải có ít nhất một đáp án.")
   }
-
-  assertSequentialGroup(
-    multiple_choice.map((item) => item.question),
-    "trắc nghiệm"
-  )
-  assertSequentialGroup(
-    true_false.map((item) => item.question),
-    "đúng/sai"
-  )
-  assertSequentialGroup(
-    short_answer.map((item) => item.question),
-    "trả lời ngắn"
-  )
 
   return {
     multipleChoice: multiple_choice,

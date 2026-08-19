@@ -46,18 +46,20 @@ describe("parseAnswerJson", () => {
     expect(result.shortAnswer[1].question).toBe(11)
   })
 
-  it("rejects gaps and duplicate question numbers within a group", () => {
-    expect(() => parseAnswerJson(JSON.stringify({
-      multiple_choice: [{ question: 5, answer: "A" }, { question: 7, answer: "B" }],
-      true_false: [],
-      short_answer: [],
-    }))).toThrow("phải là câu 6")
+  it("allows non-consecutive and arbitrary question numbers", () => {
+    const result = parseAnswerJson(JSON.stringify({
+      multiple_choice: [{ question: 2, answer: "A" }, { question: 14, answer: "B" }],
+      true_false: [{ question: 99, a: true, b: false, c: true, d: false }],
+      short_answer: [{ question: 7, answer: "42" }, { question: 50, answer: "-1.5" }],
+    }))
 
-    expect(() => parseAnswerJson(JSON.stringify({
-      multiple_choice: [],
-      true_false: [{ question: 2, a: true, b: true, c: false, d: false }, { question: 2, a: true, b: false, c: true, d: false }],
-      short_answer: [],
-    }))).toThrow("phải là câu 3")
+    expect(result.multipleChoice).toEqual([
+      { question: 2, answer: "A" },
+      { question: 14, answer: "B" },
+    ])
+    expect(result.trueFalse[0].question).toBe(99)
+    expect(result.shortAnswer[0].question).toBe(7)
+    expect(result.shortAnswer[1].question).toBe(50)
   })
 
   it("rejects malformed JSON and invalid options", () => {
