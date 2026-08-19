@@ -44,50 +44,166 @@ export async function sendNewExamNotification({
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app';
-    const examLink = examUrl || `${baseUrl}/student/exams/${examId}`;
+    const examLink = examUrl || `${baseUrl}/student/exams/${examId}/take`;
 
     try {
-        // Send to each student individually (Resend free tier allows batching)
         const { data, error } = await getResend().emails.send({
             from: getFromEmail(),
             to: studentEmails,
-            subject: `📝 Đề thi mới: ${examTitle}`,
+            subject: `📝 Bài thi mới: ${examTitle}`,
             html: `
-                <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 12px 12px 0 0;">
-                        <h1 style="color: white; margin: 0; font-size: 24px;">📝 Đề thi mới</h1>
-                    </div>
-                    
-                    <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0;">
-                        <h2 style="color: #1e293b; margin-top: 0;">${examTitle}</h2>
-                        
-                        <p style="color: #64748b; line-height: 1.6;">
-                            Giáo viên <strong>${teacherName}</strong> đã đăng một đề thi mới cho bạn.
-                        </p>
-                        
-                        ${deadline ? `
-                            <div style="background: #fef3c7; padding: 12px 16px; border-radius: 8px; margin: 16px 0;">
-                                <p style="color: #92400e; margin: 0; font-weight: 500;">
-                                    ⏰ Hạn nộp: ${deadline}
-                                </p>
-                            </div>
-                        ` : ''}
-                        
-                        <a href="${examLink}" 
-                           style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                                  color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none;
-                                  font-weight: 600; margin-top: 16px;">
-                            Làm bài ngay →
-                        </a>
-                        
-                        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-                        
-                        <p style="color: #94a3b8; font-size: 12px; margin: 0;">
-                            Email này được gửi tự động từ Hệ thống Thi trắc nghiệm.
-                            <br>Nếu bạn không phải học sinh, vui lòng bỏ qua email này.
-                        </p>
-                    </div>
-                </div>
+<!DOCTYPE html>
+<html lang="vi" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đề thi mới từ ExamHub</title>
+  <style>
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    table { border-collapse: collapse !important; }
+    body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #0B0A13; }
+    @media screen and (max-width: 600px) {
+      .mobile-card { padding: 28px 20px !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0B0A13; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <div style="display: none; font-size: 1px; color: #0B0A13; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+    Giáo viên ${teacherName} vừa giao cho bạn bài thi mới: ${examTitle}.
+  </div>
+
+  <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #0B0A13; width: 100%;">
+    <tr>
+      <td align="center" style="padding: 40px 16px;">
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 540px; margin: 0 auto;">
+          
+          <!-- Logo Header -->
+          <tr>
+            <td style="padding-bottom: 24px; text-align: left;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color: #1C1A2D; border: 1px solid #2A2344; border-radius: 12px; padding: 8px 14px;">
+                    <span style="font-size: 15px; font-weight: 700; color: #F1EDF9; letter-spacing: -0.02em;">ExamHub</span>
+                    <span style="display: inline-block; width: 6px; height: 6px; background-color: #C18CFF; border-radius: 50%; margin-left: 4px; vertical-align: middle;"></span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Main Card -->
+          <tr>
+            <td style="background-color: #15131F; border: 1px solid #2A2344; border-radius: 20px; padding: 36px 32px;" class="mobile-card">
+              <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                
+                <!-- Badge -->
+                <tr>
+                  <td>
+                    <span style="display: inline-block; background-color: rgba(193, 140, 255, 0.12); border: 1px solid rgba(193, 140, 255, 0.25); border-radius: 999px; padding: 4px 12px; font-size: 11px; font-weight: 700; color: #C18CFF; text-transform: uppercase; letter-spacing: 0.12em;">
+                      Bài thi mới
+                    </span>
+                  </td>
+                </tr>
+
+                <!-- Heading -->
+                <tr>
+                  <td style="padding-top: 18px;">
+                    <h1 style="margin: 0; font-size: 22px; font-weight: 600; line-height: 1.35; color: #F1EDF9; letter-spacing: -0.02em;">
+                      ${examTitle}
+                    </h1>
+                  </td>
+                </tr>
+
+                <!-- Body Text -->
+                <tr>
+                  <td style="padding-top: 12px; font-size: 14px; line-height: 1.65; color: #D0CCE0;">
+                    Giáo viên <strong>${teacherName}</strong> vừa giao bài thi mới cho bạn trên ExamHub. Vui lòng sắp xếp thời gian làm bài để nộp đúng hạn.
+                  </td>
+                </tr>
+
+                <!-- Meta Details Box -->
+                <tr>
+                  <td style="padding-top: 20px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #1C1A2D; border: 1px solid #363056; border-radius: 14px; padding: 16px;">
+                      <tr>
+                        <td style="padding: 4px 0; font-size: 13px; color: #8C87A2;">
+                          Giáo viên giao:
+                        </td>
+                        <td align="right" style="padding: 4px 0; font-size: 13px; font-weight: 600; color: #F1EDF9;">
+                          ${teacherName}
+                        </td>
+                      </tr>
+                      ${deadline ? `
+                      <tr>
+                        <td style="padding: 6px 0 0; font-size: 13px; color: #8C87A2;">
+                          Hạn chót nộp bài:
+                        </td>
+                        <td align="right" style="padding: 6px 0 0; font-size: 13px; font-weight: 600; color: #C18CFF;">
+                          ${deadline}
+                        </td>
+                      </tr>
+                      ` : `
+                      <tr>
+                        <td style="padding: 6px 0 0; font-size: 13px; color: #8C87A2;">
+                          Thời hạn:
+                        </td>
+                        <td align="right" style="padding: 6px 0 0; font-size: 13px; font-weight: 600; color: #34D399;">
+                          Tự do thời gian
+                        </td>
+                      </tr>
+                      `}
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- CTA Button -->
+                <tr>
+                  <td style="padding-top: 24px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center">
+                          <a href="${examLink}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #C18CFF; color: #0B0A13; text-align: center; text-decoration: none; font-size: 14px; font-weight: 700; padding: 14px 24px; border-radius: 12px;">
+                            Bắt đầu làm bài thi &rarr;
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Security Notice -->
+                <tr>
+                  <td style="padding-top: 28px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-top: 1px solid #2A2344;">
+                      <tr>
+                        <td style="padding-top: 16px; font-size: 12px; line-height: 1.6; color: #8C87A2;">
+                          Hãy chuẩn bị không gian yên tĩnh và đường truyền internet ổn định trước khi bấm làm bài. Nếu bạn không tham gia khóa học này, vui lòng bỏ qua email.
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top: 24px; text-align: center; font-size: 12px; line-height: 1.6; color: #6B6680;">
+              &copy; ExamHub &bull; Hệ thống thi & luyện đề trực tuyến<br>
+              <span style="font-size: 11px; color: #524E66;">Thư gửi tự động từ hệ thống. Vui lòng không phản hồi thư này.</span>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
             `
         });
 
@@ -121,40 +237,134 @@ export async function sendDeadlineReminder({
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app';
-    const examLink = `${baseUrl}/student/exams/${examId}`;
+    const examLink = `${baseUrl}/student/exams/${examId}/take`;
 
     try {
         const { error } = await getResend().emails.send({
             from: getFromEmail(),
             to: studentEmail,
-            subject: `⏰ Nhắc nhở: ${examTitle} sắp hết hạn!`,
+            subject: `⏰ Nhắc nhở hạn nộp: ${examTitle}`,
             html: `
-                <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; border-radius: 12px 12px 0 0;">
-                        <h1 style="color: white; margin: 0; font-size: 24px;">⏰ Nhắc nhở</h1>
-                    </div>
-                    
-                    <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0;">
-                        <h2 style="color: #1e293b; margin-top: 0;">${examTitle}</h2>
-                        
-                        <div style="background: #fef3c7; padding: 16px; border-radius: 8px; margin: 16px 0;">
-                            <p style="color: #92400e; margin: 0; font-weight: 600; font-size: 16px;">
-                                Bài thi sẽ hết hạn vào: ${deadline}
-                            </p>
-                        </div>
-                        
-                        <p style="color: #64748b; line-height: 1.6;">
-                            Đừng quên hoàn thành bài thi trước thời hạn!
-                        </p>
-                        
-                        <a href="${examLink}" 
-                           style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
-                                  color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none;
-                                  font-weight: 600; margin-top: 16px;">
-                            Làm bài ngay →
-                        </a>
-                    </div>
-                </div>
+<!DOCTYPE html>
+<html lang="vi" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nhắc nhở hạn nộp bài thi</title>
+  <style>
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    table { border-collapse: collapse !important; }
+    body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #0B0A13; }
+    @media screen and (max-width: 600px) {
+      .mobile-card { padding: 28px 20px !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0B0A13; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <div style="display: none; font-size: 1px; color: #0B0A13; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+    Bài thi ${examTitle} sắp đến hạn nộp (${deadline}).
+  </div>
+
+  <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #0B0A13; width: 100%;">
+    <tr>
+      <td align="center" style="padding: 40px 16px;">
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 540px; margin: 0 auto;">
+          
+          <!-- Logo Header -->
+          <tr>
+            <td style="padding-bottom: 24px; text-align: left;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color: #1C1A2D; border: 1px solid #2A2344; border-radius: 12px; padding: 8px 14px;">
+                    <span style="font-size: 15px; font-weight: 700; color: #F1EDF9; letter-spacing: -0.02em;">ExamHub</span>
+                    <span style="display: inline-block; width: 6px; height: 6px; background-color: #C18CFF; border-radius: 50%; margin-left: 4px; vertical-align: middle;"></span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Main Card -->
+          <tr>
+            <td style="background-color: #15131F; border: 1px solid #2A2344; border-radius: 20px; padding: 36px 32px;" class="mobile-card">
+              <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                
+                <!-- Badge -->
+                <tr>
+                  <td>
+                    <span style="display: inline-block; background-color: rgba(251, 146, 60, 0.12); border: 1px solid rgba(251, 146, 60, 0.25); border-radius: 999px; padding: 4px 12px; font-size: 11px; font-weight: 700; color: #FB923C; text-transform: uppercase; letter-spacing: 0.12em;">
+                      Sắp hết hạn
+                    </span>
+                  </td>
+                </tr>
+
+                <!-- Heading -->
+                <tr>
+                  <td style="padding-top: 18px;">
+                    <h1 style="margin: 0; font-size: 22px; font-weight: 600; line-height: 1.35; color: #F1EDF9; letter-spacing: -0.02em;">
+                      ${examTitle}
+                    </h1>
+                  </td>
+                </tr>
+
+                <!-- Body Text -->
+                <tr>
+                  <td style="padding-top: 12px; font-size: 14px; line-height: 1.65; color: #D0CCE0;">
+                    Bài thi của bạn sắp đến hạn kết thúc. Hãy vào làm và hoàn tất bài nộp trước khi hệ thống đóng cổng.
+                  </td>
+                </tr>
+
+                <!-- Deadline Box -->
+                <tr>
+                  <td style="padding-top: 20px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #1C1A2D; border: 1px solid #363056; border-radius: 14px; padding: 16px;">
+                      <tr>
+                        <td align="center">
+                          <div style="font-size: 11px; font-weight: 600; color: #8C87A2; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 6px;">Hạn chót làm bài</div>
+                          <div style="font-size: 18px; font-weight: 700; color: #FB923C;">
+                            ${deadline}
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- CTA Button -->
+                <tr>
+                  <td style="padding-top: 24px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center">
+                          <a href="${examLink}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #C18CFF; color: #0B0A13; text-align: center; text-decoration: none; font-size: 14px; font-weight: 700; padding: 14px 24px; border-radius: 12px;">
+                            Vào làm bài ngay &rarr;
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top: 24px; text-align: center; font-size: 12px; line-height: 1.6; color: #6B6680;">
+              &copy; ExamHub &bull; Hệ thống thi & luyện đề trực tuyến<br>
+              <span style="font-size: 11px; color: #524E66;">Thư gửi tự động từ hệ thống. Vui lòng không phản hồi thư này.</span>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
             `
         });
 
@@ -190,21 +400,124 @@ export async function sendOtpEmail({
             to,
             subject: `${code} — Mã xác thực ExamHub`,
             html: `
-                <div style="font-family: 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-                    <h1 style="font-size: 20px; color: #0f172a; margin: 0 0 12px;">Xác thực email ExamHub</h1>
-                    <p style="color: #475569; line-height: 1.6; margin: 0 0 16px;">
-                        Xin chào ${name}, mã xác thực 4 số của bạn là:
-                    </p>
-                    <div style="background: #f1f5f9; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 16px;">
-                        <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #0f172a;">${code}</span>
-                    </div>
-                    <p style="color: #64748b; font-size: 14px; line-height: 1.5; margin: 0;">
-                        Mã có hiệu lực trong <strong>10 phút</strong>. Không chia sẻ mã này với bất kỳ ai.
-                    </p>
-                    <p style="color: #94a3b8; font-size: 12px; margin: 20px 0 0;">
-                        Nếu em không đăng ký ExamHub, hãy bỏ qua email này.
-                    </p>
-                </div>
+<!DOCTYPE html>
+<html lang="vi" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mã xác thực ExamHub</title>
+  <style>
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    table { border-collapse: collapse !important; }
+    body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #0B0A13; }
+    @media screen and (max-width: 600px) {
+      .mobile-card { padding: 28px 20px !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0B0A13; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <div style="display: none; font-size: 1px; color: #0B0A13; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+    Mã xác thực của bạn là ${code}.
+  </div>
+
+  <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #0B0A13; width: 100%;">
+    <tr>
+      <td align="center" style="padding: 40px 16px;">
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 540px; margin: 0 auto;">
+          
+          <!-- Logo Header -->
+          <tr>
+            <td style="padding-bottom: 24px; text-align: left;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color: #1C1A2D; border: 1px solid #2A2344; border-radius: 12px; padding: 8px 14px;">
+                    <span style="font-size: 15px; font-weight: 700; color: #F1EDF9; letter-spacing: -0.02em;">ExamHub</span>
+                    <span style="display: inline-block; width: 6px; height: 6px; background-color: #C18CFF; border-radius: 50%; margin-left: 4px; vertical-align: middle;"></span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Main Card -->
+          <tr>
+            <td style="background-color: #15131F; border: 1px solid #2A2344; border-radius: 20px; padding: 36px 32px;" class="mobile-card">
+              <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                
+                <!-- Badge -->
+                <tr>
+                  <td>
+                    <span style="display: inline-block; background-color: rgba(193, 140, 255, 0.12); border: 1px solid rgba(193, 140, 255, 0.25); border-radius: 999px; padding: 4px 12px; font-size: 11px; font-weight: 700; color: #C18CFF; text-transform: uppercase; letter-spacing: 0.12em;">
+                      Xác thực OTP
+                    </span>
+                  </td>
+                </tr>
+
+                <!-- Heading -->
+                <tr>
+                  <td style="padding-top: 18px;">
+                    <h1 style="margin: 0; font-size: 22px; font-weight: 600; line-height: 1.35; color: #F1EDF9; letter-spacing: -0.02em;">
+                      Xác thực tài khoản của bạn
+                    </h1>
+                  </td>
+                </tr>
+
+                <!-- Body Text -->
+                <tr>
+                  <td style="padding-top: 12px; font-size: 14px; line-height: 1.65; color: #D0CCE0;">
+                    Xin chào <strong>${name}</strong>, đây là mã xác thực 4 số để hoàn tất thao tác trên ExamHub:
+                  </td>
+                </tr>
+
+                <!-- Token / Code Box -->
+                <tr>
+                  <td style="padding-top: 24px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #1C1A2D; border: 1px solid #363056; border-radius: 14px;">
+                      <tr>
+                        <td align="center" style="padding: 18px 16px;">
+                          <div style="font-size: 11px; font-weight: 600; color: #8C87A2; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 6px;">Mã xác thực bảo mật</div>
+                          <div style="font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #C18CFF;">
+                            ${code}
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Security Notice -->
+                <tr>
+                  <td style="padding-top: 28px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-top: 1px solid #2A2344;">
+                      <tr>
+                        <td style="padding-top: 16px; font-size: 12px; line-height: 1.6; color: #8C87A2;">
+                          Mã có hiệu lực trong <strong>10 phút</strong>. Tuyệt đối không chia sẻ mã này với bất kỳ ai. Nếu bạn không gửi yêu cầu, vui lòng bỏ qua thư này.
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top: 24px; text-align: center; font-size: 12px; line-height: 1.6; color: #6B6680;">
+              &copy; ExamHub &bull; Hệ thống thi & luyện đề trực tuyến<br>
+              <span style="font-size: 11px; color: #524E66;">Thư gửi tự động từ hệ thống. Vui lòng không phản hồi thư này.</span>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
             `,
         });
 
