@@ -355,7 +355,7 @@ export default function ExamBankPage() {
       await supabase.from("exam_participants").delete().eq("exam_id", id)
       await supabase.from("exam_sessions").delete().eq("exam_id", id)
       await supabase.from("submission_audit_log").delete().eq("exam_id", id)
-      await supabase.from("submissions").delete().eq("exam_id", id)
+      // Submissions are deleted by the exams FK cascade (client writes revoked).
       const { error } = await supabase.from("exams").delete().eq("id", id)
       if (error) throw error
       await fetchExams()

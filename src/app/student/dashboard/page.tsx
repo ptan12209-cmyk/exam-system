@@ -70,49 +70,21 @@ export default function StudentDashboard() {
     if (!user || !profile) return
 
     const fetchData = async () => {
-      const { stats } = await getUserStats(user.id)
-      setStudentStats(stats)
-      setUserXp(stats.xp)
-
+      // PERF: all independent fetches run concurrently instead of serially.
       const isX = profile.nickname === "X"
 
-      // Fetch exams
       let examsQuery = supabase
-        .from("exams")
-        .select("*")
-        .eq("status", "published")
+        .from("exams_public")
+        .select("id, title, subject, exam_type, duration, total_questions, assigned_to, target_grade, target_classes, is_scheduled, start_time, end_time, max_attempts, security_level")
         .eq("assigned_to", isX ? "x" : "normal")
 
       if (!isX && profile.grade !== null) {
         examsQuery = examsQuery.or(`target_grade.is.null,target_grade.eq.${profile.grade}`)
       }
 
-      const { data: examsData } = await examsQuery.order("created_at", { ascending: false })
-      if (examsData) {
-        if (isX) {
-          setAvailableExams(examsData)
-        } else {
-          const studentClassSuffix = profile.class_suffix?.toUpperCase()
-          const visibleExams = examsData.filter((exam: any) => {
-            if (exam.target_classes && exam.target_classes.length > 0) {
-              return studentClassSuffix && exam.target_classes.map((c: string) => c.toUpperCase()).includes(studentClassSuffix)
-            }
-            return true
-          })
-          setAvailableExams(visibleExams)
-        }
-      }
-
-      // Fetch submissions
-      const { data: submissionsData } = await supabase
-        .from("submissions")
-        .select("*, exam:exams(*)")
-        .eq("student_id", user.id)
-        .order("submitted_at", { ascending: false })
-      if (submissionsData) setSubmissions(submissionsData)
-
-      // Calculate class rank
-      if (profile.class) {
+      // Class rank: two chained queries kept sequential within the group
+      const fetchClassRank = async () => {
+        if (!profile.class) return
         const { data: classProfiles } = await supabase
           .from("profiles")
           .select("id")
@@ -138,10 +110,40 @@ export default function StudentDashboard() {
           setClassRank(1)
           setClassSize(1)
         }
-      } else {
-        setClassRank(1)
-        setClassSize(1)
       }
+
+      const [, statsResult, examsResult, submissionsResult] = await Promise.all([
+        fetchClassRank(),
+        getUserStats(user.id),
+        examsQuery.order("created_at", { ascending: false }),
+        supabase
+          .from("submissions")
+          .select("exam_id, score")
+          .eq("student_id", user.id)
+          .order("submitted_at", { ascending: false }),
+      ])
+
+      const { stats } = statsResult
+      setStudentStats(stats)
+      setUserXp(stats.xp)
+
+      const { data: examsData } = examsResult
+      if (examsData) {
+        if (isX) {
+          setAvailableExams(examsData as Exam[])
+        } else {
+          const studentClassSuffix = profile.class_suffix?.toUpperCase()
+          const visibleExams = (examsData as Exam[]).filter((exam) => {
+            if (exam.target_classes && exam.target_classes.length > 0) {
+              return studentClassSuffix && exam.target_classes.map((c: string) => c.toUpperCase()).includes(studentClassSuffix)
+            }
+            return true
+          })
+          setAvailableExams(visibleExams)
+        }
+      }
+
+      if (submissionsResult.data) setSubmissions(submissionsResult.data as Submission[])
 
       // Fetch max streak from daily_logins
       const { data: maxStreakData } = await supabase

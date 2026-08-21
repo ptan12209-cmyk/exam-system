@@ -49,17 +49,36 @@ export default function StudentAnalyticsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push("/login"); return }
 
-      const { data: profile } = await supabase.from("profiles").select("full_name, class").eq("id", user.id).single()
+      // PERF: profile, stats, submissions and student_stats fetch concurrently
+      const [profileResult, statsResult, subsResult, statsDataResult] = await Promise.all([
+        supabase.from("profiles").select("full_name, class").eq("id", user.id).single(),
+        getUserStats(user.id),
+        (async () => {
+          // Own submissions + exam metadata joined client-side from the safe
+          // view (students cannot read the base exams table directly anymore).
+          return Promise.all([
+            supabase.from("submissions").select("id, exam_id, score, submitted_at").eq("student_id", user.id).order("submitted_at", { ascending: true }),
+            supabase.from("exams_public").select("id, title, subject"),
+          ])
+        })(),
+        supabase.from("student_stats").select("*").eq("user_id", user.id).single(),
+      ])
+
+      const profile = profileResult.data
       setFullName(profile?.full_name || "")
       setUserClass(profile?.class || "")
 
-      const { stats: userStats } = await getUserStats(user.id)
+      const { stats: userStats } = statsResult
       setStudentStats(userStats)
       setUserXp(userStats.xp)
 
-      const { data: subsData } = await supabase.from("submissions").select("id, exam_id, score, submitted_at, exam:exams(id, title, subject)").eq("student_id", user.id).order("submitted_at", { ascending: true })
+      const [subsData, examMeta] = subsResult
       if (subsData) {
-        const transformed = subsData.map((submission: { id: string; exam_id: string; score: number; submitted_at: string; exam: { id: string; title: string; subject: string | null } | { id: string; title: string; subject: string | null }[] | null }) => ({ ...submission, exam: Array.isArray(submission.exam) ? submission.exam[0] : submission.exam })) as Submission[]
+        const examMap = new Map((examMeta ?? []).map((e: { id: string; title: string; subject: string | null }) => [e.id, e]))
+        const transformed = subsData.map((submission: { id: string; exam_id: string; score: number; submitted_at: string }) => ({
+          ...submission,
+          exam: examMap.get(submission.exam_id) ?? null,
+        })) as Submission[]
         setSubmissions(transformed)
         const scores = transformed.map((item) => item.score)
         if (scores.length > 0) {
@@ -70,8 +89,7 @@ export default function StudentAnalyticsPage() {
         }
       }
 
-      const { data: statsData } = await supabase.from("student_stats").select("*").eq("user_id", user.id).single()
-      if (statsData) setStats(statsData)
+      if (statsDataResult.data) setStats(statsDataResult.data)
       setLoading(false)
     }
     fetchData()

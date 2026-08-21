@@ -67,15 +67,11 @@ interface AuthCacheEntry {
 const authCache = new Map<string, AuthCacheEntry>()
 const AUTH_CACHE_TTL_MS = 30_000 // 30 seconds
 
-// Simple string hash to create unique cache key from full cookie
+import { createHash } from "crypto"
+
+// Collision-resistant cache key from the full credential header
 function hashString(str: string): string {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash |= 0 // Convert to 32-bit integer
-  }
-  return hash.toString(36)
+  return createHash("sha256").update(str).digest("hex")
 }
 
 export async function POST(request: NextRequest) {
@@ -120,16 +116,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Xác định target student_id (để người anh có thể tự đăng ký hộ cho em trai)
+    // Xác định target student_id — chỉ người QUẢN LÝ học sinh đó
+    // (parent_student_links) mới được ghi khuôn mặt hộ.
     let targetStudentId = userId
     if (student_id && student_id !== userId) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .single()
-      
-      if (profile && (profile.role === "teacher" || profile.role === "parent" || profile.role === "admin")) {
+      const { data: link } = await supabase
+        .rpc("manages_student", {
+          p_student_id: student_id,
+          p_manager_id: userId,
+        })
+
+      if (link === true) {
         targetStudentId = student_id
       } else {
         return NextResponse.json({ error: "Không có quyền đăng ký khuôn mặt cho học sinh khác." }, { status: 403 })

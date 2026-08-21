@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { checkRateLimit, getClientIP } from '@/lib/rate-limit'
 import { withErrorHandler, successResponse, ApiError } from '@/lib/api-utils'
 import { requireAuth } from '@/lib/auth-utils'
@@ -55,6 +55,10 @@ async function handlePOST(request: Request) {
     // Authenticate user
     const user = await requireAuth(supabase)
 
+    // Answer keys and submission writes are server-only; use the service
+    // role for both. Client input never decides publish state or score.
+    const admin = createAdminClient()
+
     // Rate limit
     const { allowed, remaining, reset } = await checkRateLimit(`submit:${user.id}`, 10, 60);
     if (!allowed) {
@@ -92,11 +96,12 @@ async function handlePOST(request: Request) {
     // Process each submission
     for (const sub of body.submissions) {
         try {
-            // Fetch current exam data to verify version
-            const { data: exam, error: examError } = await supabase
+            // Fetch current exam data to verify version and publish state
+            const { data: exam, error: examError } = await admin
                 .from('exams')
-                .select('id, title, total_questions, mc_answers, tf_answers, sa_answers, max_attempts')
+                .select('id, title, total_questions, mc_answers, tf_answers, sa_answers, max_attempts, is_scheduled, start_time, end_time')
                 .eq('id', sub.exam_id)
+                .eq('status', 'published')
                 .single()
 
             if (examError || !exam) {
@@ -105,9 +110,26 @@ async function handlePOST(request: Request) {
                     exam_id: sub.exam_id,
                     score: 0,
                     status: 'error',
-                    message: 'Bài thi không tồn tại',
+                    message: 'Bài thi không tồn tại hoặc đã bị khóa',
                 })
                 continue
+            }
+
+            // Enforce the schedule window server-side
+            if ((exam as Record<string, unknown>).is_scheduled) {
+                const now = new Date()
+                const startTime = (exam as { start_time?: string | null }).start_time
+                const endTime = (exam as { end_time?: string | null }).end_time
+                if ((startTime && new Date(startTime) > now) || (endTime && new Date(endTime) < now)) {
+                    results.push({
+                        submission_id: null,
+                        exam_id: sub.exam_id,
+                        score: 0,
+                        status: 'error',
+                        message: 'Ngoài thời gian làm bài',
+                    })
+                    continue
+                }
             }
 
             // Verify package version
@@ -158,8 +180,10 @@ async function handlePOST(request: Request) {
                 }
             )
 
-            // Save submission
-            const { data: submission, error: saveError } = await supabase
+            // Save submission — server-issued timestamps; client times are
+            // never trusted for the official record.
+            const nowIso = new Date().toISOString()
+            const { data: submission, error: saveError } = await admin
                 .from('submissions')
                 .insert({
                     exam_id: sub.exam_id,
@@ -174,8 +198,8 @@ async function handlePOST(request: Request) {
                     tf_correct: Math.round(scoring.details.tf.correct),
                     sa_correct: scoring.details.sa.correct,
                     time_spent: sub.time_spent,
-                    started_at: sub.started_at,
-                    submitted_at: sub.submitted_at,
+                    started_at: nowIso,
+                    submitted_at: nowIso,
                     cheat_flags: sub.cheat_flags ?? { tab_switches: 0, multi_browser: false },
                     attempt_number: (existingAttempts ?? 0) + 1,
                     is_ranked: existingAttempts === 0

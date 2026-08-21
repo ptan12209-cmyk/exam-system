@@ -82,21 +82,30 @@ export default function StudentExamsPage() {
       setUserProfile({ grade: profile?.grade ?? null, nickname: profile?.nickname ?? null })
       setSelectedGrade(profile?.grade ?? "all")
 
-      const { stats } = await getUserStats(authUser.id)
+      // PERF: stats, exams and submissions run concurrently
+      const isStudentX = profile?.nickname === "X"
+      const examsQuery = supabase
+        .from("exams_public")
+        .select("id, title, subject, exam_type, description, pdf_url, duration, total_questions, assigned_to, target_grade, target_classes, is_advanced, is_scheduled, start_time, end_time, max_attempts, chapter_id, lesson_id, section_id")
+        .eq("assigned_to", isStudentX ? "x" : "normal")
+
+      const [statsResult, examsResult, subsResult] = await Promise.all([
+        getUserStats(authUser.id),
+        examsQuery.order("created_at", { ascending: false }),
+        supabase
+          .from("submissions")
+          .select("exam_id, score")
+          .eq("student_id", authUser.id),
+      ])
+
+      const { stats } = statsResult
       setStudentStats(stats)
       setUserXp(stats.xp)
 
-      const isStudentX = profile?.nickname === "X"
-      const examsQuery = supabase
-        .from("exams")
-        .select("*")
-        .eq("status", "published")
-        .eq("assigned_to", isStudentX ? "x" : "normal")
-
-      const { data: examsData } = await examsQuery.order("created_at", { ascending: false })
+      const { data: examsData } = examsResult
       if (examsData) {
         const studentClassSuffix = profile?.class_suffix?.toUpperCase()
-        const visibleExams = examsData.filter((exam: any) => {
+        const visibleExams = (examsData as Exam[]).filter((exam) => {
           if (exam.target_classes && exam.target_classes.length > 0) {
             return studentClassSuffix && exam.target_classes.map((c: string) => c.toUpperCase()).includes(studentClassSuffix)
           }
@@ -105,14 +114,9 @@ export default function StudentExamsPage() {
         setExams(visibleExams)
       }
 
-      const { data: subsData } = await supabase
-        .from("submissions")
-        .select("exam_id, score")
-        .eq("student_id", authUser.id)
-
-      if (subsData) {
+      if (subsResult.data) {
         const subMap = new Map<string, number>()
-        subsData.forEach((s: Submission) => {
+        subsResult.data.forEach((s: Submission) => {
           if (s.exam_id) {
             const existing = subMap.get(s.exam_id)
             if (!existing || s.score > existing) subMap.set(s.exam_id, s.score)
@@ -218,7 +222,7 @@ export default function StudentExamsPage() {
     setShowAllQuestions(false)
 
     const { data: questions } = await supabase
-      .from("questions")
+      .from("questions_public")
       .select("id, question_text, options")
       .eq("exam_id", exam.id)
       .order("order_index")

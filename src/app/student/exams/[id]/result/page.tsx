@@ -27,6 +27,22 @@ interface LeaderboardEntry {
   profile: { full_name: string | null }
 }
 
+interface GradedExamPayload {
+  id: string
+  title: string
+  subject: string
+  exam_type: string
+  duration: number
+  total_questions: number
+  max_attempts: number
+  score_visibility_mode: string
+  score_visibility_threshold: number | null
+  correct_answers: string[]
+  mc_answers: { question: number; answer: string }[]
+  tf_answers: { question: number; a: boolean; b: boolean; c: boolean; d: boolean }[]
+  sa_answers: { question: number; answer: string | number }[]
+}
+
 const instrumentSerif = { className: "font-instrument-serif" }
 const jetbrainsMono = { className: "font-jetbrains-mono" }
 const inter = { className: "font-inter" }
@@ -64,11 +80,14 @@ export default function ExamResultPage() {
       const { data: profile } = await supabase.from("profiles").select("full_name, class").eq("id", user.id).single()
       if (profile) setFullName(profile.full_name || "")
 
-      const { data: examData } = await supabase.from("exams").select("*").eq("id", examId).single()
-      if (!examData) { router.push("/student/dashboard"); return }
-
-      setExam(examData)
-      const examMaxAttempts = examData.max_attempts ?? 1
+      // Answer keys are only readable server-side once a submission exists —
+      // the RPC returns null otherwise. Scalar jsonb RPCs unwrap directly.
+      const { data: gradedExam } = await supabase
+        .rpc("get_graded_exam_for_student", { exam_uuid: examId })
+      const payload = (gradedExam ?? null) as GradedExamPayload | null
+      if (!payload) { router.push(`/student/exams/${examId}/take`); return }
+      setExam(payload as unknown as Exam)
+      const examMaxAttempts = payload.max_attempts ?? 1
       setMaxAttempts(examMaxAttempts)
 
       const { data: allSubmissions, count } = await supabase.from("submissions").select("*", { count: "exact" }).eq("exam_id", examId).eq("student_id", user.id).order("score", { ascending: false })
@@ -79,24 +98,24 @@ export default function ExamResultPage() {
       setAttemptsUsed(count ?? allSubmissions.length)
       if (examMaxAttempts === 0 || (count ?? 0) < examMaxAttempts) setCanRetake(true)
 
-      const scoreVisMode = examData.score_visibility_mode || "always"
-      const scoreThresh = examData.score_visibility_threshold || 0
+      const scoreVisMode = payload.score_visibility_mode || "always"
+      const scoreThresh = payload.score_visibility_threshold || 0
       setCanViewScore(scoreVisMode === "always" || (scoreVisMode === "threshold" && currentSubmission.score >= scoreThresh))
 
-      const { data: leaderboardData } = await supabase
-        .from("submissions")
-        .select("id, score, time_spent, student_id, profile:profiles(full_name)")
-        .eq("exam_id", examId)
-        .order("score", { ascending: false })
-        .order("time_spent", { ascending: true })
-        .limit(10)
+      // Aggregate ranking via the security-definer RPC (no other students'
+      // answers are exposed).
+      const { data: leaderboardRows } = await supabase
+        .rpc("get_exam_leaderboard", { exam_uuid: examId })
 
-      if (leaderboardData) {
+      if (leaderboardRows) {
         setLeaderboard(
-          leaderboardData.map((item: { id: string; score: number; time_spent: number; student_id: string; profile: { full_name: string | null } | { full_name: string | null }[] | null }) => {
-            const profileData = Array.isArray(item.profile) ? item.profile[0] : item.profile
-            return { id: item.id, score: item.score, time_spent: item.time_spent, student_id: item.student_id, profile: { full_name: profileData?.full_name ?? null } }
-          })
+          leaderboardRows.slice(0, 10).map((row: { rank: number; student_id: string; student_name: string | null; score: number; time_spent: number }) => ({
+            id: row.student_id,
+            score: row.score,
+            time_spent: row.time_spent,
+            student_id: row.student_id,
+            profile: { full_name: row.student_name ?? null }
+          }))
         )
       }
 
@@ -420,15 +439,15 @@ export default function ExamResultPage() {
                 </div>
                 <div className="divide-y divide-[var(--os-muted)]/10 bg-[var(--os-card)]">
                   {leaderboard.map((entry, index) => (
-                    <div key={entry.id} className={cn("flex items-center justify-between p-4", entry.id === submission.id ? "bg-[var(--os-accent)]/10 text-[var(--os-accent)]" : "text-[var(--os-fg)]") }>
+                    <div key={entry.id} className={cn("flex items-center justify-between p-4", entry.student_id === submission.student_id ? "bg-[var(--os-accent)]/10 text-[var(--os-accent)]" : "text-[var(--os-fg)]") }>
                       <div className="flex items-center gap-3">
-                        <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg border text-xs font-bold font-mono", entry.id === submission.id ? "border-[var(--os-accent)]" : "border-[var(--os-muted)]/20")}>{index + 1}</div>
+                        <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg border text-xs font-bold font-mono", entry.student_id === submission.student_id ? "border-[var(--os-accent)]" : "border-[var(--os-muted)]/20")}>{index + 1}</div>
                         <div>
                           <p className="text-sm font-bold">
                             <Link href={`/profile/${entry.student_id}`} className="hover:underline transition-colors">
                               {entry.profile?.full_name || "Ẩn danh"}
                             </Link>
-                            {entry.id === submission.id && " (Bạn)"}
+                            {entry.student_id === submission.student_id && " (Bạn)"}
                           </p>
                           <p className="text-[10px] text-[var(--os-muted)] font-mono">{formatTime(entry.time_spent)}</p>
                         </div>

@@ -48,52 +48,32 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             })
         }
 
-        // Fetch from database
-        const { data: submissions, error } = await supabase
-            .from('submissions')
-            .select(`
-                student_id,
-                score,
-                time_spent,
-                submitted_at,
-                profiles!submissions_student_id_fkey (
-                    full_name,
-                    avatar_url
-                )
-            `)
-            .eq('exam_id', examId)
-            .eq('is_ranked', true)
-            .order('score', { ascending: false })
-            .order('time_spent', { ascending: true })
-            .limit(100)
+        // Fetch via the security-definer RPC: aggregate ranking only, no
+        // access to other students' answers.
+        const { data: rpcRows, error } = await supabase
+            .rpc('get_exam_leaderboard', { exam_uuid: examId })
 
         if (error) {
             console.error('Leaderboard fetch error:', error)
             return NextResponse.json({ error: 'Failed to fetch leaderboard' }, { status: 500 })
         }
 
-        // Transform data
-        interface ProfileData {
-            full_name: string | null
-            avatar_url: string | null
-        }
-
-        const leaderboard: LeaderboardEntry[] = (submissions || []).map((sub, index) => {
-            // Handle both single object and array responses from Supabase
-            const profile = Array.isArray(sub.profiles)
-                ? sub.profiles[0] as ProfileData | undefined
-                : sub.profiles as ProfileData | null
-
-            return {
-                rank: index + 1,
-                student_id: sub.student_id,
-                student_name: profile?.full_name || 'Học sinh',
-                avatar_url: profile?.avatar_url || null,
-                score: sub.score,
-                time_spent: sub.time_spent,
-                submitted_at: sub.submitted_at
-            }
-        })
+        const leaderboard: LeaderboardEntry[] = (rpcRows || []).map((row: {
+            rank: number
+            student_id: string
+            student_name: string | null
+            score: number
+            time_spent: number
+            submitted_at: string
+        }) => ({
+            rank: Number(row.rank),
+            student_id: row.student_id,
+            student_name: row.student_name || 'Học sinh',
+            avatar_url: null,
+            score: row.score,
+            time_spent: row.time_spent,
+            submitted_at: row.submitted_at
+        }))
 
         // Cache the result
         cache.set(cacheKey, leaderboard, CACHE_TTL.LEADERBOARD)

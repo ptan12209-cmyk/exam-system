@@ -21,9 +21,8 @@ export function usePublishedExams() {
 
     async function fetchExams() {
       const { data, error: fetchError } = await supabase
-        .from("exams")
+        .from("exams_public")
         .select("*")
-        .eq("status", "published")
         .order("created_at", { ascending: false })
 
       if (cancelled) return

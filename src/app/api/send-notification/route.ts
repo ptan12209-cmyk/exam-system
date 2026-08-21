@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { sendNewExamNotification } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
@@ -8,6 +9,12 @@ export async function POST(request: NextRequest) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
             return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+        }
+
+        // 🔒 Rate limit mass-notification sends
+        const { allowed } = await checkRateLimit(`notify:${user.id}`, 5, 300);
+        if (!allowed) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
 
         // Verify user is teacher or admin
@@ -29,6 +36,18 @@ export async function POST(request: NextRequest) {
                 { error: 'Thiếu thông tin bắt buộc: examId, examTitle' },
                 { status: 400 }
             );
+        }
+
+        // Verify the caller owns the exam before emailing anyone about it
+        const { data: ownedExam } = await supabase
+            .from('exams')
+            .select('id')
+            .eq('id', examId)
+            .eq('teacher_id', user.id)
+            .single();
+
+        if (!ownedExam) {
+            return NextResponse.json({ error: 'Không tìm thấy đề thi thuộc quyền của bạn' }, { status: 403 });
         }
 
         let adminClient;

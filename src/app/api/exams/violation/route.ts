@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
     try {
@@ -32,16 +33,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid action type" }, { status: 400 })
         }
 
-        // Rate limit: max 1 violation log per second per student per exam
-        const oneSecondAgo = new Date(Date.now() - 1000).toISOString()
-        const { count } = await supabase
-            .from("submission_audit_log")
-            .select("*", { count: "exact", head: true })
-            .eq("exam_id", exam_id)
-            .eq("student_id", user.id)
-            .gte("created_at", oneSecondAgo)
-
-        if ((count ?? 0) > 0) {
+        // Rate limit: max 10 violation logs per minute per student per exam
+        const { allowed } = await checkRateLimit(`violation:${user.id}:${exam_id}`, 10, 60)
+        if (!allowed) {
             return NextResponse.json({ ok: true, throttled: true })
         }
 

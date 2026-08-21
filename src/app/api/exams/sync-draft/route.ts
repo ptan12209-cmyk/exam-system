@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         // Validate session belongs to user and is in_progress
         const { data: session, error: sessionError } = await supabase
             .from('exam_sessions')
-            .select('id, student_id, status')
+            .select('id, student_id, status, tab_switch_count')
             .eq('id', session_id)
             .single()
 
@@ -69,7 +69,8 @@ export async function POST(request: NextRequest) {
             sa: sa_answers
         }
 
-        // 🛡️ ANTI-CHEAT: Only update tab_switch_count if provided in this request
+        // 🛡️ ANTI-CHEAT: violation counters are monotonic — the server keeps
+        // the maximum ever reported so clients cannot reset them.
         const updateData: any = {
             answers_snapshot,
             time_spent: time_spent || 0,
@@ -77,7 +78,10 @@ export async function POST(request: NextRequest) {
         }
 
         if (cheat_flags?.tab_switches !== undefined) {
-            updateData.tab_switch_count = cheat_flags.tab_switches
+            updateData.tab_switch_count = Math.max(
+                Number(session.tab_switch_count ?? 0),
+                cheat_flags.tab_switches
+            )
         }
 
         // Update the session with the latest snapshot

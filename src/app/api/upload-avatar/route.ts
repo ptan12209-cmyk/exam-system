@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+
+/** Sniff magic bytes — never trust the client-supplied Content-Type. */
+function sniffImageType(bytes: Uint8Array): string | null {
+    if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg"
+    if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return "image/png"
+    if (bytes.length >= 12 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return "image/webp"
+    return null
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -14,6 +23,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
+        // 🔒 Rate limit uploads
+        const { allowed } = await checkRateLimit(`avatar:${user.id}`, 5, 300)
+        if (!allowed) {
+            return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+        }
+
         // Get form data
         const formData = await request.formData()
         const file = formData.get("file") as File
@@ -22,7 +37,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "No file provided" }, { status: 400 })
         }
 
-        // Validate file type
+        // Validate declared type (fast reject)
         if (!ALLOWED_TYPES.includes(file.type)) {
             return NextResponse.json({
                 error: "Invalid file type. Only JPG, PNG, and WebP are allowed."
@@ -36,6 +51,15 @@ export async function POST(request: NextRequest) {
             }, { status: 400 })
         }
 
+        // Verify real content type via magic bytes
+        const buffer = new Uint8Array(await file.arrayBuffer())
+        const sniffed = sniffImageType(buffer)
+        if (!sniffed || !ALLOWED_TYPES.includes(sniffed)) {
+            return NextResponse.json({
+                error: "Invalid file content. Only JPG, PNG, and WebP are allowed."
+            }, { status: 400 })
+        }
+
         // Get current avatar to delete later
         const { data: profile } = await supabase
             .from("profiles")
@@ -43,16 +67,15 @@ export async function POST(request: NextRequest) {
             .eq("id", user.id)
             .single()
 
-        // Generate unique filename
-        const fileExt = file.name.split(".").pop()
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`
-        const filePath = fileName // No "avatars/" prefix - bucket already has it
+        // Store inside the user's own folder — storage policies scope by it.
+        const fileExt = sniffed === "image/jpeg" ? "jpg" : sniffed.split("/")[1]
+        const filePath = `${user.id}/${Date.now()}.${fileExt}`
 
         // Upload to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from("avatars")
             .upload(filePath, file, {
-                contentType: file.type,
+                contentType: sniffed,
                 upsert: false
             })
 
@@ -86,10 +109,11 @@ export async function POST(request: NextRequest) {
         // Delete old avatar if exists
         if (profile?.avatar_url) {
             try {
-                // Extract filename from URL (last segment after /)
-                const urlParts = profile.avatar_url.split("/")
-                const oldFileName = urlParts[urlParts.length - 1]
-                await supabase.storage.from("avatars").remove([oldFileName])
+                // Extract object path: /object/public/avatars/<path>
+                const match = profile.avatar_url.match(/\/object\/(?:public|signed)\/avatars\/(.+)$/)
+                if (match) {
+                    await supabase.storage.from("avatars").remove([decodeURIComponent(match[1])])
+                }
             } catch (e) {
                 console.error("Failed to delete old avatar:", e)
                 // Non-critical, continue
@@ -127,10 +151,11 @@ export async function DELETE(request: NextRequest) {
             .single()
 
         if (profile?.avatar_url) {
-            // Delete from storage - extract filename from URL
-            const urlParts = profile.avatar_url.split("/")
-            const fileName = urlParts[urlParts.length - 1]
-            await supabase.storage.from("avatars").remove([fileName])
+            // Delete from storage - extract object path from the URL
+            const match = profile.avatar_url.match(/\/object\/(?:public|signed)\/avatars\/(.+)$/)
+            if (match) {
+                await supabase.storage.from("avatars").remove([decodeURIComponent(match[1])])
+            }
 
             // Update profile
             await supabase

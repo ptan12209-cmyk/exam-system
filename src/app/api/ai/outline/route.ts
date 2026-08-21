@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // V98Store API (OpenAI compatible format)
 const V98_API_KEY = process.env.GEMINI_API_KEY;
@@ -27,12 +29,26 @@ CHỈ TRẢ VỀ JSON ARRAY CHỨA CÁC BLOCK (BẮT ĐẦU BẰNG [ VÀ KẾT T
 
 export async function POST(request: NextRequest) {
   try {
+    // Paid LLM proxy: never reachable without an authenticated account.
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔒 Rate limit + hard input caps regardless of feature-flag state.
+    const { allowed } = await checkRateLimit(`ai-outline:${user.id}`, 5, 300);
+    if (!allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     if (!V98_API_KEY) {
       return NextResponse.json({ error: "AI outline service is disabled" }, { status: 503 });
     }
 
     const body = await request.json();
-    const { title, subject } = body;
+    const title = typeof body?.title === "string" ? body.title.slice(0, 200) : "";
+    const subject = typeof body?.subject === "string" ? body.subject.slice(0, 80) : "";
 
     if (!title) {
       return NextResponse.json(
