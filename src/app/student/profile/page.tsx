@@ -14,6 +14,7 @@ import { StudentNavTabs } from "@/components/student/StudentNavTabs"
 import { BookOpen, BarChart3, ListTodo, Swords, User, Edit, Smartphone } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
+import { ARENA_ENABLED, CHECKLIST_ENABLED } from "@/lib/features"
 
 const instrumentSerif = { className: "font-instrument-serif" }
 const inter = { className: "font-inter" }
@@ -79,8 +80,12 @@ export default function ProfilePage() {
   const quickLinks = [
     { href: "/student/exams", label: "Đề thi của tôi", icon: BookOpen },
     { href: "/student/analytics", label: "Thống kê kết quả", icon: BarChart3 },
-    { href: "/student/checklist", label: "Nhiệm vụ được giao", icon: ListTodo },
-    { href: "/arena", label: "Đấu trường Arena", icon: Swords },
+    ...(CHECKLIST_ENABLED
+      ? [{ href: "/student/checklist", label: "Nhiệm vụ được giao", icon: ListTodo }]
+      : []),
+    ...(ARENA_ENABLED
+      ? [{ href: "/arena", label: "Đấu trường Arena", icon: Swords }]
+      : []),
   ]
 
   return (

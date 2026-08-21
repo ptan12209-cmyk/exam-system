@@ -6,12 +6,15 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useEffect, useState, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { ARENA_ENABLED, TIMETABLE_ENABLED } from "@/lib/features"
 
 interface NavItem {
     href: string
     label: string
     icon: LucideIcon
     activePattern?: RegExp
+    arena?: boolean
+    timetable?: boolean
 }
 
 const studentNavItems: NavItem[] = [
@@ -31,13 +34,15 @@ const studentNavItems: NavItem[] = [
         href: "/arena",
         label: "Đấu trường",
         icon: Swords,
-        activePattern: /^\/arena/
+        activePattern: /^\/arena/,
+        arena: true
     },
     {
         href: "/student/timetable",
         label: "TKB",
         icon: CalendarDays,
-        activePattern: /^\/student\/timetable/
+        activePattern: /^\/student\/timetable/,
+        timetable: true
     },
     {
         href: "/student/profile",
@@ -64,7 +69,8 @@ const teacherNavItems: NavItem[] = [
         href: "/teacher/arena",
         label: "Đấu trường",
         icon: Swords,
-        activePattern: /^\/teacher\/arena/
+        activePattern: /^\/teacher\/arena/,
+        arena: true
     },
     {
         href: "/teacher/students",
@@ -166,7 +172,11 @@ export function MobileNav() {
         return null
     }
 
-    const items = isTeacherArea ? teacherNavItems : studentNavItems
+    const items = (isTeacherArea ? teacherNavItems : studentNavItems).filter((item) => {
+        if (item.arena && !ARENA_ENABLED) return false
+        if (item.timetable && !TIMETABLE_ENABLED) return false
+        return true
+    })
 
     return (
         <nav className="glass-nav-bottom fixed bottom-0 left-0 right-0 z-50 lg:hidden safe-area-bottom">

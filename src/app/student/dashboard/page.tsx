@@ -33,7 +33,7 @@ import { StudentNavTabs } from "@/components/student/StudentNavTabs"
 import { GradeOnboardingModal } from "@/components/student/GradeOnboardingModal"
 import { ThptCountdown } from "@/components/shared/ThptCountdown"
 import { useAuth } from "@/hooks/useAuth"
-import { GAMIFICATION_ENABLED } from "@/lib/features"
+import { ARENA_ENABLED, CHECKLIST_ENABLED, GAMIFICATION_ENABLED, TIMETABLE_ENABLED } from "@/lib/features"
 
 import type { Profile, Exam, Submission } from "@/types"
 
@@ -322,11 +322,13 @@ export default function StudentDashboard() {
                   {profile?.nickname === "X" ? "Làm đề giao riêng" : "Luyện tập ngay"}
                 </Button>
               </a>
-              <Link href="/student/timetable">
-                <Button variant="outline" className="rounded-xl border-[var(--os-border)] hover:border-[var(--os-accent)] text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent px-5 py-4 transition-all">
-                  Xem thời khóa biểu
-                </Button>
-              </Link>
+              {TIMETABLE_ENABLED && (
+                <Link href="/student/timetable">
+                  <Button variant="outline" className="rounded-xl border-[var(--os-border)] hover:border-[var(--os-accent)] text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent px-5 py-4 transition-all">
+                    Xem thời khóa biểu
+                  </Button>
+                </Link>
+              )}
               <Link href="/student/analytics">
                 <Button variant="outline" className="rounded-xl border-[var(--os-border)] hover:border-[var(--os-accent)] text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent px-5 py-4 transition-all">
                   Xem chi tiết tiến độ
@@ -603,13 +605,19 @@ export default function StudentDashboard() {
                 {[
                   { href: "/student/exams", label: "Đề thi được giao", icon: FileText },
                   { href: "/student/analytics", label: "Thống kê kết quả", icon: Trophy },
-                  { href: "/arena", label: "Đấu trường thi đấu", icon: Swords },
+                  ...(ARENA_ENABLED
+                    ? [{ href: "/arena", label: "Đấu trường thi đấu", icon: Swords }]
+                    : []),
                   { href: "https://theieltsdictionary.com/", label: "Từ điển IELTS", icon: GraduationCap, isExternal: true },
                   ...(GAMIFICATION_ENABLED
                     ? [{ href: "/student/achievements", label: "Bảng thành tích", icon: Award }]
                     : []),
-                  { href: "/student/timetable", label: "Thời khóa biểu", icon: Calendar },
-                  { href: "/student/checklist", label: "Checklist / Nhiệm vụ", icon: ListTodo },
+                  ...(TIMETABLE_ENABLED
+                    ? [{ href: "/student/timetable", label: "Thời khóa biểu", icon: Calendar }]
+                    : []),
+                  ...(CHECKLIST_ENABLED
+                    ? [{ href: "/student/checklist", label: "Checklist / Nhiệm vụ", icon: ListTodo }]
+                    : []),
                 ].map((item) => {
                   const itemContent = (
                     <div className="flex flex-col justify-between p-3.5 h-20 bg-[var(--os-bg)] hover:bg-[var(--os-bg)]/80 border border-[var(--os-border)] hover:border-[var(--os-accent)]/50 rounded-xl transition-all duration-200 group">

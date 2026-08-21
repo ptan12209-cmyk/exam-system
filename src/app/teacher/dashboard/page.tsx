@@ -19,7 +19,7 @@ import {
 import { Loading } from "@/components/shared/Loading"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/hooks/useAuth"
-import { ONLINE_STUDY_ENABLED } from "@/lib/features"
+import { ARENA_ENABLED, ONLINE_STUDY_ENABLED } from "@/lib/features"
 
 // Recharts components
 import { 
@@ -130,18 +130,20 @@ export default function TeacherDashboard() {
         setTotalStudents(studentCount || 0)
 
         // 4. Fetch arena sessions
-        const { data: arenasData } = await supabase
-          .from("arena_sessions")
-          .select(`
-            id, 
-            status, 
-            start_time,
-            exam:exams(title, subject, duration, total_questions)
-          `)
-          .eq("created_by", user.id)
-          .order("start_time", { ascending: true })
-        if (arenasData) {
-          setArenas(arenasData)
+        if (ARENA_ENABLED) {
+          const { data: arenasData } = await supabase
+            .from("arena_sessions")
+            .select(`
+              id, 
+              status, 
+              start_time,
+              exam:exams(title, subject, duration, total_questions)
+            `)
+            .eq("created_by", user.id)
+            .order("start_time", { ascending: true })
+          if (arenasData) {
+            setArenas(arenasData)
+          }
         }
 
       } catch (err) {
@@ -375,18 +377,20 @@ export default function TeacherDashboard() {
           </div>
 
           {/* KPI 4 */}
-          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-5 hover:border-[var(--os-accent)]/30 transition-colors">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--os-muted)]">⚔️ Đấu trường</span>
-              <Swords className="h-4 w-4 text-[var(--os-accent)]" />
+          {ARENA_ENABLED && (
+            <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-5 hover:border-[var(--os-accent)]/30 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--os-muted)]">⚔️ Đấu trường</span>
+                <Swords className="h-4 w-4 text-[var(--os-accent)]" />
+              </div>
+              <div className={cn("mt-4 text-3xl font-bold font-mono text-[var(--os-fg)]", jetbrainsMono.className)}>
+                {arenas.length}
+              </div>
+              <p className="mt-1 text-[10px] text-amber-400 font-mono">
+                {upcomingArenasCount} phòng chờ kích hoạt
+              </p>
             </div>
-            <div className={cn("mt-4 text-3xl font-bold font-mono text-[var(--os-fg)]", jetbrainsMono.className)}>
-              {arenas.length}
-            </div>
-            <p className="mt-1 text-[10px] text-amber-400 font-mono">
-              {upcomingArenasCount} phòng chờ kích hoạt
-            </p>
-          </div>
+          )}
         </section>
 
         {/* Row 2 — Charts (7-Day Line & Score distribution Pie) */}
@@ -598,7 +602,7 @@ export default function TeacherDashboard() {
         </section>
 
         {/* Row 4 — Discord monitor widget & Waiting Arenas */}
-        <section className={cn("mt-6 grid gap-6", ONLINE_STUDY_ENABLED && "lg:grid-cols-2")}>
+        {(ONLINE_STUDY_ENABLED || ARENA_ENABLED) && <section className={cn("mt-6 grid gap-6", ONLINE_STUDY_ENABLED && "lg:grid-cols-2")}>
           
           {/* Discord monitoring widget */}
           {ONLINE_STUDY_ENABLED && <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-6">
@@ -649,7 +653,7 @@ export default function TeacherDashboard() {
           </div>}
 
           {/* Waiting Arena Sessions */}
-          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-6">
+          {ARENA_ENABLED && <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-6">
             <div className="flex items-center justify-between border-b border-[var(--os-muted)]/10 pb-4 mb-4">
               <h3 className="text-sm font-bold text-[var(--os-fg)] flex items-center gap-2">
                 <Swords className="h-4.5 w-4.5 text-[var(--os-accent)]" /> Trận Đấu Trường chờ kích hoạt
@@ -695,8 +699,8 @@ export default function TeacherDashboard() {
                 </Link>
               </div>
             )}
-          </div>
-        </section>
+          </div>}
+        </section>}
       </main>
 
       <TeacherBottomNav />

@@ -1,13 +1,22 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import {
+  ARENA_ENABLED,
+  CHECKLIST_ENABLED,
   GAMIFICATION_ENABLED,
+  MONITORING_ENABLED,
   ONLINE_STUDY_ENABLED,
+  TIMETABLE_ENABLED,
+  isArenaRoute,
+  isChecklistRoute,
   isGamificationApiRoute,
   isGamificationRoute,
+  isMonitoringApiRoute,
+  isMonitoringRoute,
   isOnlineStudyApiRoute,
   isOnlineStudyRoute,
   isRegistrationOpen,
+  isTimetableRoute,
 } from '@/lib/features'
 import { isVerificationBlocked } from '@/lib/email-verify'
 
@@ -74,6 +83,19 @@ export async function middleware(request: NextRequest) {
     )
   }
 
+  if (!MONITORING_ENABLED && isMonitoringApiRoute(pathname)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: 'FEATURE_DISABLED',
+          message: 'Tính năng giám sát đang tạm khóa.',
+        },
+      },
+      { status: 503 }
+    )
+  }
+
   // Keep the implementation in the repository, but remove every public entry
   // point while the product focuses on assignments and student management.
   if (!ONLINE_STUDY_ENABLED && isOnlineStudyRoute(pathname)) {
@@ -111,6 +133,30 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/student/dashboard'
     url.searchParams.set('gamification', 'locked')
+    return NextResponse.redirect(url)
+  }
+
+  // Core-exam focus locks: arena, timetables, checklist, monitoring station.
+  // Keep implementations in the repo; remove every public entry point.
+  const pausedFeature = !ARENA_ENABLED && isArenaRoute(pathname)
+    ? 'arena'
+    : !TIMETABLE_ENABLED && isTimetableRoute(pathname)
+      ? 'timetable'
+      : !CHECKLIST_ENABLED && isChecklistRoute(pathname)
+        ? 'checklist'
+        : !MONITORING_ENABLED && isMonitoringRoute(pathname)
+          ? 'monitoring'
+          : null
+
+  if (pausedFeature) {
+    const url = request.nextUrl.clone()
+    if (pathname.startsWith('/teacher/')) {
+      url.pathname = '/teacher/dashboard'
+    } else {
+      url.pathname = '/student/dashboard'
+    }
+    url.search = ''
+    url.searchParams.set(pausedFeature, 'paused')
     return NextResponse.redirect(url)
   }
 
@@ -294,5 +340,6 @@ export const config = {
     '/api/discord/daily-checkin/:path*',
     '/api/rewards/:path*',
     '/api/titles/:path*',
+    '/api/monitor/:path*',
   ],
 }
