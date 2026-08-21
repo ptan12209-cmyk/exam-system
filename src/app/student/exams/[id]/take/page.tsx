@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -11,12 +12,17 @@ import { AntiCheatProvider } from "@/components/exam/AntiCheatProvider"
 import { AntiCheatWarning, FullscreenPrompt } from "@/components/exam/AntiCheatUI"
 import { WebcamProctor } from "@/components/exam/WebcamProctor"
 import { AudioProctor } from "@/components/exam/AudioProctor"
-import { InlinePdfViewer } from "@/components/exam/InlinePdfViewer"
 import { StudentShell } from "@/components/student/StudentShell"
 import { AlertTriangle, Clock, FileText, Send, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
 import { useToast } from "@/components/ui/toast"
+
+// pdf.js (~1MB) only loads when a PDF exam is actually rendered
+const InlinePdfViewer = dynamic(
+  () => import("@/components/exam/InlinePdfViewer").then((m) => m.InlinePdfViewer),
+  { ssr: false, loading: () => <Loading label="Đang tải tài liệu đề thi..." /> }
+)
 
 type Option = "A" | "B" | "C" | "D"
 import type { Exam, TFStudentAnswer, SAStudentAnswer } from "@/types"

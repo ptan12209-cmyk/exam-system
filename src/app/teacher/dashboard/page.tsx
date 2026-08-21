@@ -82,68 +82,78 @@ export default function TeacherDashboard() {
     
     const fetchDashboardData = async () => {
       try {
+        // PERF: exams, recent submissions, student count and arenas load in
+        // parallel. Submissions are capped to the last 8 days — the dashboard
+        // charts/stats only look back 7 days.
+        const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString()
+
         // 1. Fetch exams
-        const { data: examsData } = await supabase
+        const examsPromise = supabase
           .from("exams")
           .select("*, submissions(count)")
           .eq("teacher_id", user.id)
           .order("created_at", { ascending: false })
-        
-        let fetchedExams: Exam[] = []
-        if (examsData) {
-          fetchedExams = examsData.map((e: Record<string, any>) => ({
+
+        // 2. Recent submissions for all exams
+        const subsPromise = supabase
+          .from("submissions")
+          .select(`
+            id,
+            exam_id,
+            score,
+            submitted_at,
+            student_id,
+            student:profiles!student_id(full_name, class, avatar_url),
+            exam:exams(title, subject)
+          `)
+          .gte("submitted_at", eightDaysAgo)
+          .order("submitted_at", { ascending: false })
+
+        // 3. Total students count
+        const studentsPromise = supabase
+          .from("profiles")
+          .select("id", { count: "exact", head: true })
+          .eq("role", "student")
+
+        // 4. Arena sessions (flag-gated)
+        const arenasPromise = ARENA_ENABLED
+          ? supabase
+              .from("arena_sessions")
+              .select(`
+                id,
+                status,
+                start_time,
+                exam:exams(title, subject, duration, total_questions)
+              `)
+              .eq("created_by", user.id)
+              .order("start_time", { ascending: true })
+          : Promise.resolve({ data: [] as any[] } as any)
+
+        const [examsResult, subsResult, studentsResult, arenasResult] = await Promise.all([
+          examsPromise,
+          subsPromise,
+          studentsPromise,
+          arenasPromise,
+        ])
+
+        if (examsResult.data) {
+          const fetchedExams = examsResult.data.map((e: Record<string, any>) => ({
             ...e,
-            submission_count: Array.isArray(e.submissions) && e.submissions.length 
-              ? e.submissions[0].count 
+            submission_count: Array.isArray(e.submissions) && e.submissions.length
+              ? e.submissions[0].count
               : 0
           })) as Exam[]
           setExams(fetchedExams)
         }
 
-        // 2. Fetch submissions for all exams
-        if (fetchedExams.length > 0) {
-          const examIds = fetchedExams.map(e => e.id)
-          const { data: subsData } = await supabase
-            .from("submissions")
-            .select(`
-              id, 
-              exam_id, 
-              score, 
-              submitted_at, 
-              student_id,
-              student:profiles!student_id(full_name, class, avatar_url),
-              exam:exams(title, subject)
-            `)
-            .in("exam_id", examIds)
-            .order("submitted_at", { ascending: false })
-          if (subsData) {
-            setSubmissions(subsData)
-          }
+        if (subsResult.data) {
+          setSubmissions(subsResult.data)
         }
 
-        // 3. Fetch total students count
-        const { count: studentCount } = await supabase
-          .from("profiles")
-          .select("id", { count: "exact", head: true })
-          .eq("role", "student")
-        
-        setTotalStudents(studentCount || 0)
+        setTotalStudents(studentsResult.count || 0)
 
-        // 4. Fetch arena sessions
-        if (ARENA_ENABLED) {
-          const { data: arenasData } = await supabase
-            .from("arena_sessions")
-            .select(`
-              id, 
-              status, 
-              start_time,
-              exam:exams(title, subject, duration, total_questions)
-            `)
-            .eq("created_by", user.id)
-            .order("start_time", { ascending: true })
-          if (arenasData) {
-            setArenas(arenasData)
-          }
+        if (arenasResult.data) {
+          setArenas(arenasResult.data)
         }
 
       } catch (err) {

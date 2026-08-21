@@ -39,16 +39,18 @@ export default function NotificationsPage() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push("/login"); return }
-      
-      const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
-      setFullName(profile?.full_name || "")
-      
-      const { stats } = await getUserStats(user.id)
-      setStudentStats(stats)
-      
-      const { data } = await supabase.from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
-      if (data) setNotifications(data)
-      
+
+      // PERF: profile, stats and notifications load concurrently
+      const [profileResult, statsResult, notifResult] = await Promise.all([
+        supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+        getUserStats(user.id),
+        supabase.from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
+      ])
+
+      setFullName(profileResult.data?.full_name || "")
+      setStudentStats(statsResult.stats)
+      if (notifResult.data) setNotifications(notifResult.data)
+
       setLoading(false)
     })()
   }, [router, supabase])

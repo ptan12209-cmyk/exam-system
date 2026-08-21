@@ -1,7 +1,6 @@
 "use client"
 
 import React, { createContext, useContext, useState, useCallback } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle2, AlertTriangle, AlertCircle, Info, X } from 'lucide-react'
 
 type ToastType = 'success' | 'error' | 'warning' | 'info'
@@ -48,11 +47,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast, success, error, warning, info }}>
       {children}
       <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3 w-full max-w-sm pointer-events-none">
-        <AnimatePresence>
-          {toasts.map((t) => (
-            <ToastItem key={t.id} toast={t} onClose={removeToast} />
-          ))}
-        </AnimatePresence>
+        {toasts.map((t) => (
+          <ToastItem key={t.id} toast={t} onClose={removeToast} />
+        ))}
       </div>
     </ToastContext.Provider>
   )
@@ -84,13 +81,8 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9, y: -10 }}
-      transition={{ duration: 0.15 }}
-      layout
-      className={`pointer-events-auto flex items-start gap-3 rounded-2xl border backdrop-blur-md p-4 shadow-xl ${borderColors[type]}`}
+    <div
+      className={`toast-in pointer-events-auto flex items-start gap-3 rounded-2xl border backdrop-blur-md p-4 shadow-xl ${borderColors[type]}`}
     >
       {icons[type]}
       <p className="text-xs font-semibold leading-relaxed flex-1 select-none pr-2">
@@ -102,6 +94,6 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
       >
         <X className="h-3.5 w-3.5" />
       </button>
-    </motion.div>
+    </div>
   )
 }

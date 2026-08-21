@@ -36,12 +36,21 @@ export function NotificationBell() {
             setLoading(false)
         }
         fetchNotifications()
-        const channel = supabase.channel("notifications").on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, (payload: { new: Notification }) => {
-            const newNotification = payload.new
-            setNotifications(prev => [newNotification, ...prev.slice(0, 9)])
-            setUnreadCount(prev => prev + 1)
-        }).subscribe()
-        return () => { supabase.removeChannel(channel) }
+        let channel: ReturnType<typeof supabase.channel> | null = null
+        const setupRealtime = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+            // Filter server-side: each client only receives its own inserts
+            channel = supabase.channel(`notifications:${user.id}`).on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, (payload: { new: Notification }) => {
+                const newNotification = payload.new
+                setNotifications(prev => [newNotification, ...prev.slice(0, 9)])
+                setUnreadCount(prev => prev + 1)
+            }).subscribe()
+        }
+        setupRealtime()
+        return () => {
+            if (channel) supabase.removeChannel(channel)
+        }
     }, [supabase])
 
     useEffect(() => {

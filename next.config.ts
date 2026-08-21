@@ -1,13 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Generate unique build ID to bust browser cache on each deploy
-  generateBuildId: async () => {
-    return `build-${Date.now()}`
-  },
+  // PERF: keep Next's default content-based build ID so hashed chunk URLs are
+  // stable across deploys that don't change a given chunk (better caching).
   // Explicitly use webpack (avoid turbopack conflicts)
   turbopack: {},
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',

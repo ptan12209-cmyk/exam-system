@@ -1235,4 +1235,25 @@ h1,
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary) / 0.3) !important;
-}
+}
+/* ============================================
+   Toast (CSS-only, no framer-motion)
+   ============================================ */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.toast-in {
+  animation: toast-in 0.18s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast-in {
+    animation: none;
+  }
+}

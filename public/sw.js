@@ -1,5 +1,5 @@
-// ExamHub Service Worker v4 - Fixed aggressive caching
-const CACHE_VERSION = 'examhub-v4';
+// ExamHub Service Worker v5 - cache-first for immutable build assets
+const CACHE_VERSION = 'examhub-v5';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -111,10 +111,38 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // EVERYTHING ELSE (JS, CSS, HTML, fonts) - Network First
+    // PERF: immutable hashed build assets — cache first. URLs change on each
+    // deploy, so a stale entry can never shadow fresh content.
+    if (
+        url.pathname.startsWith('/_next/static') ||
+        request.destination === 'font' ||
+        /\.(woff2?|ttf)$/i.test(url.pathname)
+    ) {
+        event.respondWith(cacheFirst(request, STATIC_CACHE));
+        return;
+    }
+
+    // EVERYTHING ELSE (JS chunks from other origins, HTML) - Network First
     // This ensures users always get the latest code after deploy
     event.respondWith(strategies.networkFirst(request, DYNAMIC_CACHE));
 });
+
+// Cache-first strategy for immutable assets
+async function cacheFirst(request, cacheName) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    try {
+        const response = await fetch(request);
+        if (response.ok) {
+            const cache = await caches.open(cacheName);
+            cache.put(request, response.clone());
+        }
+        return response;
+    } catch (error) {
+        const fallback = await caches.match('/offline.html');
+        return fallback || Response.error();
+    }
+}
 
 // Push notification handler
 self.addEventListener('push', (event) => {

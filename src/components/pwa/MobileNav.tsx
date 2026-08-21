@@ -102,51 +102,22 @@ export function MobileNav() {
     useEffect(() => {
         let active = true
         async function getUnsubmittedCount() {
+            // 60s sessionStorage cache — one RPC instead of 4 serial queries
+            const CACHE_KEY = "unsubmitted-exam-count"
             try {
-                const { data: { user: authUser } } = await supabase.auth.getUser()
-                if (!authUser || !active) return
-
-                const { data: profile } = await supabase
-                    .from("profiles")
-                    .select("grade, class_suffix, nickname")
-                    .eq("id", authUser.id)
-                    .single()
-
-                if (!active) return
-
-                const isStudentX = profile?.nickname === "X"
-                let examsQuery = supabase
-                    .from("exams")
-                    .select("id, target_grade, target_classes")
-                    .eq("status", "published")
-                    .eq("assigned_to", isStudentX ? "x" : "normal")
-
-                if (profile && profile.grade !== null) {
-                    examsQuery = examsQuery.or(`target_grade.is.null,target_grade.eq.${profile.grade}`)
+                const cached = sessionStorage.getItem(CACHE_KEY)
+                if (cached) {
+                    const { count, ts } = JSON.parse(cached) as { count: number; ts: number }
+                    if (Date.now() - ts < 60_000) {
+                        setUnsubmittedCount(count)
+                        return
+                    }
                 }
 
-                const { data: examsData } = await examsQuery
-
-                if (!active || !examsData) return
-
-                const studentClassSuffix = profile?.class_suffix?.toUpperCase()
-                const visibleExams = examsData.filter((exam: any) => {
-                    if (exam.target_classes && exam.target_classes.length > 0) {
-                        return studentClassSuffix && exam.target_classes.map((c: string) => c.toUpperCase()).includes(studentClassSuffix)
-                    }
-                    return true
-                })
-
-                const { data: subsData } = await supabase
-                    .from("submissions")
-                    .select("exam_id")
-                    .eq("student_id", authUser.id)
-
-                if (!active || !subsData) return
-
-                const submittedIds = new Set(subsData.map((s: any) => s.exam_id))
-                const unsubmitted = visibleExams.filter((exam: any) => !submittedIds.has(exam.id))
-                setUnsubmittedCount(unsubmitted.length)
+                const { data: count } = await supabase.rpc("get_unsubmitted_exam_count")
+                if (!active) return
+                setUnsubmittedCount(count ?? 0)
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify({ count: count ?? 0, ts: Date.now() }))
             } catch (error) {
                 console.error("Error fetching unsubmitted count:", error)
             }

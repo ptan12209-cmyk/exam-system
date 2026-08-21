@@ -191,7 +191,6 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route))
 
   // reset-password is semi-public (user may arrive with recovery session)
   if (!user && pathname.startsWith('/verify-email')) {
@@ -210,13 +209,36 @@ export async function middleware(request: NextRequest) {
   }
 
   // If user IS authenticated and visiting login/register → redirect to dashboard
-  if (user && isAuthRoute) {
-    const { data: profile } = await supabase
+  // Hard gate: self_register past grace → only verify-email (and exempt paths)
+  // Role-based access control for authenticated users
+  //
+  // PERF: the profile row is fetched AT MOST ONCE per request and reused by
+  // all three gates below (auth-route redirect, verification hard gate, role check).
+  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route))
+  const needsRoleCheck =
+    pathname.startsWith('/teacher') ||
+    pathname.startsWith('/student') ||
+    pathname.startsWith('/arena') ||
+    pathname.startsWith('/live')
+
+  let profile: {
+    role: string
+    account_status: string
+    email_verified_at: string | null
+    account_source: string | null
+    created_at: string
+  } | null = null
+
+  if (user && (isAuthRoute || isProtected || pathname.startsWith('/student'))) {
+    const { data } = await supabase
       .from('profiles')
       .select('role, account_status, email_verified_at, account_source, created_at')
       .eq('id', user.id)
       .single()
+    profile = data
+  }
 
+  if (user && isAuthRoute) {
     if (!profile) {
       return supabaseResponse
     }
@@ -241,16 +263,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(dashboardUrl)
   }
 
-  // Hard gate: self_register past grace → only verify-email (and exempt paths)
   if (user) {
     const exempt = VERIFY_EXEMPT_PREFIXES.some((p) => pathname.startsWith(p))
     if (!exempt && (isProtected || pathname.startsWith('/student'))) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, account_status, email_verified_at, account_source, created_at')
-        .eq('id', user.id)
-        .single()
-
       if (profile && profile.account_status !== 'active') {
         const loginUrl = request.nextUrl.clone()
         loginUrl.pathname = '/login'
@@ -268,46 +283,31 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Role-based access control for authenticated users
-  if (user && isProtected) {
-    const needsRoleCheck =
-      pathname.startsWith('/teacher') ||
-      pathname.startsWith('/student') ||
-      pathname.startsWith('/arena') ||
-      pathname.startsWith('/live')
+  if (user && isProtected && needsRoleCheck) {
+    if (profile) {
+      if (profile.account_status !== 'active') {
+        const loginUrl = request.nextUrl.clone()
+        loginUrl.pathname = '/login'
+        loginUrl.search = ''
+        loginUrl.searchParams.set('error', 'account_disabled')
+        return NextResponse.redirect(loginUrl)
+      }
 
-    if (needsRoleCheck) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, account_status')
-        .eq('id', user.id)
-        .single()
-
-      if (profile) {
-        if (profile.account_status !== 'active') {
-          const loginUrl = request.nextUrl.clone()
-          loginUrl.pathname = '/login'
-          loginUrl.search = ''
-          loginUrl.searchParams.set('error', 'account_disabled')
-          return NextResponse.redirect(loginUrl)
+      // Accessing teacher routes
+      if (pathname.startsWith('/teacher')) {
+        if (profile.role !== 'teacher') {
+          const redirectUrl = request.nextUrl.clone()
+          redirectUrl.pathname = '/student/dashboard'
+          return NextResponse.redirect(redirectUrl)
         }
+      }
 
-        // Accessing teacher routes
-        if (pathname.startsWith('/teacher')) {
-          if (profile.role !== 'teacher') {
-            const redirectUrl = request.nextUrl.clone()
-            redirectUrl.pathname = '/student/dashboard'
-            return NextResponse.redirect(redirectUrl)
-          }
-        }
-
-        // Accessing student routes
-        if (pathname.startsWith('/student')) {
-          if (profile.role !== 'student' && profile.role !== 'online_student') {
-            const redirectUrl = request.nextUrl.clone()
-            redirectUrl.pathname = '/teacher/dashboard'
-            return NextResponse.redirect(redirectUrl)
-          }
+      // Accessing student routes
+      if (pathname.startsWith('/student')) {
+        if (profile.role !== 'student' && profile.role !== 'online_student') {
+          const redirectUrl = request.nextUrl.clone()
+          redirectUrl.pathname = '/teacher/dashboard'
+          return NextResponse.redirect(redirectUrl)
         }
       }
     }
