@@ -11,6 +11,7 @@ import { TeacherBottomNav } from "@/components/BottomNav"
 import { cn } from "@/lib/utils"
 import { LiveParticipants } from "@/components/realtime/LiveParticipants"
 import { SubmissionFeed } from "@/components/realtime/SubmissionFeed"
+import { SimilarityPanel } from "./SimilarityPanel"
 import { ArrowLeft, Users, Trophy, Clock, Download, CheckCircle2, Medal, Eye, Edit3, AlertCircle, ShieldAlert, GraduationCap, RefreshCw } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { NotificationBell } from "@/components/NotificationBell"
@@ -117,6 +118,8 @@ export default function ExamScoresPage() {
             { icon: Medal, value: stats.highest, label: "Cao nhất" },
           ].map(({ icon: Icon, value, label }) => <div key={label} className="rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4"><div className="flex items-center gap-3"><div className="rounded-2xl bg-[hsl(var(--muted))]/20 p-2"><Icon className="h-5 w-5" /></div><div><p className="text-2xl font-semibold">{value}</p><p className="text-sm text-[hsl(var(--muted-foreground))]">{label}</p></div></div></div>)}
         </section>
+
+        <SimilarityPanel examId={examId} />
 
         <div className="grid gap-6 lg:grid-cols-2 mb-6"><LiveParticipants examId={examId} /><SubmissionFeed examId={examId} /></div>
 
