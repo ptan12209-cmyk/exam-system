@@ -70,7 +70,6 @@ export const ONLINE_STUDY_API_PREFIXES = [
   "/api/subscriptions",
   "/api/payments",
   "/api/spaced-repetition",
-  "/api/ai",
   "/api/discord",
 ] as const
 
