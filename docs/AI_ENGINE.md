@@ -50,7 +50,16 @@ src/app/teacher/ai        ← UI xưởng AI
 
 ## Roadmap tiếp theo
 
-- [ ] Phase B: phát hiện trùng/bài làm giống nhau giữa HS (server-side similarity)
-- [ ] Phase C: động cơ đánh giá năng lực theo tag/chương sau nhiều lượt làm bài
+- [x] ~~Phase B: phát hiện trùng/bài làm giống nhau giữa HS~~ → `src/lib/anti-cheat/similarity.ts` + panel trên trang Kết quả thi
+- [x] ~~Phase C: động cơ đánh giá năng lực theo nhiều lượt làm bài~~ → `src/lib/competency/` + `/teacher/students/[id]` + AI nhận xét
 - [ ] Batch lời giải cho toàn bộ đề (1 click cho N câu)
 - [ ] Nhập tài liệu PDF thay vì dán text (dùng pdf-parse đã có trong deps)
+
+## Phase C — Hồ sơ năng lực (`src/lib/competency/`)
+
+- Trang **`/teacher/students/[studentId]`** — link "Năng lực" từ danh sách học sinh
+- Tổng hợp MỌI lượt làm bài trên đề của GV: điểm TB/cao nhất, xu hướng (nửa đầu vs nửa cuối), độ ổn định
+- Mức thành thạo theo môn: `strong` (≥3 lượt & TB≥6.5) / `moderate` / `weak` (TB<5)
+- Chính xác theo dạng câu (MC/TF/SA) gộp mọi lượt — dùng cột `mc_correct/tf_correct/sa_correct`
+- Nút **AI nhận xét**: chỉ gửi số liệu tổng hợp (không PII) qua engine → đoạn nhận xét 4–6 câu GV duyệt trước khi dùng
+- Access check: `manages_student()` HOẶC HS đã nộp bài vào đề của GV

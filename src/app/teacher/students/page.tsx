@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   Check,
@@ -225,7 +226,10 @@ export default function TeacherStudentsPage() {
                   <article key={student.id} className="grid gap-4 rounded-2xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))] p-4 sm:grid-cols-[44px_1fr_auto] sm:items-center">
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[hsl(var(--muted))]/30 text-sm font-bold">{String(index + 1).padStart(2, "0")}</div>
                     <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="truncate font-semibold">{student.full_name}</h3><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${student.account_status === "active" ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-500"}`}>{student.account_status === "active" ? "Hoạt động" : "Đã khóa"}</span></div><p className="mt-1 truncate text-xs text-[hsl(var(--muted-foreground))]">{student.email} · {student.class || (student.grade ? `Khối ${student.grade}` : "Chưa xếp lớp")}</p></div>
-                    <button type="button" onClick={() => void toggleStatus(student)} disabled={actionId === student.id} className="rounded-full border border-[hsl(var(--border))]/70 px-4 py-2 text-xs font-semibold disabled:opacity-50">{actionId === student.id ? <Loader2 className="mx-auto h-3.5 w-3.5 animate-spin" /> : student.account_status === "active" ? "Khóa tài khoản" : "Mở lại"}</button>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/teacher/students/${student.id}`} className="rounded-full border border-[var(--os-accent)]/40 px-4 py-2 text-xs font-semibold text-[var(--os-accent)] hover:bg-[var(--os-accent)]/10">Năng lực</Link>
+                      <button type="button" onClick={() => void toggleStatus(student)} disabled={actionId === student.id} className="rounded-full border border-[hsl(var(--border))]/70 px-4 py-2 text-xs font-semibold disabled:opacity-50">{actionId === student.id ? <Loader2 className="mx-auto h-3.5 w-3.5 animate-spin" /> : student.account_status === "active" ? "Khóa tài khoản" : "Mở lại"}</button>
+                    </div>
                   </article>
                 ))}
               </div>

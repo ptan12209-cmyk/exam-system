@@ -116,3 +116,28 @@ Câu hỏi: ${input.questionText}${optionsBlock}
         },
     ]
 }
+
+export interface CompetencyReportInput {
+    studentLabel: string
+    /** Compact, PII-free aggregate — numbers and subject names only. */
+    aggregates: unknown
+}
+
+export function buildCompetencyReportMessages(input: CompetencyReportInput): AiMessage[] {
+    return [
+        { role: "system", content: SYSTEM_TUTOR },
+        {
+            role: "user",
+            content: `Dựa trên số liệu tổng hợp sau đây (đã ẩn danh, chỉ gồm con số và tên môn), viết NHẬN XÉT NĂNG LỰC cho học sinh ${input.studentLabel}.
+
+YÊU CẦU:
+1. 4–6 câu tiếng Việt, giọng thân mật hướng thiện chí như giáo viên chủ nhiệm.
+2. Cấu trúc: nhận xét chung → điểm mạnh → điểm cần cải thiện → 1–2 gợi ý luyện tập cụ thể.
+3. KHÔNG bịa số liệu không có trong dữ liệu; KHÔNG chấm điểm nhân cách.
+4. Trả về VĂN BẢN thuần (không JSON, không markdown header).
+
+SỐ LIỆU:
+${JSON.stringify(input.aggregates)}`,
+        },
+    ]
+}
