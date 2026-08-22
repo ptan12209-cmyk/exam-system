@@ -1,91 +1,54 @@
-﻿"use client"
-
-import { useEffect, useMemo, useState } from "react"
-import Link from "next/link"
+﻿import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
 import { getUserStats } from "@/lib/gamification"
 import { PWAInstallButton } from "@/components/PWAInstallButton"
 import { StudentShell } from "@/components/student/StudentShell"
 import { StudentTopbar } from "@/components/student/StudentTopbar"
 import { StudentNavTabs } from "@/components/student/StudentNavTabs"
-import { BookOpen, BarChart3, ListTodo, Swords, User, Edit, Smartphone } from "lucide-react"
-import { Loading } from "@/components/shared/Loading"
+import { BookOpen, BarChart3, User, Edit, Smartphone } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { ARENA_ENABLED, CHECKLIST_ENABLED } from "@/lib/features"
 
 const instrumentSerif = { className: "font-instrument-serif" }
 const inter = { className: "font-inter" }
 
-export default function ProfilePage() {
-  const router = useRouter()
-  const supabase = useMemo(() => createClient(), [])
-  const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState<string | null>(null)
-  const [fullName, setFullName] = useState("")
-  const [userClass, setUserClass] = useState("")
-  const [profile, setProfile] = useState<{ avatar_url?: string | null; nickname?: string | null; bio?: string | null } | null>(null)
-  const [stats, setStats] = useState<{ xp: number; level: number; streak_days: number; exams_completed: number; perfect_scores: number } | null>(null)
+/**
+ * Server Component — profile + stats render straight from the HTML payload.
+ */
+export default async function ProfilePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/login")
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push("/login"); return }
-      setUserId(user.id)
-      
-      const { data: profileData } = await supabase.from("profiles").select("full_name, class, avatar_url, nickname, bio").eq("id", user.id).single()
-      if (profileData) {
-        setFullName(profileData.full_name || "")
-        setUserClass(profileData.class || "")
-        setProfile(profileData)
-      }
-      
-      const { stats: userStats } = await getUserStats(user.id)
-      setStats(userStats)
-      setLoading(false)
-    }
-    fetchData()
-  }, [router, supabase])
+  const [{ data: profileData }, statsResult] = await Promise.all([
+    supabase.from("profiles").select("full_name, class, avatar_url, nickname, bio").eq("id", user.id).single(),
+    getUserStats(user.id, supabase),
+  ])
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push("/login")
-  }
+  const fullName = profileData?.full_name || ""
+  const userClass = profileData?.class || ""
+  const stats = statsResult.stats
 
   let avatarContent: React.ReactNode = "?"
-  if (profile?.avatar_url) {
+  if (profileData?.avatar_url) {
     avatarContent = (
-      <Image 
-        src={profile.avatar_url} 
-        alt={fullName || "Avatar"} 
-        width={96} 
-        height={96} 
-        className="h-full w-full object-cover" 
+      <Image
+        src={profileData.avatar_url}
+        alt={fullName || "Avatar"}
+        width={96}
+        height={96}
+        className="h-full w-full object-cover"
       />
     )
   } else if (fullName) {
     avatarContent = fullName.charAt(0).toUpperCase()
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
-        <Loading label="Đang tải hồ sơ..." />
-      </div>
-    )
-  }
-
   const quickLinks = [
     { href: "/student/exams", label: "Đề thi của tôi", icon: BookOpen },
     { href: "/student/analytics", label: "Thống kê kết quả", icon: BarChart3 },
-    ...(CHECKLIST_ENABLED
-      ? [{ href: "/student/checklist", label: "Nhiệm vụ được giao", icon: ListTodo }]
-      : []),
-    ...(ARENA_ENABLED
-      ? [{ href: "/arena", label: "Đấu trường Arena", icon: Swords }]
-      : []),
   ]
 
   return (
@@ -93,17 +56,16 @@ export default function ProfilePage() {
       {/* Topbar */}
       <StudentTopbar
         name={fullName}
-        userXp={stats?.xp || 0}
-        level={stats?.level || 1}
-        streak={stats?.streak_days || 0}
-        onLogout={handleLogout}
+        userXp={stats.xp}
+        level={stats.level}
+        streak={stats.streak_days}
       />
 
       {/* NavTabs */}
       <StudentNavTabs />
 
       <main className="mx-auto max-w-7xl px-4 pb-28 pt-8 sm:px-6 lg:px-8">
-        
+
         {/* Title Header Section */}
         <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
           <div>
@@ -120,11 +82,11 @@ export default function ProfilePage() {
         </section>
 
         {/* Quick Links Grid */}
-        <section className="mt-8 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-8 grid gap-4 grid-cols-1 sm:grid-cols-2">
           {quickLinks.map((item) => (
-            <Link 
-              key={item.href} 
-              href={item.href} 
+            <Link
+              key={item.href}
+              href={item.href}
               className="flex items-center gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] p-4 hover:border-[var(--os-accent)]/50 transition-colors group"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--os-border)] bg-[var(--os-bg)] text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors">
@@ -147,8 +109,8 @@ export default function ProfilePage() {
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-[var(--os-fg)]">{fullName || "Học sinh"}</h2>
                   {userClass && <p className="mt-1 text-sm text-[var(--os-muted)] font-mono uppercase">Lớp {userClass}</p>}
-                  {profile?.nickname && <p className="mt-1 text-xs text-[var(--os-accent)] font-mono">@{profile.nickname}</p>}
-                  <p className="mt-3 text-xs text-[var(--os-muted)] leading-relaxed max-w-md">{profile?.bio || "Chưa có giới thiệu bản thân."}</p>
+                  {profileData?.nickname && <p className="mt-1 text-xs text-[var(--os-accent)] font-mono">@{profileData.nickname}</p>}
+                  <p className="mt-3 text-xs text-[var(--os-muted)] leading-relaxed max-w-md">{profileData?.bio || "Chưa có giới thiệu bản thân."}</p>
                 </div>
                 <Link href="/student/profile/edit" className="shrink-0 w-full md:w-auto">
                   <Button className="rounded-xl border border-[var(--os-border)] text-[var(--os-muted)] hover:text-[var(--os-fg)] hover:border-[var(--os-accent)] hover:bg-[var(--os-accent)]/15 bg-transparent py-5 px-5 text-xs font-semibold w-full md:w-auto">

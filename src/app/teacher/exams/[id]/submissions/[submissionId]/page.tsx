@@ -1,69 +1,64 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
-import { TeacherSidebar } from "@/components/TeacherSidebar"
 import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { TeacherBottomNav } from "@/components/BottomNav"
 import { cn } from "@/lib/utils"
-import { ArrowLeft, User, Clock, Trophy, CheckCircle2, XCircle, Calendar, Mail, GraduationCap } from "lucide-react"
-import { Loading } from "@/components/shared/Loading"
+import { ArrowLeft, CheckCircle2, XCircle, Clock, Calendar, Mail, User, Trophy } from "lucide-react"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 
-import type { Exam, Submission, Profile } from "@/types"
+import type { Exam, Profile, Submission } from "@/types"
 
-export default function SubmissionDetailPage() {
-  const router = useRouter()
-  const params = useParams()
-  const examId = params.id as string
-  const submissionId = params.submissionId as string
-  const supabase = createClient()
-  const [exam, setExam] = useState<Exam | null>(null)
-  const [submission, setSubmission] = useState<Submission | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [teacherProfile, setTeacherProfile] = useState<{ full_name: string | null } | null>(null)
+function formatTime(seconds: number) {
+  return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")}`
+}
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+}
+function getScoreColor(score: number) {
+  return score >= 8 ? "text-emerald-500" : score >= 5 ? "text-amber-500" : "text-rose-500"
+}
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push("/login"); return }
-      const { data: tp } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
-      setTeacherProfile(tp)
-      const { data: examData } = await supabase.from("exams").select("*").eq("id", examId).eq("teacher_id", user.id).single()
-      if (!examData) { router.push("/teacher/dashboard"); return }
-      setExam(examData as unknown as Exam)
-      const { data: submissionData } = await supabase.from("submissions").select("*").eq("id", submissionId).eq("exam_id", examId).single()
-      if (!submissionData) { router.push(`/teacher/exams/${examId}/scores`); return }
-      setSubmission(submissionData as unknown as Submission)
-      const { data: profileData } = await supabase.from("profiles").select("full_name, email").eq("id", submissionData.student_id).single()
-      setProfile(profileData as unknown as Profile)
-      setLoading(false)
-    }
-    fetchData()
-  }, [examId, submissionId, router, supabase])
+/**
+ * Server Component — teacher's per-student review arrives fully rendered.
+ * Answer keys are readable here because the teacher owns the exam (RLS).
+ */
+export default async function SubmissionDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string; submissionId: string }>
+}) {
+  const { id: examId, submissionId } = await params
+  const supabase = await createClient()
 
-  const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")}`
-  const formatDate = (dateStr: string) => new Date(dateStr).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
-  const getScoreColor = (score: number) => score >= 8 ? "text-emerald-500" : score >= 5 ? "text-amber-500" : "text-rose-500"
-  const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login") }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/login")
 
-  if (loading) return <Loading fullPage label="Đang tải chi tiết bài làm..." />
-  if (!exam || !submission) return null
+  const { data: teacherProfile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
+  const { data: examData } = await supabase.from("exams").select("*").eq("id", examId).eq("teacher_id", user.id).single()
+  if (!examData) redirect("/teacher/dashboard")
+  const exam = examData as unknown as Exam
 
-  const mcCorrectAnswers = exam.mc_answers || (exam.correct_answers?.map((a, i) => ({ question: i + 1, answer: a }))) || []
-  const studentMcAnswers = submission.mc_student_answers || (submission.student_answers?.map((a, i) => ({ question: i + 1, answer: a }))) || []
-  const tfAnswers = exam.tf_answers || []
-  const saAnswers = exam.sa_answers || []
-  const studentTfAnswers = submission.tf_student_answers || []
-  const studentSaAnswers = submission.sa_student_answers || []
+  const { data: submissionData } = await supabase.from("submissions").select("*").eq("id", submissionId).eq("exam_id", examId).single()
+  if (!submissionData) redirect(`/teacher/exams/${examId}/scores`)
+  const submission = submissionData as unknown as Submission
+
+  const { data: profileData } = await supabase.from("profiles").select("full_name, email").eq("id", submissionData.student_id).single()
+  const profile = profileData as unknown as Pick<Profile, "full_name" | "email"> | null
+
+  const mcCorrectAnswers = (exam.mc_answers as unknown as { question: number; answer: string }[] | null)
+    ?? (exam.correct_answers?.map((a, i) => ({ question: i + 1, answer: a }))) ?? []
+  const studentMcAnswers = ((submission.mc_student_answers ?? null) as unknown as { question: number; answer: string | null }[] | null)
+    ?? (submission.student_answers?.map((a, i) => ({ question: i + 1, answer: a }))) ?? []
+  const tfAnswers = (exam.tf_answers as unknown as { question: number; a: boolean; b: boolean; c: boolean; d: boolean }[] | null) ?? []
+  const saAnswers = (exam.sa_answers as unknown as { question: number; answer: string | number }[] | null) ?? []
+  const studentTfAnswers = (submission.tf_student_answers ?? []) as unknown as { question: number; a: boolean | null; b: boolean | null; c: boolean | null; d: boolean | null }[]
+  const studentSaAnswers = (submission.sa_student_answers ?? []) as unknown as { question: number; answer: string }[]
 
   return (
-    <TeacherShell onLogout={handleLogout}>
+    <TeacherShell>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-[hsl(var(--border))]/25 bg-[hsl(var(--background))]/70 backdrop-blur-md lg:hidden safe-top">
         <div className="flex h-16 items-center justify-between px-4">
           <Link href={`/teacher/exams/${examId}/scores`} className="flex items-center gap-3">
@@ -74,16 +69,18 @@ export default function SubmissionDetailPage() {
           </Link>
           <div className="flex items-center gap-2">
             <NotificationBell />
-            <UserMenu userName={teacherProfile?.full_name || ""} onLogout={handleLogout} role="teacher" />
+            <UserMenu userName={teacherProfile?.full_name || ""} role="teacher" />
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 pb-24 pt-24 lg:px-8 lg:py-10">
         <div className="mb-8 flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => router.back()} className="rounded-full border-[hsl(var(--border))]/70 bg-transparent transition-transform active:scale-95">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          <Link href={`/teacher/exams/${examId}/scores`}>
+            <Button variant="outline" size="icon" className="rounded-full border-[hsl(var(--border))]/70 bg-transparent transition-transform active:scale-95">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">Submission detail</p>
             <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Chi tiết bài làm</h1>
@@ -140,7 +137,7 @@ export default function SubmissionDetailPage() {
 
           <div className="flex flex-col items-center justify-center rounded-2xl p-8 text-center">
             <div className={cn(
-              "mb-6 flex h-24 w-24 items-center justify-center rounded-full ring-8 ring-opacity-20", 
+              "mb-6 flex h-24 w-24 items-center justify-center rounded-full ring-8 ring-opacity-20",
               (submission.score / 10) >= 0.5 ? "bg-emerald-500/10 text-emerald-500 ring-emerald-500" : "bg-rose-500/10 text-rose-500 ring-rose-500"
             )}>
               {(submission.score / 10) >= 0.5 ? <CheckCircle2 className="h-12 w-12" /> : <XCircle className="h-12 w-12" />}
@@ -165,9 +162,9 @@ export default function SubmissionDetailPage() {
               </h3>
             </div>
             <div className="p-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-              {mcCorrectAnswers.map((correct, index) => { 
-                const studentAnswer = studentMcAnswers.find((a) => a.question === correct.question)?.answer; 
-                const isCorrect = studentAnswer?.toUpperCase() === correct.answer?.toUpperCase(); 
+              {mcCorrectAnswers.map((correct, index) => {
+                const studentAnswer = studentMcAnswers.find((a) => a.question === correct.question)?.answer
+                const isCorrect = studentAnswer?.toUpperCase() === correct.answer?.toUpperCase()
                 return (
                   <div key={index} className={cn("rounded-2xl border p-4 transition-colors", isCorrect ? "border-emerald-500/20 bg-emerald-500/5" : "border-rose-500/20 bg-rose-500/5")}>
                     <div className="mb-3 flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-3">
@@ -201,17 +198,17 @@ export default function SubmissionDetailPage() {
               </h3>
             </div>
             <div className="p-6 grid gap-6 md:grid-cols-2">
-              {tfAnswers.map((tf, index) => { 
-                const studentTf = studentTfAnswers.find((a) => a.question === tf.question); 
-                const qNum = (exam.mc_answers?.length || exam.correct_answers?.length || 0) + 1 + index; 
+              {tfAnswers.map((tf, index) => {
+                const studentTf = studentTfAnswers.find((a) => a.question === tf.question)
+                const qNum = (exam.mc_answers?.length || exam.correct_answers?.length || 0) + 1 + index
                 return (
                   <div key={index} className="rounded-xl border border-[hsl(var(--border))]/60 p-5 hover:bg-[hsl(var(--muted))]/5 transition-colors">
                     <p className="mb-4 border-b border-[hsl(var(--border))]/40 pb-2 text-sm font-bold tracking-tight">CÂU HỎI {qNum}</p>
                     <div className="grid grid-cols-4 gap-3">
-                      {(['a', 'b', 'c', 'd'] as const).map((opt) => { 
-                        const correctVal = tf[opt]; 
-                        const studentVal = studentTf?.[opt]; 
-                        const isCorrect = studentVal === correctVal; 
+                      {(['a', 'b', 'c', 'd'] as const).map((opt) => {
+                        const correctVal = tf[opt]
+                        const studentVal = studentTf?.[opt]
+                        const isCorrect = studentVal === correctVal
                         return (
                           <div key={opt} className={cn("rounded-xl border p-3 text-center", isCorrect ? "border-emerald-500/20 bg-emerald-500/5" : "border-rose-500/20 bg-rose-500/5")}>
                             <p className="text-[10px] font-bold uppercase text-[hsl(var(--muted-foreground))]">{opt}</p>
@@ -238,13 +235,13 @@ export default function SubmissionDetailPage() {
               </h3>
             </div>
             <div className="p-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {saAnswers.map((sa, index) => { 
-                const studentSa = studentSaAnswers.find((a) => a.question === sa.question); 
-                const qNum = (exam.mc_answers?.length || exam.correct_answers?.length || 0) + tfAnswers.length + 1 + index; 
-                const correctVal = parseFloat(sa.answer.toString().replace(",", ".")); 
-                const studentVal = parseFloat(studentSa?.answer?.replace(",", ".") || "0"); 
-                const tolerance = Math.abs(correctVal) * 0.05; 
-                const isCorrect = Math.abs(correctVal - studentVal) <= tolerance; 
+              {saAnswers.map((sa, index) => {
+                const studentSa = studentSaAnswers.find((a) => a.question === sa.question)
+                const qNum = (exam.mc_answers?.length || exam.correct_answers?.length || 0) + tfAnswers.length + 1 + index
+                const correctVal = parseFloat(sa.answer.toString().replace(",", "."))
+                const studentVal = parseFloat(studentSa?.answer?.replace(",", ".") || "0")
+                const tolerance = Math.abs(correctVal) * 0.05
+                const isCorrect = Math.abs(correctVal - studentVal) <= tolerance
                 return (
                   <div key={index} className={cn("rounded-2xl border p-5 transition-colors", isCorrect ? "border-emerald-500/20 bg-emerald-500/5" : "border-rose-500/20 bg-rose-500/5")}>
                     <div className="mb-4 flex items-center justify-between border-b border-[hsl(var(--border))]/20 pb-3">
