@@ -6,16 +6,11 @@ import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { updateStudentStats, getUserStats } from "@/lib/gamification"
-import { XpGainAnimation, LevelUpAnimation } from "@/components/gamification/XpBar"
-import { NewBadgeAnimation } from "@/components/gamification/BadgeCard"
-import { useAchievementUnlock } from "@/components/gamification/AchievementUnlock"
 import { StudentShell } from "@/components/student/StudentShell"
 import { StudentTopbar } from "@/components/student/StudentTopbar"
 import { StudentNavTabs } from "@/components/student/StudentNavTabs"
 import { Trophy, CheckCircle2, XCircle, Home, Medal, Share2, RotateCcw, Lock } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
-import { GAMIFICATION_ENABLED } from "@/lib/features"
 
 import type { Exam, Submission } from "@/types"
 
@@ -58,19 +53,10 @@ export default function ExamResultPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [fullName, setFullName] = useState("")
-  const [xpGained, setXpGained] = useState<number | null>(null)
-  const [showLevelUp, setShowLevelUp] = useState(false)
-  const [newLevel, setNewLevel] = useState(1)
   const [canRetake, setCanRetake] = useState(false)
   const [attemptsUsed, setAttemptsUsed] = useState(0)
   const [maxAttempts, setMaxAttempts] = useState(1)
   const [canViewScore, setCanViewScore] = useState(true)
-  
-  const [studentStats, setStudentStats] = useState({ xp: 0, level: 1, streak_days: 0 })
-
-  const { unlock, AchievementPopup } = useAchievementUnlock()
-  const [unlockedBadges, setUnlockedBadges] = useState<any[]>([])
-  const [currentBadgeIndex, setCurrentBadgeIndex] = useState(0)
 
   useEffect(() => {
     (async () => {
@@ -94,7 +80,7 @@ export default function ExamResultPage() {
       if (!allSubmissions?.length) { router.push(`/student/exams/${examId}/take`); return }
 
       const currentSubmission = allSubmissions[0]
-      setSubmission(currentSubmission)
+      setSubmission(currentSubmission as unknown as Submission)
       setAttemptsUsed(count ?? allSubmissions.length)
       if (examMaxAttempts === 0 || (count ?? 0) < examMaxAttempts) setCanRetake(true)
 
@@ -117,57 +103,6 @@ export default function ExamResultPage() {
             profile: { full_name: row.student_name ?? null }
           }))
         )
-      }
-
-      if (GAMIFICATION_ENABLED) {
-        // Gamification remains in the codebase but is not executed while locked.
-        const { stats } = await getUserStats(user.id)
-        setStudentStats(stats)
-
-        const xpAwardedKey = `xp_awarded_${examId}_${user.id}_${currentSubmission.id}`
-        if (!localStorage.getItem(xpAwardedKey)) {
-          try {
-            const result = await updateStudentStats(user.id, currentSubmission.score)
-            setXpGained(result.xpGained)
-            setNewLevel(result.newLevel)
-            if (result.leveledUp) setShowLevelUp(true)
-
-            // Re-fetch updated stats after checkin/update
-            const { stats: updatedStats } = await getUserStats(user.id)
-            setStudentStats(updatedStats)
-
-            // Check for newly unlocked badges
-            if (result.newBadges && result.newBadges.length > 0) {
-              const { data: badgeData } = await supabase
-                .from("badges")
-                .select("*")
-                .in("name", result.newBadges)
-              if (badgeData) {
-                setUnlockedBadges(badgeData)
-              }
-            }
-
-            // Check for newly unlocked achievements
-            const { data: achievementData } = await supabase.rpc("check_and_unlock_achievements", {
-              p_user_id: user.id
-            })
-            if (achievementData && achievementData.unlocked && achievementData.unlocked.length > 0) {
-              const { data: achData } = await supabase
-                .from("achievements")
-                .select("*")
-                .in("name", achievementData.unlocked)
-              if (achData) {
-                achData.forEach((ach: any) => {
-                  unlock(ach)
-                })
-              }
-            }
-
-            localStorage.setItem(xpAwardedKey, "true")
-          } catch (error) {
-            console.error("Failed to update stats:", error)
-          }
-        }
       }
 
       setLoading(false)
@@ -213,22 +148,9 @@ export default function ExamResultPage() {
 
   return (
     <StudentShell className={cn("bg-[var(--os-bg)] text-[var(--os-fg)]", inter.className)}>
-      {GAMIFICATION_ENABLED && xpGained !== null && xpGained > 0 && <XpGainAnimation xpGained={xpGained} onComplete={() => setXpGained(null)} />}
-      {GAMIFICATION_ENABLED && showLevelUp && <LevelUpAnimation newLevel={newLevel} onComplete={() => setShowLevelUp(false)} />}
-      {GAMIFICATION_ENABLED && unlockedBadges.length > 0 && currentBadgeIndex < unlockedBadges.length && (
-        <NewBadgeAnimation 
-          badge={unlockedBadges[currentBadgeIndex]} 
-          onComplete={() => setCurrentBadgeIndex(prev => prev + 1)} 
-        />
-      )}
-      {GAMIFICATION_ENABLED && AchievementPopup}
-
       {/* Topbar */}
       <StudentTopbar
         name={fullName}
-        userXp={studentStats.xp}
-        level={studentStats.level}
-        streak={studentStats.streak_days}
         onLogout={handleLogout}
       />
 

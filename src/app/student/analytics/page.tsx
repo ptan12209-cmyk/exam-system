@@ -72,13 +72,14 @@ export default function StudentAnalyticsPage() {
       setStudentStats(userStats)
       setUserXp(userStats.xp)
 
-      const [subsData, examMeta] = subsResult
+      const [subsResponse, examMetaResponse] = subsResult
+      const subsData = subsResponse.data
       if (subsData) {
-        const examMap = new Map((examMeta ?? []).map((e: { id: string; title: string; subject: string | null }) => [e.id, e]))
-        const transformed = subsData.map((submission: { id: string; exam_id: string; score: number; submitted_at: string }) => ({
+        const examMap = new Map((examMetaResponse.data ?? []).map((e) => [e.id, e]))
+        const transformed = subsData.map((submission) => ({
           ...submission,
           exam: examMap.get(submission.exam_id) ?? null,
-        })) as Submission[]
+        })) as unknown as Submission[]
         setSubmissions(transformed)
         const scores = transformed.map((item) => item.score)
         if (scores.length > 0) {

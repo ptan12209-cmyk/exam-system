@@ -43,12 +43,13 @@ export function useStudentSubmissions(studentId: string | null) {
     }
 
     let cancelled = false
+    const sid = studentId
 
     async function fetchSubmissions() {
       const { data } = await supabase
         .from("submissions")
         .select("id, exam_id, score, time_spent, submitted_at, student_id")
-        .eq("student_id", studentId)
+        .eq("student_id", sid)
 
       if (cancelled) return
 

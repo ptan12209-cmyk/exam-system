@@ -78,7 +78,7 @@ export default function StudentExamsPage() {
         .eq("id", authUser.id)
         .single()
 
-      setUser({ id: authUser.id, full_name: profile?.full_name, class: profile?.class })
+      setUser({ id: authUser.id, full_name: profile?.full_name ?? undefined, class: profile?.class ?? undefined })
       setUserProfile({ grade: profile?.grade ?? null, nickname: profile?.nickname ?? null })
       setSelectedGrade(profile?.grade ?? "all")
 
@@ -116,7 +116,7 @@ export default function StudentExamsPage() {
 
       if (subsResult.data) {
         const subMap = new Map<string, number>()
-        subsResult.data.forEach((s: Submission) => {
+        subsResult.data.forEach((s) => {
           if (s.exam_id) {
             const existing = subMap.get(s.exam_id)
             if (!existing || s.score > existing) subMap.set(s.exam_id, s.score)
@@ -226,7 +226,7 @@ export default function StudentExamsPage() {
       .select("id, question_text, options")
       .eq("exam_id", exam.id)
       .order("order_index")
-    if (questions) setPreviewQuestions(questions)
+    if (questions) setPreviewQuestions(questions as unknown as Question[])
 
     setLoadingPreview(false)
   }

@@ -19,6 +19,7 @@ import { TeacherBottomNav } from "@/components/BottomNav"
 import { ArrowLeft, GraduationCap, Loader2, Wand2, Eye, X } from "lucide-react"
 import { StepIndicator, ExamInfoForm, PdfUploader, ScheduleFields, AnswerEntry } from "./_components"
 import type { Option, TFAnswer, SAAnswer } from "@/types/exam"
+import type { Json } from "@/types/database"
 import { MAP_DB_TO_SUBJECT } from "@/lib/subjects"
 
 export default function CreateExamPage() {
@@ -234,6 +235,7 @@ export default function CreateExamPage() {
         .from("exams")
         .insert({
           teacher_id: user.id,
+          created_by: user.id,
           target_grade: targetGrade,
           target_classes: classesArray,
           is_advanced: isAdvanced,
@@ -241,10 +243,10 @@ export default function CreateExamPage() {
           subject,
           duration,
           total_questions: mcCount + effectiveTf + effectiveSa,
-          correct_answers: Object.values(parsedAnswers).length ? Object.values(parsedAnswers) : mcAnswers.length > 0 ? mcAnswers : correctAnswers,
-          mc_answers: mcAnswerObjects,
-          tf_answers: finalTfAnswers,
-          sa_answers: finalSaAnswers,
+          correct_answers: (Object.values(parsedAnswers).length ? Object.values(parsedAnswers) : mcAnswers.length > 0 ? mcAnswers : correctAnswers) as unknown as string[],
+          mc_answers: mcAnswerObjects as unknown as Json,
+          tf_answers: finalTfAnswers as unknown as Json,
+          sa_answers: finalSaAnswers as unknown as Json,
           pdf_url: pdfUrl,
           max_attempts: maxAttempts,
           status: publish ? "published" : "draft",

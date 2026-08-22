@@ -17,6 +17,7 @@ import { AlertTriangle, Clock, FileText, Send, ArrowLeft, ChevronLeft, ChevronRi
 import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
 import { useToast } from "@/components/ui/toast"
+import type { Json } from "@/types/database"
 
 // pdf.js (~1MB) only loads when a PDF exam is actually rendered
 const InlinePdfViewer = dynamic(
@@ -240,7 +241,7 @@ export default function TakeExamPage() {
     if (!sessionId) return
     const timer = setInterval(async () => {
       await supabase.from("exam_sessions").update({
-        answers_snapshot: { mc: studentAnswers, tf: tfStudentAnswers, sa: saStudentAnswers },
+        answers_snapshot: { mc: studentAnswers, tf: tfStudentAnswers, sa: saStudentAnswers } as unknown as Json,
         last_active_at: new Date().toISOString(),
         tab_switch_count: tabSwitchCount
       }).eq("id", sessionId)

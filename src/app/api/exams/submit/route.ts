@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { rateLimiters, getClientIP, rateLimitResponse } from '@/lib/rate-limit'
 import { invalidateCache } from '@/lib/cache'
+import type { Json } from '@/types/database'
 
 import { calculateScore, TFStudentAnswer, SAStudentAnswer } from '@/services/scoring'
+import type { MCAnswer, TFAnswer, SAAnswer } from '@/types'
 
 interface SubmitRequest {
     exam_id: string
@@ -121,7 +123,12 @@ export async function POST(request: NextRequest) {
         }
 
         // 4. Calculate Score (Centralized Service)
-        const scoring = calculateScore(mc_answers, tf_answers, sa_answers, exam)
+        const scoring = calculateScore(mc_answers, tf_answers, sa_answers, {
+            correct_answers: exam.correct_answers,
+            mc_answers: exam.mc_answers as unknown as MCAnswer[],
+            tf_answers: exam.tf_answers as unknown as TFAnswer[],
+            sa_answers: exam.sa_answers as unknown as SAAnswer[],
+        })
 
         // 5. Check session ranking status
         let isRanked = true
@@ -145,9 +152,9 @@ export async function POST(request: NextRequest) {
                 exam_id,
                 student_id: user.id,
                 student_answers: mc_answers,
-                mc_student_answers: mc_answers?.map((a, i) => ({ question: i + 1, answer: a })),
-                tf_student_answers: tf_answers,
-                sa_student_answers: sa_answers,
+                mc_student_answers: (mc_answers?.map((a, i) => ({ question: i + 1, answer: a })) ?? []) as unknown as Json,
+                tf_student_answers: (tf_answers ?? []) as unknown as Json,
+                sa_student_answers: (sa_answers ?? []) as unknown as Json,
                 score: scoring.score,
                 correct_count: Math.round(scoring.totalCorrect),
                 mc_correct: scoring.details.mc.correct,
@@ -158,7 +165,7 @@ export async function POST(request: NextRequest) {
                 attempt_number: (attemptCount ?? 0) + 1,
                 session_id,
                 is_ranked: isRanked,
-                cheat_flags: cheat_flags || { tab_switches: 0, multi_browser: false }
+                cheat_flags: (cheat_flags || { tab_switches: 0, multi_browser: false }) as unknown as Json
             })
             .select('id')
             .single()

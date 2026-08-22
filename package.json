@@ -11,11 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run",
-    "ci": "npm run typecheck && npm run lint:ci && npm run test:unit",
-    "remotion:studio": "npm run studio --prefix remotion",
-    "remotion:voice": "npm run voice:generate --prefix remotion",
-    "remotion:render:full": "npm run render:full --prefix remotion",
-    "remotion:render:full:voice": "npm run render:full:with-voice --prefix remotion"
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "ci": "npm run typecheck && npm run lint:ci && npm run test:unit && npm run test:e2e"
   },
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1675466862",
@@ -27,6 +25,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-toast": "^1.2.15",
+    "@sentry/nextjs": "^10.70.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.90.1",
     "@tensorflow-models/coco-ssd": "^2.2.3",
@@ -68,6 +67,7 @@
     }
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/jest": "^30.0.0",
     "@types/node": "^20",

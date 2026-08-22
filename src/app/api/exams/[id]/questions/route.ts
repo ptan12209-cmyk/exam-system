@@ -130,6 +130,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         // Build SAFE response (NO ANSWER KEYS!)
+        const mcAnswerRows = (exam.mc_answers ?? null) as { question: number }[] | null
+        const tfAnswerRows = (exam.tf_answers ?? null) as { question: number }[] | null
+        const saAnswerRows = (exam.sa_answers ?? null) as { question: number }[] | null
+
         const safeExam = {
             id: exam.id,
             title: exam.title,
@@ -144,18 +148,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             security_level: exam.security_level ?? 1,
 
             // MC questions: Only question numbers, NO correct answers
-            mc_questions: exam.mc_answers
-                ? exam.mc_answers.map((q: { question: number }) => ({ question: q.question }))
+            mc_questions: mcAnswerRows
+                ? mcAnswerRows.map((q) => ({ question: q.question }))
                 : Array.from({ length: exam.correct_answers?.length || exam.total_questions }, (_, i) => ({ question: i + 1 })),
 
             // TF questions: Only question numbers, NO correct boolean values
-            tf_questions: exam.tf_answers
-                ? exam.tf_answers.map((q: { question: number }) => ({ question: q.question }))
+            tf_questions: tfAnswerRows
+                ? tfAnswerRows.map((q) => ({ question: q.question }))
                 : [],
 
             // SA questions: Only question numbers, NO correct answers
-            sa_questions: exam.sa_answers
-                ? exam.sa_answers.map((q: { question: number }) => ({ question: q.question }))
+            sa_questions: saAnswerRows
+                ? saAnswerRows.map((q) => ({ question: q.question }))
                 : []
         }
 

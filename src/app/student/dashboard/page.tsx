@@ -6,34 +6,24 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import {
+  Award,
   BookOpen,
   Clock,
   FileText,
   Search,
-  Swords,
   Trophy,
-  Zap,
-  CheckCircle,
-  Award,
-  ListTodo,
-  AlertCircle,
   GraduationCap,
-  Sparkles,
-  Calendar,
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { cn } from "@/lib/utils"
 import { getUserStats } from "@/lib/gamification"
 import { SUBJECTS, getSubjectInfo } from "@/lib/subjects"
-import { DailyCheckIn } from "@/components/gamification/DailyCheckIn"
-import { ChallengesWidget } from "@/components/gamification/ChallengeCard"
 import { StudentShell } from "@/components/student/StudentShell"
 import { StudentTopbar } from "@/components/student/StudentTopbar"
 import { StudentNavTabs } from "@/components/student/StudentNavTabs"
 import { GradeOnboardingModal } from "@/components/student/GradeOnboardingModal"
 import { ThptCountdown } from "@/components/shared/ThptCountdown"
 import { useAuth } from "@/hooks/useAuth"
-import { ARENA_ENABLED, CHECKLIST_ENABLED, GAMIFICATION_ENABLED, TIMETABLE_ENABLED } from "@/lib/features"
 
 import type { Profile, Exam, Submission } from "@/types"
 
@@ -236,30 +226,6 @@ export default function StudentDashboard() {
     return max.toFixed(1)
   }, [submissions])
 
-  const xpProgress = useMemo(() => {
-    const currentLevel = studentStats.level
-    const currentLevelThreshold = Math.pow(currentLevel - 1, 2) * 100
-    const nextLevelThreshold = Math.pow(currentLevel, 2) * 100
-    const xpInCurrentLevel = userXp - currentLevelThreshold
-    const xpRequiredForLevel = nextLevelThreshold - currentLevelThreshold
-    
-    return {
-      percent: Math.min((xpInCurrentLevel / xpRequiredForLevel) * 100, 100),
-      current: xpInCurrentLevel,
-      required: xpRequiredForLevel,
-      nextTotal: nextLevelThreshold
-    }
-  }, [studentStats.level, userXp])
-
-  const rank = useMemo(() => {
-    const level = studentStats.level
-    if (level >= 30) return { name: "Thần Thoại", color: "text-red-500", border: "border-red-500/50" }
-    if (level >= 20) return { name: "Cao Thủ", color: "text-amber-500", border: "border-amber-500/50" }
-    if (level >= 10) return { name: "Tinh Anh", color: "text-purple-500", border: "border-purple-500/50" }
-    if (level >= 5) return { name: "Chiến Binh", color: "text-blue-500", border: "border-blue-500/50" }
-    return { name: "Tân Binh", color: "text-[var(--os-muted)]", border: "border-[var(--os-border)]" }
-  }, [studentStats.level])
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
@@ -324,13 +290,6 @@ export default function StudentDashboard() {
                   {profile?.nickname === "X" ? "Làm đề giao riêng" : "Luyện tập ngay"}
                 </Button>
               </a>
-              {TIMETABLE_ENABLED && (
-                <Link href="/student/timetable">
-                  <Button variant="outline" className="rounded-xl border-[var(--os-border)] hover:border-[var(--os-accent)] text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent px-5 py-4 transition-all">
-                    Xem thời khóa biểu
-                  </Button>
-                </Link>
-              )}
               <Link href="/student/analytics">
                 <Button variant="outline" className="rounded-xl border-[var(--os-border)] hover:border-[var(--os-accent)] text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent px-5 py-4 transition-all">
                   Xem chi tiết tiến độ
@@ -342,49 +301,6 @@ export default function StudentDashboard() {
           {/* Profile / countdown card */}
           <div className="flex flex-col gap-4">
             <ThptCountdown className="flex-1" />
-
-            {GAMIFICATION_ENABLED && (
-              <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={cn("relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 shadow-sm bg-[var(--os-bg)]", rank.border)}>
-                    {profile?.avatar_url ? (
-                      <img src={profile.avatar_url ?? undefined} alt={profile.full_name ?? undefined} className="h-full w-full rounded-full object-cover" />
-                    ) : (
-                      <span className="text-2xl font-bold text-[var(--os-fg)]">{profile?.full_name?.[0] || (profile?.nickname === "X" ? "X" : "H")}</span>
-                    )}
-                    <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--os-card)] border border-[var(--os-border)] text-[10px] font-bold text-[var(--os-accent)]">
-                      {studentStats.level}
-                    </div>
-                  </div>
-                  <div>
-                    <span className={cn("text-xs font-bold uppercase tracking-widest", rank.color)}>
-                      {rank.name} Rank
-                    </span>
-                    <h3 className="text-xl font-bold text-[var(--os-fg)] mt-0.5">{profile?.full_name || "Học sinh"}</h3>
-                    <p className="text-xs text-[var(--os-muted)] mt-0.5">
-                      Lớp: {profile?.class || "Chưa thiết lập"}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-6 space-y-2">
-                  <div className="flex justify-between text-xs font-mono text-[var(--os-muted)]">
-                    <span>Tiến trình cấp {studentStats.level}</span>
-                    <span>
-                      <strong className="text-[var(--os-accent)]">{xpProgress.current}</strong> / {xpProgress.required} XP
-                    </span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-[var(--os-bg)] overflow-hidden border border-[var(--os-border)]">
-                    <div
-                      className="h-full bg-[var(--os-accent)] transition-all duration-700 ease-out"
-                      style={{ width: `${xpProgress.percent}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="mt-6 border-t border-[var(--os-border)] pt-4">
-                  <DailyCheckIn onComplete={({ xp }) => setUserXp((prev) => prev + xp)} />
-                </div>
-              </div>
-            )}
           </div>
         </section>
 
@@ -425,28 +341,15 @@ export default function StudentDashboard() {
             </p>
           </div>
 
-          {/* Card 4: Streak (gamification) or pending assignments */}
-          {GAMIFICATION_ENABLED ? (
-            <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-xl p-5 hover:border-[var(--os-accent)]/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">Streak</span>
-                <Sparkles className="h-4 w-4 text-[var(--os-accent)]" />
-              </div>
-              <p className="text-3xl font-bold tracking-tight text-[var(--os-fg)] mt-3">
-                {studentStats.streak_days} <span className="text-lg font-normal text-[var(--os-muted)]">ngày</span>
-              </p>
-              <p className="text-xs text-[var(--os-muted)] mt-1.5 font-medium">Kỷ lục: {maxStreak} ngày</p>
+          {/* Card 4: pending assignments */}
+          <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-xl p-5 hover:border-[var(--os-accent)]/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">Đề chưa làm</span>
+              <FileText className="h-4 w-4 text-[var(--os-accent)]" />
             </div>
-          ) : (
-            <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-xl p-5 hover:border-[var(--os-accent)]/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-[var(--os-muted)] uppercase tracking-wider font-mono">Đề chưa làm</span>
-                <FileText className="h-4 w-4 text-[var(--os-accent)]" />
-              </div>
-              <p className="text-3xl font-bold tracking-tight text-[var(--os-fg)] mt-3">{unsubmittedExams.length}</p>
-              <p className="text-xs text-[var(--os-muted)] mt-1.5 font-medium">Bài tập đang chờ hoàn thành</p>
-            </div>
-          )}
+            <p className="text-3xl font-bold tracking-tight text-[var(--os-fg)] mt-3">{unsubmittedExams.length}</p>
+            <p className="text-xs text-[var(--os-muted)] mt-1.5 font-medium">Bài tập đang chờ hoàn thành</p>
+          </div>
         </section>
 
         {/* Row 3: Main Layout Content Grid */}
@@ -591,14 +494,8 @@ export default function StudentDashboard() {
 
           </div>
 
-          {/* Right Panel: Challenges & Quick Tools */}
+          {/* Right Panel: Quick Tools */}
           <div className="space-y-6">
-            
-            {GAMIFICATION_ENABLED && (
-              <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-2xl p-6 shadow-sm">
-                <ChallengesWidget limit={3} />
-              </div>
-            )}
 
             {/* Quick Navigation Tools */}
             <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-2xl p-6 shadow-sm">
@@ -607,19 +504,7 @@ export default function StudentDashboard() {
                 {[
                   { href: "/student/exams", label: "Đề thi được giao", icon: FileText },
                   { href: "/student/analytics", label: "Thống kê kết quả", icon: Trophy },
-                  ...(ARENA_ENABLED
-                    ? [{ href: "/arena", label: "Đấu trường thi đấu", icon: Swords }]
-                    : []),
                   { href: "https://theieltsdictionary.com/", label: "Từ điển IELTS", icon: GraduationCap, isExternal: true },
-                  ...(GAMIFICATION_ENABLED
-                    ? [{ href: "/student/achievements", label: "Bảng thành tích", icon: Award }]
-                    : []),
-                  ...(TIMETABLE_ENABLED
-                    ? [{ href: "/student/timetable", label: "Thời khóa biểu", icon: Calendar }]
-                    : []),
-                  ...(CHECKLIST_ENABLED
-                    ? [{ href: "/student/checklist", label: "Checklist / Nhiệm vụ", icon: ListTodo }]
-                    : []),
                 ].map((item) => {
                   const itemContent = (
                     <div className="flex flex-col justify-between p-3.5 h-20 bg-[var(--os-bg)] hover:bg-[var(--os-bg)]/80 border border-[var(--os-border)] hover:border-[var(--os-accent)]/50 rounded-xl transition-all duration-200 group">

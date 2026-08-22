@@ -36,12 +36,12 @@ export default function SubmissionDetailPage() {
       setTeacherProfile(tp)
       const { data: examData } = await supabase.from("exams").select("*").eq("id", examId).eq("teacher_id", user.id).single()
       if (!examData) { router.push("/teacher/dashboard"); return }
-      setExam(examData)
+      setExam(examData as unknown as Exam)
       const { data: submissionData } = await supabase.from("submissions").select("*").eq("id", submissionId).eq("exam_id", examId).single()
       if (!submissionData) { router.push(`/teacher/exams/${examId}/scores`); return }
-      setSubmission(submissionData)
+      setSubmission(submissionData as unknown as Submission)
       const { data: profileData } = await supabase.from("profiles").select("full_name, email").eq("id", submissionData.student_id).single()
-      setProfile(profileData)
+      setProfile(profileData as unknown as Profile)
       setLoading(false)
     }
     fetchData()

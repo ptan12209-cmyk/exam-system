@@ -9,6 +9,8 @@ import { generatePackageVersion, validatePackageVersion } from '@/lib/offline-ut
 import { cache } from '@/lib/cache'
 import { createServiceContext } from '@/lib/service-context'
 import { updateStudentStats } from '@/lib/gamification'
+import type { Json } from '@/types/database'
+import type { MCAnswer, TFAnswer, SAAnswer } from '@/types'
 
 // ── Zod schema for offline submission batch ──
 const offlineSubmissionSchema = z.object({
@@ -172,11 +174,10 @@ async function handlePOST(request: Request) {
                 sub.mc_answers,
                 sub.tf_answers,
                 sub.sa_answers,
-                exam as {
-                    mc_answers?: Array<{ question: number; answer: string }>
-                    correct_answers?: string[]
-                    tf_answers?: Array<{ question: number; a: boolean; b: boolean; c: boolean; d: boolean }>
-                    sa_answers?: Array<{ question: number; answer: number | string }>
+                {
+                    mc_answers: exam.mc_answers as unknown as MCAnswer[],
+                    tf_answers: exam.tf_answers as unknown as TFAnswer[],
+                    sa_answers: exam.sa_answers as unknown as SAAnswer[],
                 }
             )
 
@@ -189,9 +190,9 @@ async function handlePOST(request: Request) {
                     exam_id: sub.exam_id,
                     student_id: user.id,
                     student_answers: sub.mc_answers,
-                    mc_student_answers: sub.mc_answers?.map((a, i) => ({ question: i + 1, answer: a })),
-                    tf_student_answers: sub.tf_answers,
-                    sa_student_answers: sub.sa_answers,
+                    mc_student_answers: (sub.mc_answers?.map((a, i) => ({ question: i + 1, answer: a })) ?? []) as unknown as Json,
+                    tf_student_answers: sub.tf_answers as unknown as Json,
+                    sa_student_answers: sub.sa_answers as unknown as Json,
                     score: scoring.score,
                     correct_count: Math.round(scoring.totalCorrect),
                     mc_correct: scoring.details.mc.correct,
@@ -200,7 +201,7 @@ async function handlePOST(request: Request) {
                     time_spent: sub.time_spent,
                     started_at: nowIso,
                     submitted_at: nowIso,
-                    cheat_flags: sub.cheat_flags ?? { tab_switches: 0, multi_browser: false },
+                    cheat_flags: (sub.cheat_flags ?? { tab_switches: 0, multi_browser: false }) as unknown as Json,
                     attempt_number: (existingAttempts ?? 0) + 1,
                     is_ranked: existingAttempts === 0
                 })

@@ -21,10 +21,10 @@ async function handleGET(request: NextRequest) {
     .limit(100)
 
   if (status && status !== "all") {
-    q = q.eq("status", status)
+    q = q.eq("status", status as "new" | "seen" | "in_progress" | "done" | "archived")
   }
   if (category && category !== "all") {
-    q = q.eq("category", category)
+    q = q.eq("category", category as "bug" | "idea" | "praise" | "other")
   }
 
   const { data, error } = await q

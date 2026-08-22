@@ -42,6 +42,7 @@ import type { ParsedAnswerJson } from "@/lib/answer-json"
 import { AnswerJsonImporter } from "@/app/teacher/exams/create/_components/AnswerJsonImporter"
 
 import type { ExamInBank } from "@/types"
+import type { Json } from "@/types/database"
 
 export default function ExamBankPage() {
   const router = useRouter()
@@ -106,7 +107,7 @@ export default function ExamBankPage() {
     setFullName(profile?.full_name || "")
 
     const { data } = await supabase.from("exams").select("*").eq("created_by", user.id).order("created_at", { ascending: false })
-    setExams((data || []).map((e: ExamInBank) => ({ ...e, subject: MAP_DB_TO_SUBJECT[e.subject] || e.subject || "toan", total_questions: e.total_questions || 0 })))
+    setExams(((data ?? []) as unknown as ExamInBank[]).map((e) => ({ ...e, subject: MAP_DB_TO_SUBJECT[e.subject] || e.subject || "toan", total_questions: e.total_questions || 0 })))
     setLoading(false)
   }, [router, supabase])
 
@@ -311,12 +312,12 @@ export default function ExamBankPage() {
         pdf_url: pdfUrl || null,
         answer_key: answerKey || null,
         correct_answers: mcAnswers.map((item) => item.answer),
-        mc_answers: mcAnswers,
-        tf_answers: tfAnswers,
-        sa_answers: saAnswers,
+        mc_answers: mcAnswers as unknown as Json,
+        tf_answers: tfAnswers as unknown as Json,
+        sa_answers: saAnswers as unknown as Json,
         total_questions: totalQuestions,
-        questions: questions.length > 0 ? questions : null,
-        status: "published",
+        questions: (questions.length > 0 ? questions : null) as unknown as Json,
+        status: "published" as const,
         created_by: user.id,
         teacher_id: user.id,
         target_grade: targetGrade,
@@ -393,17 +394,17 @@ export default function ExamBankPage() {
         duration: 45, // Default duration
         total_questions: publishingExam.total_questions,
         correct_answers: mcAnswers.map((item) => item.answer),
-        mc_answers: mcAnswers,
-        tf_answers: tfAnswers,
-        sa_answers: saAnswers,
+        mc_answers: mcAnswers as unknown as Json,
+        tf_answers: tfAnswers as unknown as Json,
+        sa_answers: saAnswers as unknown as Json,
         pdf_url: publishingExam.pdf_url,
-        status: "published",
+        status: "published" as const,
         is_scheduled: publishIsScheduled,
         start_time: publishIsScheduled && publishStartTime ? new Date(publishStartTime).toISOString() : null,
         end_time: publishIsScheduled && publishEndTime ? new Date(publishEndTime).toISOString() : null,
-        score_visibility_mode: "always",
+        score_visibility_mode: "always" as const,
         security_level: 1,
-        assigned_to: publishAssignedTo,
+        assigned_to: publishAssignedTo as "normal" | "x",
         target_grade: publishGrade === "all" ? null : Number(publishGrade),
         target_classes: classesArray,
         chapter_id: publishingExam.chapter_id || null,

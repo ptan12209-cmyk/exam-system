@@ -49,16 +49,17 @@ export default function QuestionBankPage() {
 
     const fetchBanks = async () => {
         try {
+            if (!user) return
             const { data, error } = await supabase
                 .from("question_banks")
                 .select("*")
-                .eq("teacher_id", user?.id)
+                .eq("teacher_id", user.id)
                 .order("created_at", { ascending: false })
 
             if (error) {
                 console.error("Error fetching banks:", error)
             } else {
-                setBanks(data || [])
+                setBanks((data || []) as unknown as QuestionBank[])
             }
         } catch (error) {
             console.error("Error:", error)
@@ -85,7 +86,7 @@ export default function QuestionBankPage() {
 
             if (error) throw error
 
-            setBanks([data, ...banks])
+            setBanks([data as unknown as QuestionBank, ...banks])
             success("Tạo ngân hàng câu hỏi thành công!")
             setIsOpen(false)
             setNewBankName("")

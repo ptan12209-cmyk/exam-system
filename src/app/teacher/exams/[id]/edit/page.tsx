@@ -17,7 +17,8 @@ import { TeacherShell } from "@/components/teacher/TeacherShell"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { MAP_SUBJECT_TO_DB, MAP_DB_TO_SUBJECT, SUBJECTS } from "@/lib/subjects"
-import { calculateScore } from "@/services/scoring"
+import type { Exam } from "@/types"
+import type { Json } from "@/types/database"
 
 const OPTIONS = ["A", "B", "C", "D"] as const
 
@@ -44,7 +45,7 @@ export default function EditExamPage() {
   const [availableLessons, setAvailableLessons] = useState<any[]>([]);
   const [availableSections, setAvailableSections] = useState<any[]>([]);
 
-  useEffect(() => { (async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) { router.push("/login"); return } const { data: profileData } = await supabase.from("profiles").select("full_name").eq("id", user.id).single(); setProfile(profileData); const { data: exam } = await supabase.from("exams").select("*").eq("id", examId).eq("teacher_id", user.id).single(); if (!exam) { const { data: anyExam } = await supabase.from("exams").select("teacher_id, title").eq("id", examId).single(); if (anyExam) setAuthError("Bạn không có quyền chỉnh sửa đề thi này. Đề thi thuộc về giáo viên khác."); else router.push("/teacher/dashboard"); setLoading(false); return } setTitle(exam.title); setDuration(exam.duration); setTargetGrade(exam.target_grade ?? null); setTargetClasses(exam.target_classes ? exam.target_classes.join(", ") : ""); setAssignedTo(exam.assigned_to ?? "normal"); setExamSubject(MAP_DB_TO_SUBJECT[exam.subject] || exam.subject || "other"); setIsAdvanced(exam.is_advanced ?? false); setSelectedChapterId(exam.chapter_id ?? ""); setSelectedLessonId(exam.lesson_id ?? ""); setSelectedSectionId(exam.section_id ?? ""); if (exam.mc_answers?.length > 0) { const mc = exam.mc_answers as { question: number; answer: Option }[]; setMcCount(mc.length); const newMc: (Option | null)[] = Array(mc.length).fill(null); mc.forEach((item) => { const idx = item.question - 1; if (idx >= 0 && idx < mc.length) newMc[idx] = item.answer }); setMcAnswers(newMc) } else if (exam.correct_answers) { setMcCount(exam.correct_answers.length); setMcAnswers(exam.correct_answers) } setTfCount(exam.tf_answers?.length || 0); setTfAnswers(exam.tf_answers || []); setSaCount(exam.sa_answers?.length || 0); setSaAnswers(exam.sa_answers || []); setSecurityLevel(exam.security_level ?? 1); setLoading(false) })() }, [examId, router, supabase])
+  useEffect(() => { (async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) { router.push("/login"); return } const { data: profileData } = await supabase.from("profiles").select("full_name").eq("id", user.id).single(); setProfile(profileData); const { data: rawExam } = await supabase.from("exams").select("*").eq("id", examId).eq("teacher_id", user.id).single(); if (!rawExam) { const { data: anyExam } = await supabase.from("exams").select("teacher_id, title").eq("id", examId).single(); if (anyExam) setAuthError("Bạn không có quyền chỉnh sửa đề thi này. Đề thi thuộc về giáo viên khác."); else router.push("/teacher/dashboard"); setLoading(false); return } const exam = rawExam as unknown as Exam; setTitle(exam.title); setDuration(exam.duration); setTargetGrade(exam.target_grade ?? null); setTargetClasses(exam.target_classes ? exam.target_classes.join(", ") : ""); setAssignedTo(exam.assigned_to ?? "normal"); setExamSubject(MAP_DB_TO_SUBJECT[exam.subject ?? ""] || exam.subject || "other"); setIsAdvanced(exam.is_advanced ?? false); setSelectedChapterId(exam.chapter_id ?? ""); setSelectedLessonId(exam.lesson_id ?? ""); setSelectedSectionId(exam.section_id ?? ""); if (exam.mc_answers && exam.mc_answers.length > 0) { const mc = exam.mc_answers as { question: number; answer: Option }[]; setMcCount(mc.length); const newMc: (Option | null)[] = Array(mc.length).fill(null); mc.forEach((item) => { const idx = item.question - 1; if (idx >= 0 && idx < mc.length) newMc[idx] = item.answer }); setMcAnswers(newMc) } else if (exam.correct_answers) { setMcCount(exam.correct_answers.length); setMcAnswers(exam.correct_answers as Option[]) } setTfCount(exam.tf_answers?.length || 0); setTfAnswers((exam.tf_answers as unknown as TFAnswer[]) || []); setSaCount(exam.sa_answers?.length || 0); setSaAnswers((exam.sa_answers as unknown as SAAnswer[]) || []); setSecurityLevel(exam.security_level ?? 1); setLoading(false) })() }, [examId, router, supabase])
 
   // Cascade: load chapters when grade+subject available
   useEffect(() => {
@@ -118,10 +119,10 @@ export default function EditExamPage() {
           duration,
           subject: examSubject,
           total_questions: mcCount + tfCount + saCount,
-          correct_answers: mcAnswers,
-          mc_answers: mcAnswerObjects,
-          tf_answers: tfCount > 0 ? finalTfAnswers : [],
-          sa_answers: saCount > 0 ? finalSaAnswers : [],
+          correct_answers: mcAnswers as unknown as string[],
+          mc_answers: mcAnswerObjects as unknown as Json,
+          tf_answers: (tfCount > 0 ? finalTfAnswers : []) as unknown as Json,
+          sa_answers: (saCount > 0 ? finalSaAnswers : []) as unknown as Json,
           security_level: securityLevel,
           target_grade: targetGrade,
           target_classes: targetClasses.trim() ? targetClasses.split(",").map(c => c.trim().toUpperCase()).filter(Boolean) : null,
@@ -160,50 +161,30 @@ export default function EditExamPage() {
       await supabase
         .from("exams")
         .update({
-          correct_answers: mcAnswers,
-          mc_answers: mcAnswerObjects,
-          tf_answers: tfCount > 0 ? finalTfAnswers : [],
-          sa_answers: saCount > 0 ? finalSaAnswers : [],
+          correct_answers: mcAnswers as unknown as string[],
+          mc_answers: mcAnswerObjects as unknown as Json,
+          tf_answers: (tfCount > 0 ? finalTfAnswers : []) as unknown as Json,
+          sa_answers: (saCount > 0 ? finalSaAnswers : []) as unknown as Json,
         })
         .eq("id", examId)
 
-      const { data: submissions } = await supabase
-        .from("submissions")
-        .select("id, student_answers, tf_student_answers, sa_student_answers")
-        .eq("exam_id", examId)
-
-      if (!submissions?.length) {
-        setSuccess("Không có bài nộp nào để chấm lại.")
-        setRegrading(false)
-        return
+      // Regrade runs server-side: clients cannot UPDATE submissions anymore.
+      const res = await fetch(`/api/exams/${examId}/regrade`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mc_answers: mcAnswerObjects.map((m) => ({ question: m.question, answer: String(m.answer) })),
+          tf_answers: finalTfAnswers,
+          sa_answers: finalSaAnswers,
+        }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Regrade failed (${res.status})`)
       }
+      const { updated } = (await res.json()) as { updated: number }
 
-      let updatedCount = 0
-      for (const sub of submissions) {
-        const result = calculateScore(
-          (sub.student_answers || []) as (string | null)[],
-          (sub.tf_student_answers || []) as TFAnswer[],
-          (sub.sa_student_answers || []) as { question: number; answer: string }[],
-          {
-            mc_answers: mcAnswerObjects as { question: number; answer: string }[],
-            tf_answers: finalTfAnswers,
-            sa_answers: finalSaAnswers,
-          }
-        )
-        await supabase
-          .from("submissions")
-          .update({
-            score: result.score,
-            correct_count: Math.round(result.totalCorrect),
-            mc_correct: result.details.mc.correct,
-            tf_correct: Math.round(result.details.tf.correct),
-            sa_correct: result.details.sa.correct,
-          })
-          .eq("id", sub.id)
-        updatedCount++
-      }
-
-      setSuccess(`✅ Đã chấm lại ${updatedCount} bài nộp thành công!`)
+      setSuccess(`✅ Đã chấm lại ${updated} bài nộp thành công!`)
     } catch (err) {
       setError("Lỗi chấm lại: " + (err as Error).message)
     } finally {

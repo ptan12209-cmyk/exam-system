@@ -157,7 +157,7 @@ export default function QuestionBankDetailPage({ params }: RouteParams) {
             .eq("bank_id", bankId)
             .order("created_at", { ascending: false })
         
-        if (data) setQuestions(data)
+        if (data) setQuestions(data as unknown as Question[])
         setLoading(false)
     }
 

@@ -1,10 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database'
 
-export async function createClient() {
+export async function createClient(): Promise<SupabaseClient<Database>> {
     const cookieStore = await cookies()
 
-    return createServerClient(
+    return createServerClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
@@ -30,12 +32,12 @@ export async function createClient() {
 
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
-export function createAdminClient() {
+export function createAdminClient(): SupabaseClient<Database> {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY
     if (!url || !key) {
         throw new Error('SUPABASE_SERVICE_ROLE_KEY (and URL) must be configured for admin operations')
     }
-    return createSupabaseClient(url, key)
+    return createSupabaseClient<Database>(url, key)
 }
 

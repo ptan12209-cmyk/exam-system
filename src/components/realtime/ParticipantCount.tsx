@@ -44,21 +44,22 @@ export function ParticipantCount({ examId, className, showLabel = true }: Partic
                     table: "exam_participants",
                     filter: `exam_id=eq.${examId}`
                 },
-                (payload: { eventType: string; new: { status: string }; old: { status: string } }) => {
-                    if (payload.eventType === "INSERT") {
-                        if ((payload.new as { status: string }).status === "active") {
+                (payload: unknown) => {
+                    const evt = payload as { eventType: string; new: { status: string }; old: { status: string } }
+                    if (evt.eventType === "INSERT") {
+                        if (evt.new.status === "active") {
                             setCount(prev => prev + 1)
                         }
-                    } else if (payload.eventType === "UPDATE") {
-                        const oldStatus = (payload.old as { status: string }).status
-                        const newStatus = (payload.new as { status: string }).status
+                    } else if (evt.eventType === "UPDATE") {
+                        const oldStatus = evt.old.status
+                        const newStatus = evt.new.status
                         if (oldStatus === "active" && newStatus !== "active") {
                             setCount(prev => Math.max(0, prev - 1))
                         } else if (oldStatus !== "active" && newStatus === "active") {
                             setCount(prev => prev + 1)
                         }
-                    } else if (payload.eventType === "DELETE") {
-                        if ((payload.old as { status: string }).status === "active") {
+                    } else if (evt.eventType === "DELETE") {
+                        if (evt.old.status === "active") {
                             setCount(prev => Math.max(0, prev - 1))
                         }
                     }

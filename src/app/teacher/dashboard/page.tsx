@@ -12,14 +12,13 @@ import { TeacherBottomNav } from "@/components/BottomNav"
 import { NotificationBell } from "@/components/NotificationBell"
 import { TeacherSidebar } from "@/components/TeacherSidebar"
 import { TeacherShell } from "@/components/teacher/TeacherShell"
-import { 
-  BarChart3, BookOpen, FileText, Users, Clock, Plus, 
-  Swords, ArrowRight, Eye, Calendar, Award, Flame, AlertCircle 
+import {
+  BarChart3, FileText, Users, Clock, Plus,
+  ArrowRight, Award
 } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/hooks/useAuth"
-import { ARENA_ENABLED, ONLINE_STUDY_ENABLED } from "@/lib/features"
 
 // Recharts components
 import { 
@@ -41,41 +40,8 @@ export default function TeacherDashboard() {
   
   const [exams, setExams] = useState<Exam[]>([])
   const [submissions, setSubmissions] = useState<any[]>([])
-  const [arenas, setArenas] = useState<any[]>([])
   const [totalStudents, setTotalStudents] = useState<number>(0)
   const [loadingData, setLoadingData] = useState(true)
-
-  // Real-time Discord Study monitoring state
-  interface ActiveMember {
-    username: string
-    discord_id: string
-    status: string
-    joined_at: string | null
-  }
-  const [discordStatus, setDiscordStatus] = useState<{ online: boolean; active_members?: ActiveMember[] } | null>(null)
-  
-  useEffect(() => {
-    if (!user || !ONLINE_STUDY_ENABLED) return
-    const fetchDiscordStatus = async () => {
-      try {
-        const res = await fetch("/api/study-sessions/bot-control", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ command: "status" })
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setDiscordStatus(data)
-        }
-      } catch (err) {
-        console.error("Failed to fetch discord status:", err)
-      }
-    }
-    
-    fetchDiscordStatus()
-    const interval = setInterval(fetchDiscordStatus, 60000)
-    return () => clearInterval(interval)
-  }, [user])
 
   useEffect(() => {
     if (!user) return
@@ -115,25 +81,10 @@ export default function TeacherDashboard() {
           .select("id", { count: "exact", head: true })
           .eq("role", "student")
 
-        // 4. Arena sessions (flag-gated)
-        const arenasPromise = ARENA_ENABLED
-          ? supabase
-              .from("arena_sessions")
-              .select(`
-                id,
-                status,
-                start_time,
-                exam:exams(title, subject, duration, total_questions)
-              `)
-              .eq("created_by", user.id)
-              .order("start_time", { ascending: true })
-          : Promise.resolve({ data: [] as any[] } as any)
-
-        const [examsResult, subsResult, studentsResult, arenasResult] = await Promise.all([
+        const [examsResult, subsResult, studentsResult] = await Promise.all([
           examsPromise,
           subsPromise,
           studentsPromise,
-          arenasPromise,
         ])
 
         if (examsResult.data) {
@@ -151,11 +102,6 @@ export default function TeacherDashboard() {
         }
 
         setTotalStudents(studentsResult.count || 0)
-
-        if (arenasResult.data) {
-          setArenas(arenasResult.data)
-        }
-
       } catch (err) {
         console.error("Error loading dashboard data:", err)
       } finally {
@@ -193,10 +139,6 @@ export default function TeacherDashboard() {
     if (totalStudents === 0) return 0
     return Math.round((activeStudentsThisWeek / totalStudents) * 100)
   }, [activeStudentsThisWeek, totalStudents])
-
-  const upcomingArenasCount = useMemo(() => {
-    return arenas.filter(a => a.status === "upcoming").length
-  }, [arenas])
 
   // --- Chart 1: 7-day Activity Data ---
   const dailyActivityData = useMemo(() => {
@@ -271,10 +213,6 @@ export default function TeacherDashboard() {
   const recentSubmissions = useMemo(() => {
     return submissions.slice(0, 5)
   }, [submissions])
-
-  const waitingArenas = useMemo(() => {
-    return arenas.filter(a => a.status === "upcoming")
-  }, [arenas])
 
   const formatTimeSpent = (dateStr?: string) => {
     if (!dateStr) return ""
@@ -386,21 +324,6 @@ export default function TeacherDashboard() {
             </p>
           </div>
 
-          {/* KPI 4 */}
-          {ARENA_ENABLED && (
-            <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-5 hover:border-[var(--os-accent)]/30 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-[var(--os-muted)]">⚔️ Đấu trường</span>
-                <Swords className="h-4 w-4 text-[var(--os-accent)]" />
-              </div>
-              <div className={cn("mt-4 text-3xl font-bold font-mono text-[var(--os-fg)]", jetbrainsMono.className)}>
-                {arenas.length}
-              </div>
-              <p className="mt-1 text-[10px] text-amber-400 font-mono">
-                {upcomingArenasCount} phòng chờ kích hoạt
-              </p>
-            </div>
-          )}
         </section>
 
         {/* Row 2 — Charts (7-Day Line & Score distribution Pie) */}
@@ -610,107 +533,6 @@ export default function TeacherDashboard() {
             )}
           </div>
         </section>
-
-        {/* Row 4 — Discord monitor widget & Waiting Arenas */}
-        {(ONLINE_STUDY_ENABLED || ARENA_ENABLED) && <section className={cn("mt-6 grid gap-6", ONLINE_STUDY_ENABLED && "lg:grid-cols-2")}>
-          
-          {/* Discord monitoring widget */}
-          {ONLINE_STUDY_ENABLED && <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-6">
-            <div className="flex items-center justify-between border-b border-[var(--os-muted)]/10 pb-4 mb-4">
-              <h3 className="text-sm font-bold text-[var(--os-fg)] flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Đài Giám Sát Discord Voice
-              </h3>
-              <Link href="/teacher/monitor" className="text-xs text-[var(--os-accent)] hover:underline flex items-center gap-1">
-                Chi tiết <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-
-            {discordStatus && discordStatus.online ? (
-              <div className="space-y-4">
-                {discordStatus.active_members && discordStatus.active_members.length > 0 ? (
-                  <div className="space-y-3.5">
-                    <p className="text-xs text-[var(--os-muted)]">
-                      Hiện tại có <strong className="text-[var(--os-fg)]">{discordStatus.active_members.length}</strong> học sinh đang trong phòng voice học tập:
-                    </p>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {discordStatus.active_members.map((member) => (
-                        <div key={member.discord_id} className="flex items-center justify-between p-2 rounded-lg bg-[var(--os-bg)] border border-[var(--os-muted)]/15 text-xs">
-                          <span className="font-semibold text-[var(--os-fg)] truncate max-w-[120px]">👤 {member.username}</span>
-                          <span className={cn(
-                            "px-1.5 py-0.5 rounded text-[8px] font-mono font-bold uppercase",
-                            member.status === "AFK" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" :
-                            member.status === "Muted" ? "bg-slate-500/10 text-slate-400 border border-slate-500/20" :
-                            "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                          )}>
-                            {member.status === "AFK" ? "AFK" : member.status === "Muted" ? "Mute" : "Active"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-[var(--os-muted)] italic gap-2">
-                    <span>Không có học sinh nào đang tham gia phòng voice.</span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-[var(--os-muted)] italic gap-2">
-                <AlertCircle className="h-5 w-5 text-amber-500" />
-                <span>Không kết nối được với Discord Bot. Vui lòng kiểm tra trạng thái bot.</span>
-              </div>
-            )}
-          </div>}
-
-          {/* Waiting Arena Sessions */}
-          {ARENA_ENABLED && <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-xl p-6">
-            <div className="flex items-center justify-between border-b border-[var(--os-muted)]/10 pb-4 mb-4">
-              <h3 className="text-sm font-bold text-[var(--os-fg)] flex items-center gap-2">
-                <Swords className="h-4.5 w-4.5 text-[var(--os-accent)]" /> Trận Đấu Trường chờ kích hoạt
-              </h3>
-              <Link href="/teacher/arena" className="text-xs text-[var(--os-accent)] hover:underline flex items-center gap-1">
-                Quản lý <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-
-            {waitingArenas.length > 0 ? (
-              <div className="space-y-3.5">
-                {waitingArenas.slice(0, 3).map((arena) => (
-                  <div key={arena.id} className="p-3.5 rounded-xl bg-[var(--os-bg)] border border-[var(--os-muted)]/15 flex items-center justify-between">
-                    <div>
-                      <h4 className="text-xs font-bold text-[var(--os-fg)]">{arena.exam?.title || "Trận đấu Arena"}</h4>
-                      <div className="mt-1 flex items-center gap-3 text-[10px] text-[var(--os-muted)]">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(arena.start_time || "").toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {arena.exam?.duration} phút
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <Link href={`/teacher/arena`}>
-                      <Button size="sm" className="h-8 rounded-lg bg-[var(--os-accent)] hover:bg-[var(--os-accent)]/90 text-[var(--os-accent-fg)] text-[10px] font-bold px-3">
-                        Vào phòng điều hành
-                      </Button>
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10 text-xs text-[var(--os-muted)] italic flex flex-col items-center justify-center gap-3">
-                <span>Không có trận Đấu Trường nào đang chờ kích hoạt.</span>
-                <Link href="/teacher/arena">
-                  <Button size="sm" variant="outline" className="h-8 rounded-lg border-[var(--os-muted)]/30 text-[10px] font-bold bg-transparent text-[var(--os-muted)] hover:text-[var(--os-accent)] hover:border-[var(--os-accent)]">
-                    Tạo phòng Arena mới
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </div>}
-        </section>}
       </main>
 
       <TeacherBottomNav />

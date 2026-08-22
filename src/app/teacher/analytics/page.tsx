@@ -58,7 +58,7 @@ export default function TeacherAnalyticsPage() {
       const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
       if (profile) setFullName(profile.full_name || "")
       const { data: examsData } = await supabase.from("exams").select("id, title, total_questions, correct_answers").eq("teacher_id", user.id).eq("status", "published").order("created_at", { ascending: false })
-      if (examsData?.length) { setExams(examsData); setSelectedExamId(examsData[0].id) }
+      if (examsData?.length) { setExams(examsData as unknown as Exam[]); setSelectedExamId(examsData[0].id) }
       setLoading(false)
     }
     fetchExams()
@@ -68,7 +68,7 @@ export default function TeacherAnalyticsPage() {
     async function fetchSubmissions() {
       if (!selectedExamId) return
       const { data: subsData } = await supabase.from("submissions").select(`id, exam_id, score, student_answers, submitted_at, student:profiles!student_id(full_name, class)`).eq("exam_id", selectedExamId).order("score", { ascending: false })
-      if (subsData) setSubmissions(subsData.map((sub: Submission) => ({ ...sub, student: Array.isArray((sub as unknown as { student: unknown }).student) ? ((sub as unknown as { student: { full_name: string | null; class: string | null }[] }).student[0]) : sub.student })))
+      if (subsData) setSubmissions((subsData as unknown as Submission[]).map((sub) => ({ ...sub, student: Array.isArray(sub.student) ? sub.student[0] : sub.student })))
     }
     fetchSubmissions()
   }, [selectedExamId, supabase])

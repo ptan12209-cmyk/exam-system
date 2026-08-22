@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   // PERF: keep Next's default content-based build ID so hashed chunk URLs are
@@ -36,7 +37,7 @@ const nextConfig: NextConfig = {
           "style-src 'self' 'unsafe-inline'",
           "img-src 'self' data: blob: https://*.supabase.co https://*.youtube.com https://i.ytimg.com https://*.cloudfront.net https://image.mux.com",
           "font-src 'self' data:",
-          "connect-src 'self' blob: data: https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://api-merchant.payos.vn https://*.cloudfront.net https://stream.mux.com",
+          "connect-src 'self' blob: data: https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://api-merchant.payos.vn https://*.cloudfront.net https://stream.mux.com https://*.sentry.io https://*.ingest.sentry.io",
           "frame-src 'self' blob: data: https://*.supabase.co https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://iframe.mediadelivery.net https://*.mediadelivery.net https://challenges.cloudflare.com",
           // Landing hero/feature clips (CloudFront) + Bunny/Mux players
           "media-src 'self' blob: https://*.supabase.co https://*.mediadelivery.net https://*.cloudfront.net https://stream.mux.com",
@@ -93,4 +94,21 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * Sentry build wrapper — uploads sourcemaps only when SENTRY_AUTH_TOKEN is
+ * present (e.g. on Vercel), so local/CI builds without credentials are no-ops.
+ */
+const sentryOptions = {
+  silent: true,
+  disableLogger: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+  // Keep telemetry off; the SDK itself stays inert without a DSN.
+  telemetry: false,
+} as const;
+
+export default withSentryConfig(nextConfig, sentryOptions);

@@ -1,29 +1,21 @@
+import * as Sentry from "@sentry/nextjs"
+
 /**
- * Next.js instrumentation — runs once when the Node server starts.
- * @see https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
+ * Next.js instrumentation hook (server + edge runtimes).
+ * https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  */
 export async function register() {
-  // Only validate on Node.js runtime (not Edge)
-  if (process.env.NEXT_RUNTIME === 'edge') return
-
-  try {
-    const { validateEnv } = await import('@/lib/env')
-    validateEnv()
-    console.log('[instrumentation] Environment variables validated')
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    if (process.env.NODE_ENV === 'production') {
-      console.error(message)
-      // Fail loud in production so misconfig is obvious in logs
-      throw err
-    }
-    console.warn('[instrumentation] Env validation warning (dev):\n', message)
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { initServerSentry } = await import("./sentry.server.config")
+    initServerSentry()
   }
-
-  try {
-    const { logTurnstileWarnings } = await import('@/lib/turnstile-utils')
-    logTurnstileWarnings()
-  } catch {
-    /* optional */
+  if (process.env.NEXT_RUNTIME === "edge") {
+    const { initEdgeSentry } = await import("./sentry.edge.config")
+    initEdgeSentry()
   }
 }
+
+/**
+ * Capture errors from nested React Server Components.
+ */
+export const onRequestError = Sentry.captureRequestError
