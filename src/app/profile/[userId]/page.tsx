@@ -26,10 +26,10 @@ export default function PublicProfilePage() {
             if (!userId) return
             const { data: profileData, error } = await supabase.from("profiles").select("id, full_name, avatar_url, nickname, bio, role, class, created_at").eq("id", userId).single()
             if (error || !profileData) { router.push("/"); return }
-            setProfile(profileData)
+            setProfile(profileData as unknown as PublicProfile)
             if (profileData.role === "student") {
-                const { data: statsData } = await supabase.from("user_stats").select("*").eq("user_id", userId).single()
-                setStats(statsData)
+                const { data: statsData } = await supabase.from("student_stats").select("xp, streak_days, exams_completed").eq("user_id", userId).single()
+                setStats(statsData ? { total_xp: statsData.xp, streak_days: statsData.streak_days, totalExams: statsData.exams_completed } : null)
             } else if (profileData.role === "teacher") {
                 const { data: exams } = await supabase.from("exams").select("id, status").eq("teacher_id", userId)
                 setStats({ totalExams: exams?.length || 0, publishedExams: exams?.filter((e: { status: string }) => e.status === "published").length || 0 })

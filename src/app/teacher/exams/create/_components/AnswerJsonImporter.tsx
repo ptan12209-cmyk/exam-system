@@ -60,7 +60,7 @@ export function AnswerJsonImporter({ onImport, initialAnswers }: AnswerJsonImpor
           <div>
             <h3 className="font-semibold tracking-tight">Nhập JSON đáp án</h3>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">
-              Một tài liệu, ba mảng theo thứ tự câu: trắc nghiệm, đúng/sai, trả lời ngắn.
+              Một tài liệu, ba mảng: mỗi phần (trắc nghiệm, đúng/sai, trả lời ngắn) được đánh số độc lập từ câu 1 đến n.
             </p>
           </div>
         </div>

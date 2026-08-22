@@ -1,8 +1,0 @@
-export { ExamServerService } from './exam-server';
-export { UserServerService } from './user-server';
-export { SubmissionServerService } from './submission-server';
-export { NotificationServerService } from './notification-server';
-export { PaymentServerService } from './payment-server';
-export { AvatarServerService } from './avatar-server';
-export { TitleServerService } from './title-server';
-export { ParentServerService } from './parent-server';

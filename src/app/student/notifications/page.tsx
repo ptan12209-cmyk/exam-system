@@ -39,16 +39,18 @@ export default function NotificationsPage() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push("/login"); return }
-      
-      const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
-      setFullName(profile?.full_name || "")
-      
-      const { stats } = await getUserStats(user.id)
-      setStudentStats(stats)
-      
-      const { data } = await supabase.from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
-      if (data) setNotifications(data)
-      
+
+      // PERF: profile, stats and notifications load concurrently
+      const [profileResult, statsResult, notifResult] = await Promise.all([
+        supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+        getUserStats(user.id),
+        supabase.from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
+      ])
+
+      setFullName(profileResult.data?.full_name || "")
+      setStudentStats(statsResult.stats)
+      if (notifResult.data) setNotifications(notifResult.data)
+
       setLoading(false)
     })()
   }, [router, supabase])
@@ -106,14 +108,14 @@ export default function NotificationsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
         <Loading label="Đang tải thông báo..." />
       </div>
     )
   }
 
   return (
-    <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9]", inter.className)}>
+    <StudentShell className={cn("bg-[var(--os-bg)] text-[var(--os-fg)]", inter.className)}>
       {/* Topbar */}
       <StudentTopbar
         name={fullName}
@@ -131,35 +133,35 @@ export default function NotificationsPage() {
         {/* Header Title Section */}
         <section className="grid gap-8 lg:grid-cols-[1.35fr_0.65fr] lg:items-end">
           <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/20 bg-[#15131F] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[#8C87A2]">
-              <Bell className="h-4 w-4 text-[#C18CFF]" /> Notifications
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--os-border)] bg-[var(--os-card)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--os-muted)]">
+              <Bell className="h-4 w-4 text-[var(--os-accent)]" /> Notifications
             </div>
-            <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight", instrumentSerif.className)}>
+            <h1 className={cn("text-4xl sm:text-5xl lg:text-6xl text-[var(--os-fg)] font-normal leading-tight", instrumentSerif.className)}>
               Thông báo hệ thống
             </h1>
-            <p className="mt-3 text-sm sm:text-base leading-relaxed text-[#8C87A2] max-w-2xl">
+            <p className="mt-3 text-sm sm:text-base leading-relaxed text-[var(--os-muted)] max-w-2xl">
               Cập nhật ngắn gọn và kịp thời về bài thi, tiến trình học tập và hoạt động của bạn.
             </p>
           </div>
 
           {/* XP Summary Box */}
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
+          <div className="bg-[var(--os-card)] border border-[var(--os-border)] rounded-2xl p-6 shadow-sm">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-[10px] text-[#8C87A2] uppercase font-mono">THÔNG BÁO CHƯA ĐỌC</span>
-              <span className="rounded bg-[#C18CFF]/15 px-2 py-0.5 text-[10px] font-bold text-[#C18CFF] font-mono">
+              <span className="text-[10px] text-[var(--os-muted)] uppercase font-mono">THÔNG BÁO CHƯA ĐỌC</span>
+              <span className="rounded bg-[var(--os-accent)]/15 px-2 py-0.5 text-[10px] font-bold text-[var(--os-accent)] font-mono">
                 {unreadCount} tin
               </span>
             </div>
-            <div className="text-3xl font-bold font-mono text-[#F1EDF9] mt-2">{studentStats.xp.toLocaleString()} XP</div>
+            <div className="text-3xl font-bold font-mono text-[var(--os-fg)] mt-2">{studentStats.xp.toLocaleString()} XP</div>
             
             <div className="mt-4 space-y-2">
-              <div className="h-1.5 w-full rounded-full bg-[#0B0A13] overflow-hidden border border-[#8C87A2]/20">
+              <div className="h-1.5 w-full rounded-full bg-[var(--os-bg)] overflow-hidden border border-[var(--os-border)]">
                 <div 
-                  className="h-full bg-[#C18CFF]" 
+                  className="h-full bg-[var(--os-accent)]" 
                   style={{ width: `${xpProgress.percent}%` }}
                 />
               </div>
-              <div className="flex justify-between text-[9px] text-[#8C87A2] font-mono">
+              <div className="flex justify-between text-[9px] text-[var(--os-muted)] font-mono">
                 <span>Cấp {studentStats.level}</span>
                 <span>Còn {xpProgress.nextTotal - studentStats.xp} XP lên cấp {studentStats.level + 1}</span>
               </div>
@@ -173,42 +175,42 @@ export default function NotificationsPage() {
             <Link 
               key={item.href} 
               href={item.href} 
-              className="flex items-center gap-3 rounded-xl border border-[#8C87A2]/20 bg-[#15131F] p-4 hover:border-[#C18CFF]/50 transition-colors group"
+              className="flex items-center gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] p-4 hover:border-[var(--os-accent)]/50 transition-colors group"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#8C87A2]/20 bg-[#0B0A13] text-[#8C87A2] group-hover:text-[#C18CFF] transition-colors">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--os-border)] bg-[var(--os-bg)] text-[var(--os-muted)] group-hover:text-[var(--os-accent)] transition-colors">
                 <item.icon className="h-4 w-4" />
               </div>
-              <span className="text-xs font-bold text-[#F1EDF9]">{item.label}</span>
+              <span className="text-xs font-bold text-[var(--os-fg)]">{item.label}</span>
             </Link>
           ))}
         </section>
 
         {/* Notifications list box */}
-        <section className="mt-8 overflow-hidden rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] shadow-sm">
+        <section className="mt-8 overflow-hidden rounded-2xl border border-[var(--os-border)] bg-[var(--os-card)] shadow-sm">
           
-          <div className="flex flex-col gap-4 border-b border-[#8C87A2]/20 p-5 bg-[#0B0A13]/30 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 border-b border-[var(--os-border)] p-5 bg-[var(--os-bg)]/30 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-base font-bold text-[#F1EDF9]">Hộp tin thông báo</h2>
-              <p className="text-xs text-[#8C87A2] mt-0.5">{unreadCount > 0 ? `${unreadCount} thông báo chưa đọc` : "Hộp thư trống hoặc tất cả đã đọc"}</p>
+              <h2 className="text-base font-bold text-[var(--os-fg)]">Hộp tin thông báo</h2>
+              <p className="text-xs text-[var(--os-muted)] mt-0.5">{unreadCount > 0 ? `${unreadCount} thông báo chưa đọc` : "Hộp thư trống hoặc tất cả đã đọc"}</p>
             </div>
             {unreadCount > 0 && (
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={markAllAsRead} 
-                className="rounded-xl border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent text-xs"
+                className="rounded-xl border-[var(--os-border)] text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent text-xs"
               >
                 <Check className="mr-1 h-3.5 w-3.5" /> Đánh dấu đã đọc tất cả
               </Button>
             )}
           </div>
 
-          <div className="divide-y divide-[#8C87A2]/10 bg-[#15131F]">
+          <div className="divide-y divide-[var(--os-border)] bg-[var(--os-card)]">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <Bell className="mb-4 h-12 w-12 text-[#8C87A2]/20" />
-                <h3 className="text-base font-bold text-[#F1EDF9]">Chưa có thông báo</h3>
-                <p className="text-xs text-[#8C87A2] mt-1 max-w-[220px]">Hệ thống sẽ hiển thị cập nhật mới tại đây.</p>
+                <Bell className="mb-4 h-12 w-12 text-[var(--os-muted)]/20" />
+                <h3 className="text-base font-bold text-[var(--os-fg)]">Chưa có thông báo</h3>
+                <p className="text-xs text-[var(--os-muted)] mt-1 max-w-[220px]">Hệ thống sẽ hiển thị cập nhật mới tại đây.</p>
               </div>
             ) : (
               notifications.map((notification) => (
@@ -216,31 +218,31 @@ export default function NotificationsPage() {
                   key={notification.id} 
                   className={cn(
                     "p-5 transition-colors", 
-                    !notification.is_read ? "bg-[#C18CFF]/5 hover:bg-[#C18CFF]/10" : "bg-transparent hover:bg-[#0B0A13]/40"
+                    !notification.is_read ? "bg-[var(--os-accent)]/5 hover:bg-[var(--os-accent)]/10" : "bg-transparent hover:bg-[var(--os-bg)]/40"
                   )}
                 >
                   <div className="flex gap-4">
-                    <div className={cn("mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full", !notification.is_read ? "bg-[#C18CFF]" : "bg-transparent border border-[#8C87A2]/20")} />
+                    <div className={cn("mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full", !notification.is_read ? "bg-[var(--os-accent)]" : "bg-transparent border border-[var(--os-border)]")} />
                     <div className="min-w-0 flex-1">
                       {notification.link ? (
                         <Link href={notification.link} onClick={() => !notification.is_read && markAsRead(notification.id)} className="group block">
                           <div className="flex items-start justify-between gap-3">
-                            <h3 className={cn("text-sm font-bold transition-colors group-hover:text-[#C18CFF]", !notification.is_read ? "text-[#F1EDF9]" : "text-[#8C87A2]")}>
+                            <h3 className={cn("text-sm font-bold transition-colors group-hover:text-[var(--os-accent)]", !notification.is_read ? "text-[var(--os-fg)]" : "text-[var(--os-muted)]")}>
                               {notification.title}
                             </h3>
-                            <ExternalLink className="mt-0.5 h-3.5 w-3.5 text-[#8C87A2] opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ExternalLink className="mt-0.5 h-3.5 w-3.5 text-[var(--os-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
-                          {notification.message && <p className="mt-1.5 text-xs text-[#8C87A2] leading-relaxed line-clamp-2">{notification.message}</p>}
+                          {notification.message && <p className="mt-1.5 text-xs text-[var(--os-muted)] leading-relaxed line-clamp-2">{notification.message}</p>}
                         </Link>
                       ) : (
                         <button onClick={() => !notification.is_read && markAsRead(notification.id)} className="block w-full text-left">
-                          <h3 className={cn("text-sm font-bold", !notification.is_read ? "text-[#F1EDF9]" : "text-[#8C87A2]")}>
+                          <h3 className={cn("text-sm font-bold", !notification.is_read ? "text-[var(--os-fg)]" : "text-[var(--os-muted)]")}>
                             {notification.title}
                           </h3>
-                          {notification.message && <p className="mt-1.5 text-xs text-[#8C87A2] leading-relaxed">{notification.message}</p>}
+                          {notification.message && <p className="mt-1.5 text-xs text-[var(--os-muted)] leading-relaxed">{notification.message}</p>}
                         </button>
                       )}
-                      <p className="mt-2.5 text-[10px] text-[#8C87A2] font-mono">{timeAgo(notification.created_at)}</p>
+                      <p className="mt-2.5 text-[10px] text-[var(--os-muted)] font-mono">{timeAgo(notification.created_at)}</p>
                     </div>
                   </div>
                 </div>

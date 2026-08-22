@@ -32,6 +32,21 @@ export const SINGLE_DEVICE_ENABLED = true
  */
 export const BUNNY_SECURITY_CHECKLIST_ENABLED = false
 
+/** Realtime competitive arena (student lobby + teacher rooms). */
+export const ARENA_ENABLED = false
+
+/** Weekly teaching / student timetables. */
+export const TIMETABLE_ENABLED = false
+
+/** Student daily checklist + Pomodoro widgets. */
+export const CHECKLIST_ENABLED = false
+
+/**
+ * Monitoring station: Discord voice tracking, face monitor and the
+ * DeepFace analyze endpoint. Basic in-exam anti-cheat stays enabled.
+ */
+export const MONITORING_ENABLED = false
+
 /** UI routes that belong to the paused online-course product. */
 export const ONLINE_STUDY_ROUTE_PREFIXES = [
   "/online-student",
@@ -105,4 +120,61 @@ export function isGamificationApiRoute(pathname: string): boolean {
 
 export function isRegistrationOpen(): boolean {
   return REGISTRATION_ENABLED
+}
+
+/** Routes hidden / redirected while the arena is locked */
+export const ARENA_ROUTE_PREFIXES = [
+  "/arena",
+  "/teacher/arena",
+] as const
+
+export function isArenaRoute(pathname: string): boolean {
+  return ARENA_ROUTE_PREFIXES.some((prefix) =>
+    matchesPrefix(pathname, prefix)
+  )
+}
+
+/** Routes hidden / redirected while timetables are locked */
+export const TIMETABLE_ROUTE_PREFIXES = [
+  "/student/timetable",
+  "/teacher/timetable",
+] as const
+
+export function isTimetableRoute(pathname: string): boolean {
+  return TIMETABLE_ROUTE_PREFIXES.some((prefix) =>
+    matchesPrefix(pathname, prefix)
+  )
+}
+
+/** Routes hidden / redirected while the checklist is locked */
+export const CHECKLIST_ROUTE_PREFIXES = [
+  "/student/checklist",
+] as const
+
+export function isChecklistRoute(pathname: string): boolean {
+  return CHECKLIST_ROUTE_PREFIXES.some((prefix) =>
+    matchesPrefix(pathname, prefix)
+  )
+}
+
+/** UI routes for the monitoring station (Discord voice / face monitor). */
+export const MONITORING_ROUTE_PREFIXES = [
+  "/teacher/monitor",
+] as const
+
+/** APIs that serve the monitoring station. */
+export const MONITORING_API_PREFIXES = [
+  "/api/monitor",
+] as const
+
+export function isMonitoringRoute(pathname: string): boolean {
+  return MONITORING_ROUTE_PREFIXES.some((prefix) =>
+    matchesPrefix(pathname, prefix)
+  )
+}
+
+export function isMonitoringApiRoute(pathname: string): boolean {
+  return MONITORING_API_PREFIXES.some((prefix) =>
+    matchesPrefix(pathname, prefix)
+  )
 }

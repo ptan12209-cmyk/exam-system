@@ -78,25 +78,34 @@ export default function StudentExamsPage() {
         .eq("id", authUser.id)
         .single()
 
-      setUser({ id: authUser.id, full_name: profile?.full_name, class: profile?.class })
+      setUser({ id: authUser.id, full_name: profile?.full_name ?? undefined, class: profile?.class ?? undefined })
       setUserProfile({ grade: profile?.grade ?? null, nickname: profile?.nickname ?? null })
       setSelectedGrade(profile?.grade ?? "all")
 
-      const { stats } = await getUserStats(authUser.id)
+      // PERF: stats, exams and submissions run concurrently
+      const isStudentX = profile?.nickname === "X"
+      const examsQuery = supabase
+        .from("exams_public")
+        .select("id, title, subject, exam_type, description, pdf_url, duration, total_questions, assigned_to, target_grade, target_classes, is_advanced, is_scheduled, start_time, end_time, max_attempts, chapter_id, lesson_id, section_id")
+        .eq("assigned_to", isStudentX ? "x" : "normal")
+
+      const [statsResult, examsResult, subsResult] = await Promise.all([
+        getUserStats(authUser.id),
+        examsQuery.order("created_at", { ascending: false }),
+        supabase
+          .from("submissions")
+          .select("exam_id, score")
+          .eq("student_id", authUser.id),
+      ])
+
+      const { stats } = statsResult
       setStudentStats(stats)
       setUserXp(stats.xp)
 
-      const isStudentX = profile?.nickname === "X"
-      const examsQuery = supabase
-        .from("exams")
-        .select("*")
-        .eq("status", "published")
-        .eq("assigned_to", isStudentX ? "x" : "normal")
-
-      const { data: examsData } = await examsQuery.order("created_at", { ascending: false })
+      const { data: examsData } = examsResult
       if (examsData) {
         const studentClassSuffix = profile?.class_suffix?.toUpperCase()
-        const visibleExams = examsData.filter((exam: any) => {
+        const visibleExams = (examsData as Exam[]).filter((exam) => {
           if (exam.target_classes && exam.target_classes.length > 0) {
             return studentClassSuffix && exam.target_classes.map((c: string) => c.toUpperCase()).includes(studentClassSuffix)
           }
@@ -105,14 +114,9 @@ export default function StudentExamsPage() {
         setExams(visibleExams)
       }
 
-      const { data: subsData } = await supabase
-        .from("submissions")
-        .select("exam_id, score")
-        .eq("student_id", authUser.id)
-
-      if (subsData) {
+      if (subsResult.data) {
         const subMap = new Map<string, number>()
-        subsData.forEach((s: Submission) => {
+        subsResult.data.forEach((s) => {
           if (s.exam_id) {
             const existing = subMap.get(s.exam_id)
             if (!existing || s.score > existing) subMap.set(s.exam_id, s.score)
@@ -218,11 +222,11 @@ export default function StudentExamsPage() {
     setShowAllQuestions(false)
 
     const { data: questions } = await supabase
-      .from("questions")
+      .from("questions_public")
       .select("id, question_text, options")
       .eq("exam_id", exam.id)
       .order("order_index")
-    if (questions) setPreviewQuestions(questions)
+    if (questions) setPreviewQuestions(questions as unknown as Question[])
 
     setLoadingPreview(false)
   }
@@ -272,28 +276,28 @@ export default function StudentExamsPage() {
     const subjectInfo = getSubjectInfo(exam.subject || "other")
 
     return (
-      <div key={exam.id} className="flex flex-col justify-between p-5 rounded-2xl bg-[#15131F] border border-[#8C87A2]/20 hover:border-[#C18CFF]/30 transition-colors">
+      <div key={exam.id} className="flex flex-col justify-between p-5 rounded-2xl bg-[var(--os-card)] border border-[var(--os-muted)]/20 hover:border-[var(--os-accent)]/30 transition-colors">
         <div className="flex items-start gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-bg)]">
             <span className="text-xl">{subjectInfo.icon}</span>
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h4 className="text-sm font-bold leading-tight text-[#F1EDF9] truncate max-w-[220px]" title={exam.title}>
+              <h4 className="text-sm font-bold leading-tight text-[var(--os-fg)] truncate max-w-[220px]" title={exam.title}>
                 {exam.title}
               </h4>
               {hasSubmitted && bestScore !== undefined && (
-                <span className={cn("rounded-lg border border-[#C18CFF]/30 bg-[#C18CFF]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-[#C18CFF]", jetbrainsMono.className)}>
+                <span className={cn("rounded-lg border border-[var(--os-accent)]/30 bg-[var(--os-accent)]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--os-accent)]", jetbrainsMono.className)}>
                   {bestScore.toFixed(1)} ĐIỂM
                 </span>
               )}
               {!available && (
-                <span className="rounded-lg border border-[#8C87A2]/30 bg-transparent px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-[#8C87A2]">
+                <span className="rounded-lg border border-[var(--os-muted)]/30 bg-transparent px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--os-muted)]">
                   Chưa mở
                 </span>
               )}
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#8C87A2]">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--os-muted)]">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {exam.duration}m
@@ -310,27 +314,27 @@ export default function StudentExamsPage() {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-end gap-2 border-t border-[#8C87A2]/20 pt-3">
-          <Button variant="outline" size="sm" onClick={() => openPreview(exam)} className="h-8 rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent text-xs transition-colors">
+        <div className="mt-4 flex items-center justify-end gap-2 border-t border-[var(--os-muted)]/20 pt-3">
+          <Button variant="outline" size="sm" onClick={() => openPreview(exam)} className="h-8 rounded-xl border-[var(--os-muted)]/40 hover:border-[var(--os-accent)] text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent text-xs transition-colors">
             <Eye className="mr-1 h-3.5 w-3.5" /> Xem đề
           </Button>
 
           {hasSubmitted ? (
             <>
               <Link href={`/student/exams/${exam.id}/result`}>
-                <Button variant="outline" size="sm" className="h-8 rounded-xl border-[#8C87A2]/40 hover:border-[#C18CFF] text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent text-xs transition-colors">
+                <Button variant="outline" size="sm" className="h-8 rounded-xl border-[var(--os-muted)]/40 hover:border-[var(--os-accent)] text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent text-xs transition-colors">
                   Kết quả
                 </Button>
               </Link>
               <Link href={`/student/exams/${exam.id}/take`}>
-                <Button size="sm" className="h-8 rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-bold text-xs transition-colors" disabled={!available}>
+                <Button size="sm" className="h-8 rounded-xl bg-[var(--os-accent)] hover:bg-[var(--os-accent)]/90 text-[var(--os-accent-fg)] font-bold text-xs transition-colors" disabled={!available}>
                   Làm lại
                 </Button>
               </Link>
             </>
           ) : (
             <Link href={`/student/exams/${exam.id}/take`}>
-              <Button size="sm" className="h-8 rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-bold px-4 text-xs transition-colors" disabled={!available}>
+              <Button size="sm" className="h-8 rounded-xl bg-[var(--os-accent)] hover:bg-[var(--os-accent)]/90 text-[var(--os-accent-fg)] font-bold px-4 text-xs transition-colors" disabled={!available}>
                 Vào thi <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Button>
             </Link>
@@ -342,14 +346,14 @@ export default function StudentExamsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
         <Loading label="Đang tải danh sách đề thi..." />
       </div>
     )
   }
 
   return (
-    <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9]", inter.className)}>
+    <StudentShell className={cn("bg-[var(--os-bg)] text-[var(--os-fg)]", inter.className)}>
       {/* Topbar */}
       <StudentTopbar
         name={user?.full_name}
@@ -367,25 +371,25 @@ export default function StudentExamsPage() {
         {/* Header Hero */}
         <section className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
           <div>
-            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#8C87A2]/20 bg-[#15131F] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[#8C87A2]">
+            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--os-muted)]/20 bg-[var(--os-card)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--os-muted)]">
               <FileText className="h-3.5 w-3.5" /> Exams
             </p>
-            <h1 className={cn("max-w-3xl text-4xl sm:text-5xl lg:text-6xl text-[#F1EDF9] font-normal leading-tight", instrumentSerif.className)}>
+            <h1 className={cn("max-w-3xl text-4xl sm:text-5xl lg:text-6xl text-[var(--os-fg)] font-normal leading-tight", instrumentSerif.className)}>
               Đề thi có sẵn
-              <span className="mt-2 block max-w-2xl text-2xl sm:text-3xl text-[#8C87A2] leading-tight tracking-normal italic">
+              <span className="mt-2 block max-w-2xl text-2xl sm:text-3xl text-[var(--os-muted)] leading-tight tracking-normal italic">
                 chọn đề, bắt đầu ngay.
               </span>
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#8C87A2]">
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--os-muted)]">
               Danh sách đề thi được sắp xếp gọn gàng theo môn, trạng thái và lịch mở để bạn truy cập nhanh hơn.
             </p>
           </div>
 
-          <div className="bg-[#15131F] border border-[#8C87A2]/20 rounded-2xl p-6 shadow-sm">
-            <p className="text-sm text-[#8C87A2] font-mono">XP hiện tại</p>
-            <div className="mt-2 text-3xl font-bold text-[#F1EDF9]">{userXp} XP</div>
+          <div className="bg-[var(--os-card)] border border-[var(--os-muted)]/20 rounded-2xl p-6 shadow-sm">
+            <p className="text-sm text-[var(--os-muted)] font-mono">XP hiện tại</p>
+            <div className="mt-2 text-3xl font-bold text-[var(--os-fg)]">{userXp} XP</div>
             <div className="mt-4">
-              <div className="rounded-xl border border-[#8C87A2]/20 bg-[#0B0A13] p-4 text-xs text-[#8C87A2]">
+              <div className="rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-bg)] p-4 text-xs text-[var(--os-muted)]">
                 Sẵn sàng khám phá đề thi mới và xem lại kết quả của bạn.
               </div>
             </div>
@@ -393,18 +397,18 @@ export default function StudentExamsPage() {
         </section>
 
         {/* Filter Bar */}
-        <section className="mt-10 overflow-hidden rounded-2xl bg-[#15131F] border border-[#8C87A2]/20 shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-[#8C87A2]/20 p-5 lg:flex-row lg:items-center lg:justify-between">
+        <section className="mt-10 overflow-hidden rounded-2xl bg-[var(--os-card)] border border-[var(--os-muted)]/20 shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-[var(--os-muted)]/20 p-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="text-xl font-bold">Đề thi có sẵn</h2>
-              <p className="text-xs text-[#8C87A2] mt-0.5">
+              <p className="text-xs text-[var(--os-muted)] mt-0.5">
                 {filteredExams.length} đề thi • {submissions.size} đã hoàn thành
               </p>
             </div>
             
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Completion Filter Tabs */}
-              <div className="flex items-center gap-1 rounded-xl bg-[#0B0A13] border border-[#8C87A2]/20 p-1 text-xs shrink-0 self-start sm:self-auto">
+              <div className="flex items-center gap-1 rounded-xl bg-[var(--os-bg)] border border-[var(--os-muted)]/20 p-1 text-xs shrink-0 self-start sm:self-auto">
                 {[
                   { key: "all", label: "Tất cả" },
                   { key: "unsubmitted", label: "Chưa làm" },
@@ -424,8 +428,8 @@ export default function StudentExamsPage() {
                       className={cn(
                         "rounded-lg px-3.5 py-1.5 font-semibold transition-all whitespace-nowrap",
                         completionFilter === t.key
-                          ? "bg-[#C18CFF] text-[#0B0A13] shadow-sm"
-                          : "text-[#8C87A2] hover:text-[#F1EDF9]"
+                          ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)] shadow-sm"
+                          : "text-[var(--os-muted)] hover:text-[var(--os-fg)]"
                       )}
                     >
                       {label}
@@ -435,21 +439,21 @@ export default function StudentExamsPage() {
               </div>
 
               {/* Search input */}
-              <div className="flex items-center gap-3 rounded-xl border border-[#8C87A2]/30 bg-[#0B0A13] px-4 py-2 w-full sm:w-[240px] lg:w-[280px]">
-                <Search className="h-4 w-4 text-[#8C87A2]" />
+              <div className="flex items-center gap-3 rounded-xl border border-[var(--os-muted)]/30 bg-[var(--os-bg)] px-4 py-2 w-full sm:w-[240px] lg:w-[280px]">
+                <Search className="h-4 w-4 text-[var(--os-muted)]" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm kiếm đề thi..."
-                  className="w-full bg-transparent text-xs outline-none placeholder:text-[#8C87A2] text-[#F1EDF9]"
+                  className="w-full bg-transparent text-xs outline-none placeholder:text-[var(--os-muted)] text-[var(--os-fg)]"
                 />
               </div>
             </div>
           </div>
 
           {/* Grade Tabs Selection */}
-          <div className="flex gap-2 overflow-x-auto border-b border-[#8C87A2]/20 p-4 bg-[#0B0A13]/40">
-            <span className="text-[10px] font-bold text-[#8C87A2] flex items-center px-2 uppercase tracking-wider whitespace-nowrap font-mono">Khối lớp:</span>
+          <div className="flex gap-2 overflow-x-auto border-b border-[var(--os-muted)]/20 p-4 bg-[var(--os-bg)]/40">
+            <span className="text-[10px] font-bold text-[var(--os-muted)] flex items-center px-2 uppercase tracking-wider whitespace-nowrap font-mono">Khối lớp:</span>
             {[
               { value: "all", label: "Tất cả các lớp" },
               { value: 12, label: "Lớp 12" },
@@ -463,8 +467,8 @@ export default function StudentExamsPage() {
                 className={cn(
                   "rounded-lg px-4 py-2 text-xs font-bold whitespace-nowrap transition-all border",
                   selectedGrade === g.value
-                    ? "bg-[#C18CFF] text-[#0B0A13] border-transparent"
-                    : "border-[#8C87A2]/40 bg-transparent text-[#8C87A2] hover:border-[#C18CFF] hover:text-[#F1EDF9]"
+                    ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)] border-transparent"
+                    : "border-[var(--os-muted)]/40 bg-transparent text-[var(--os-muted)] hover:border-[var(--os-accent)] hover:text-[var(--os-fg)]"
                 )}
               >
                 {g.label}
@@ -473,12 +477,12 @@ export default function StudentExamsPage() {
           </div>
 
           {/* Subject Pills Selection */}
-          <div className="flex gap-2 overflow-x-auto border-b border-[#8C87A2]/20 p-4 bg-[#15131F]">
+          <div className="flex gap-2 overflow-x-auto border-b border-[var(--os-muted)]/20 p-4 bg-[var(--os-card)]">
             <button
               onClick={() => setSelectedSubject("all")}
               className={cn(
                 "rounded-lg px-4 py-2 text-xs font-bold whitespace-nowrap border",
-                selectedSubject === "all" ? "bg-[#C18CFF] text-[#0B0A13] border-transparent" : "border-[#8C87A2]/40 bg-transparent text-[#8C87A2] hover:border-[#C18CFF] hover:text-[#F1EDF9]"
+                selectedSubject === "all" ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)] border-transparent" : "border-[var(--os-muted)]/40 bg-transparent text-[var(--os-muted)] hover:border-[var(--os-accent)] hover:text-[var(--os-fg)]"
               )}
             >
               TẤT CẢ MÔN HỌC
@@ -489,7 +493,7 @@ export default function StudentExamsPage() {
                 onClick={() => setSelectedSubject(subject.value)}
                 className={cn(
                   "rounded-lg px-4 py-2 text-xs font-bold whitespace-nowrap border",
-                  selectedSubject === subject.value ? "bg-[#C18CFF] text-[#0B0A13] border-transparent" : "border-[#8C87A2]/40 bg-transparent text-[#8C87A2] hover:border-[#C18CFF] hover:text-[#F1EDF9]"
+                  selectedSubject === subject.value ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)] border-transparent" : "border-[var(--os-muted)]/40 bg-transparent text-[var(--os-muted)] hover:border-[var(--os-accent)] hover:text-[var(--os-fg)]"
                 )}
               >
                 {subject.label.toUpperCase()}
@@ -499,8 +503,8 @@ export default function StudentExamsPage() {
 
           {/* Cascading Hierarchical Filtering Row */}
           {selectedSubject !== "all" && chapters.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3 border-b border-[#8C87A2]/20 p-4 bg-[#0B0A13]/30">
-              <span className="text-[10px] font-bold text-[#8C87A2] shrink-0 mr-1 uppercase tracking-wider font-mono">
+            <div className="flex flex-wrap items-center gap-3 border-b border-[var(--os-muted)]/20 p-4 bg-[var(--os-bg)]/30">
+              <span className="text-[10px] font-bold text-[var(--os-muted)] shrink-0 mr-1 uppercase tracking-wider font-mono">
                 Bài học:
               </span>
 
@@ -560,24 +564,24 @@ export default function StudentExamsPage() {
           {/* Side-by-side lists of Main and Advanced exams */}
           {filteredExams.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <FileText className="mb-4 h-12 w-12 text-[#8C87A2]/20" />
-              <h3 className="text-base font-semibold text-[#F1EDF9]">Không tìm thấy đề thi</h3>
-              <p className="mt-1 text-xs text-[#8C87A2]">Thử đổi từ khóa hoặc bộ lọc.</p>
+              <FileText className="mb-4 h-12 w-12 text-[var(--os-muted)]/20" />
+              <h3 className="text-base font-semibold text-[var(--os-fg)]">Không tìm thấy đề thi</h3>
+              <p className="mt-1 text-xs text-[var(--os-muted)]">Thử đổi từ khóa hoặc bộ lọc.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[#8C87A2]/20 bg-[#0B0A13]/20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[var(--os-muted)]/20 bg-[var(--os-bg)]/20">
               {/* Main Exercises Column */}
               <div className="p-6 space-y-4">
-                <div className="flex items-center justify-between border-b border-[#8C87A2]/20 pb-3 mb-2">
-                  <h3 className="text-sm font-bold text-[#C18CFF] flex items-center gap-2">
+                <div className="flex items-center justify-between border-b border-[var(--os-muted)]/20 pb-3 mb-2">
+                  <h3 className="text-sm font-bold text-[var(--os-accent)] flex items-center gap-2">
                     <span className="text-xl">📘</span> Chuỗi bài tập chính
                   </h3>
-                  <span className="text-xs bg-[#C18CFF]/15 text-[#C18CFF] px-2.5 py-0.5 rounded-lg font-bold font-mono">
+                  <span className="text-xs bg-[var(--os-accent)]/15 text-[var(--os-accent)] px-2.5 py-0.5 rounded-lg font-bold font-mono">
                     {mainExams.length} đề
                   </span>
                 </div>
                 {mainExams.length === 0 ? (
-                  <p className="text-xs italic text-[#8C87A2] text-center py-10">Chưa có đề bài tập chính nào.</p>
+                  <p className="text-xs italic text-[var(--os-muted)] text-center py-10">Chưa có đề bài tập chính nào.</p>
                 ) : (
                   <div className="grid grid-cols-1 gap-4 max-h-[600px] overflow-y-auto pr-1">
                     {mainExams.map((exam) => renderExamCard(exam))}
@@ -587,16 +591,16 @@ export default function StudentExamsPage() {
 
               {/* Advanced Exercises Column */}
               <div className="p-6 space-y-4">
-                <div className="flex items-center justify-between border-b border-[#8C87A2]/20 pb-3 mb-2">
-                  <h3 className="text-sm font-bold text-[#C18CFF]/80 flex items-center gap-2">
+                <div className="flex items-center justify-between border-b border-[var(--os-muted)]/20 pb-3 mb-2">
+                  <h3 className="text-sm font-bold text-[var(--os-accent)]/80 flex items-center gap-2">
                     <span className="text-xl">⚡</span> Chuỗi nâng trình (Nâng cao)
                   </h3>
-                  <span className="text-xs bg-[#C18CFF]/15 text-[#C18CFF]/80 px-2.5 py-0.5 rounded-lg font-bold font-mono">
+                  <span className="text-xs bg-[var(--os-accent)]/15 text-[var(--os-accent)]/80 px-2.5 py-0.5 rounded-lg font-bold font-mono">
                     {advancedExams.length} đề
                   </span>
                 </div>
                 {advancedExams.length === 0 ? (
-                  <p className="text-xs italic text-[#8C87A2] text-center py-10">Chưa có đề nâng trình nào.</p>
+                  <p className="text-xs italic text-[var(--os-muted)] text-center py-10">Chưa có đề nâng trình nào.</p>
                 ) : (
                   <div className="grid grid-cols-1 gap-4 max-h-[600px] overflow-y-auto pr-1">
                     {advancedExams.map((exam) => renderExamCard(exam))}
@@ -610,42 +614,42 @@ export default function StudentExamsPage() {
         {/* Dialog preview exam */}
         {previewExam && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl rounded-2xl border border-[#8C87A2]/30 bg-[#15131F] p-6 space-y-4 shadow-xl">
+            <div className="w-full max-w-2xl rounded-2xl border border-[var(--os-muted)]/30 bg-[var(--os-card)] p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-[#F1EDF9]">{previewExam.title}</h2>
-                <Button variant="ghost" size="icon" onClick={closePreview} className="rounded-full text-[#8C87A2] hover:text-[#F1EDF9] hover:bg-[#0B0A13]">
+                <h2 className="text-xl font-bold text-[var(--os-fg)]">{previewExam.title}</h2>
+                <Button variant="ghost" size="icon" onClick={closePreview} className="rounded-full text-[var(--os-muted)] hover:text-[var(--os-fg)] hover:bg-[var(--os-bg)]">
                   <X className="h-5 w-5" />
                 </Button>
               </div>
 
-              <div className="space-y-2 border border-[#8C87A2]/20 rounded-xl p-4 bg-[#0B0A13]">
-                <p className="text-sm text-[#8C87A2]"><strong>Môn học:</strong> <span className="text-[#F1EDF9]">{getSubjectInfo(previewExam.subject || "other").label}</span></p>
-                <p className="text-sm text-[#8C87A2]"><strong>Thời gian làm bài:</strong> <span className="text-[#F1EDF9]">{previewExam.duration} phút</span></p>
-                <p className="text-sm text-[#8C87A2]"><strong>Số lượng câu hỏi:</strong> <span className="text-[#F1EDF9]">{previewExam.total_questions} câu</span></p>
-                {previewExam.description && <p className="text-sm text-[#8C87A2]"><strong>Mô tả:</strong> <span className="text-[#F1EDF9]">{previewExam.description}</span></p>}
+              <div className="space-y-2 border border-[var(--os-muted)]/20 rounded-xl p-4 bg-[var(--os-bg)]">
+                <p className="text-sm text-[var(--os-muted)]"><strong>Môn học:</strong> <span className="text-[var(--os-fg)]">{getSubjectInfo(previewExam.subject || "other").label}</span></p>
+                <p className="text-sm text-[var(--os-muted)]"><strong>Thời gian làm bài:</strong> <span className="text-[var(--os-fg)]">{previewExam.duration} phút</span></p>
+                <p className="text-sm text-[var(--os-muted)]"><strong>Số lượng câu hỏi:</strong> <span className="text-[var(--os-fg)]">{previewExam.total_questions} câu</span></p>
+                {previewExam.description && <p className="text-sm text-[var(--os-muted)]"><strong>Mô tả:</strong> <span className="text-[var(--os-fg)]">{previewExam.description}</span></p>}
               </div>
 
               {loadingPreview ? (
                 <div className="flex items-center justify-center py-10">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#C18CFF] border-t-transparent" />
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--os-accent)] border-t-transparent" />
                 </div>
               ) : previewQuestions.length > 0 ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-[#F1EDF9]">Xem trước câu hỏi ({previewQuestions.length} câu)</h3>
-                    <Button variant="ghost" size="sm" onClick={() => setShowAllQuestions(!showAllQuestions)} className="text-xs text-[#C18CFF] hover:text-[#C18CFF]/85 bg-transparent p-0 h-auto">
+                    <h3 className="text-sm font-bold text-[var(--os-fg)]">Xem trước câu hỏi ({previewQuestions.length} câu)</h3>
+                    <Button variant="ghost" size="sm" onClick={() => setShowAllQuestions(!showAllQuestions)} className="text-xs text-[var(--os-accent)] hover:text-[var(--os-accent)]/85 bg-transparent p-0 h-auto">
                       {showAllQuestions ? "Xem từng câu" : "Xem tất cả"}
                     </Button>
                   </div>
 
-                  <div className="max-h-[300px] overflow-y-auto space-y-4 border border-[#8C87A2]/20 rounded-xl p-4 bg-[#0B0A13]/50">
+                  <div className="max-h-[300px] overflow-y-auto space-y-4 border border-[var(--os-muted)]/20 rounded-xl p-4 bg-[var(--os-bg)]/50">
                     {showAllQuestions ? (
                       previewQuestions.map((q, idx) => (
-                        <div key={q.id} className="pb-4 border-b border-[#8C87A2]/10 last:border-b-0">
-                          <p className="text-sm font-bold text-[#F1EDF9]">Câu {idx + 1}: {q.question_text}</p>
+                        <div key={q.id} className="pb-4 border-b border-[var(--os-muted)]/10 last:border-b-0">
+                          <p className="text-sm font-bold text-[var(--os-fg)]">Câu {idx + 1}: {q.question_text}</p>
                           <div className="mt-2 grid grid-cols-2 gap-2">
                             {(q.options || []).map((opt, oIdx) => (
-                              <div key={oIdx} className="text-xs text-[#8C87A2] p-2.5 rounded-lg bg-[#0B0A13] border border-[#8C87A2]/20">
+                              <div key={oIdx} className="text-xs text-[var(--os-muted)] p-2.5 rounded-lg bg-[var(--os-bg)] border border-[var(--os-muted)]/20">
                                 {["A", "B", "C", "D"][oIdx]}. {opt.replace(/^[A-D]\.\s*/, "")}
                               </div>
                             ))}
@@ -656,10 +660,10 @@ export default function StudentExamsPage() {
                       <div className="space-y-4">
                         {previewQuestions[currentPreviewIndex] && (
                           <div>
-                            <p className="text-sm font-bold text-[#F1EDF9]">Câu {currentPreviewIndex + 1}: {previewQuestions[currentPreviewIndex].question_text}</p>
+                            <p className="text-sm font-bold text-[var(--os-fg)]">Câu {currentPreviewIndex + 1}: {previewQuestions[currentPreviewIndex].question_text}</p>
                             <div className="mt-3 grid grid-cols-2 gap-2">
                               {(previewQuestions[currentPreviewIndex].options || []).map((opt, oIdx) => (
-                                <div key={oIdx} className="text-xs text-[#8C87A2] p-2.5 rounded-lg bg-[#0B0A13] border border-[#8C87A2]/20">
+                                <div key={oIdx} className="text-xs text-[var(--os-muted)] p-2.5 rounded-lg bg-[var(--os-bg)] border border-[var(--os-muted)]/20">
                                   {["A", "B", "C", "D"][oIdx]}. {opt.replace(/^[A-D]\.\s*/, "")}
                                 </div>
                               ))}
@@ -668,22 +672,22 @@ export default function StudentExamsPage() {
                         )}
 
                         <div className="flex items-center justify-between pt-2">
-                          <Button size="sm" variant="outline" disabled={currentPreviewIndex === 0} onClick={() => setCurrentPreviewIndex(prev => prev - 1)} className="rounded-lg border-[#8C87A2]/40 text-[#8C87A2]">Trước</Button>
-                          <span className="text-xs font-mono text-[#8C87A2]">Câu {currentPreviewIndex + 1} / {previewQuestions.length}</span>
-                          <Button size="sm" variant="outline" disabled={currentPreviewIndex === previewQuestions.length - 1} onClick={() => setCurrentPreviewIndex(prev => prev + 1)} className="rounded-lg border-[#8C87A2]/40 text-[#8C87A2]">Sau</Button>
+                          <Button size="sm" variant="outline" disabled={currentPreviewIndex === 0} onClick={() => setCurrentPreviewIndex(prev => prev - 1)} className="rounded-lg border-[var(--os-muted)]/40 text-[var(--os-muted)]">Trước</Button>
+                          <span className="text-xs font-mono text-[var(--os-muted)]">Câu {currentPreviewIndex + 1} / {previewQuestions.length}</span>
+                          <Button size="sm" variant="outline" disabled={currentPreviewIndex === previewQuestions.length - 1} onClick={() => setCurrentPreviewIndex(prev => prev + 1)} className="rounded-lg border-[var(--os-muted)]/40 text-[var(--os-muted)]">Sau</Button>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-[#8C87A2] py-6 text-center">Không có bản xem trước câu hỏi cho đề thi này.</p>
+                <p className="text-xs text-[var(--os-muted)] py-6 text-center">Không có bản xem trước câu hỏi cho đề thi này.</p>
               )}
 
               <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={closePreview} className="rounded-lg border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9]">Đóng</Button>
+                <Button variant="outline" onClick={closePreview} className="rounded-lg border-[var(--os-muted)]/40 text-[var(--os-muted)] hover:text-[var(--os-fg)]">Đóng</Button>
                 <Link href={`/student/exams/${previewExam.id}/take`}>
-                  <Button className="rounded-lg bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-bold" disabled={!isExamAvailable(previewExam)}>
+                  <Button className="rounded-lg bg-[var(--os-accent)] hover:bg-[var(--os-accent)]/90 text-[var(--os-accent-fg)] font-bold" disabled={!isExamAvailable(previewExam)}>
                     Bắt đầu làm bài
                   </Button>
                 </Link>

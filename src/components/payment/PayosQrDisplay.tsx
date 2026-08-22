@@ -32,7 +32,7 @@ export function PayosQrDisplay({ value, size = 320, className = "" }: PayosQrDis
       width: size,
       margin: 2,
       errorCorrectionLevel: "M",
-      color: { dark: "#0B0A13", light: "#FFFFFF" },
+      color: { dark: "var(--os-bg)", light: "#FFFFFF" },
     })
       .then((url) => {
         if (!cancelled) setDataUrl(url)
@@ -64,7 +64,7 @@ export function PayosQrDisplay({ value, size = 320, className = "" }: PayosQrDis
         className={`flex items-center justify-center rounded-2xl bg-white ${className}`}
         style={{ width: size, height: size, maxWidth: "100%" }}
       >
-        <Loader2 className="h-8 w-8 animate-spin text-[#C18CFF]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--os-accent)]" />
       </div>
     )
   }

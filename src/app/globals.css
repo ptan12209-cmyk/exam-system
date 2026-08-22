@@ -101,12 +101,12 @@ html.light {
   color-scheme: light;
 }
 
-html.theme-dol ::selection {
+html.theme-dol ::selection,
+html.theme-dream ::selection,
+html.theme-swiss ::selection,
+::selection {
   background-color: var(--os-selection);
-}
-
-html.theme-dream ::selection {
-  background-color: var(--os-selection);
+  color: inherit;
 }
 
 /* Focus ring */
@@ -261,92 +261,60 @@ html.theme-dream ::selection {
    Glassmorphism Utility Classes
    ============================================ */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--os-card) 70%, transparent);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.dark .glass {
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  border: 1px solid var(--os-border);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.6);
+  background: color-mix(in srgb, var(--os-card) 80%, transparent);
   backdrop-filter: blur(12px) saturate(150%);
   -webkit-backdrop-filter: blur(12px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--os-border);
   box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 2px 4px -2px rgba(0, 0, 0, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    0 2px 4px -2px rgba(0, 0, 0, 0.03);
 }
 
 .dark .glass-card {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.08);
   box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.3),
-    0 2px 4px -2px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    0 2px 4px -2px rgba(0, 0, 0, 0.2);
 }
 
 .glass-nav {
-  background: rgba(255, 255, 255, 0.8);
+  background: color-mix(in srgb, var(--os-bg) 85%, transparent);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.dark .glass-nav {
-  background: rgba(15, 23, 42, 0.85);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  border-bottom: 1px solid var(--os-border);
 }
 
 .glass-nav-bottom {
-  background: rgba(255, 255, 255, 0.8);
+  background: color-mix(in srgb, var(--os-bg) 85%, transparent);
   backdrop-filter: blur(24px) saturate(200%);
   -webkit-backdrop-filter: blur(24px) saturate(200%);
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.05);
+  border-top: 1px solid var(--os-border);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
-
-.dark .glass-nav-bottom {
-  background: rgba(11, 10, 19, 0.75);
-  border-top: 1px solid rgba(193, 140, 255, 0.08);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25);
-}
-
 
 .glass-sidebar {
-  background: rgba(255, 255, 255, 0.85);
+  background: color-mix(in srgb, var(--os-card) 85%, transparent);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.dark .glass-sidebar {
-  background: rgba(15, 23, 42, 0.9);
-  border-right: 1px solid rgba(148, 163, 184, 0.08);
+  border-right: 1px solid var(--os-border);
 }
 
 .glass-input {
-  background: rgba(255, 255, 255, 0.5);
+  background: color-mix(in srgb, var(--os-card) 50%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--os-border);
 }
 
-.dark .glass-input {
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.15);
-}
-
-.glass-input:focus,
-.dark .glass-input:focus {
-  border-color: hsl(var(--primary));
-  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
+.glass-input:focus {
+  border-color: var(--os-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--os-accent) 20%, transparent);
 }
 
 /* ============================================
@@ -776,7 +744,7 @@ html {
   width: 3px;
   height: 60%;
   border-radius: 0 4px 4px 0;
-  background: linear-gradient(180deg, hsl(234 89% 64%), hsl(252 56% 57%));
+  background: linear-gradient(180deg, var(--os-accent), var(--os-accent-secondary));
 }
 
 /* ============================================
@@ -794,13 +762,13 @@ html {
 }
 
 .badge-primary {
-  background: hsl(234 89% 64% / 0.1);
-  color: hsl(234 89% 64%);
+  background: color-mix(in srgb, var(--os-accent) 12%, transparent);
+  color: var(--os-accent);
 }
 
 .dark .badge-primary {
-  background: hsl(234 89% 64% / 0.2);
-  color: hsl(234 89% 74%);
+  background: color-mix(in srgb, var(--os-accent) 18%, transparent);
+  color: var(--os-accent);
 }
 
 .badge-success {
@@ -988,7 +956,7 @@ select option {
 .theme-dol {
   --font-family-display: var(--font-plus-jakarta-sans);
   --font-family-body: var(--font-inter);
-  --radius: 12px;
+  --radius: 0.75rem;
   font-size: 14px;
   line-height: 1.5715;
 }
@@ -996,22 +964,22 @@ select option {
 /* DOL + Light (canonical LMS) */
 .light.theme-dol,
 .theme-dol:not(.dark) {
-  --background: 0 0% 100%;
-  --foreground: 224 22% 18%; /* #242938 */
-  --card: 0 0% 100%;
+  --background: 240 6% 96%; /* #f4f4f6 */
+  --foreground: 224 22% 18%; /* #242938 slate navy */
+  --card: 0 0% 100%; /* #ffffff */
   --card-foreground: 224 22% 18%;
   --popover: 0 0% 100%;
   --popover-foreground: 224 22% 18%;
-  --primary: 0 61% 54%; /* #d14242 */
+  --primary: 0 61% 54%; /* #d14242 crimson */
   --primary-foreground: 0 0% 100%;
-  --secondary: 240 6% 96%; /* #f4f4f6 */
+  --secondary: 240 6% 94%; /* #f0f1f3 */
   --secondary-foreground: 224 22% 18%;
-  --muted: 228 5% 61% / 0.15;
-  --muted-foreground: 228 5% 45%; /* stronger than #95979f for AA */
+  --muted: 228 8% 60% / 0.12;
+  --muted-foreground: 228 8% 44%; /* WCAG AA accessible */
   --accent: 206 71% 43% / 0.12; /* tech blue wash */
   --accent-foreground: 206 71% 38%;
-  --border: 210 7% 92%;
-  --input: 210 7% 92%;
+  --border: 220 13% 90%; /* #e2e4e8 */
+  --input: 220 13% 90%;
   --ring: 0 61% 54%;
   --destructive: 0 72% 48%;
   --destructive-foreground: 0 0% 100%;
@@ -1024,32 +992,32 @@ select option {
   --os-accent: #d14242;
   --os-accent-fg: #ffffff;
   --os-accent-secondary: #2074bb;
-  --os-border: #e9eaeb;
+  --os-border: #e2e4e8;
   --os-success: #059669;
   --os-warning: #d97706;
   --os-danger: #dc2626;
-  --os-selection: rgba(209, 66, 66, 0.28);
+  --os-selection: rgba(209, 66, 66, 0.22);
 }
 
 /* DOL + Dark (slate navy night mode, same crimson brand) */
 .dark.theme-dol {
-  --background: 228 22% 10%; /* deep slate */
-  --foreground: 220 20% 96%;
-  --card: 228 18% 14%;
+  --background: 228 22% 10%; /* #161822 deep slate */
+  --foreground: 220 20% 96%; /* #f0f1f5 */
+  --card: 228 18% 15%; /* #1e2130 */
   --card-foreground: 220 20% 96%;
-  --popover: 228 18% 14%;
+  --popover: 228 18% 15%;
   --popover-foreground: 220 20% 96%;
-  --primary: 0 61% 58%; /* slightly brighter crimson on dark */
+  --primary: 0 68% 61%; /* #e05555 vibrant crimson */
   --primary-foreground: 0 0% 100%;
-  --secondary: 228 14% 18%;
+  --secondary: 228 14% 20%; /* #272b3d */
   --secondary-foreground: 220 20% 96%;
   --muted: 228 8% 55% / 0.15;
-  --muted-foreground: 228 8% 68%;
+  --muted-foreground: 228 8% 65%; /* #95979f */
   --accent: 206 71% 55% / 0.15;
   --accent-foreground: 206 71% 70%;
-  --border: 228 10% 55% / 0.2;
-  --input: 228 10% 55% / 0.2;
-  --ring: 0 61% 58%;
+  --border: 228 10% 55% / 0.22;
+  --input: 228 10% 55% / 0.22;
+  --ring: 0 68% 61%;
   --destructive: 0 62% 48%;
   --destructive-foreground: 0 0% 100%;
 
@@ -1061,11 +1029,11 @@ select option {
   --os-accent: #e05555;
   --os-accent-fg: #ffffff;
   --os-accent-secondary: #4d90c9;
-  --os-border: color-mix(in srgb, #95979f 28%, transparent);
+  --os-border: rgba(149, 151, 159, 0.22);
   --os-success: #34d399;
   --os-warning: #fbbf24;
   --os-danger: #f87171;
-  --os-selection: rgba(209, 66, 66, 0.35);
+  --os-selection: rgba(224, 85, 85, 0.35);
 }
 
 .theme-dol h1,
@@ -1093,22 +1061,22 @@ select option {
 
 .light.theme-swiss,
 .theme-swiss:not(.dark) {
-  --background: 48 10% 95%; /* #F4F3EF */
-  --foreground: 0 0% 7%;
-  --card: 0 0% 100%;
+  --background: 48 12% 95%; /* #F4F3EF warm alpine stone */
+  --foreground: 0 0% 7%; /* #111111 */
+  --card: 0 0% 100%; /* #ffffff */
   --card-foreground: 0 0% 7%;
   --popover: 0 0% 100%;
   --popover-foreground: 0 0% 7%;
-  --primary: 0 100% 45%; /* #E60000 */
+  --primary: 0 100% 45%; /* #E60000 Swiss International Red */
   --primary-foreground: 0 0% 100%;
-  --secondary: 48 10% 90%;
+  --secondary: 48 10% 90%; /* #EBE9E3 */
   --secondary-foreground: 0 0% 7%;
-  --muted: 0 0% 40% / 0.15;
-  --muted-foreground: 0 0% 40%;
-  --accent: 0 100% 45% / 0.12;
+  --muted: 0 0% 40% / 0.12;
+  --muted-foreground: 0 0% 40%; /* #666666 */
+  --accent: 0 100% 45% / 0.1;
   --accent-foreground: 0 100% 40%;
-  --border: 0 0% 7% / 0.15;
-  --input: 0 0% 7% / 0.15;
+  --border: 0 0% 7% / 0.16;
+  --input: 0 0% 7% / 0.16;
   --ring: 0 100% 45%;
 
   --os-bg: #f4f3ef;
@@ -1119,30 +1087,30 @@ select option {
   --os-accent: #e60000;
   --os-accent-fg: #ffffff;
   --os-accent-secondary: #111111;
-  --os-border: color-mix(in srgb, #111111 15%, transparent);
+  --os-border: rgba(17, 17, 17, 0.16);
   --os-success: #0f766e;
   --os-warning: #b45309;
   --os-danger: #b91c1c;
-  --os-selection: color-mix(in srgb, #e60000 25%, transparent);
+  --os-selection: rgba(230, 0, 0, 0.25);
 }
 
 .dark.theme-swiss {
-  --background: 0 0% 8%;
-  --foreground: 48 10% 95%;
-  --card: 0 0% 12%;
+  --background: 0 0% 8%; /* #141414 dark neutral alpine stone */
+  --foreground: 48 10% 95%; /* #F4F3EF */
+  --card: 0 0% 12%; /* #1E1E1E */
   --card-foreground: 48 10% 95%;
   --popover: 0 0% 12%;
   --popover-foreground: 48 10% 95%;
-  --primary: 0 100% 52%;
+  --primary: 0 100% 52%; /* #FF2A2A vivid Swiss Red */
   --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 16%;
+  --secondary: 0 0% 16%; /* #2A2A2A */
   --secondary-foreground: 48 10% 95%;
   --muted: 0 0% 60% / 0.15;
-  --muted-foreground: 0 0% 65%;
+  --muted-foreground: 0 0% 65%; /* #999999 */
   --accent: 0 100% 52% / 0.15;
   --accent-foreground: 0 100% 65%;
-  --border: 0 0% 100% / 0.12;
-  --input: 0 0% 100% / 0.12;
+  --border: 0 0% 100% / 0.14;
+  --input: 0 0% 100% / 0.14;
   --ring: 0 100% 52%;
 
   --os-bg: #141414;
@@ -1153,20 +1121,34 @@ select option {
   --os-accent: #ff2a2a;
   --os-accent-fg: #ffffff;
   --os-accent-secondary: #f4f3ef;
-  --os-border: color-mix(in srgb, #f4f3ef 14%, transparent);
+  --os-border: rgba(244, 243, 239, 0.14);
   --os-success: #34d399;
   --os-warning: #fbbf24;
   --os-danger: #f87171;
-  --os-selection: color-mix(in srgb, #ff2a2a 30%, transparent);
+  --os-selection: rgba(255, 42, 42, 0.3);
 }
 
 .theme-swiss h1,
 .theme-swiss .h1-style {
-  font-weight: 300 !important;
-  letter-spacing: -0.04em !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.02em !important;
 }
 
-.theme-swiss *:not(.rounded-full):not(svg):not(path) {
+.theme-swiss button:not(.rounded-full),
+.theme-swiss input:not(.rounded-full),
+.theme-swiss select,
+.theme-swiss textarea,
+.theme-swiss .card,
+.theme-swiss .card-elevated,
+.theme-swiss .card-interactive,
+.theme-swiss .glass-card,
+.theme-swiss .glass-nav,
+.theme-swiss .glass-nav-bottom,
+.theme-swiss .btn-primary,
+.theme-swiss .btn-brand,
+.theme-swiss .btn-ghost,
+.theme-swiss [role="dialog"],
+.theme-swiss [role="menu"] {
   border-radius: 0px !important;
 }
 
@@ -1203,10 +1185,23 @@ select option {
   background: color-mix(in srgb, var(--os-bg) 88%, transparent);
   border-bottom-color: var(--os-border);
 }
+.dark.theme-swiss .glass-nav {
+  background: color-mix(in srgb, var(--os-bg) 92%, transparent);
+  border-bottom-color: var(--os-border);
+}
+
 .dark.theme-dream .glass-nav-bottom,
 .dark:not(.theme-swiss):not(.theme-dol) .glass-nav-bottom {
   background: color-mix(in srgb, var(--os-bg) 80%, transparent);
-  border-top-color: color-mix(in srgb, var(--os-accent) 12%, transparent);
+  border-top-color: color-mix(in srgb, var(--os-accent) 15%, var(--os-border));
+}
+.dark.theme-dol .glass-nav-bottom {
+  background: color-mix(in srgb, var(--os-bg) 88%, transparent);
+  border-top-color: color-mix(in srgb, var(--os-accent) 20%, var(--os-border));
+}
+.dark.theme-swiss .glass-nav-bottom {
+  background: color-mix(in srgb, var(--os-bg) 92%, transparent);
+  border-top-color: var(--os-border);
 }
 
 /* Utility: brand primary fill for CTAs that should track design theme */
@@ -1240,4 +1235,25 @@ h1,
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary) / 0.3) !important;
-}
+}
+/* ============================================
+   Toast (CSS-only, no framer-motion)
+   ============================================ */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.toast-in {
+  animation: toast-in 0.18s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast-in {
+    animation: none;
+  }
+}

@@ -22,7 +22,8 @@ export async function POST(request: NextRequest) {
         }
 
         // 1. Lấy ngẫu nhiên câu hỏi từ ngân hàng
-        const fetchRandomQuestions = async (type: string, limit: number) => {
+        type BankQuestion = { id: string; question_type: "mc" | "tf" | "sa"; correct_answer: unknown }
+        const fetchRandomQuestions = async (type: "mc" | "tf" | "sa", limit: number): Promise<BankQuestion[]> => {
             if (limit <= 0) return []
             // Lấy id ngẫu nhiên (Supabase raw query approach without RPC: fetch all matching types, shuffle in memory)
             // Cẩn thận nếu kho có 10,000 câu. Ở quy mô này ta lấy < 1000 câu về để shuffle.
@@ -34,11 +35,11 @@ export async function POST(request: NextRequest) {
                 .limit(500)
 
             if (error) throw error
-            
+
             // Xáo trộn mảng và lấy đủ số lượng
-            const shuffled = (data || []).sort(() => 0.5 - Math.random())
+            const shuffled = ((data ?? []) as BankQuestion[]).sort(() => 0.5 - Math.random())
             const selected = shuffled.slice(0, limit)
-            
+
             if (selected.length < limit) {
                 throw new Error(`Kho câu hỏi không đủ ${limit} câu loại ${type.toUpperCase()}`)
             }
@@ -54,30 +55,34 @@ export async function POST(request: NextRequest) {
         // 2. Định dạng lại đáp án để lưu vào bảng exams (Backward Compatibility)
         const mcAnswers = mcQuestions.map((q, idx) => ({
             question: idx + 1,
-            answer: q.correct_answer // Expected "A"|"B"|"C"|"D"
+            answer: String(q.correct_answer ?? "A") // Expected "A"|"B"|"C"|"D"
         }))
 
-        const tfAnswers = tfQuestions.map((q, idx) => ({
-            question: mc_count + idx + 1,
-            a: q.correct_answer?.a ?? true,
-            b: q.correct_answer?.b ?? false,
-            c: q.correct_answer?.c ?? true,
-            d: q.correct_answer?.d ?? false,
-        }))
+        const tfAnswers = tfQuestions.map((q, idx) => {
+            const ans = (q.correct_answer ?? {}) as Partial<Record<"a" | "b" | "c" | "d", boolean>>
+            return {
+                question: idx + 1,
+                a: ans.a ?? true,
+                b: ans.b ?? false,
+                c: ans.c ?? true,
+                d: ans.d ?? false,
+            }
+        })
 
         const saAnswers = saQuestions.map((q, idx) => ({
-            question: mc_count + tf_count + idx + 1,
-            answer: q.correct_answer // Expected string/number
+            question: idx + 1,
+            answer: q.correct_answer as string // Expected string/number
         }))
 
         // Gộp correct_answers (legacy array for MC)
-        const correctAnswersArr = mcQuestions.map(q => q.correct_answer)
+        const correctAnswersArr = mcQuestions.map(q => String(q.correct_answer))
 
         // 3. Tạo đề thi
         const { data: newExam, error: examError } = await supabase
             .from('exams')
             .insert({
                 teacher_id: user.id,
+                created_by: user.id,
                 title,
                 duration,
                 exam_type: 'digital',

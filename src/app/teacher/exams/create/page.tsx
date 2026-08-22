@@ -19,6 +19,7 @@ import { TeacherBottomNav } from "@/components/BottomNav"
 import { ArrowLeft, GraduationCap, Loader2, Wand2, Eye, X } from "lucide-react"
 import { StepIndicator, ExamInfoForm, PdfUploader, ScheduleFields, AnswerEntry } from "./_components"
 import type { Option, TFAnswer, SAAnswer } from "@/types/exam"
+import type { Json } from "@/types/database"
 import { MAP_DB_TO_SUBJECT } from "@/lib/subjects"
 
 export default function CreateExamPage() {
@@ -151,7 +152,7 @@ export default function CreateExamPage() {
     setEnableTF(newCount > 0)
     setTfAnswers(
       Array.from({ length: newCount }, (_, i) => {
-        const baseQ = mcCount + 1 + i
+        const baseQ = 1 + i
         return tfAnswers[i] || { question: baseQ, a: true, b: true, c: true, d: true }
       })
     )
@@ -162,7 +163,7 @@ export default function CreateExamPage() {
     setEnableSA(newCount > 0)
     setSaAnswers(
       Array.from({ length: newCount }, (_, i) => {
-        const baseQ = mcCount + (newCount > 0 ? tfCount : 0) + 1 + i
+        const baseQ = 1 + i
         return saAnswers[i] || { question: baseQ, answer: "" }
       })
     )
@@ -203,7 +204,7 @@ export default function CreateExamPage() {
 
       const finalTfAnswers = enableTF
         ? Array.from({ length: tfCount }, (_, i) => {
-            const baseQ = mcCount + 1 + i;
+            const baseQ = 1 + i;
             const existing = tfAnswers.find((t) => t.question === baseQ) || tfAnswers[i] || {};
             return {
               question: baseQ,
@@ -217,7 +218,7 @@ export default function CreateExamPage() {
 
       const finalSaAnswers = enableSA
         ? Array.from({ length: saCount }, (_, i) => {
-            const baseQ = mcCount + effectiveTf + 1 + i;
+            const baseQ = 1 + i;
             const existing = saAnswers.find((s) => s.question === baseQ) || saAnswers[i] || {};
             return {
               question: baseQ,
@@ -234,6 +235,7 @@ export default function CreateExamPage() {
         .from("exams")
         .insert({
           teacher_id: user.id,
+          created_by: user.id,
           target_grade: targetGrade,
           target_classes: classesArray,
           is_advanced: isAdvanced,
@@ -241,10 +243,10 @@ export default function CreateExamPage() {
           subject,
           duration,
           total_questions: mcCount + effectiveTf + effectiveSa,
-          correct_answers: Object.values(parsedAnswers).length ? Object.values(parsedAnswers) : mcAnswers.length > 0 ? mcAnswers : correctAnswers,
-          mc_answers: mcAnswerObjects,
-          tf_answers: finalTfAnswers,
-          sa_answers: finalSaAnswers,
+          correct_answers: (Object.values(parsedAnswers).length ? Object.values(parsedAnswers) : mcAnswers.length > 0 ? mcAnswers : correctAnswers) as unknown as string[],
+          mc_answers: mcAnswerObjects as unknown as Json,
+          tf_answers: finalTfAnswers as unknown as Json,
+          sa_answers: finalSaAnswers as unknown as Json,
           pdf_url: pdfUrl,
           max_attempts: maxAttempts,
           status: publish ? "published" : "draft",
@@ -260,27 +262,33 @@ export default function CreateExamPage() {
         .single()
 
       if (insertError) throw insertError
+
+      if (publish && sendNotification && data) {
+        try {
+          const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
+          const deadlineStr = isScheduled && endTime ? new Date(endTime).toLocaleString("vi-VN") : undefined
+          await fetch("/api/send-notification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              examId: data.id,
+              examTitle: title.trim(),
+              teacherName: profile?.full_name || "Giáo viên",
+              deadline: deadlineStr,
+              targetClasses: classesArray,
+              targetGrade,
+              assignedTo,
+            }),
+          })
+        } catch (notifErr) {
+          console.warn("Lỗi gửi thông báo email:", notifErr)
+        }
+      }
+
       if (data) {
         setCreatedExamId(data.id)
         setShowLinkDialog(true)
         router.push("/teacher/dashboard")
-      }
-
-      if (publish && sendNotification && data) {
-        const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
-        const { data: students } = await supabase.from("profiles").select("id").eq("role", "student")
-        if (students?.length) {
-          await supabase.from("notifications").insert(
-            students.map((s: { id: string }) => ({
-              user_id: s.id,
-              title: `Đề thi mới: ${title.trim()}`,
-              message: `${profile?.full_name || "Giáo viên"} đã đăng đề thi mới`,
-              type: "exam",
-              link: `/student/exams/${data.id}/take`,
-              is_read: false,
-            }))
-          )
-        }
       }
     } catch (err) {
       setError("Lỗi lưu đề thi: " + (err as Error).message)

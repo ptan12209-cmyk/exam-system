@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { ARENA_ENABLED, MONITORING_ENABLED, TIMETABLE_ENABLED } from "@/lib/features"
 
 interface TeacherSidebarProps {
   onLogout?: () => void
@@ -36,13 +37,22 @@ const NAV_ITEMS = [
   { href: "/teacher/exams/create", label: "Tạo đề mới", icon: Plus },
 ]
 
-const MANAGE_ITEMS = [
+type ManageItem = {
+  href: string
+  label: string
+  icon: any
+  arena?: boolean
+  timetable?: boolean
+  monitoring?: boolean
+}
+
+const MANAGE_ITEMS: ManageItem[] = [
   { href: "/teacher/students", label: "Cấp tài khoản HS", icon: UserPlus },
-  { href: "/teacher/monitor", label: "Quản lý học sinh", icon: Activity },
+  { href: "/teacher/monitor", label: "Quản lý học sinh", icon: Activity, monitoring: true },
   { href: "/teacher/exam-bank", label: "Ngân hàng đề", icon: Database },
   { href: "/teacher/analytics", label: "Thống kê kết quả", icon: PieChart },
-  { href: "/teacher/arena", label: "Đấu trường", icon: Swords },
-  { href: "/teacher/timetable", label: "Thời khóa biểu", icon: CalendarDays },
+  { href: "/teacher/arena", label: "Đấu trường", icon: Swords, arena: true },
+  { href: "/teacher/timetable", label: "Thời khóa biểu", icon: CalendarDays, timetable: true },
   { href: "/teacher/profile", label: "Hồ sơ giáo viên", icon: UserCircle },
 ]
 
@@ -186,7 +196,12 @@ export function TeacherSidebar({ onLogout, collapsed: externalCollapsed, setColl
             <p className="px-3 pb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--muted-foreground))]/60">Management</p>
           )}
           <div className="space-y-1">
-            {MANAGE_ITEMS.map((item) => (
+            {MANAGE_ITEMS.filter((item) => {
+              if (item.arena && !ARENA_ENABLED) return false
+              if (item.timetable && !TIMETABLE_ENABLED) return false
+              if (item.monitoring && !MONITORING_ENABLED) return false
+              return true
+            }).map((item) => (
               <SidebarLink 
                 key={item.href} 
                 href={item.href} 

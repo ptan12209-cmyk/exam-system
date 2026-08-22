@@ -53,7 +53,7 @@ export default function ExamMonitorPage() {
 
     if (participantData) {
       const now = new Date()
-      const processed = participantData.map((p: ExamParticipant) => {
+      const processed = (participantData as unknown as ExamParticipant[]).map((p) => {
         const inactiveMs = now.getTime() - new Date(p.last_active).getTime()
         return { ...p, status: p.status === "active" && inactiveMs > 120000 ? "disconnected" : p.status }
       })

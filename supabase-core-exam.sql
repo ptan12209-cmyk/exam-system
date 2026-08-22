@@ -928,7 +928,13 @@ for select to authenticated
 using (
   id = (select auth.uid())
   or public.manages_student(id, (select auth.uid()))
-  or (role = 'teacher' and public.is_active_user((select auth.uid())))
+  or (
+    public.is_teacher()
+    and exists (
+      select 1 from public.submissions s
+      where s.student_id = id and public.owns_exam(s.exam_id)
+    )
+  )
 );
 
 create policy profiles_update_self on public.profiles
@@ -949,9 +955,7 @@ using (parent_id = (select auth.uid()) and public.is_teacher());
 create policy exams_teacher_select on public.exams
 for select to authenticated
 using (teacher_id = (select auth.uid()) or created_by = (select auth.uid()));
-create policy exams_student_select_published on public.exams
-for select to authenticated
-using (status = 'published' and public.is_active_user());
+-- Students read exams through the public.exams_public view (no answer columns).
 create policy exams_teacher_insert on public.exams
 for insert to authenticated
 with check (
@@ -1000,22 +1004,19 @@ for select to authenticated
 using (
   student_id = (select auth.uid())
   or public.owns_exam(exam_id)
-  or (
-    is_ranked and exists (
-      select 1 from public.exams e where e.id = exam_id and e.status = 'published'
-    )
-  )
 );
+-- Writes are server-only: /api/exams/submit and /api/exams/submit-offline
+-- insert via the service-role key. Clients cannot forge scores.
 create policy submissions_insert on public.submissions
-for insert to authenticated
-with check (student_id = (select auth.uid()) and public.is_active_user());
+for insert to service_role
+with check (true);
 create policy submissions_update on public.submissions
-for update to authenticated
-using (student_id = (select auth.uid()) or public.owns_exam(exam_id))
-with check (student_id = (select auth.uid()) or public.owns_exam(exam_id));
+for update to service_role
+using (true)
+with check (true);
 create policy submissions_delete on public.submissions
-for delete to authenticated
-using (student_id = (select auth.uid()) or public.owns_exam(exam_id));
+for delete to service_role
+using (true);
 
 create policy audit_select on public.submission_audit_log
 for select to authenticated
@@ -1035,24 +1036,8 @@ create policy questions_teacher_all on public.questions
 for all to authenticated
 using (teacher_id = (select auth.uid()) and public.is_teacher())
 with check (teacher_id = (select auth.uid()) and public.is_teacher());
-create policy questions_student_select on public.questions
-for select to authenticated
-using (
-  public.is_active_user()
-  and (
-    exists (
-      select 1
-      from public.exams e
-      where e.id = public.questions.exam_id and e.status = 'published'
-    )
-    or exists (
-      select 1
-      from public.exam_questions eq
-      join public.exams e on e.id = eq.exam_id
-      where eq.question_id = id and e.status = 'published'
-    )
-  )
-);
+-- Students read questions through the public.questions_public view
+-- (no correct_answer / explanation columns).
 
 create policy exam_questions_select on public.exam_questions
 for select to authenticated
@@ -1335,6 +1320,79 @@ revoke all on function public.get_exam_for_student(uuid) from public;
 grant execute on function public.get_exam_leaderboard(uuid) to authenticated;
 grant execute on function public.get_exam_for_student(uuid) to authenticated;
 
+-- Safe student views: published exams / linked questions WITHOUT answer keys.
+-- Teachers keep full base-table access via owns_exam() policies above.
+create view public.exams_public as
+select
+  id, title, description, subject, exam_type, pdf_url,
+  duration, total_questions, status, assigned_to,
+  target_grade, target_classes, is_advanced, max_attempts,
+  is_scheduled, start_time, end_time,
+  score_visibility_mode, score_visibility_threshold, security_level,
+  chapter_id, lesson_id, section_id, created_at, updated_at
+from public.exams
+where status = 'published'
+  and public.is_active_user();
+
+grant select on public.exams_public to authenticated;
+
+create view public.questions_public as
+select
+  q.id, q.bank_id, q.exam_id, q.subject, q.question_type, q.difficulty,
+  q.content, q.question_text, q.options, q.tags, q.order_index, q.created_at
+from public.questions q
+where public.is_active_user()
+  and exists (
+    select 1
+    from public.exams e
+    where e.status = 'published'
+      and (
+        e.id = q.exam_id
+        or exists (
+          select 1 from public.exam_questions eq
+          where eq.question_id = q.id and eq.exam_id = e.id
+        )
+      )
+  );
+
+grant select on public.questions_public to authenticated;
+
+-- Graded exam payload (incl. answer keys) — only when the caller has a submission.
+create or replace function public.get_graded_exam_for_student(exam_uuid uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'id', e.id,
+    'title', e.title,
+    'subject', e.subject,
+    'exam_type', e.exam_type,
+    'duration', e.duration,
+    'total_questions', e.total_questions,
+    'max_attempts', e.max_attempts,
+    'score_visibility_mode', e.score_visibility_mode,
+    'score_visibility_threshold', e.score_visibility_threshold,
+    'correct_answers', e.correct_answers,
+    'mc_answers', e.mc_answers,
+    'tf_answers', e.tf_answers,
+    'sa_answers', e.sa_answers
+  )
+  from public.exams e
+  where e.id = exam_uuid
+    and e.status = 'published'
+    and public.is_active_user()
+    and exists (
+      select 1 from public.submissions s
+      where s.exam_id = e.id and s.student_id = (select auth.uid())
+    );
+$$;
+
+revoke all on function public.get_graded_exam_for_student(uuid) from public, anon;
+grant execute on function public.get_graded_exam_for_student(uuid) to authenticated;
+
 -- Notify the managing teacher/guardian after each submission.
 create or replace function public.notify_manager_on_submission()
 returns trigger
@@ -1368,8 +1426,8 @@ for each row execute function public.notify_manager_on_submission();
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
-  ('exam-pdfs', 'exam-pdfs', true, 26214400, array['application/pdf']),
-  ('exams', 'exams', true, 26214400, array['application/pdf']),
+  ('exam-pdfs', 'exam-pdfs', false, 26214400, array['application/pdf']),
+  ('exams', 'exams', false, 26214400, array['application/pdf']),
   ('avatars', 'avatars', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
   ('student-snapshots', 'student-snapshots', false, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
 on conflict (id) do update set
@@ -1381,17 +1439,43 @@ drop policy if exists "core_exam_storage_read" on storage.objects;
 drop policy if exists "core_exam_storage_insert" on storage.objects;
 drop policy if exists "core_exam_storage_update" on storage.objects;
 drop policy if exists "core_exam_storage_delete" on storage.objects;
+drop policy if exists "core_exam_storage_read_avatars" on storage.objects;
+drop policy if exists "core_exam_storage_read_private" on storage.objects;
 
-create policy "core_exam_storage_read" on storage.objects
+-- Avatars stay publicly readable (profile images).
+create policy "core_exam_storage_read_avatars" on storage.objects
 for select to public
-using (bucket_id in ('exam-pdfs', 'exams', 'avatars'));
+using (bucket_id = 'avatars');
+
+-- Exam PDFs and proctoring snapshots are private: owner, in-folder user,
+-- or active teacher/admin. Students read exam PDFs via signed URLs issued
+-- by /api/exams/[id]/questions after eligibility checks.
+create policy "core_exam_storage_read_private" on storage.objects
+for select to authenticated
+using (
+  bucket_id in ('exam-pdfs', 'exams', 'student-snapshots')
+  and (
+    owner = (select auth.uid())
+    or (storage.foldername(name))[1] = (select auth.uid())::text
+    or exists (
+      select 1 from public.profiles p
+      where p.id = (select auth.uid())
+        and p.account_status = 'active'
+        and p.role in ('teacher', 'admin')
+    )
+  )
+);
 
 create policy "core_exam_storage_insert" on storage.objects
 for insert to authenticated
 with check (
-  bucket_id in ('exam-pdfs', 'exams', 'avatars', 'student-snapshots')
-  and (storage.foldername(name))[1] = (select auth.uid())::text
-  and public.is_active_user()
+  case
+    when bucket_id in ('exam-pdfs', 'exams') then public.is_teacher()
+    when bucket_id in ('avatars', 'student-snapshots') then
+      (storage.foldername(name))[1] = (select auth.uid())::text
+      and public.is_active_user()
+    else false
+  end
 );
 
 create policy "core_exam_storage_update" on storage.objects
@@ -1424,6 +1508,8 @@ grant usage, select on all sequences in schema public to authenticated, service_
 -- Sensitive tables remain server-only despite the broad authenticated grant.
 revoke all on public.email_otps from authenticated, anon;
 revoke insert, update, delete on public.user_device_bindings from authenticated, anon;
+-- Submissions are written exclusively by the scoring API (service role).
+revoke insert, update, delete on public.submissions from authenticated;
 
 do $$
 declare

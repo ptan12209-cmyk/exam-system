@@ -6,12 +6,15 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useEffect, useState, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { ARENA_ENABLED, TIMETABLE_ENABLED } from "@/lib/features"
 
 interface NavItem {
     href: string
     label: string
     icon: LucideIcon
     activePattern?: RegExp
+    arena?: boolean
+    timetable?: boolean
 }
 
 const studentNavItems: NavItem[] = [
@@ -31,13 +34,15 @@ const studentNavItems: NavItem[] = [
         href: "/arena",
         label: "Đấu trường",
         icon: Swords,
-        activePattern: /^\/arena/
+        activePattern: /^\/arena/,
+        arena: true
     },
     {
         href: "/student/timetable",
         label: "TKB",
         icon: CalendarDays,
-        activePattern: /^\/student\/timetable/
+        activePattern: /^\/student\/timetable/,
+        timetable: true
     },
     {
         href: "/student/profile",
@@ -64,7 +69,8 @@ const teacherNavItems: NavItem[] = [
         href: "/teacher/arena",
         label: "Đấu trường",
         icon: Swords,
-        activePattern: /^\/teacher\/arena/
+        activePattern: /^\/teacher\/arena/,
+        arena: true
     },
     {
         href: "/teacher/students",
@@ -96,51 +102,22 @@ export function MobileNav() {
     useEffect(() => {
         let active = true
         async function getUnsubmittedCount() {
+            // 60s sessionStorage cache — one RPC instead of 4 serial queries
+            const CACHE_KEY = "unsubmitted-exam-count"
             try {
-                const { data: { user: authUser } } = await supabase.auth.getUser()
-                if (!authUser || !active) return
-
-                const { data: profile } = await supabase
-                    .from("profiles")
-                    .select("grade, class_suffix, nickname")
-                    .eq("id", authUser.id)
-                    .single()
-
-                if (!active) return
-
-                const isStudentX = profile?.nickname === "X"
-                let examsQuery = supabase
-                    .from("exams")
-                    .select("id, target_grade, target_classes")
-                    .eq("status", "published")
-                    .eq("assigned_to", isStudentX ? "x" : "normal")
-
-                if (profile && profile.grade !== null) {
-                    examsQuery = examsQuery.or(`target_grade.is.null,target_grade.eq.${profile.grade}`)
+                const cached = sessionStorage.getItem(CACHE_KEY)
+                if (cached) {
+                    const { count, ts } = JSON.parse(cached) as { count: number; ts: number }
+                    if (Date.now() - ts < 60_000) {
+                        setUnsubmittedCount(count)
+                        return
+                    }
                 }
 
-                const { data: examsData } = await examsQuery
-
-                if (!active || !examsData) return
-
-                const studentClassSuffix = profile?.class_suffix?.toUpperCase()
-                const visibleExams = examsData.filter((exam: any) => {
-                    if (exam.target_classes && exam.target_classes.length > 0) {
-                        return studentClassSuffix && exam.target_classes.map((c: string) => c.toUpperCase()).includes(studentClassSuffix)
-                    }
-                    return true
-                })
-
-                const { data: subsData } = await supabase
-                    .from("submissions")
-                    .select("exam_id")
-                    .eq("student_id", authUser.id)
-
-                if (!active || !subsData) return
-
-                const submittedIds = new Set(subsData.map((s: any) => s.exam_id))
-                const unsubmitted = visibleExams.filter((exam: any) => !submittedIds.has(exam.id))
-                setUnsubmittedCount(unsubmitted.length)
+                const { data: count } = await supabase.rpc("get_unsubmitted_exam_count")
+                if (!active) return
+                setUnsubmittedCount(count ?? 0)
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify({ count: count ?? 0, ts: Date.now() }))
             } catch (error) {
                 console.error("Error fetching unsubmitted count:", error)
             }
@@ -166,7 +143,11 @@ export function MobileNav() {
         return null
     }
 
-    const items = isTeacherArea ? teacherNavItems : studentNavItems
+    const items = (isTeacherArea ? teacherNavItems : studentNavItems).filter((item) => {
+        if (item.arena && !ARENA_ENABLED) return false
+        if (item.timetable && !TIMETABLE_ENABLED) return false
+        return true
+    })
 
     return (
         <nav className="glass-nav-bottom fixed bottom-0 left-0 right-0 z-50 lg:hidden safe-area-bottom">

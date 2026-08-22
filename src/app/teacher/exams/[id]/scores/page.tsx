@@ -42,7 +42,7 @@ export default function ExamScoresPage() {
         setLoading(false)
         return
       }
-      setExam(examData)
+      setExam(examData as unknown as Exam)
       const { data: submissionsData } = await supabase.from("submissions").select("id, student_id, score, correct_count, time_spent, submitted_at").eq("exam_id", examId).order("score", { ascending: false }).order("time_spent", { ascending: true })
       if (submissionsData?.length) {
         const studentIds = submissionsData.map((s: Submission) => s.student_id)

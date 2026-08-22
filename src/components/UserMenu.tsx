@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useState, useRef, useEffect, useCallback } from "react"
@@ -12,9 +12,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
-import { TitleBadge } from "@/components/gamification/TitleSelector"
 import { useTheme } from "@/components/ThemeProvider"
-import { GAMIFICATION_ENABLED } from "@/lib/features"
 
 interface UserMenuProps {
     userName: string
@@ -28,7 +26,6 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
     const { designTheme, setDesignTheme } = useTheme()
     const [isOpen, setIsOpen] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
-    const [equippedTitle, setEquippedTitle] = useState<{ display_text: string; color: string } | null>(null)
 
     const handleLogout = useCallback(async () => {
         if (onLogout) {
@@ -41,28 +38,6 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
     }, [onLogout, router])
 
     useEffect(() => {
-        if (role !== "student" || !GAMIFICATION_ENABLED) return
-        
-        const fetchEquippedTitle = async () => {
-            const supabase = createClient()
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
-            
-            const { data: profile } = await supabase
-                .from("profiles")
-                .select("equipped_title:titles(display_text, color)")
-                .eq("id", user.id)
-                .single()
-            
-            if (profile?.equipped_title) {
-                setEquippedTitle(profile.equipped_title as any)
-            }
-        }
-        
-        fetchEquippedTitle()
-    }, [role])
-
-    useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setIsOpen(false)
@@ -73,13 +48,13 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
     }, [])
 
     const menuItems = role === "student" ? [
-        { href: "/student/profile", icon: User, label: "Hồ sơ của tôi" },
-        { href: "/student/dashboard", icon: LayoutDashboard, label: "Tổng quan bài tập" },
-        { href: "/student/exams", icon: FileText, label: "Đề thi của tôi" },
+        { href: "/student/profile", icon: User, label: "H沼?s퉤 c沼쬪 t척i" },
+        { href: "/student/dashboard", icon: LayoutDashboard, label: "T沼븂g quan b횪i t梳춑" },
+        { href: "/student/exams", icon: FileText, label: "휂沼?thi c沼쬪 t척i" },
     ] : [
-        { href: "/teacher/profile", icon: User, label: "Hồ sơ của tôi" },
-        { href: "/teacher/dashboard", icon: LayoutDashboard, label: "Tổng quan quản lý" },
-        { href: "/teacher/exams", icon: FileText, label: "Quản lý đề thi" },
+        { href: "/teacher/profile", icon: User, label: "H沼?s퉤 c沼쬪 t척i" },
+        { href: "/teacher/dashboard", icon: LayoutDashboard, label: "T沼븂g quan qu梳즢 l첵" },
+        { href: "/teacher/exams", icon: FileText, label: "Qu梳즢 l첵 휃沼?thi" },
     ]
 
     const initials = userName
@@ -106,9 +81,8 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                 <div className="hidden sm:block text-left">
                     <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="text-sm font-semibold text-foreground leading-tight">{userName || "User"}</p>
-                        {GAMIFICATION_ENABLED && equippedTitle && <TitleBadge title={equippedTitle} />}
                     </div>
-                    <p className="text-[10px] text-muted-foreground">{userClass || (role === "student" ? "Học sinh" : "Giáo viên")}</p>
+                    <p className="text-[10px] text-muted-foreground">{userClass || (role === "student" ? "H沼뛠 sinh" : "Gi찼o vi챗n")}</p>
                 </div>
                 <ChevronDown className={cn(
                     "w-4 h-4 text-muted-foreground transition-transform duration-200 hidden sm:block",
@@ -128,9 +102,8 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                             <div>
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                     <p className="font-semibold text-foreground text-sm">{userName}</p>
-                                    {GAMIFICATION_ENABLED && equippedTitle && <TitleBadge title={equippedTitle} />}
                                 </div>
-                                <p className="text-xs text-muted-foreground">{userClass || (role === "student" ? "Học sinh" : "Giáo viên")}</p>
+                                <p className="text-xs text-muted-foreground">{userClass || (role === "student" ? "H沼뛠 sinh" : "Gi찼o vi챗n")}</p>
                             </div>
                         </div>
                     </div>
@@ -150,10 +123,10 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                         ))}
                     </div>
 
-                    {/* Brand switcher: Dream Violet ↔ DOL Crimson (+ Swiss) */}
+                    {/* Brand switcher: Dream Violet ??DOL Crimson (+ Swiss) */}
                     <div className="border-t border-[hsl(var(--border))]/40 py-2.5 px-3.5 space-y-2">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-                            Thương hiệu
+                            Th튼퉤ng hi沼뇎
                         </p>
                         <div className="grid grid-cols-3 gap-1 bg-muted/40 p-0.5 rounded-lg border border-[hsl(var(--border))]/10">
                             {(
@@ -191,7 +164,7 @@ export function UserMenu({ userName, userClass, onLogout, role = "student" }: Us
                             className="flex items-center gap-3 px-3 py-2.5 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all duration-150 w-full group"
                         >
                             <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                            Đăng xuất
+                            휂훱ng xu梳쩿
                         </button>
                     </div>
                 </div>

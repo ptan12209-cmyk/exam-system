@@ -1,13 +1,22 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import {
+  ARENA_ENABLED,
+  CHECKLIST_ENABLED,
   GAMIFICATION_ENABLED,
+  MONITORING_ENABLED,
   ONLINE_STUDY_ENABLED,
+  TIMETABLE_ENABLED,
+  isArenaRoute,
+  isChecklistRoute,
   isGamificationApiRoute,
   isGamificationRoute,
+  isMonitoringApiRoute,
+  isMonitoringRoute,
   isOnlineStudyApiRoute,
   isOnlineStudyRoute,
   isRegistrationOpen,
+  isTimetableRoute,
 } from '@/lib/features'
 import { isVerificationBlocked } from '@/lib/email-verify'
 
@@ -74,6 +83,19 @@ export async function middleware(request: NextRequest) {
     )
   }
 
+  if (!MONITORING_ENABLED && isMonitoringApiRoute(pathname)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: 'FEATURE_DISABLED',
+          message: 'Tính năng giám sát đang tạm khóa.',
+        },
+      },
+      { status: 503 }
+    )
+  }
+
   // Keep the implementation in the repository, but remove every public entry
   // point while the product focuses on assignments and student management.
   if (!ONLINE_STUDY_ENABLED && isOnlineStudyRoute(pathname)) {
@@ -114,6 +136,30 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Core-exam focus locks: arena, timetables, checklist, monitoring station.
+  // Keep implementations in the repo; remove every public entry point.
+  const pausedFeature = !ARENA_ENABLED && isArenaRoute(pathname)
+    ? 'arena'
+    : !TIMETABLE_ENABLED && isTimetableRoute(pathname)
+      ? 'timetable'
+      : !CHECKLIST_ENABLED && isChecklistRoute(pathname)
+        ? 'checklist'
+        : !MONITORING_ENABLED && isMonitoringRoute(pathname)
+          ? 'monitoring'
+          : null
+
+  if (pausedFeature) {
+    const url = request.nextUrl.clone()
+    if (pathname.startsWith('/teacher/')) {
+      url.pathname = '/teacher/dashboard'
+    } else {
+      url.pathname = '/student/dashboard'
+    }
+    url.search = ''
+    url.searchParams.set(pausedFeature, 'paused')
+    return NextResponse.redirect(url)
+  }
+
   // Create a response that we can modify
   let supabaseResponse = NextResponse.next({ request })
 
@@ -145,7 +191,6 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route))
 
   // reset-password is semi-public (user may arrive with recovery session)
   if (!user && pathname.startsWith('/verify-email')) {
@@ -164,13 +209,36 @@ export async function middleware(request: NextRequest) {
   }
 
   // If user IS authenticated and visiting login/register → redirect to dashboard
-  if (user && isAuthRoute) {
-    const { data: profile } = await supabase
+  // Hard gate: self_register past grace → only verify-email (and exempt paths)
+  // Role-based access control for authenticated users
+  //
+  // PERF: the profile row is fetched AT MOST ONCE per request and reused by
+  // all three gates below (auth-route redirect, verification hard gate, role check).
+  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route))
+  const needsRoleCheck =
+    pathname.startsWith('/teacher') ||
+    pathname.startsWith('/student') ||
+    pathname.startsWith('/arena') ||
+    pathname.startsWith('/live')
+
+  let profile: {
+    role: string
+    account_status: string
+    email_verified_at: string | null
+    account_source: string | null
+    created_at: string
+  } | null = null
+
+  if (user && (isAuthRoute || isProtected || pathname.startsWith('/student'))) {
+    const { data } = await supabase
       .from('profiles')
       .select('role, account_status, email_verified_at, account_source, created_at')
       .eq('id', user.id)
       .single()
+    profile = data
+  }
 
+  if (user && isAuthRoute) {
     if (!profile) {
       return supabaseResponse
     }
@@ -195,16 +263,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(dashboardUrl)
   }
 
-  // Hard gate: self_register past grace → only verify-email (and exempt paths)
   if (user) {
     const exempt = VERIFY_EXEMPT_PREFIXES.some((p) => pathname.startsWith(p))
     if (!exempt && (isProtected || pathname.startsWith('/student'))) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, account_status, email_verified_at, account_source, created_at')
-        .eq('id', user.id)
-        .single()
-
       if (profile && profile.account_status !== 'active') {
         const loginUrl = request.nextUrl.clone()
         loginUrl.pathname = '/login'
@@ -222,46 +283,31 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Role-based access control for authenticated users
-  if (user && isProtected) {
-    const needsRoleCheck =
-      pathname.startsWith('/teacher') ||
-      pathname.startsWith('/student') ||
-      pathname.startsWith('/arena') ||
-      pathname.startsWith('/live')
+  if (user && isProtected && needsRoleCheck) {
+    if (profile) {
+      if (profile.account_status !== 'active') {
+        const loginUrl = request.nextUrl.clone()
+        loginUrl.pathname = '/login'
+        loginUrl.search = ''
+        loginUrl.searchParams.set('error', 'account_disabled')
+        return NextResponse.redirect(loginUrl)
+      }
 
-    if (needsRoleCheck) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, account_status')
-        .eq('id', user.id)
-        .single()
-
-      if (profile) {
-        if (profile.account_status !== 'active') {
-          const loginUrl = request.nextUrl.clone()
-          loginUrl.pathname = '/login'
-          loginUrl.search = ''
-          loginUrl.searchParams.set('error', 'account_disabled')
-          return NextResponse.redirect(loginUrl)
+      // Accessing teacher routes
+      if (pathname.startsWith('/teacher')) {
+        if (profile.role !== 'teacher') {
+          const redirectUrl = request.nextUrl.clone()
+          redirectUrl.pathname = '/student/dashboard'
+          return NextResponse.redirect(redirectUrl)
         }
+      }
 
-        // Accessing teacher routes
-        if (pathname.startsWith('/teacher')) {
-          if (profile.role !== 'teacher') {
-            const redirectUrl = request.nextUrl.clone()
-            redirectUrl.pathname = '/student/dashboard'
-            return NextResponse.redirect(redirectUrl)
-          }
-        }
-
-        // Accessing student routes
-        if (pathname.startsWith('/student')) {
-          if (profile.role !== 'student' && profile.role !== 'online_student') {
-            const redirectUrl = request.nextUrl.clone()
-            redirectUrl.pathname = '/teacher/dashboard'
-            return NextResponse.redirect(redirectUrl)
-          }
+      // Accessing student routes
+      if (pathname.startsWith('/student')) {
+        if (profile.role !== 'student' && profile.role !== 'online_student') {
+          const redirectUrl = request.nextUrl.clone()
+          redirectUrl.pathname = '/teacher/dashboard'
+          return NextResponse.redirect(redirectUrl)
         }
       }
     }
@@ -294,5 +340,6 @@ export const config = {
     '/api/discord/daily-checkin/:path*',
     '/api/rewards/:path*',
     '/api/titles/:path*',
+    '/api/monitor/:path*',
   ],
 }

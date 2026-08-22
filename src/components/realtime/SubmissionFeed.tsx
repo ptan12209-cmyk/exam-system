@@ -50,7 +50,7 @@ export function SubmissionFeed({ examId, className, maxItems = 5 }: SubmissionFe
                     .select("id, full_name")
                     .in("id", studentIds)
 
-                const profileMap = new Map(profiles?.map((p: { id: string; full_name: string }) => [p.id, p.full_name]) || [])
+                const profileMap = new Map(profiles?.map((p) => [p.id, p.full_name] as [string, string]) || [])
 
                 const enrichedSubmissions = data.map((s: { id: string; student_id: string; score: number; exams: { total_questions: number } | { total_questions: number }[]; submitted_at: string }) => ({
                     id: s.id,

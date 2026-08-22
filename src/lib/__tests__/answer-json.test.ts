@@ -10,7 +10,7 @@ describe("parseAnswerJson", () => {
       { question: 2, answer: "C" },
     ])
     expect(result.trueFalse[0]).toEqual({
-      question: 3,
+      question: 1,
       a: true,
       b: false,
       c: true,
@@ -23,19 +23,43 @@ describe("parseAnswerJson", () => {
     const result = parseAnswerJson(JSON.stringify({
       multiple_choice: [{ question: 1, answer: " b " }],
       true_false: [],
-      short_answer: [{ question: 2, answer: 3.14 }],
+      short_answer: [{ question: 1, answer: 3.14 }],
     }))
 
     expect(result.multipleChoice[0].answer).toBe("B")
     expect(result.shortAnswer[0].answer).toBe("3.14")
   })
 
-  it("rejects gaps and duplicate question numbers", () => {
-    expect(() => parseAnswerJson(JSON.stringify({
-      multiple_choice: [{ question: 1, answer: "A" }],
-      true_false: [{ question: 1, a: true, b: true, c: false, d: false }],
-      short_answer: [],
-    }))).toThrow("phải là câu 2")
+  it("allows custom starting question numbers for any section", () => {
+    const result = parseAnswerJson(JSON.stringify({
+      multiple_choice: [{ question: 21, answer: "A" }, { question: 22, answer: "B" }],
+      true_false: [{ question: 5, a: true, b: false, c: true, d: false }],
+      short_answer: [{ question: 10, answer: "42" }, { question: 11, answer: "99" }],
+    }))
+
+    expect(result.multipleChoice).toEqual([
+      { question: 21, answer: "A" },
+      { question: 22, answer: "B" },
+    ])
+    expect(result.trueFalse[0].question).toBe(5)
+    expect(result.shortAnswer[0].question).toBe(10)
+    expect(result.shortAnswer[1].question).toBe(11)
+  })
+
+  it("allows non-consecutive and arbitrary question numbers", () => {
+    const result = parseAnswerJson(JSON.stringify({
+      multiple_choice: [{ question: 2, answer: "A" }, { question: 14, answer: "B" }],
+      true_false: [{ question: 99, a: true, b: false, c: true, d: false }],
+      short_answer: [{ question: 7, answer: "42" }, { question: 50, answer: "-1.5" }],
+    }))
+
+    expect(result.multipleChoice).toEqual([
+      { question: 2, answer: "A" },
+      { question: 14, answer: "B" },
+    ])
+    expect(result.trueFalse[0].question).toBe(99)
+    expect(result.shortAnswer[0].question).toBe(7)
+    expect(result.shortAnswer[1].question).toBe(50)
   })
 
   it("rejects malformed JSON and invalid options", () => {

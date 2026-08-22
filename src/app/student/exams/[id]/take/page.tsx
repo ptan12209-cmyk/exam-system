@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -11,12 +12,18 @@ import { AntiCheatProvider } from "@/components/exam/AntiCheatProvider"
 import { AntiCheatWarning, FullscreenPrompt } from "@/components/exam/AntiCheatUI"
 import { WebcamProctor } from "@/components/exam/WebcamProctor"
 import { AudioProctor } from "@/components/exam/AudioProctor"
-import { InlinePdfViewer } from "@/components/exam/InlinePdfViewer"
 import { StudentShell } from "@/components/student/StudentShell"
 import { AlertTriangle, Clock, FileText, Send, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
 import { Loading } from "@/components/shared/Loading"
 import { DotmSquare1 } from "@/components/ui/dotm-square-1"
 import { useToast } from "@/components/ui/toast"
+import type { Json } from "@/types/database"
+
+// pdf.js (~1MB) only loads when a PDF exam is actually rendered
+const InlinePdfViewer = dynamic(
+  () => import("@/components/exam/InlinePdfViewer").then((m) => m.InlinePdfViewer),
+  { ssr: false, loading: () => <Loading label="Đang tải tài liệu đề thi..." /> }
+)
 
 type Option = "A" | "B" | "C" | "D"
 import type { Exam, TFStudentAnswer, SAStudentAnswer } from "@/types"
@@ -234,7 +241,7 @@ export default function TakeExamPage() {
     if (!sessionId) return
     const timer = setInterval(async () => {
       await supabase.from("exam_sessions").update({
-        answers_snapshot: { mc: studentAnswers, tf: tfStudentAnswers, sa: saStudentAnswers },
+        answers_snapshot: { mc: studentAnswers, tf: tfStudentAnswers, sa: saStudentAnswers } as unknown as Json,
         last_active_at: new Date().toISOString(),
         tab_switch_count: tabSwitchCount
       }).eq("id", sessionId)
@@ -334,7 +341,7 @@ export default function TakeExamPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0A13] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
         <Loading label="Đang tải đề thi..." />
       </div>
     )
@@ -344,16 +351,16 @@ export default function TakeExamPage() {
 
   if (showSessionChoice && existingSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B0A13] p-4 text-[#F1EDF9]">
-        <div className="w-full max-w-md rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-6 text-center shadow-lg">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[#8C87A2]/30 bg-[#0B0A13]">
-            <AlertTriangle className="h-7 w-7 text-[#C18CFF]" />
+      <div className="min-h-screen flex items-center justify-center bg-[var(--os-bg)] p-4 text-[var(--os-fg)]">
+        <div className="w-full max-w-md rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] p-6 text-center shadow-lg">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[var(--os-muted)]/30 bg-[var(--os-bg)]">
+            <AlertTriangle className="h-7 w-7 text-[var(--os-accent)]" />
           </div>
           <h2 className="text-xl font-bold">Có phiên làm bài đang mở</h2>
-          <p className="mt-2 text-xs text-[#8C87A2]">Bạn có thể tiếp tục phiên trước hoặc bắt đầu lại từ đầu.</p>
+          <p className="mt-2 text-xs text-[var(--os-muted)]">Bạn có thể tiếp tục phiên trước hoặc bắt đầu lại từ đầu.</p>
           <div className="mt-6 space-y-3">
-            <Button onClick={handleContinueSession} className="w-full rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-semibold py-3">Tiếp tục</Button>
-            <Button onClick={handleRestartSession} variant="outline" className="w-full rounded-xl border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] bg-transparent py-3">Làm lại</Button>
+            <Button onClick={handleContinueSession} className="w-full rounded-xl bg-[var(--os-accent)] hover:bg-[var(--os-accent)]/90 text-[var(--os-accent-fg)] font-semibold py-3">Tiếp tục</Button>
+            <Button onClick={handleRestartSession} variant="outline" className="w-full rounded-xl border-[var(--os-muted)]/40 text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent py-3">Làm lại</Button>
           </div>
         </div>
       </div>
@@ -367,26 +374,26 @@ export default function TakeExamPage() {
       {examStarted && (exam.security_level ?? 1) >= 2 && <WebcamProctor enabled enableFaceDetection={(exam.security_level ?? 1) >= 4} onViolation={() => handleViolation("webcam_violation", tabSwitchCount + 1)} />}
       {examStarted && (exam.security_level ?? 1) >= 3 && <AudioProctor enabled onViolation={() => handleViolation("audio_violation", tabSwitchCount + 1)} />}
       
-      <StudentShell className={cn("bg-[#0B0A13] text-[#F1EDF9]", inter.className)}>
+      <StudentShell className={cn("bg-[var(--os-bg)] text-[var(--os-fg)]", inter.className)}>
         {/* Sticky Header */}
-        <div className="sticky top-0 z-50 border-b border-[#8C87A2]/20 bg-[#15131F]">
+        <div className="sticky top-0 z-50 border-b border-[var(--os-muted)]/20 bg-[var(--os-card)]">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
-              <Link href="/student/exams" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#8C87A2]/30 bg-[#0B0A13] text-[#F1EDF9] hover:border-[#C18CFF] hover:text-[#C18CFF] transition-colors">
+              <Link href="/student/exams" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--os-muted)]/30 bg-[var(--os-bg)] text-[var(--os-fg)] hover:border-[var(--os-accent)] hover:text-[var(--os-accent)] transition-colors">
                 <ArrowLeft className="h-4 w-4" />
               </Link>
               <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] text-[#8C87A2] font-mono">Đang làm bài</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--os-muted)] font-mono">Đang làm bài</p>
                 <h1 className="max-w-[220px] truncate text-base font-bold md:max-w-md">{exam.title}</h1>
               </div>
             </div>
             
             <div className="flex items-center gap-3">
-              <div className={cn("rounded-xl border px-4 py-2 font-mono text-sm font-semibold flex items-center bg-[#0B0A13]", timeLeft <= 60 ? "border-red-500/30 text-red-500 bg-red-500/10" : "border-[#8C87A2]/30 text-[#C18CFF]") }>
+              <div className={cn("rounded-xl border px-4 py-2 font-mono text-sm font-semibold flex items-center bg-[var(--os-bg)]", timeLeft <= 60 ? "border-red-500/30 text-red-500 bg-red-500/10" : "border-[var(--os-muted)]/30 text-[var(--os-accent)]") }>
                 <Clock className="mr-2 h-4 w-4" />
                 <span>{String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")}</span>
               </div>
-              <Button onClick={() => setShowConfirm(true)} disabled={submitting} className="rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-bold"> 
+              <Button onClick={() => setShowConfirm(true)} disabled={submitting} className="rounded-xl bg-[var(--os-accent)] hover:bg-[var(--os-accent)]/90 text-[var(--os-accent-fg)] font-bold"> 
                 <Send className="mr-2 h-4 w-4" />Nộp bài
               </Button>
             </div>
@@ -397,13 +404,13 @@ export default function TakeExamPage() {
         <main className="mx-auto grid max-w-7xl gap-6 px-4 py-4 pb-28 lg:grid-cols-12 lg:px-8">
           
           {/* PDF Viewer */}
-          <section className="overflow-hidden rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] lg:col-span-9 shadow-sm">
+          <section className="overflow-hidden rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] lg:col-span-9 shadow-sm">
             {exam.pdf_url ? (
               <InlinePdfViewer url={exam.pdf_url} className={heightClass} />
             ) : (
-              <div className={cn("flex items-center justify-center text-center text-[#8C87A2]", heightClass)}>
+              <div className={cn("flex items-center justify-center text-center text-[var(--os-muted)]", heightClass)}>
                 <div>
-                  <FileText className="mx-auto mb-3 h-10 w-10 text-[#8C87A2]/20" />
+                  <FileText className="mx-auto mb-3 h-10 w-10 text-[var(--os-muted)]/20" />
                   <p className="text-xs">Không có file đề thi</p>
                 </div>
               </div>
@@ -411,27 +418,27 @@ export default function TakeExamPage() {
           </section>
 
           {/* Answers Panel */}
-          <section className={cn("overflow-hidden rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] lg:col-span-3 flex flex-col shadow-sm", heightClass)}>
+          <section className={cn("overflow-hidden rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] lg:col-span-3 flex flex-col shadow-sm", heightClass)}>
             
-            <div className="border-b border-[#8C87A2]/20 p-5">
+            <div className="border-b border-[var(--os-muted)]/20 p-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-sm font-bold text-[#F1EDF9]">Phiếu trả lời</h2>
-                  <p className="text-xs text-[#8C87A2] mt-0.5">Đã làm {answeredCount}/{exam.total_questions} câu</p>
+                  <h2 className="text-sm font-bold text-[var(--os-fg)]">Phiếu trả lời</h2>
+                  <p className="text-xs text-[var(--os-muted)] mt-0.5">Đã làm {answeredCount}/{exam.total_questions} câu</p>
                 </div>
-                <div className="text-right text-[10px] text-[#8C87A2] font-mono">
-                  <div className="h-1.5 w-24 overflow-hidden rounded-full bg-[#0B0A13]">
-                    <div className="h-full rounded-full bg-[#C18CFF]" style={{ width: `${Math.min(100, (answeredCount / exam.total_questions) * 100)}%` }} />
+                <div className="text-right text-[10px] text-[var(--os-muted)] font-mono">
+                  <div className="h-1.5 w-24 overflow-hidden rounded-full bg-[var(--os-bg)]">
+                    <div className="h-full rounded-full bg-[var(--os-accent)]" style={{ width: `${Math.min(100, (answeredCount / exam.total_questions) * 100)}%` }} />
                   </div>
                   <div className="mt-1">Tiến độ</div>
                 </div>
               </div>
 
               {/* Sub tabs switcher */}
-              <div className="mt-4 flex gap-1 rounded-xl border border-[#8C87A2]/30 bg-[#0B0A13] p-1">
-                <button onClick={() => setActiveTab("mc")} className={cn("flex-1 rounded-lg py-1.5 text-xs font-bold transition-all whitespace-nowrap", activeTab === "mc" ? "bg-[#C18CFF] text-[#0B0A13]" : "text-[#8C87A2] hover:text-[#F1EDF9]")}>Trắc nghiệm</button>
-                {!!exam.tf_questions?.length && <button onClick={() => setActiveTab("tf")} className={cn("flex-1 rounded-lg py-1.5 text-xs font-bold transition-all whitespace-nowrap", activeTab === "tf" ? "bg-[#C18CFF] text-[#0B0A13]" : "text-[#8C87A2] hover:text-[#F1EDF9]")}>Đúng/Sai</button>}
-                {!!exam.sa_questions?.length && <button onClick={() => setActiveTab("sa")} className={cn("flex-1 rounded-lg py-1.5 text-xs font-bold transition-all whitespace-nowrap", activeTab === "sa" ? "bg-[#C18CFF] text-[#0B0A13]" : "text-[#8C87A2] hover:text-[#F1EDF9]")}>Tự luận</button>}
+              <div className="mt-4 flex gap-1 rounded-xl border border-[var(--os-muted)]/30 bg-[var(--os-bg)] p-1">
+                <button onClick={() => setActiveTab("mc")} className={cn("flex-1 rounded-lg py-1.5 text-xs font-bold transition-all whitespace-nowrap", activeTab === "mc" ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)]" : "text-[var(--os-muted)] hover:text-[var(--os-fg)]")}>Trắc nghiệm</button>
+                {!!exam.tf_questions?.length && <button onClick={() => setActiveTab("tf")} className={cn("flex-1 rounded-lg py-1.5 text-xs font-bold transition-all whitespace-nowrap", activeTab === "tf" ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)]" : "text-[var(--os-muted)] hover:text-[var(--os-fg)]")}>Đúng/Sai</button>}
+                {!!exam.sa_questions?.length && <button onClick={() => setActiveTab("sa")} className={cn("flex-1 rounded-lg py-1.5 text-xs font-bold transition-all whitespace-nowrap", activeTab === "sa" ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)]" : "text-[var(--os-muted)] hover:text-[var(--os-fg)]")}>Tự luận</button>}
               </div>
             </div>
 
@@ -452,10 +459,10 @@ export default function TakeExamPage() {
                           className={cn(
                             "h-10 w-full rounded-xl text-xs font-bold border transition-all duration-200 flex flex-col items-center justify-center gap-0.5",
                             isActive
-                              ? "bg-[#C18CFF] text-[#0B0A13] border-[#C18CFF] scale-105"
+                              ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)] border-[var(--os-accent)] scale-105"
                               : isAnswered
-                              ? "bg-[#C18CFF]/15 border-[#C18CFF]/30 text-[#C18CFF]"
-                              : "border-[#8C87A2]/20 bg-transparent text-[#8C87A2] hover:border-[#C18CFF]/50"
+                              ? "bg-[var(--os-accent)]/15 border-[var(--os-accent)]/30 text-[var(--os-accent)]"
+                              : "border-[var(--os-muted)]/20 bg-transparent text-[var(--os-muted)] hover:border-[var(--os-accent)]/50"
                           )}
                         >
                           <span className="font-mono">{i + 1}</span>
@@ -466,11 +473,11 @@ export default function TakeExamPage() {
                   </div>
 
                   {/* Detail Option Choices */}
-                  <div className="mt-5 rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13]/40 p-5 flex flex-col justify-between flex-1">
+                  <div className="mt-5 rounded-xl border border-[var(--os-muted)]/25 bg-[var(--os-bg)]/40 p-5 flex flex-col justify-between flex-1">
                     <div>
-                      <div className="flex items-center justify-between border-b border-[#8C87A2]/20 pb-3 mb-4">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Chọn đáp án</span>
-                        <span className="rounded-lg bg-[#C18CFF]/15 px-2.5 py-0.5 text-xs font-bold text-[#C18CFF]">Câu {activeMcIndex + 1}</span>
+                      <div className="flex items-center justify-between border-b border-[var(--os-muted)]/20 pb-3 mb-4">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--os-muted)] font-mono">Chọn đáp án</span>
+                        <span className="rounded-lg bg-[var(--os-accent)]/15 px-2.5 py-0.5 text-xs font-bold text-[var(--os-accent)]">Câu {activeMcIndex + 1}</span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto py-2">
@@ -494,8 +501,8 @@ export default function TakeExamPage() {
                               className={cn(
                                 "h-12 rounded-xl border text-base font-bold flex items-center justify-center transition-all active:scale-95",
                                 isSelected
-                                  ? "bg-[#C18CFF] text-[#0B0A13] border-[#C18CFF] scale-105"
-                                  : "border-[#8C87A2]/30 bg-[#15131F] text-[#8C87A2] hover:border-[#C18CFF]/50 hover:text-[#F1EDF9]"
+                                  ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)] border-[var(--os-accent)] scale-105"
+                                  : "border-[var(--os-muted)]/30 bg-[var(--os-card)] text-[var(--os-muted)] hover:border-[var(--os-accent)]/50 hover:text-[var(--os-fg)]"
                               )}
                             >
                               {option}
@@ -505,13 +512,13 @@ export default function TakeExamPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between mt-4 border-t border-[#8C87A2]/20 pt-4">
+                    <div className="flex items-center justify-between mt-4 border-t border-[var(--os-muted)]/20 pt-4">
                       <Button
                         variant="outline"
                         size="sm"
                         disabled={activeMcIndex === 0}
                         onClick={() => setActiveMcIndex((prev) => prev - 1)}
-                        className="rounded-xl border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] h-9 text-xs"
+                        className="rounded-xl border-[var(--os-muted)]/40 text-[var(--os-muted)] hover:text-[var(--os-fg)] h-9 text-xs"
                       >
                         <ChevronLeft className="mr-1 h-3.5 w-3.5" /> Trước
                       </Button>
@@ -520,7 +527,7 @@ export default function TakeExamPage() {
                         size="sm"
                         disabled={activeMcIndex === (exam.mc_questions?.length || exam.total_questions) - 1}
                         onClick={() => setActiveMcIndex((prev) => prev + 1)}
-                        className="rounded-xl border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] h-9 text-xs"
+                        className="rounded-xl border-[var(--os-muted)]/40 text-[var(--os-muted)] hover:text-[var(--os-fg)] h-9 text-xs"
                       >
                         Sau <ChevronRight className="ml-1 h-3.5 w-3.5" />
                       </Button>
@@ -545,14 +552,14 @@ export default function TakeExamPage() {
                           className={cn(
                             "h-10 w-full rounded-xl text-xs font-bold border transition-all duration-200 flex flex-col items-center justify-center gap-0.5",
                             isActive
-                              ? "bg-[#C18CFF] text-[#0B0A13] border-[#C18CFF] scale-105"
+                              ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)] border-[var(--os-accent)] scale-105"
                               : isAnswered
-                              ? "bg-[#C18CFF]/15 border-[#C18CFF]/30 text-[#C18CFF]"
-                              : "border-[#8C87A2]/20 bg-transparent text-[#8C87A2] hover:border-[#C18CFF]/50"
+                              ? "bg-[var(--os-accent)]/15 border-[var(--os-accent)]/30 text-[var(--os-accent)]"
+                              : "border-[var(--os-muted)]/20 bg-transparent text-[var(--os-muted)] hover:border-[var(--os-accent)]/50"
                           )}
                         >
                           <span className="font-mono">{tf.question}</span>
-                          {isAnswered && <span className="text-[9px] font-bold font-mono text-[#C18CFF]">{answeredSubCount}/4 ý</span>}
+                          {isAnswered && <span className="text-[9px] font-bold font-mono text-[var(--os-accent)]">{answeredSubCount}/4 ý</span>}
                         </button>
                       )
                     })}
@@ -563,17 +570,17 @@ export default function TakeExamPage() {
                     if (!tf) return null
                     const current = tfStudentAnswers.find((item) => item.question === tf.question) || { question: tf.question, a: null, b: null, c: null, d: null }
                     return (
-                      <div className="mt-5 rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13]/40 p-5 flex flex-col justify-between flex-1">
+                      <div className="mt-5 rounded-xl border border-[var(--os-muted)]/25 bg-[var(--os-bg)]/40 p-5 flex flex-col justify-between flex-1">
                         <div>
-                          <div className="flex items-center justify-between border-b border-[#8C87A2]/20 pb-3 mb-4">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Chọn Đúng/Sai</span>
-                            <span className="rounded-lg bg-[#C18CFF]/15 px-2.5 py-0.5 text-xs font-bold text-[#C18CFF]">Câu {tf.question}</span>
+                          <div className="flex items-center justify-between border-b border-[var(--os-muted)]/20 pb-3 mb-4">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--os-muted)] font-mono">Chọn Đúng/Sai</span>
+                            <span className="rounded-lg bg-[var(--os-accent)]/15 px-2.5 py-0.5 text-xs font-bold text-[var(--os-accent)]">Câu {tf.question}</span>
                           </div>
 
                           <div className="space-y-2.5">
                             {(["a", "b", "c", "d"] as const).map((sub) => (
-                              <div key={sub} className="flex items-center justify-between gap-4 p-2 rounded-xl border border-[#8C87A2]/20 bg-[#15131F]">
-                                <span className="text-xs font-bold uppercase text-[#8C87A2] w-6 text-center font-mono">Ý {sub}</span>
+                              <div key={sub} className="flex items-center justify-between gap-4 p-2 rounded-xl border border-[var(--os-muted)]/20 bg-[var(--os-card)]">
+                                <span className="text-xs font-bold uppercase text-[var(--os-muted)] w-6 text-center font-mono">Ý {sub}</span>
                                 <div className="flex gap-2 flex-1 max-w-[160px]">
                                   <button
                                     onClick={() => setTfStudentAnswers((prev) => {
@@ -587,7 +594,7 @@ export default function TakeExamPage() {
                                       "flex-1 rounded-lg border py-1 text-xs font-bold transition-all",
                                       current[sub] === true
                                         ? "bg-emerald-500 text-white border-emerald-500 scale-105"
-                                        : "border-[#8C87A2]/30 bg-transparent text-[#8C87A2] hover:bg-[#0B0A13]/40"
+                                        : "border-[var(--os-muted)]/30 bg-transparent text-[var(--os-muted)] hover:bg-[var(--os-bg)]/40"
                                     )}
                                   >
                                     Đúng
@@ -604,7 +611,7 @@ export default function TakeExamPage() {
                                       "flex-1 rounded-lg border py-1 text-xs font-bold transition-all",
                                       current[sub] === false
                                         ? "bg-red-500 text-white border-red-500 scale-105"
-                                        : "border-[#8C87A2]/30 bg-transparent text-[#8C87A2] hover:bg-[#0B0A13]/40"
+                                        : "border-[var(--os-muted)]/30 bg-transparent text-[var(--os-muted)] hover:bg-[var(--os-bg)]/40"
                                     )}
                                   >
                                     Sai
@@ -615,13 +622,13 @@ export default function TakeExamPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between mt-4 border-t border-[#8C87A2]/20 pt-4">
+                        <div className="flex items-center justify-between mt-4 border-t border-[var(--os-muted)]/20 pt-4">
                           <Button
                             variant="outline"
                             size="sm"
                             disabled={activeTfIndex === 0}
                             onClick={() => setActiveTfIndex((prev) => prev - 1)}
-                            className="rounded-xl border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] h-9 text-xs"
+                            className="rounded-xl border-[var(--os-muted)]/40 text-[var(--os-muted)] hover:text-[var(--os-fg)] h-9 text-xs"
                           >
                             <ChevronLeft className="mr-1 h-3.5 w-3.5" /> Trước
                           </Button>
@@ -630,7 +637,7 @@ export default function TakeExamPage() {
                             size="sm"
                             disabled={activeTfIndex === exam.tf_questions.length - 1}
                             onClick={() => setActiveTfIndex((prev) => prev + 1)}
-                            className="rounded-xl border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] h-9 text-xs"
+                            className="rounded-xl border-[var(--os-muted)]/40 text-[var(--os-muted)] hover:text-[var(--os-fg)] h-9 text-xs"
                           >
                             Sau <ChevronRight className="ml-1 h-3.5 w-3.5" />
                           </Button>
@@ -656,14 +663,14 @@ export default function TakeExamPage() {
                           className={cn(
                             "h-10 w-full rounded-xl text-xs font-bold border transition-all duration-200 flex flex-col items-center justify-center gap-0.5",
                             isActive
-                              ? "bg-[#C18CFF] text-[#0B0A13] border-[#C18CFF] scale-105"
+                              ? "bg-[var(--os-accent)] text-[var(--os-accent-fg)] border-[var(--os-accent)] scale-105"
                               : isAnswered
-                              ? "bg-[#C18CFF]/15 border-[#C18CFF]/30 text-[#C18CFF]"
-                              : "border-[#8C87A2]/20 bg-transparent text-[#8C87A2] hover:border-[#C18CFF]/50"
+                              ? "bg-[var(--os-accent)]/15 border-[var(--os-accent)]/30 text-[var(--os-accent)]"
+                              : "border-[var(--os-muted)]/20 bg-transparent text-[var(--os-muted)] hover:border-[var(--os-accent)]/50"
                           )}
                         >
                           <span className="font-mono">{sa.question}</span>
-                          {isAnswered && <span className="text-[9px] font-bold text-[#C18CFF] truncate max-w-[32px] px-0.5 font-mono">{current?.answer}</span>}
+                          {isAnswered && <span className="text-[9px] font-bold text-[var(--os-accent)] truncate max-w-[32px] px-0.5 font-mono">{current?.answer}</span>}
                         </button>
                       )
                     })}
@@ -674,11 +681,11 @@ export default function TakeExamPage() {
                     if (!sa) return null
                     const current = saStudentAnswers.find((item) => item.question === sa.question)
                     return (
-                      <div className="mt-5 rounded-xl border border-[#8C87A2]/25 bg-[#0B0A13]/40 p-5 flex flex-col justify-between flex-1">
+                      <div className="mt-5 rounded-xl border border-[var(--os-muted)]/25 bg-[var(--os-bg)]/40 p-5 flex flex-col justify-between flex-1">
                         <div>
-                          <div className="flex items-center justify-between border-b border-[#8C87A2]/20 pb-3 mb-4">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C87A2] font-mono">Nhập đáp án ngắn</span>
-                            <span className="rounded-lg bg-[#C18CFF]/15 px-2.5 py-0.5 text-xs font-bold text-[#C18CFF]">Câu {sa.question}</span>
+                          <div className="flex items-center justify-between border-b border-[var(--os-muted)]/20 pb-3 mb-4">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--os-muted)] font-mono">Nhập đáp án ngắn</span>
+                            <span className="rounded-lg bg-[var(--os-accent)]/15 px-2.5 py-0.5 text-xs font-bold text-[var(--os-accent)]">Câu {sa.question}</span>
                           </div>
 
                           <div className="space-y-4 py-2">
@@ -693,18 +700,18 @@ export default function TakeExamPage() {
                                 return next
                               })}
                               placeholder="Nhập câu trả lời..."
-                              className="w-full rounded-xl border border-[#8C87A2]/40 bg-[#15131F] px-4 py-3 text-base font-bold outline-none focus:border-[#C18CFF] transition-all text-center text-[#F1EDF9]"
+                              className="w-full rounded-xl border border-[var(--os-muted)]/40 bg-[var(--os-card)] px-4 py-3 text-base font-bold outline-none focus:border-[var(--os-accent)] transition-all text-center text-[var(--os-fg)]"
                             />
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between mt-4 border-t border-[#8C87A2]/20 pt-4">
+                        <div className="flex items-center justify-between mt-4 border-t border-[var(--os-muted)]/20 pt-4">
                           <Button
                             variant="outline"
                             size="sm"
                             disabled={activeSaIndex === 0}
                             onClick={() => setActiveSaIndex((prev) => prev - 1)}
-                            className="rounded-xl border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] h-9 text-xs"
+                            className="rounded-xl border-[var(--os-muted)]/40 text-[var(--os-muted)] hover:text-[var(--os-fg)] h-9 text-xs"
                           >
                             <ChevronLeft className="mr-1 h-3.5 w-3.5" /> Trước
                       </Button>
@@ -713,7 +720,7 @@ export default function TakeExamPage() {
                             size="sm"
                             disabled={activeSaIndex === exam.sa_questions.length - 1}
                             onClick={() => setActiveSaIndex((prev) => prev + 1)}
-                            className="rounded-xl border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9] h-9 text-xs"
+                            className="rounded-xl border-[var(--os-muted)]/40 text-[var(--os-muted)] hover:text-[var(--os-fg)] h-9 text-xs"
                           >
                             Sau <ChevronRight className="ml-1 h-3.5 w-3.5" />
                           </Button>
@@ -728,22 +735,22 @@ export default function TakeExamPage() {
         </main>
 
         <div className="fixed bottom-6 right-6 z-50 md:hidden">
-          <Button onClick={() => setShowConfirm(true)} size="icon" className="h-14 w-14 rounded-full bg-[#C18CFF] text-[#0B0A13]">
+          <Button onClick={() => setShowConfirm(true)} size="icon" className="h-14 w-14 rounded-full bg-[var(--os-accent)] text-[var(--os-accent-fg)]">
             <Send className="h-5 w-5" />
           </Button>
         </div>
 
         {showConfirm && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
-            <div className="w-full max-w-sm rounded-2xl border border-[#8C87A2]/20 bg-[#15131F] p-6 text-center shadow-lg">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[#8C87A2]/30 bg-[#0B0A13]">
-                <FileText className="h-8 w-8 text-[#C18CFF]" />
+            <div className="w-full max-w-sm rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] p-6 text-center shadow-lg">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[var(--os-muted)]/30 bg-[var(--os-bg)]">
+                <FileText className="h-8 w-8 text-[var(--os-accent)]" />
               </div>
               <h3 className="text-xl font-bold">Nộp bài?</h3>
-              <p className="mt-2 text-xs text-[#8C87A2]">Bạn đã làm {answeredCount}/{exam.total_questions} câu.</p>
+              <p className="mt-2 text-xs text-[var(--os-muted)]">Bạn đã làm {answeredCount}/{exam.total_questions} câu.</p>
               <div className="mt-6 grid grid-cols-2 gap-3">
-                <Button variant="outline" onClick={() => setShowConfirm(false)} className="rounded-xl border-[#8C87A2]/40 text-[#8C87A2] hover:text-[#F1EDF9]">Làm tiếp</Button>
-                <Button onClick={() => handleSubmit(false)} disabled={submitting} className="rounded-xl bg-[#C18CFF] hover:bg-[#C18CFF]/90 text-[#0B0A13] font-bold">
+                <Button variant="outline" onClick={() => setShowConfirm(false)} className="rounded-xl border-[var(--os-muted)]/40 text-[var(--os-muted)] hover:text-[var(--os-fg)]">Làm tiếp</Button>
+                <Button onClick={() => handleSubmit(false)} disabled={submitting} className="rounded-xl bg-[var(--os-accent)] hover:bg-[var(--os-accent)]/90 text-[var(--os-accent-fg)] font-bold">
                   {submitting ? <DotmSquare1 size={16} dotSize={2} className="mr-2" /> : null}Nộp bài
                 </Button>
               </div>

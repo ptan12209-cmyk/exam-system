@@ -41,6 +41,9 @@ const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin", "vietnamese"],
   variable: "--font-plus-jakarta-sans",
   display: "swap",
+  // DOL-brand display font — not needed on the default Dream brand, so skip
+  // preloading to cut initial font payload (loads on demand if switched).
+  preload: false,
 })
 
 const ibmPlex = IBM_Plex_Sans({
@@ -48,6 +51,8 @@ const ibmPlex = IBM_Plex_Sans({
   subsets: ["latin", "vietnamese"],
   variable: "--font-ibm-plex-sans",
   display: "swap",
+  // Swiss-brand body font — same lazy-load rationale as above.
+  preload: false,
 })
 
 export const metadata: Metadata = {

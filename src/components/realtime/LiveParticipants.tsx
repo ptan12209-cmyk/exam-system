@@ -35,7 +35,7 @@ export function LiveParticipants({ examId, className }: LiveParticipantsProps) {
                 .order("started_at", { ascending: false })
 
             if (!error && data) {
-                setParticipants(data)
+                setParticipants(data as unknown as Participant[])
             }
             setLoading(false)
         }
@@ -53,16 +53,17 @@ export function LiveParticipants({ examId, className }: LiveParticipantsProps) {
                     table: "exam_participants",
                     filter: `exam_id=eq.${examId}`
                 },
-                (payload: { eventType: string; new: Participant; old: { id: string } }) => {
-                    if (payload.eventType === "INSERT") {
-                        setParticipants(prev => [payload.new as Participant, ...prev])
-                    } else if (payload.eventType === "UPDATE") {
+                (payload: unknown) => {
+                    const evt = payload as { eventType: string; new: Participant; old: { id: string } }
+                    if (evt.eventType === "INSERT") {
+                        setParticipants(prev => [evt.new as Participant, ...prev])
+                    } else if (evt.eventType === "UPDATE") {
                         setParticipants(prev =>
-                            prev.map(p => p.id === (payload.new as Participant).id ? payload.new as Participant : p)
+                            prev.map(p => p.id === (evt.new as Participant).id ? evt.new as Participant : p)
                         )
-                    } else if (payload.eventType === "DELETE") {
+                    } else if (evt.eventType === "DELETE") {
                         setParticipants(prev =>
-                            prev.filter(p => p.id !== (payload.old as Participant).id)
+                            prev.filter(p => p.id !== (evt.old as Participant).id)
                         )
                     }
                 }
