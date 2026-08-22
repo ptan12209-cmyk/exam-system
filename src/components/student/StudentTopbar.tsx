@@ -1,11 +1,13 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { GraduationCap, Flame } from "lucide-react"
 import { NotificationBell } from "@/components/NotificationBell"
 import { UserMenu } from "@/components/UserMenu"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { ThptCountdown } from "@/components/shared/ThptCountdown"
+import { createClient } from "@/lib/supabase/client"
 import { GAMIFICATION_ENABLED } from "@/lib/features"
 
 interface StudentTopbarProps {
@@ -13,7 +15,8 @@ interface StudentTopbarProps {
   readonly userXp?: number
   readonly level?: number
   readonly streak?: number
-  readonly onLogout: () => void
+  /** Optional — defaults to signing out and returning to /login (lets RSC pages render this without handlers). */
+  readonly onLogout?: () => void
   readonly nickname?: string | null
   readonly studentClass?: string | null
 }
@@ -27,6 +30,10 @@ export function StudentTopbar({
   nickname,
   studentClass,
 }: Readonly<StudentTopbarProps>) {
+  const router = useRouter()
+  const handleLogout = onLogout ?? (() => {
+    void createClient().auth.signOut().then(() => router.push("/login"))
+  })
   const xpInCurrentLevel = userXp % 1000
   const xpNeededForNextLevel = 1000
   const progressPercent = Math.min((xpInCurrentLevel / xpNeededForNextLevel) * 100, 100)
@@ -91,7 +98,7 @@ export function StudentTopbar({
           <UserMenu
             userName={name || (nickname === "X" ? "Học sinh X" : "Học sinh")}
             userClass={nickname === "X" ? "Lớp X" : (studentClass ?? "Học sinh")}
-            onLogout={onLogout}
+            onLogout={handleLogout}
             role="student"
           />
         </div>

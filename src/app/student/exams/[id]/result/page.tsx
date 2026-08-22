@@ -1,26 +1,14 @@
-"use client"
-
-import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { StudentShell } from "@/components/student/StudentShell"
 import { StudentTopbar } from "@/components/student/StudentTopbar"
 import { StudentNavTabs } from "@/components/student/StudentNavTabs"
 import { Trophy, CheckCircle2, XCircle, Home, Medal, Share2, RotateCcw, Lock } from "lucide-react"
-import { Loading } from "@/components/shared/Loading"
 
 import type { Exam, Submission } from "@/types"
-
-interface LeaderboardEntry {
-  id: string
-  score: number
-  time_spent: number
-  student_id: string
-  profile: { full_name: string | null }
-}
 
 interface GradedExamPayload {
   id: string
@@ -38,128 +26,112 @@ interface GradedExamPayload {
   sa_answers: { question: number; answer: string | number }[]
 }
 
+interface LeaderboardEntry {
+  id: string
+  score: number
+  time_spent: number
+  student_id: string
+  profile: { full_name: string | null }
+}
+
 const instrumentSerif = { className: "font-instrument-serif" }
-const jetbrainsMono = { className: "font-jetbrains-mono" }
 const inter = { className: "font-inter" }
 
-export default function ExamResultPage() {
-  const router = useRouter()
-  const params = useParams()
-  const examId = params.id as string
-  const supabase = useMemo(() => createClient(), [])
+function formatTime(seconds: number) {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, "0")}`
+}
 
-  const [exam, setExam] = useState<Exam | null>(null)
-  const [submission, setSubmission] = useState<Submission | null>(null)
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
-  const [loading, setLoading] = useState(true)
-  const [fullName, setFullName] = useState("")
-  const [canRetake, setCanRetake] = useState(false)
-  const [attemptsUsed, setAttemptsUsed] = useState(0)
-  const [maxAttempts, setMaxAttempts] = useState(1)
-  const [canViewScore, setCanViewScore] = useState(true)
+function getScoreColor(score: number) {
+  if (score >= 8) return "text-emerald-400"
+  if (score >= 6.5) return "text-[var(--os-accent)]"
+  if (score >= 5) return "text-amber-400"
+  return "text-red-400"
+}
 
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push("/login"); return }
+function getScoreMessage(score: number) {
+  if (score >= 8) return "Làm tốt lắm! Xuất sắc 🎉"
+  if (score >= 6.5) return "Khá tốt! Hãy cố gắng phát huy 👍"
+  if (score >= 5) return "Đạt yêu cầu! Tiếp tục luyện tập nhé 📚"
+  return "Cần cố gắng thêm nhiều học sinh nhé 💪"
+}
 
-      const { data: profile } = await supabase.from("profiles").select("full_name, class").eq("id", user.id).single()
-      if (profile) setFullName(profile.full_name || "")
+/**
+ * Server Component — the graded exam (incl. answer keys, gated by the
+ * security-definer RPC), own submissions and the leaderboard are all fetched
+ * on the server. The HTML arrives fully rendered; no client waterfall.
+ */
+export default async function ExamResultPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: examId } = await params
+  const supabase = await createClient()
 
-      // Answer keys are only readable server-side once a submission exists —
-      // the RPC returns null otherwise. Scalar jsonb RPCs unwrap directly.
-      const { data: gradedExam } = await supabase
-        .rpc("get_graded_exam_for_student", { exam_uuid: examId })
-      const payload = (gradedExam ?? null) as GradedExamPayload | null
-      if (!payload) { router.push(`/student/exams/${examId}/take`); return }
-      setExam(payload as unknown as Exam)
-      const examMaxAttempts = payload.max_attempts ?? 1
-      setMaxAttempts(examMaxAttempts)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/login")
 
-      const { data: allSubmissions, count } = await supabase.from("submissions").select("*", { count: "exact" }).eq("exam_id", examId).eq("student_id", user.id).order("score", { ascending: false })
-      if (!allSubmissions?.length) { router.push(`/student/exams/${examId}/take`); return }
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, class")
+    .eq("id", user.id)
+    .single()
+  const fullName = profile?.full_name || ""
 
-      const currentSubmission = allSubmissions[0]
-      setSubmission(currentSubmission as unknown as Submission)
-      setAttemptsUsed(count ?? allSubmissions.length)
-      if (examMaxAttempts === 0 || (count ?? 0) < examMaxAttempts) setCanRetake(true)
+  // Answer keys are only readable server-side once a submission exists —
+  // the RPC returns null otherwise. Scalar jsonb RPCs unwrap directly.
+  const { data: gradedExam } = await supabase
+    .rpc("get_graded_exam_for_student", { exam_uuid: examId })
+  const payload = (gradedExam ?? null) as GradedExamPayload | null
+  if (!payload) redirect(`/student/exams/${examId}/take`)
 
-      const scoreVisMode = payload.score_visibility_mode || "always"
-      const scoreThresh = payload.score_visibility_threshold || 0
-      setCanViewScore(scoreVisMode === "always" || (scoreVisMode === "threshold" && currentSubmission.score >= scoreThresh))
+  const exam = payload as unknown as Exam
+  const examMaxAttempts = payload.max_attempts ?? 1
 
-      // Aggregate ranking via the security-definer RPC (no other students'
-      // answers are exposed).
-      const { data: leaderboardRows } = await supabase
-        .rpc("get_exam_leaderboard", { exam_uuid: examId })
+  const { data: allSubmissions, count } = await supabase
+    .from("submissions")
+    .select("*", { count: "exact" })
+    .eq("exam_id", examId)
+    .eq("student_id", user.id)
+    .order("score", { ascending: false })
+  if (!allSubmissions?.length) redirect(`/student/exams/${examId}/take`)
 
-      if (leaderboardRows) {
-        setLeaderboard(
-          leaderboardRows.slice(0, 10).map((row: { rank: number; student_id: string; student_name: string | null; score: number; time_spent: number }) => ({
-            id: row.student_id,
-            score: row.score,
-            time_spent: row.time_spent,
-            student_id: row.student_id,
-            profile: { full_name: row.student_name ?? null }
-          }))
-        )
-      }
+  const submission = allSubmissions[0] as unknown as Submission
+  const attemptsUsed = count ?? allSubmissions.length
+  const canRetake = examMaxAttempts === 0 || attemptsUsed < examMaxAttempts
 
-      setLoading(false)
-    })()
-  }, [examId, router, supabase])
+  const scoreVisMode = payload.score_visibility_mode || "always"
+  const scoreThresh = payload.score_visibility_threshold || 0
+  const canViewScore =
+    scoreVisMode === "always" ||
+    (scoreVisMode === "threshold" && submission.score >= scoreThresh)
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push("/login")
-  }
+  // Aggregate ranking via the security-definer RPC (no other students'
+  // answers are exposed).
+  const { data: leaderboardRows } = await supabase
+    .rpc("get_exam_leaderboard", { exam_uuid: examId })
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
+  const leaderboard: LeaderboardEntry[] = (leaderboardRows ?? [])
+    .slice(0, 10)
+    .map((row) => ({
+      id: row.student_id,
+      score: row.score,
+      time_spent: row.time_spent,
+      student_id: row.student_id,
+      profile: { full_name: row.student_name ?? null },
+    }))
 
-  const getScoreColor = (score: number) => {
-    if (score >= 8) return "text-emerald-400"
-    if (score >= 6.5) return "text-[var(--os-accent)]"
-    if (score >= 5) return "text-amber-400"
-    return "text-red-400"
-  }
-
-  const getScoreMessage = (score: number) => {
-    if (score >= 8) return "Làm tốt lắm! Xuất sắc 🎉"
-    if (score >= 6.5) return "Khá tốt! Hãy cố gắng phát huy 👍"
-    if (score >= 5) return "Đạt yêu cầu! Tiếp tục luyện tập nhé 📚"
-    return "Cần cố gắng thêm nhiều học sinh nhé 💪"
-  }
-
-  const progressPercent = useMemo(() => (exam && submission ? Math.min(100, ((submission.correct_count ?? 0) / exam.total_questions) * 100) : 0), [exam, submission])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[var(--os-bg)] flex items-center justify-center">
-        <Loading label="Đang chấm bài..." />
-      </div>
-    )
-  }
-
-  if (!exam || !submission) return null
+  const progressPercent = Math.min(100, ((submission.correct_count ?? 0) / exam.total_questions) * 100)
 
   return (
     <StudentShell className={cn("bg-[var(--os-bg)] text-[var(--os-fg)]", inter.className)}>
       {/* Topbar */}
-      <StudentTopbar
-        name={fullName}
-        onLogout={handleLogout}
-      />
+      <StudentTopbar name={fullName} />
 
       {/* NavTabs */}
       <StudentNavTabs />
 
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 pb-28 pt-8 sm:px-6 lg:px-8">
-        
+
         {/* Title Section */}
         <section className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
           <div>
@@ -195,7 +167,7 @@ export default function ExamResultPage() {
 
         {/* Detailed Panels */}
         <section className="mt-8 grid gap-8 lg:grid-cols-[1.35fr_0.65fr] lg:items-start">
-          
+
           <div className="space-y-6">
             {canViewScore ? (
               <>
@@ -210,7 +182,7 @@ export default function ExamResultPage() {
                       {submission.score.toFixed(1)}
                     </h3>
                     <p className="mt-3 text-lg font-semibold text-[var(--os-fg)]">{getScoreMessage(submission.score)}</p>
-                    
+
                     <div className="mt-8 h-2 w-full overflow-hidden rounded-full bg-[var(--os-bg)] border border-[var(--os-muted)]/20">
                       <div className="h-full rounded-full bg-[var(--os-accent)]" style={{ width: `${progressPercent}%` }} />
                     </div>
@@ -218,13 +190,13 @@ export default function ExamResultPage() {
                   </div>
                 </div>
 
-                {/* Question Details List (Strict Dark Mode Fills) */}
+                {/* Question Details List */}
                 <div className="overflow-hidden rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)]">
                   <div className="border-b border-[var(--os-muted)]/20 p-5 bg-[var(--os-bg)]/30">
                     <h3 className="text-lg font-bold">Chi tiết bài làm</h3>
                   </div>
                   <div className="p-5">
-                    
+
                     {/* 1. Trắc nghiệm MC */}
                     {(exam.correct_answers?.length ?? 0) > 0 && (
                       <div className="mb-8">
@@ -327,7 +299,7 @@ export default function ExamResultPage() {
 
           {/* Sidebar Controls */}
           <aside className="space-y-6">
-            
+
             {/* Actions Card */}
             <div className="rounded-2xl border border-[var(--os-muted)]/20 bg-[var(--os-card)] p-6 shadow-sm">
               <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--os-muted)] font-mono">Thao tác</h3>
@@ -340,7 +312,7 @@ export default function ExamResultPage() {
                   </Link>
                 )}
                 <p className="text-center text-[10px] text-[var(--os-muted)] font-mono">
-                  {maxAttempts === 0 ? `Đã làm ${attemptsUsed} lần` : `Đã dùng ${attemptsUsed}/${maxAttempts} lượt`}
+                  {examMaxAttempts === 0 ? `Đã làm ${attemptsUsed} lần` : `Đã dùng ${attemptsUsed}/${examMaxAttempts} lượt`}
                 </p>
                 <Link href="/student/dashboard" className="block">
                   <Button variant="outline" className="w-full rounded-xl border-[var(--os-muted)]/40 text-[var(--os-muted)] hover:text-[var(--os-fg)] bg-transparent py-3 transition-all">
